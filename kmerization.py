@@ -5,7 +5,7 @@
 #6/7/2017- Created file and wrote basic code
 #6/8/2017- Made print function
 
-import string
+import string, math
 
 def evaluateCodons(snippet):
     newSnippet = snippet.replace("T", "U")
@@ -44,21 +44,26 @@ def myPrintFunction(kmerList):
         print(wt + "\t" + mt)
     return None
 
-def kmer(nucleotideString, mutatedString = "", mutationLength = 0):
+def kmer(nucleotideString, mutatedString = "", mutationPos = -1, mutationLength = 0):
     if(len(mutatedString) == 0):
         mutatedString = nucleotideString
+    #If not given, assume that the mutation is in the middle of the nucleotide
+    if(mutationPos == -1):
+        mutationPos = len(nucleotideString)//2
     kmerList = list()
     AA = turnToAA(nucleotideString)
     mutatedAA = turnToAA(mutatedString)
+    #Calculate which amino acid is affected
+    mutatedAAPos = math.ceil(mutationPos/3)
+    #Loop through window sizes
     for ksize in range(8, 12):
-        #Below for-loop assumes mutation is in middle of string
-        for startIndex in range(11-ksize, (len(AA)+mutationLength)//2+1):
-            if(startIndex <= 0):
-                continue
+        #firstIndex corrects for mutations in the first half of the given string
+        firstIndex = max(mutatedAAPos-ksize, 0)
+        #lastIndex corrects for mutations in the latter half of the given string
+        lastIndex = min(mutatedAAPos, len(mutatedAA)-ksize + 1)
+        for startIndex in range(firstIndex, lastIndex):
             kmerList.append((AA[startIndex:startIndex+ksize], mutatedAA[startIndex:startIndex+ksize]))
     myPrintFunction(kmerList)
     return kmerList
 
-
-#In this case, the analysis is centered around the GTGTGT part in the first string, which is turned to GTTTGT in the second
-kmer("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTG", "ACGTGTGTCCGACCAGGTTTTAAAAAACGTTTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTG")
+kmer("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT", "ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
