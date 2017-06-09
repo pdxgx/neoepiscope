@@ -52,7 +52,7 @@ def myPrintFunction(kmerList):
 def kmer(normalAA, mutatedAA = "", mutatedAAPos = -1, mutationLength = 0):
     if(len(mutatedAA) == 0):
         mutatedAA = normalAA
-    #If not given, assume that the mutation is in the middle of the nucleotide
+    #If not given, assume that the mutation is in the middle of the string
     if(mutatedAAPos == -1):
         mutatedAAPos = len(normalAA)//2
     kmerList = list()
