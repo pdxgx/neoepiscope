@@ -3,9 +3,13 @@
 #Send it in to the binding affinity black box for analysis
 
 #6/7/2017- Created file and wrote basic code
-#6/8/2017- Made print function
+#6/8/2017- Made print function. Adjusted for mutations not in middle of string
+#6/9/2017- Separated turnToAA and kmer functions. Wrote gteMutatedAAPos
 
 import string, math
+
+def getMutatedAAPos(affectedNucleotide):
+    return math.ceil(affectedNucleotide/3)
 
 def evaluateCodons(snippet):
     newSnippet = snippet.replace("T", "U")
@@ -44,17 +48,14 @@ def myPrintFunction(kmerList):
         print(wt + "\t" + mt)
     return None
 
-def kmer(nucleotideString, mutatedString = "", mutationPos = -1, mutationLength = 0):
-    if(len(mutatedString) == 0):
-        mutatedString = nucleotideString
+
+def kmer(normalAA, mutatedAA = "", mutatedAAPos = -1, mutationLength = 0):
+    if(len(mutatedAA) == 0):
+        mutatedAA = normalAA
     #If not given, assume that the mutation is in the middle of the nucleotide
-    if(mutationPos == -1):
-        mutationPos = len(nucleotideString)//2
+    if(mutatedAAPos == -1):
+        mutatedAAPos = len(normalAA)//2
     kmerList = list()
-    AA = turnToAA(nucleotideString)
-    mutatedAA = turnToAA(mutatedString)
-    #Calculate which amino acid is affected
-    mutatedAAPos = math.ceil(mutationPos/3)
     #Loop through window sizes
     for ksize in range(8, 12):
         #firstIndex corrects for mutations in the first half of the given string
@@ -62,8 +63,11 @@ def kmer(nucleotideString, mutatedString = "", mutationPos = -1, mutationLength 
         #lastIndex corrects for mutations in the latter half of the given string
         lastIndex = min(mutatedAAPos, len(mutatedAA)-ksize + 1)
         for startIndex in range(firstIndex, lastIndex):
-            kmerList.append((AA[startIndex:startIndex+ksize], mutatedAA[startIndex:startIndex+ksize]))
+            kmerList.append((normalAA[startIndex:startIndex+ksize], mutatedAA[startIndex:startIndex+ksize]))
     myPrintFunction(kmerList)
     return kmerList
 
-kmer("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT", "ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+normalString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+tumorsString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+#Note: the getMutatedAAPos function can calculate which aa was affected based on nucleotide #
+kmer(normalString, tumorsString, getMutatedAAPos(64))
