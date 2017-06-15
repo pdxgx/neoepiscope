@@ -5,6 +5,7 @@ import sys
 def get_seq(start, end, chrom, ref_ind):
     splice_length = end - start 
     chr_name = "chr"+chrom #proper
+    print(start, end-start, chr_name)
     try:
         strand = ref_ind.get_stretch(chr_name, start, splice_length)
         return strand
@@ -45,22 +46,22 @@ try:
             if not line or line[0] == '#': continue
             vals = line.strip().split('\t')
             (chrom, pos, ref, alt) = (vals[0], int(vals[1]), vals[3], vals[4])
-            if last_chrom == chrom and pos-last_pos < 33:
+            if last_chrom == chrom and pos-last_pos < 36:
                 #The order of that if-statement is important! Don't change it!
-                end_ind = pos+32
+                end_ind = pos+35
             else:
                 if last_chrom != "None":
                     seq_strand = get_seq(st_ind,end_ind,last_chrom,ref_ind)
-                    #mute_strand = make_mute_strand(seq_strand,mute_locs)
+                    mute_strand = make_mute_strand(seq_strand,mute_locs)
                     #@TODO, now pass into makeIntoAA/ kmer function
                     #vars needed to be passed: st_ind, end_ind, last_chrom,
                     #seq_strand, mute_strand
                 mute_locs = dict()
-                (st_ind, end_ind) = (pos-32, pos+32)
+                (st_ind, end_ind) = (pos-35, pos+35)
             mute_locs[(pos-st_ind)] = alt
             (last_pos,last_chrom) = (pos, chrom)
         seq_strand = get_seq(st_ind, end_ind, last_chrom, ref_ind)
-        #mute_strand = make_mute_strand(seq_strand,mute_locs)
+        mute_strand = make_mute_strand(seq_strand,mute_locs)
         #@TODO, now pass into makeIntoAA/ kmer function
         #vars needed to be passed: st_ind, end_ind, last_chrom,
         #seq_strand, mute_strand
