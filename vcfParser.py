@@ -1,9 +1,60 @@
+import bisect
 import argparse
 import bowtie_index
 import sys
+#import pickle to unpickle ordered_exon_dict
 
-def get_seq(start, end, chrom, ref_ind):
-    splice_length = end - start 
+def get_exons(transcript_id, mutation_pos, strand_length_left, 
+              strand_length_right):
+    ordered_exon_dict = {}
+    total_strand_length = strand_length_right + strand_length_left
+    original_length_left = strand_length_left
+    exon_list = ordered_exon_dict[transcript_id]
+    middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
+    #If the middle_exon_index is past the last boundary, move it to the last.
+    if middle_exon_index > len(exon_list)-1:
+        middle_exon_index -=2
+    nucleotide_index_list = []
+    curr_left_index = middle_exon_index
+    curr_right_index = middle_exon_index+1 #Exon boundary end indexes
+    curr_pos_left = mutation_pos
+    curr_pos_right = mutation_pos #Actual number in chromosome
+    count = 0
+    while(len(nucleotide_index_list) == 0 or 
+          sum([index[1] for index in nucleotide_index_list]) < (original_length_left)):
+        if curr_pos_left-exon_list[curr_left_index] >= strand_length_left:
+            nucleotide_index_list.append((curr_pos_left-strand_length_left,
+                                          strand_length_left))
+            strand_length_left = 0
+        else:
+            nucleotide_index_list.append((exon_list[curr_left_index],
+                                          curr_pos_left-exon_list[curr_left_index]))
+            strand_length_left -= curr_pos_left-exon_list[curr_left_index]
+            curr_pos_left = exon_list[curr_left_index-1]
+            curr_left_index -= 2
+            if curr_left_index < 0:
+                print("Exceeded all possible exon boundaries!")
+                #Changed total_strand_length for comparison in next while loop.
+                total_strand_length = original_length_left-strand_length_left+strand_length_right
+                break
+    while(len(nucleotide_index_list) == 0 or 
+              sum([index[1] for index in nucleotide_index_list]) < (total_strand_length)):
+        if exon_list[curr_right_index] >= curr_pos_right + strand_length_right:
+            nucleotide_index_list.append((curr_pos_right, strand_length_right))
+            strand_length_right = 0
+        else:
+            try:
+                nucleotide_index_list.append((curr_pos_right+1,
+                                                      exon_list[curr_right_index]-curr_pos_right))
+                strand_length_right -= exon_list[curr_right_index]-curr_pos_right
+                curr_pos_right = exon_list[curr_right_index+1]
+                curr_right_index += 2
+            except IndexError:
+                print("Exceeded all possible exon boundaries!")
+                break
+    return nucleotide_index_list
+
+def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr"+chrom #proper
     print(start, end, chr_name)
     try:
@@ -59,7 +110,11 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    seq_strand = get_seq(st_ind,end_ind,last_chrom,ref_ind)
+                    exon_list = get_exons(trans_id, last_pos, left_side, right_side)
+                    seq_strand = ""
+                    for exon_stretch in exon_list:
+                        (seq_start, strand_length) = exon_stretch
+                        seq_strand += get_seq(last_chrom, seq_start, strand_length, ref_ind)
                     mute_strand = make_mute_strand(seq_strand,mute_locs)
                     #@TODO, now pass into makeIntoAA/ kmer function
                     #vars needed to be passed: st_ind, end_ind, last_chrom,
