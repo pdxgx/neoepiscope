@@ -6,7 +6,7 @@ import sys
 
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
               strand_length_right):
-    ordered_exon_dict = {}
+    ordered_exon_dict = {'ENST00000332235': [405438, 408401, 409006, 409139]}
     total_strand_length = strand_length_right + strand_length_left
     original_length_left = strand_length_left
     exon_list = ordered_exon_dict[transcript_id]
@@ -21,31 +21,36 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     curr_pos_right = mutation_pos #Actual number in chromosome
     count = 0
     while(len(nucleotide_index_list) == 0 or 
-          sum([index[1] for index in nucleotide_index_list]) < (original_length_left)):
+          sum([index[1] for index in nucleotide_index_list]) 
+          < (original_length_left)):
         if curr_pos_left-exon_list[curr_left_index] >= strand_length_left:
             nucleotide_index_list.append((curr_pos_left-strand_length_left,
                                           strand_length_left))
             strand_length_left = 0
         else:
             nucleotide_index_list.append((exon_list[curr_left_index],
-                                          curr_pos_left-exon_list[curr_left_index]))
+                                    curr_pos_left-exon_list[curr_left_index]))
             strand_length_left -= curr_pos_left-exon_list[curr_left_index]
             curr_pos_left = exon_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
                 print("Exceeded all possible exon boundaries!")
                 #Changed total_strand_length for comparison in next while loop.
-                total_strand_length = original_length_left-strand_length_left+strand_length_right
+                total_strand_length = (original_length_left
+                                      - strand_length_left
+                                      + strand_length_right)
                 break
     while(len(nucleotide_index_list) == 0 or 
-              sum([index[1] for index in nucleotide_index_list]) < (total_strand_length)):
+              sum([index[1] for index in nucleotide_index_list]) 
+              < (total_strand_length)):
         if exon_list[curr_right_index] >= curr_pos_right + strand_length_right:
             nucleotide_index_list.append((curr_pos_right, strand_length_right))
             strand_length_right = 0
         else:
             try:
                 nucleotide_index_list.append((curr_pos_right+1,
-                                                      exon_list[curr_right_index]-curr_pos_right))
+                                              exon_list[curr_right_index]
+                                              - curr_pos_right))
                 strand_length_right -= exon_list[curr_right_index]-curr_pos_right
                 curr_pos_right = exon_list[curr_right_index+1]
                 curr_right_index += 2
