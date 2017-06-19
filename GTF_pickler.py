@@ -10,7 +10,7 @@ parser.add_argument('-d', '--dump', type=str, required=True,
 
 args = parser.parse_args()
 
-my_file = open("gencode.txt").read()
+my_file = ""# ex: open("gencode.txt").read()
 
 exon_dict = {}
 chrom_dict = {}
