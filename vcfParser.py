@@ -112,11 +112,17 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
                                       - strand_length_left
                                       + strand_length_right)
                 break
+    nucleotide_index_list.append((mutation_pos, 1))
     while(len(nucleotide_index_list) == 0 or 
               sum([index[1] for index in nucleotide_index_list]) 
               < (total_strand_length)):
         if exon_list[curr_right_index] >= curr_pos_right + strand_length_right:
-            nucleotide_index_list.append((curr_pos_right, strand_length_right))
+            if curr_pos_right == mutation_pos:
+                nucleotide_index_list.append((curr_pos_right+1,
+                                              strand_length_right))
+            else:
+                nucleotide_index_list.append((curr_pos_right,
+                                              strand_length_right))
             strand_length_right = 0
         else:
             try:
@@ -133,9 +139,10 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
-    #print(start, splice_length, chr_name)
+    print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
+        print("THIS ", seq)
         return seq
     except Exception as e:
         #print e
@@ -147,7 +154,6 @@ def get_seq(chrom, start, splice_length, ref_ind):
         #raise
         print(chr_name, start, splice_length)
         return "No"
-
 def make_mute_strand(orig_strand, mute_locs):
     mute_strand = ""
     for ind in range(len(orig_strand)):
@@ -188,7 +194,7 @@ try:
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
-            if last_chrom == chrom and pos-last_pos < (32-pos_in_codon):
+            if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
                 end_ind = pos+32-pos_in_codon
@@ -206,7 +212,7 @@ try:
                     #seq_strand, mute_strand
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
-                end_ind = pos+33-pos_in_codon
+                end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             (last_pos,last_chrom) = (pos, chrom)
         seq_strand = get_seq(st_ind, end_ind, last_chrom, ref_ind)
