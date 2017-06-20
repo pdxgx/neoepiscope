@@ -2,60 +2,11 @@ import bisect
 import argparse
 import bowtie_index
 import sys
-import math
 #import pickle to unpickle ordered_exon_dict
-#Outline Function
-
-
-def evaluateCodons(snippet):
-    newSnippet = snippet.replace("T", "U")
-    codonTable = {"UUU":"F", "UUC":"F", "UUA":"L", "UUG":"L",
-    "UCU":"S", "UCC":"S", "UCA":"S", "UCG":"S",
-    "UAU":"Y", "UAC":"Y", "UAA":"Stop", "UAG":"Stop",
-    "UGU":"C", "UGC":"C", "UGA":"Stop", "UGG":"W",
-    "CUU":"L", "CUC":"L", "CUA":"L", "CUG":"L",
-    "CCU":"P", "CCC":"P", "CCA":"P", "CCG":"P",
-    "CAU":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
-    "CGU":"R", "CGC":"R", "CGA":"R", "CGG":"R",
-    "AUU":"I", "AUC":"I", "AUA":"I", "AUG":"M",
-    "ACU":"T", "ACC":"T", "ACA":"T", "ACG":"T",
-    "AAU":"N", "AAC":"N", "AAA":"K", "AAG":"K",
-    "AGU":"S", "AGC":"S", "AGA":"R", "AGG":"R",
-    "GUU":"V", "GUC":"V", "GUA":"V", "GUG":"V",
-    "GCU":"A", "GCC":"A", "GCA":"A", "GCG":"A",
-    "GAU":"D", "GAC":"D", "GAA":"E", "GAG":"E",
-    "GGU":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
-    return codonTable[newSnippet]
-
-def getMutatedAAPos(affectedNucleotide):
-    return math.ceil(affectedNucleotide/3)
-
-def turnToAA(nucleotideString):
-    aaString = ""
-    for aa in range(len(nucleotideString)//3):
-        codon = evaluateCodons(nucleotideString[3*aa:3*aa+3])
-        if(codon == "Stop"):
-            break
-        else:
-            aaString += codon
-    return aaString
-
-def myPrintFunction(kmerList):
-    ''' Prints out Mutant Type, Wild Type, and Misc. Information
-
-        kmerList: (List) Contains Mutant and Wild Types
-
-        Return value: None
-    '''
-
-    print("WILD TYPE" + "\t" + "MUTANT TYPE")
-    for wtmtPair in kmerList:
-        wt,mt = wtmtPair
-        print(wt + "\t" + mt)
-    return None
 
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
-              strand_length_right):
+              strand_length_right,exon_dict):
+
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
@@ -72,12 +23,14 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
         of a mutation within a chromosome.
     '''
 
-    ordered_exon_dict = {}
-    if transcript_id not in ordered_exon_dict:
-        return []
+    #print(transcript_id, mutation_pos, strand_length_left, strand_length_right)
+    ordered_exon_dict = exon_dict
     total_strand_length = strand_length_right + strand_length_left
     original_length_left = strand_length_left
-    exon_list = ordered_exon_dict[transcript_id]
+    if transcript_id not in ordered_exon_dict:
+        return []
+    else:
+        exon_list = ordered_exon_dict[transcript_id]
     middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
     #If the middle_exon_index is past the last boundary, move it to the last.
     if middle_exon_index > len(exon_list)-1:
@@ -165,8 +118,36 @@ parser.add_argument('-v', '--vcf', type=str, required=False,
 parser.add_argument('-x', '--bowtie-index', type=str, required=True,
         help='path to Bowtie index basename'
     )
+parser.add_argument('-g', '--gtf', type=str, required=False,
+        help='input gtf'
+    )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
+my_file = open(args.gtf)# ex: open("gencode.txt").read()
+
+exon_dict = {}
+chrom_dict = {}
+for line in my_file:
+    if not line or line[0] == '#': continue
+    tokens = line.strip().split('\t')
+    if tokens[2] != "exon": continue
+    read_info = tokens[8].split(';')
+    version_in_id = read_info[1].find('.')
+    if version_in_id == -1:
+        transcript_id = read_info[1][16:]
+    else:
+        transcript_id = read_info[1][16:version_in_id]
+    if transcript_id not in exon_dict:
+        exon_dict[transcript_id] = [int(tokens[3]), int(tokens[4])]
+    else:
+        insert_point = 2*bisect.bisect(exon_dict[transcript_id][0::2],
+                                       int(tokens[3]))
+        #I'm assuming there aren't two exons that start at the same point.
+        exon_dict[transcript_id] = (exon_dict[transcript_id][:insert_point] 
+                                    + [int(tokens[3]), int(tokens[4])] 
+                                    + exon_dict[transcript_id][insert_point:])
+    if transcript_id not in chrom_dict:
+        chrom_dict[transcript_id] = tokens[0]
 
 try:
     if args.vcf == '-':
@@ -195,7 +176,7 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    exon_list = get_exons(trans_id, last_pos, left_side, right_side)
+                    exon_list = get_exons(trans_id, last_pos, left_side, right_side,exon_dict)
                     seq_strand = ""
                     for exon_stretch in exon_list:
                         (seq_start, strand_length) = exon_stretch
@@ -206,7 +187,7 @@ try:
                     #seq_strand, mute_strand
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
-                end_ind = pos+33-pos_in_codon
+                end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             (last_pos,last_chrom) = (pos, chrom)
         seq_strand = get_seq(st_ind, end_ind, last_chrom, ref_ind)
