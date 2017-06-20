@@ -5,8 +5,7 @@ import sys
 #import pickle to unpickle ordered_exon_dict
 
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
-              strand_length_right,exon_dict):
-
+              strand_length_right, exon_dict):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
@@ -23,14 +22,12 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
         of a mutation within a chromosome.
     '''
 
-    #print(transcript_id, mutation_pos, strand_length_left, strand_length_right)
     ordered_exon_dict = exon_dict
-    total_strand_length = strand_length_right + strand_length_left
-    original_length_left = strand_length_left
     if transcript_id not in ordered_exon_dict:
         return []
-    else:
-        exon_list = ordered_exon_dict[transcript_id]
+    total_strand_length = strand_length_right + strand_length_left
+    original_length_left = strand_length_left
+    exon_list = ordered_exon_dict[transcript_id]
     middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
     #If the middle_exon_index is past the last boundary, move it to the last.
     if middle_exon_index > len(exon_list)-1:
@@ -65,11 +62,17 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
                                       - strand_length_left
                                       + strand_length_right)
                 break
+    nucleotide_index_list.append((mutation_pos, 1))
     while(len(nucleotide_index_list) == 0 or 
               sum([index[1] for index in nucleotide_index_list]) 
               < (total_strand_length)):
         if exon_list[curr_right_index] >= curr_pos_right + strand_length_right:
-            nucleotide_index_list.append((curr_pos_right, strand_length_right))
+            if curr_pos_right == mutation_pos:
+                nucleotide_index_list.append((curr_pos_right+1,
+                                              strand_length_right))
+            else:
+                nucleotide_index_list.append((curr_pos_right,
+                                              strand_length_right))
             strand_length_right = 0
         else:
             try:
@@ -84,11 +87,13 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
                 break
     return nucleotide_index_list
 
+
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
-    #print(start, splice_length, chr_name)
+    print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
+        print("THIS ", seq)
         return seq
     except Exception as e:
         #print e
@@ -169,7 +174,7 @@ try:
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
-            if last_chrom == chrom and pos-last_pos < (32-pos_in_codon):
+            if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
                 end_ind = pos+32-pos_in_codon
