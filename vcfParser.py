@@ -2,10 +2,76 @@ import bisect
 import argparse
 import bowtie_index
 import sys
+import math
 #import pickle to unpickle ordered_exon_dict
+#Outline Function
+
+
+def evaluateCodons(snippet):
+    newSnippet = snippet.replace("T", "U")
+    codonTable = {"UUU":"F", "UUC":"F", "UUA":"L", "UUG":"L",
+    "UCU":"S", "UCC":"S", "UCA":"S", "UCG":"S",
+    "UAU":"Y", "UAC":"Y", "UAA":"Stop", "UAG":"Stop",
+    "UGU":"C", "UGC":"C", "UGA":"Stop", "UGG":"W",
+    "CUU":"L", "CUC":"L", "CUA":"L", "CUG":"L",
+    "CCU":"P", "CCC":"P", "CCA":"P", "CCG":"P",
+    "CAU":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
+    "CGU":"R", "CGC":"R", "CGA":"R", "CGG":"R",
+    "AUU":"I", "AUC":"I", "AUA":"I", "AUG":"M",
+    "ACU":"T", "ACC":"T", "ACA":"T", "ACG":"T",
+    "AAU":"N", "AAC":"N", "AAA":"K", "AAG":"K",
+    "AGU":"S", "AGC":"S", "AGA":"R", "AGG":"R",
+    "GUU":"V", "GUC":"V", "GUA":"V", "GUG":"V",
+    "GCU":"A", "GCC":"A", "GCA":"A", "GCG":"A",
+    "GAU":"D", "GAC":"D", "GAA":"E", "GAG":"E",
+    "GGU":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
+    return codonTable[newSnippet]
+
+def getMutatedAAPos(affectedNucleotide):
+    return math.ceil(affectedNucleotide/3)
+
+def turnToAA(nucleotideString):
+    aaString = ""
+    for aa in range(len(nucleotideString)//3):
+        codon = evaluateCodons(nucleotideString[3*aa:3*aa+3])
+        if(codon == "Stop"):
+            break
+        else:
+            aaString += codon
+    return aaString
+
+def myPrintFunction(kmerList):
+    ''' Prints out Mutant Type, Wild Type, and Misc. Information
+
+        kmerList: (List) Contains Mutant and Wild Types
+
+        Return value: None
+    '''
+
+    print("WILD TYPE" + "\t" + "MUTANT TYPE")
+    for wtmtPair in kmerList:
+        wt,mt = wtmtPair
+        print(wt + "\t" + mt)
+    return None
 
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
               strand_length_right):
+    ''' References exon_dict to get Exon Bounds for later Bowtie query.
+
+        transcript_id: (String) Indicates the transcript the mutation
+            is located on.
+        mutation_pos: (int) Mutation's position on chromosome
+        strand_length_left: (int) How many bases must be gathered
+            to the left of the mutation
+        strand_length_right: (int) How many bases must be gathered to
+            the right of the mutation
+
+        Return value: List of tuples containing starting indexes and stretch
+        lengths within exon boundaries necessary to acquire the complete 
+        sequence necessary for 8-11' peptide kmerization based on the position 
+        of a mutation within a chromosome.
+    '''
+
     ordered_exon_dict = {}
     if transcript_id not in ordered_exon_dict:
         return []
@@ -66,12 +132,20 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     return nucleotide_index_list
 
 def get_seq(chrom, start, splice_length, ref_ind):
-    chr_name = "chr"+chrom #proper
-    print(start, splice_length, chr_name)
+    chr_name = "chr" + chrom #proper
+    #print(start, splice_length, chr_name)
     try:
-        strand = ref_ind.get_stretch(chr_name, start, splice_length)
-        return strand
-    except:
+        seq = ref_ind.get_stretch(chr_name, start, splice_length)
+        return seq
+    except Exception as e:
+        #print e
+        #print chr_name
+        #print start
+        #print splice_length
+        #for key in ref_ind.recs:
+        #    print(key)
+        #raise
+        print(chr_name, start, splice_length)
         return "No"
 
 def make_mute_strand(orig_strand, mute_locs):
