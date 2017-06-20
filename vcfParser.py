@@ -6,19 +6,23 @@ import sys
 
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
               strand_length_right):
-    ordered_exon_dict = {'ENST00000332235': [405438, 408401, 409006, 409139]}
+    ordered_exon_dict = {}
     total_strand_length = strand_length_right + strand_length_left
     original_length_left = strand_length_left
     exon_list = ordered_exon_dict[transcript_id]
     middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
+    print(exon_list[middle_exon_index])
     #If the middle_exon_index is past the last boundary, move it to the last.
     if middle_exon_index > len(exon_list)-1:
-        middle_exon_index -=2
+        middle_exon_index -= 2
     nucleotide_index_list = []
     curr_left_index = middle_exon_index
     curr_right_index = middle_exon_index+1 #Exon boundary end indexes
     curr_pos_left = mutation_pos
     curr_pos_right = mutation_pos #Actual number in chromosome
+    #If the mutation is not on in exon bounds, return [].
+    if mutation_pos > exon_list[curr_right_index]:
+        return nucleotide_index_list
     count = 0
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
