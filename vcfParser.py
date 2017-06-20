@@ -65,7 +65,7 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr"+chrom #proper
-    print(start, end, chr_name)
+    print(start, splice_length, chr_name)
     try:
         strand = ref_ind.get_stretch(chr_name, start, splice_length)
         return strand
