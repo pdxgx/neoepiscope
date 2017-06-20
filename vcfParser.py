@@ -7,6 +7,8 @@ import sys
 def get_exons(transcript_id, mutation_pos, strand_length_left, 
               strand_length_right):
     ordered_exon_dict = {}
+    if transcript_id not in ordered_exon_dict:
+        return []
     total_strand_length = strand_length_right + strand_length_left
     original_length_left = strand_length_left
     exon_list = ordered_exon_dict[transcript_id]
