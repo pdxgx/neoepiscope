@@ -1,12 +1,4 @@
-#Get VCF file and analyze it
-#Make the kmerization function
-#Send it in to the binding affinity black box for analysis
-
-#6/7/2017- Created file and wrote basic code
-#6/8/2017- Made print function. Adjusted for mutations not in middle of string
-#6/9/2017- Separated turnToAA and kmer functions. Wrote gteMutatedAAPos
-
-import string, math
+import math
 
 def getMutatedAAPos(affectedNucleotide):
     return math.ceil(affectedNucleotide/3)
@@ -67,7 +59,7 @@ def kmer(normalAA, mutatedAA = "", mutatedAAPos = -1, mutationLength = 0):
     myPrintFunction(kmerList)
     return kmerList
 
-normalString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
-tumorsString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+#normalString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+#tumorsString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
 #Note: the getMutatedAAPos function can calculate which aa was affected based on nucleotide #
-kmer(normalString, tumorsString, getMutatedAAPos(64))
+#kmer(normalString, tumorsString, getMutatedAAPos(64))
