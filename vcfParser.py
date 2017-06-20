@@ -20,7 +20,8 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     curr_pos_left = mutation_pos
     curr_pos_right = mutation_pos #Actual number in chromosome
     #If the mutation is not on in exon bounds, return [].
-    if mutation_pos > exon_list[curr_right_index]:
+    if (mutation_pos > exon_list[curr_right_index] or 
+       mutation_pos < exon_list[curr_left_index]):
         return nucleotide_index_list
     count = 0
     while(len(nucleotide_index_list) == 0 or 
