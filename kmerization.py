@@ -1,65 +1,56 @@
 import math
 
-def getMutatedAAPos(affectedNucleotide):
-    return math.ceil(affectedNucleotide/3)
+codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
+    "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
+    "TAT":"Y", "TAC":"Y", "TAA":"Stop", "TAG":"Stop",
+    "TGT":"C", "TGC":"C", "TGA":"Stop", "TGG":"W",
+    "CTT":"L", "CTC":"L", "CTA":"L", "CTG":"L",
+    "CCT":"P", "CCC":"P", "CCA":"P", "CCG":"P",
+    "CAT":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
+    "CGT":"R", "CGC":"R", "CGA":"R", "CGG":"R",
+    "ATT":"I", "ATC":"I", "ATA":"I", "ATG":"M",
+    "ACT":"T", "ACC":"T", "ACA":"T", "ACG":"T",
+    "AAT":"N", "AAC":"N", "AAA":"K", "AAG":"K",
+    "AGT":"S", "AGC":"S", "AGA":"R", "AGG":"R",
+    "GTT":"V", "GTC":"V", "GTA":"V", "GTG":"V",
+    "GCT":"A", "GCC":"A", "GCA":"A", "GCG":"A",
+    "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
+    "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
 
-def evaluateCodons(snippet):
-    newSnippet = snippet.replace("T", "U")
-    codonTable = {"UUU":"F", "UUC":"F", "UUA":"L", "UUG":"L",
-    "UCU":"S", "UCC":"S", "UCA":"S", "UCG":"S",
-    "UAU":"Y", "UAC":"Y", "UAA":"Stop", "UAG":"Stop",
-    "UGU":"C", "UGC":"C", "UGA":"Stop", "UGG":"W",
-    "CUU":"L", "CUC":"L", "CUA":"L", "CUG":"L",
-    "CCU":"P", "CCC":"P", "CCA":"P", "CCG":"P",
-    "CAU":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
-    "CGU":"R", "CGC":"R", "CGA":"R", "CGG":"R",
-    "AUU":"I", "AUC":"I", "AUA":"I", "AUG":"M",
-    "ACU":"T", "ACC":"T", "ACA":"T", "ACG":"T",
-    "AAU":"N", "AAC":"N", "AAA":"K", "AAG":"K",
-    "AGU":"S", "AGC":"S", "AGA":"R", "AGG":"R",
-    "GUU":"V", "GUC":"V", "GUA":"V", "GUG":"V",
-    "GCU":"A", "GCC":"A", "GCA":"A", "GCG":"A",
-    "GAU":"D", "GAC":"D", "GAA":"E", "GAG":"E",
-    "GGU":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
-    return codonTable[newSnippet]
-
-def turnToAA(nucleotideString):
-    aaString = ""
-    for aa in range(len(nucleotideString)//3):
-        codon = evaluateCodons(nucleotideString[3*aa:3*aa+3])
-        if(codon == "Stop"):
+def turn_to_aa(nucleotide_string):
+    aa_string = ""
+    for aa in range(len(nucleotide_string)//3):
+        codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
+        if (codon == "Stop"):
             break
         else:
-            aaString += codon
-    return aaString
+            aa_string += codon
+    return aa_string
 
-def myPrintFunction(kmerList):
+def my_print_function(kmer_list):
     print("WILD TYPE" + "\t" + "MUTANT TYPE")
-    for wtmtPair in kmerList:
+    for wtmtPair in kmer_list:
         wt,mt = wtmtPair
         print(wt + "\t" + mt)
     return None
 
 
-def kmer(normalAA, mutatedAA = "", mutatedAAPos = -1, mutationLength = 0):
-    if(len(mutatedAA) == 0):
-        mutatedAA = normalAA
-    #If not given, assume that the mutation is in the middle of the string
-    if(mutatedAAPos == -1):
-        mutatedAAPos = len(normalAA)//2
-    kmerList = list()
+def kmer(normal_aa, mutated_aa = ""):
+    if (len(mutated_aa) == 0):
+        mutated_aa = normal_aa
+    kmer_list = list()
     #Loop through window sizes
     for ksize in range(8, 12):
-        #firstIndex corrects for mutations in the first half of the given string
-        firstIndex = max(mutatedAAPos-ksize, 0)
-        #lastIndex corrects for mutations in the latter half of the given string
-        lastIndex = min(mutatedAAPos, len(mutatedAA)-ksize + 1)
-        for startIndex in range(firstIndex, lastIndex):
-            kmerList.append((normalAA[startIndex:startIndex+ksize], mutatedAA[startIndex:startIndex+ksize]))
-    myPrintFunction(kmerList)
-    return kmerList
+        for startIndex in range(len(mutated_aa)-ksize):
+            kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
+    final_list = list()
+    for WT,MT in kmer_list:
+        if (WT != MT):
+            final_list.append((WT, MT))
+    my_print_function(final_list)
+    return final_list
 
-#normalString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
-#tumorsString = turnToAA("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
-#Note: the getMutatedAAPos function can calculate which aa was affected based on nucleotide #
-#kmer(normalString, tumorsString, getMutatedAAPos(64))
+#normal_string = turn_to_aa("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+#tumors_string = turn_to_aa("ACGTGTGTCCGACCAGGTTTTAAAAAACGTGTGTCGACCAGACCAGGTTTTAAAACGTGTGTGTGT")
+#Note: the get_mutated_aa_pos function can calculate which aa was affected based on nucleotide #
+kmer(normal_string, tumors_string)
