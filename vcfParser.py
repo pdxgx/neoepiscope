@@ -11,7 +11,6 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     original_length_left = strand_length_left
     exon_list = ordered_exon_dict[transcript_id]
     middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
-    print(exon_list[middle_exon_index])
     #If the middle_exon_index is past the last boundary, move it to the last.
     if middle_exon_index > len(exon_list)-1:
         middle_exon_index -= 2
