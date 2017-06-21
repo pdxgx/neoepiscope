@@ -71,7 +71,6 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-
     ordered_exon_dict = {}
     if transcript_id not in ordered_exon_dict:
         return []
@@ -95,6 +94,7 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
        mutation_pos < exon_list[curr_left_index]):
         return nucleotide_index_list
     count = 0
+    #Loop left until receive all queried left-side bases and mutation base.
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
@@ -146,6 +146,15 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     return nucleotide_index_list
 
 def get_seq(chrom, start, splice_length, ref_ind):
+    ''' Queries Bowtie Index for a stretch of bases
+
+        chrom: (str) Chromosome number
+        start: (int) Zero-based numbering start index on chromosome
+        splice_length: (int) Number of bases needed
+        ref_ind: Contains reference to bowtie_index
+
+        Return value: Stretch if success; else failure string "No"
+    '''
     chr_name = "chr" + chrom #proper
     print(start, splice_length, chr_name)
     try:
@@ -162,7 +171,15 @@ def get_seq(chrom, start, splice_length, ref_ind):
         #raise
         print(chr_name, start, splice_length)
         return "No"
+
 def make_mute_strand(orig_strand, mute_locs):
+    ''' Creates a mutation strand by changing key values in the original strand
+
+        orig_strand: (string) Normal (non-tumor) string of bases
+        mute_locs: (dictionary) Maps mutation-index-locs to mutated base
+
+        Return value: Completed mutation strand string
+    '''
     mute_strand = ""
     for ind in range(len(orig_strand)):
         if ind in mute_locs:
@@ -193,15 +210,18 @@ try:
         input_stream = open(args.vcf)
         last_chrom = "None" #Will this work?
         for line in input_stream:
+            #Take out Header Comments:
             if not line or line[0] == '#': continue
             vals = line.strip().split('\t')
             (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7]
                 )
+            #Info contains '|' separated miscellanous information
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
+            #If another mutation is within 33 base pairs, increase query length.
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
