@@ -159,6 +159,7 @@ def get_seq(chrom, start, splice_length, ref_ind):
         Return value: Stretch if success; else failure string "No"
     '''
     chr_name = "chr" + chrom #proper
+    start -= 1 #Adjust for 0-based Bowtie queries
     print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
@@ -239,9 +240,6 @@ try:
                         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
                     mute_seq = make_mute_seq(wild_seq,mute_locs)
                     kmer(wild_seq, mute_seq)
-                    #@TODO, now pass into makeIntoAA/ kmer function
-                    #vars needed to be passed: st_ind, end_ind, last_chrom,
-                    #wild_seq, mute_seq
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
