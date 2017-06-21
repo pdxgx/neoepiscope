@@ -90,7 +90,7 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
-    print(start, splice_length, chr_name)
+    #print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
         print("THIS ", seq)
@@ -103,7 +103,7 @@ def get_seq(chrom, start, splice_length, ref_ind):
         #for key in ref_ind.recs:
         #    print(key)
         #raise
-        print(chr_name, start, splice_length)
+        print("No ", chr_name, start, splice_length)
         return "No"
 
 def make_mute_strand(orig_strand, mute_locs):
@@ -186,7 +186,10 @@ try:
                     for exon_stretch in exon_list:
                         (seq_start, strand_length) = exon_stretch
                         seq_strand += get_seq(last_chrom, seq_start, strand_length, ref_ind)
+                    print(seq_strand)
+                    #print(seq_strand)
                     mute_strand = make_mute_strand(seq_strand,mute_locs)
+                    #print(seq_strand, mute_strand)
                     #@TODO, now pass into makeIntoAA/ kmer function
                     #vars needed to be passed: st_ind, end_ind, last_chrom,
                     #seq_strand, mute_strand
