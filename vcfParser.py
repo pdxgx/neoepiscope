@@ -75,6 +75,8 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
     ordered_exon_dict = {}
     if transcript_id not in ordered_exon_dict:
         return []
+    #Increase the strand length by 1 to account for mutation_pos collection
+    strand_length_left += 1
     total_strand_length = strand_length_right + strand_length_left
     original_length_left = strand_length_left
     exon_list = ordered_exon_dict[transcript_id]
@@ -84,8 +86,9 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
         middle_exon_index -= 2
     nucleotide_index_list = []
     curr_left_index = middle_exon_index
-    curr_right_index = middle_exon_index+1 #Exon boundary end indexes
-    curr_pos_left = mutation_pos
+    curr_right_index = middle_exon_index+1 #Exon boundary end indexes\
+    #Increase by one to ensure mutation_pos is collected into boundaries.
+    curr_pos_left = mutation_pos + 1
     curr_pos_right = mutation_pos #Actual number in chromosome
     #If the mutation is not on in exon bounds, return [].
     if (mutation_pos > exon_list[curr_right_index] or 
@@ -96,7 +99,11 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
         if curr_pos_left-exon_list[curr_left_index] >= strand_length_left:
-            nucleotide_index_list.append((curr_pos_left-strand_length_left,
+            if curr_pos_left != mutation_pos+1:
+                nucleotide_index_list.append((curr_pos_left-strand_length_left+1,
+                                          strand_length_left))
+            else:
+                nucleotide_index_list.append((curr_pos_left-strand_length_left,
                                           strand_length_left))
             strand_length_left = 0
         else:
@@ -112,7 +119,8 @@ def get_exons(transcript_id, mutation_pos, strand_length_left,
                                       - strand_length_left
                                       + strand_length_right)
                 break
-    nucleotide_index_list.append((mutation_pos, 1))
+    #Reverse list to get tuples in order
+    nucleotide_index_list = list(reversed(nucleotide_index_list))
     while(len(nucleotide_index_list) == 0 or 
               sum([index[1] for index in nucleotide_index_list]) 
               < (total_strand_length)):
