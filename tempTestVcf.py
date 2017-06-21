@@ -149,6 +149,7 @@ def get_exons(transcript_id, mutation_pos, seq_length_left,
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
+    start -= 1 #adjust for 0-based bowtie queries
     #print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
@@ -249,10 +250,6 @@ try:
                     #print(wild_seq)
                     mute_seq = make_mute_seq(wild_seq,mute_locs)
                     kmer(wild_seq, mute_seq)
-                    #print(wild_seq, mute_seq)
-                    #@TODO, now pass into makeIntoAA/ kmer function
-                    #vars needed to be passed: st_ind, end_ind, last_chrom,
-                    #wild_seq, mute_seq
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
