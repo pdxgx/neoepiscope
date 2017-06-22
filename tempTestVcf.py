@@ -150,10 +150,8 @@ def get_exons(transcript_id, mutation_pos, seq_length_left,
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
     start -= 1 #adjust for 0-based bowtie queries
-    #print(start, splice_length, chr_name)
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
-        print("THIS ", seq)
         return seq
     except Exception as e:
         #print e
@@ -163,7 +161,7 @@ def get_seq(chrom, start, splice_length, ref_ind):
         #for key in ref_ind.recs:
         #    print(key)
         #raise
-        print("No ", chr_name, start, splice_length)
+        #print("No ", chr_name, start, splice_length)
         return "No"
 
 def make_mute_seq(orig_seq, mute_locs):
@@ -242,19 +240,20 @@ try:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
                     exon_list = get_exons(trans_id, last_pos, left_side, right_side,exon_dict)
-                    wild_seq = ""
-                    for exon_stretch in exon_list:
-                        (seq_start, seq_length) = exon_stretch
-                        wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-                    print(wild_seq)
-                    #print(wild_seq)
-                    mute_seq = make_mute_seq(wild_seq,mute_locs)
-                    kmer(wild_seq, mute_seq)
+                    if(len(exon_list) != 0):
+                        wild_seq = ""
+                        for exon_stretch in exon_list:
+                            (seq_start, seq_length) = exon_stretch
+                            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+                        mute_seq = make_mute_seq(wild_seq,mute_locs)
+                        kmer(turn_to_aa(wild_seq), turn_to_aa(mute_seq))
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             (last_pos,last_chrom) = (pos, chrom)
+        #NEED TO FIX THIS!!!!!
+        print("WHA________________T")
         wild_seq = get_seq(st_ind, end_ind, last_chrom, ref_ind)
         mute_seq = make_mute_seq(wild_seq,mute_locs)
         #@TODO, now pass into makeIntoAA/ kmer function
