@@ -214,18 +214,15 @@ try:
         input_stream = open(args.vcf)
         last_chrom = "None" #Will this work?
         for line in input_stream:
-            #Take out Header Comments:
             if not line or line[0] == '#': continue
             vals = line.strip().split('\t')
             (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7]
                 )
-            #Info contains '|' separated miscellanous information
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
-            #If another mutation is within 33 base pairs, increase query length.
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
@@ -233,18 +230,21 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    exon_list = get_exons(trans_id, last_pos, left_side, right_side)
-                    wild_seq = ""
-                    for exon_stretch in exon_list:
-                        (seq_start, seq_length) = exon_stretch
-                        wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-                    mute_seq = make_mute_seq(wild_seq,mute_locs)
-                    kmer(wild_seq, mute_seq)
+                    exon_list = get_exons(trans_id, last_pos, left_side, right_side,exon_dict)
+                    if(len(exon_list) != 0):
+                        wild_seq = ""
+                        for exon_stretch in exon_list:
+                            (seq_start, seq_length) = exon_stretch
+                            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+                        mute_seq = make_mute_seq(wild_seq,mute_locs)
+                        kmer(turn_to_aa(wild_seq), turn_to_aa(mute_seq))
                 mute_locs = dict()
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             (last_pos,last_chrom) = (pos, chrom)
+        #NEED TO FIX THIS!!!!!
+        print("WHA________________T")
         wild_seq = get_seq(st_ind, end_ind, last_chrom, ref_ind)
         mute_seq = make_mute_seq(wild_seq,mute_locs)
         #@TODO, now pass into makeIntoAA/ kmer function
