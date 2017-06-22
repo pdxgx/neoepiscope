@@ -13,7 +13,7 @@ args = parser.parse_args()
 my_file = ""# ex: open("gencode.txt").read()
 
 exon_dict = {}
-chrom_dict = {}
+orf_dict = {}
 for line in my_file.splitlines():
     if not line or line[0] == '#': continue
     tokens = line.strip().split('\t')
@@ -33,8 +33,8 @@ for line in my_file.splitlines():
         exon_dict[transcript_id] = (exon_dict[transcript_id][:insert_point] 
                                     + [int(tokens[3]), int(tokens[4])] 
                                     + exon_dict[transcript_id][insert_point:])
-    if transcript_id not in chrom_dict:
-        chrom_dict[transcript_id] = tokens[0]
+    if transcript_id not in orf_dict:
+        orf_dict[transcript_id] = (tokens[6])
     
 #@TODO: Don't forget to pickle the chrom_dict also!!!!!!!
 pickle_out = open(args.dump, "wb")
