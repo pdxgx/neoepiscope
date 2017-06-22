@@ -1,4 +1,5 @@
 import math
+import string
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -17,8 +18,11 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
     "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
 
-def turn_to_aa(nucleotide_string):
+def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
+    if strand == "-":
+        translation_table = string.maketrans("ATCG", "TAGC")
+        nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
         codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         if (codon == "Stop"):
