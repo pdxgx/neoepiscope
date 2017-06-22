@@ -7,7 +7,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dump', type=str, required=True,
         help='input path to file for dict storage'
     )
-
+parser.add_argument('-g', '--gtf', type=str, required=False,
+        help='input gtf'
+    )
 args = parser.parse_args()
 
 my_file = ""# ex: open("gencode.txt").read()
