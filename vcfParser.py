@@ -3,6 +3,7 @@ import argparse
 import bowtie_index
 import sys
 import math
+import string
 #import pickle to unpickle ordered_exon_dict
 #Outline Function
 
@@ -24,8 +25,11 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
     "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
 
-def turn_to_aa(nucleotide_string):
+def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
+    if strand == "-":
+        translation_table = string.maketrans("ATCG", "TAGC")
+        nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
         codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         if (codon == "Stop"):
@@ -74,7 +78,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-    ordered_exon_dict = {"EN": [1000, 2000, 4000, 5000, 7000, 8000]}
+    ordered_exon_dict = dict()
     if transcript_id not in ordered_exon_dict:
         return []
     exon_list = ordered_exon_dict[transcript_id]
@@ -239,7 +243,7 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    exon_list = get_exons(trans_id, last_pos, left_side, right_side,exon_dict)
+                    exon_list = get_exons(trans_id, mute_posits, left_side, right_side)
                     if(len(exon_list) != 0):
                         wild_seq = ""
                         for exon_stretch in exon_list:
@@ -247,10 +251,11 @@ try:
                             wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
                         mute_seq = make_mute_seq(wild_seq,mute_locs)
                         kmer(turn_to_aa(wild_seq), turn_to_aa(mute_seq))
-                mute_locs = dict()
+                (mute_locs, mute_posits) = (dict(), [])
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
+            mute_posits.append(pos)
             (last_pos,last_chrom) = (pos, chrom)
         #NEED TO FIX THIS!!!!!
         print("WHA________________T")
