@@ -62,7 +62,7 @@ def kmer(normal_aa, mutated_aa = ""):
     return final_list
 
 def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
-              seq_length_right, pos_in_codon):
+              seq_length_right):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
@@ -81,6 +81,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     ordered_exon_dict = {}
     if transcript_id not in ordered_exon_dict:
         return []
+    pos_in_codon = 2 - (seq_length_right%3)
     exon_list = ordered_exon_dict[transcript_id]
     mutation_pos = -1
     for index in range(len(mutation_pos_list)-1, -1, -1):
