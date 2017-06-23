@@ -3,6 +3,7 @@ import argparse
 import bowtie_index
 import sys
 import math
+import string
 #import pickle to unpickle ordered_exon_dict
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
@@ -22,8 +23,11 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
     "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
 
-def turn_to_aa(nucleotide_string):
+def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
+    if strand == "-":
+        translation_table = string.maketrans("ATCG", "TAGC")
+        nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
         codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         if (codon == "Stop"):
@@ -33,6 +37,7 @@ def turn_to_aa(nucleotide_string):
     return aa_string
 
 def my_print_function(kmer_list):
+    if len(kmer_list)==0: return None
     print("WILD TYPE" + "\t" + "MUTANT TYPE")
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
@@ -55,7 +60,7 @@ def kmer(normal_aa, mutated_aa = ""):
     my_print_function(final_list)
     return final_list
 
-def get_exons(transcript_id, mutation_pos, seq_length_left, 
+def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
               seq_length_right, exon_dict):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
@@ -76,26 +81,40 @@ def get_exons(transcript_id, mutation_pos, seq_length_left,
     ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
         return []
-    #Increase the seq length by 1 to account for mutation_pos collection
+    pos_in_codon = 2 - (seq_length_right%3)
+    exon_list = ordered_exon_dict[transcript_id]
+    mutation_pos = -1
+    for index in range(len(mutation_pos_list)-1, -1, -1):
+        mutation = mutation_pos_list[index]
+        middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation)-2
+        #If the middle_exon_index is past the last boundary, move it to the last.
+        if middle_exon_index > len(exon_list)-1:
+            middle_exon_index -= 2
+        curr_left_index = middle_exon_index
+        curr_right_index = middle_exon_index+1 #Exon boundary end indexes\
+        #Increase by one to ensure mutation_pos_list is collected into boundaries.
+        curr_pos_left = mutation + 1
+        curr_pos_right = mutation #Actual number in chromosome
+        #If the mutation is not on in exon bounds, return [].
+        if(mutation <= exon_list[curr_right_index] and 
+           mutation >= exon_list[curr_left_index]):
+            mutation_pos = mutation
+            if index != len(mutation_pos_list)-1:
+                #shift is the current mutation's position in the codon.
+                new_pos_in_codon = (mutation_pos_list[-1]
+                                    - pos_in_codon-mutation_pos_list[index]) % 3
+                seq_length_right = 30 + new_pos_in_codon
+                seq_length_left -= (mutation_pos_list[-1] 
+                                    - mutation_pos_list[index])
+            break
+    if(mutation_pos == -1):
+        return []
+    #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
     original_length_left = seq_length_left
-    exon_list = ordered_exon_dict[transcript_id]
-    middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos)-2
-    #If the middle_exon_index is past the last boundary, move it to the last.
-    if middle_exon_index > len(exon_list)-1:
-        middle_exon_index -= 2
     nucleotide_index_list = []
-    curr_left_index = middle_exon_index
-    curr_right_index = middle_exon_index+1 #Exon boundary end indexes\
-    #Increase by one to ensure mutation_pos is collected into boundaries.
-    curr_pos_left = mutation_pos + 1
-    curr_pos_right = mutation_pos #Actual number in chromosome
-    #If the mutation is not on in exon bounds, return [].
-    if (mutation_pos > exon_list[curr_right_index] or 
-       mutation_pos < exon_list[curr_left_index]):
-        return nucleotide_index_list
-    count = 0
+    #Loop left until receive all queried left-side bases and mutation base.
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
@@ -171,7 +190,18 @@ def make_mute_seq(orig_seq, mute_locs):
             mute_seq += mute_locs[ind]
         else:
             mute_seq += orig_seq[ind]
+    print orig_seq, mute_seq
     return mute_seq
+
+def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
+                      orf_dict, trans_id):
+    wild_seq = ""
+    for exon_stretch in exon_list:
+        (seq_start, seq_length) = exon_stretch
+        wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        mute_seq = make_mute_seq(wild_seq,mute_locs)
+        kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), turn_to_aa(mute_seq, orf_dict[trans_id]))
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--vcf', type=str, required=False,
@@ -189,7 +219,7 @@ ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
 my_file = open(args.gtf)# ex: open("gencode.txt").read()
 
 exon_dict = {}
-chrom_dict = {}
+orf_dict = {}
 for line in my_file:
     if not line or line[0] == '#': continue
     tokens = line.strip().split('\t')
@@ -209,8 +239,8 @@ for line in my_file:
         exon_dict[transcript_id] = (exon_dict[transcript_id][:insert_point] 
                                     + [int(tokens[3]), int(tokens[4])] 
                                     + exon_dict[transcript_id][insert_point:])
-    if transcript_id not in chrom_dict:
-        chrom_dict[transcript_id] = tokens[0]
+    if transcript_id not in orf_dict:
+        orf_dict[transcript_id] = (tokens[6])
 
 try:
     if args.vcf == '-':
@@ -230,7 +260,7 @@ try:
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
-            (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
+            (trans_id, rel_pos, orig_codon) = (tokens[6], int(tokens[13]), tokens[16])
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
@@ -239,27 +269,23 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    exon_list = get_exons(trans_id, last_pos, left_side, right_side,exon_dict)
+                    exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
                     if(len(exon_list) != 0):
-                        wild_seq = ""
-                        for exon_stretch in exon_list:
-                            (seq_start, seq_length) = exon_stretch
-                            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-                        mute_seq = make_mute_seq(wild_seq,mute_locs)
-                        kmer(turn_to_aa(wild_seq), turn_to_aa(mute_seq))
-                mute_locs = dict()
+                        find_seq_and_kmer(exon_list, last_chrom, ref_ind,
+                                          mute_locs, orf_dict, trans_id)
+                (mute_locs, mute_posits) = (dict(), [])
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
-            (last_pos,last_chrom) = (pos, chrom)
+            mute_posits.append(pos)
+            (last_pos,last_chrom, last_codon) = (pos, chrom, orig_codon)
         #NEED TO FIX THIS!!!!!
-        print("WHA________________T")
-        wild_seq = get_seq(st_ind, end_ind, last_chrom, ref_ind)
-        mute_seq = make_mute_seq(wild_seq,mute_locs)
-        #@TODO, now pass into makeIntoAA/ kmer function
-        #vars needed to be passed: st_ind, end_ind, last_chrom,
-        #wild_seq, mute_seq
-    #@TODO Repeated code above; need to clean/ make helper function
+        (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
+        exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
+        if(len(exon_list) != 0):
+            find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
+                              orf_dict, trans_id)
+
 finally:
     if args.vcf != '-':
         input_stream.close()
