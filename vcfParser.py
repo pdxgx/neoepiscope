@@ -62,7 +62,7 @@ def kmer(normal_aa, mutated_aa = ""):
     return final_list
 
 def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
-              seq_length_right):
+              seq_length_right, pos_in_codon):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
@@ -78,7 +78,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-    ordered_exon_dict = dict()
+    ordered_exon_dict = {}
     if transcript_id not in ordered_exon_dict:
         return []
     exon_list = ordered_exon_dict[transcript_id]
@@ -95,13 +95,16 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         curr_pos_left = mutation + 1
         curr_pos_right = mutation #Actual number in chromosome
         #If the mutation is not on in exon bounds, return [].
-        if(mutation <= exon_list[curr_right_index] or 
+        if(mutation <= exon_list[curr_right_index] and 
            mutation >= exon_list[curr_left_index]):
             mutation_pos = mutation
             if index != len(mutation_pos_list)-1:
-                shift = mutation_pos_list[index+1] - mutation_pos_list[index]
-                seq_length_right += shift
-                seq_length_left -= shift
+                #shift is the current mutation's position in the codon.
+                new_pos_in_codon = (mutation_pos_list[-1]
+                                    - pos_in_codon-mutation_pos_list[index]) % 3
+                seq_length_right = 30 + new_pos_in_codon
+                seq_length_left -= (mutation_pos_list[-1] 
+                                    - mutation_pos_list[index])
             break
     if(mutation_pos == -1):
         return []
