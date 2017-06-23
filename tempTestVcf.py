@@ -190,7 +190,6 @@ def make_mute_seq(orig_seq, mute_locs):
             mute_seq += mute_locs[ind]
         else:
             mute_seq += orig_seq[ind]
-    print orig_seq, mute_seq
     return mute_seq
 
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
@@ -199,8 +198,11 @@ def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-        mute_seq = make_mute_seq(wild_seq,mute_locs)
-        kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), turn_to_aa(mute_seq, orf_dict[trans_id]))
+    mute_seq = make_mute_seq(wild_seq,mute_locs)
+    kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), 
+         turn_to_aa(mute_seq, orf_dict[trans_id])
+        )
+    print("")
 
 
 parser = argparse.ArgumentParser()
@@ -279,7 +281,6 @@ try:
             mute_locs[(pos-st_ind)] = alt
             mute_posits.append(pos)
             (last_pos,last_chrom, last_codon) = (pos, chrom, orig_codon)
-        #NEED TO FIX THIS!!!!!
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
         exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
         if(len(exon_list) != 0):
