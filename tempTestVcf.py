@@ -262,7 +262,7 @@ try:
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
-            (trans_id, rel_pos, orig_codon) = (tokens[6], int(tokens[13]), tokens[16])
+            (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
@@ -280,7 +280,7 @@ try:
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             mute_posits.append(pos)
-            (last_pos,last_chrom, last_codon) = (pos, chrom, orig_codon)
+            (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
         exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
         if(len(exon_list) != 0):
