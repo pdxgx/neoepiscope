@@ -38,7 +38,6 @@ def turn_to_aa(nucleotide_string, strand="+"):
 
 def my_print_function(kmer_list):
     if len(kmer_list)==0: return None
-    print("WILD TYPE" + "\t" + "MUTANT TYPE")
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
         print(wt + "\t" + mt)
@@ -198,11 +197,12 @@ def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+    #for mute in mute_locs:
+    #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), 
          turn_to_aa(mute_seq, orf_dict[trans_id])
         )
-    print("")
 
 
 parser = argparse.ArgumentParser()
