@@ -37,15 +37,15 @@ def turn_to_aa(nucleotide_string, strand="+"):
             aa_string += codon
     return aa_string
 
-def my_print_function(kmer_list):
+def my_print_function(kmer_list, mute_posits):
     if len(kmer_list)==0: return None
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
-        print(wt + "\t" + mt)
+        print(wt + "\t" + mt + "\t" + str(mute_posits))
     return None
 
 
-def kmer(normal_aa, mutated_aa = ""):
+def kmer(mute_posits, normal_aa, mutated_aa = ""):
     if (len(mutated_aa) == 0):
         mutated_aa = normal_aa
     kmer_list = list()
@@ -57,7 +57,7 @@ def kmer(normal_aa, mutated_aa = ""):
     for WT,MT in kmer_list:
         if (WT != MT):
             final_list.append((WT, MT))
-    my_print_function(final_list)
+    my_print_function(final_list, mute_posits)
     return final_list
 
 def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
@@ -79,7 +79,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     '''
     ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
-        return []
+        return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
     exon_list = ordered_exon_dict[transcript_id]
     mutation_pos = -1
@@ -209,7 +209,7 @@ def make_mute_seq(orig_seq, mute_locs):
     return mute_seq
 
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
-                      orf_dict, trans_id):
+                      orf_dict, trans_id, mute_posits):
     wild_seq = ""
     full_length = 0
     for exon_stretch in exon_list:
@@ -217,12 +217,12 @@ def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
         full_length += seq_length
     exon_start = exon_list[0][0]
-    print last_chrom, exon_start, full_length+exon_start, wild_seq
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
-    kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), 
-         turn_to_aa(mute_seq, orf_dict[trans_id])
+    kmer(mute_posits,
+        turn_to_aa(wild_seq, orf_dict[trans_id]), 
+        turn_to_aa(mute_seq, orf_dict[trans_id])
         )
 
 
@@ -297,7 +297,7 @@ try:
                     (exon_list, mute_locs) = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if(len(exon_list) != 0):
                         find_seq_and_kmer(exon_list, last_chrom, ref_ind,
-                                          mute_locs, orf_dict, trans_id)
+                                          mute_locs, orf_dict, trans_id, mute_posits)
                 (mute_locs, mute_posits) = (dict(), [])
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
