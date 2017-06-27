@@ -87,17 +87,17 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         removal_list = []
         #Remove all mutations outside of exon boundaries.
         for index in range(len(mutation_pos_list)):
-            lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index])-2
+            lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index][0])-2
             upper_exon_index = lower_exon_index+1
             if(lower_exon_index < 0 or 
-               exon_list[upper_exon_index] < mutation_pos_list[index]):
+               exon_list[upper_exon_index] < mutation_pos_list[index][0]):
                 del mute_dict[min(mute_dict)]
                 removal_list.append(index)
         for index in range(len(removal_list)-1, -1, -1):
             mutation_pos_list.pop(removal_list[index])
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
-        mutation = mutation_pos_list[index]
+        mutation = mutation_pos_list[index][0]
         middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation)-2
         #If the middle_exon_index is past the last boundary, move it to the last
         if middle_exon_index > len(exon_list)-1:
@@ -116,11 +116,11 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             mutation_pos = mutation
             if index != len(mutation_pos_list)-1:
                 #shift is the current mutation's position in the codon.
-                new_pos_in_codon = (mutation_pos_list[-1]
-                                    - pos_in_codon-mutation_pos_list[index]) % 3
+                new_pos_in_codon = (mutation_pos_list[-1][0]
+                                    - pos_in_codon-mutation_pos_list[index][0]) % 3
                 seq_length_right = 30 + new_pos_in_codon
-                seq_length_left -= (mutation_pos_list[-1] 
-                                    - mutation_pos_list[index])
+                seq_length_left -= (mutation_pos_list[-1][0] 
+                                    - mutation_pos_list[index][0])
             break
     if(mutation_pos == -1):
         return [], mute_locs
