@@ -78,7 +78,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     '''
     ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
-        return []
+        return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
     exon_list = ordered_exon_dict[transcript_id]
     mutation_pos = -1
@@ -104,7 +104,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             middle_exon_index -= 2
         #If the biggest position is smaller than the smallest bound, return []
         if middle_exon_index < 0:
-            return []
+            return [], mute_locs
         curr_left_index = middle_exon_index
         curr_right_index = middle_exon_index+1 #Exon boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
@@ -123,7 +123,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index])
             break
     if(mutation_pos == -1):
-        return []
+        return [], mute_locs
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
