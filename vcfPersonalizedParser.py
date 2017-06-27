@@ -38,7 +38,6 @@ def turn_to_aa(nucleotide_string, strand="+"):
 
 def my_print_function(kmer_list):
     if len(kmer_list)==0: return None
-    print("WILD TYPE" + "\t" + "MUTANT TYPE")
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
         print(wt + "\t" + mt)
@@ -195,14 +194,19 @@ def make_mute_seq(orig_seq, mute_locs):
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id):
     wild_seq = ""
+    full_length = 0
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        full_length += seq_length
+    exon_start = exon_list[0][0]
+    print last_chrom, exon_start, full_length+exon_start, wild_seq
+    #for mute in mute_locs:
+    #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(turn_to_aa(wild_seq, orf_dict[trans_id]), 
          turn_to_aa(mute_seq, orf_dict[trans_id])
         )
-    print("")
 
 
 parser = argparse.ArgumentParser()
@@ -215,9 +219,6 @@ parser.add_argument('-x', '--bowtie-index', type=str, required=True,
     )
 parser.add_argument('-g', '--gtf', type=str, required=False,
         help='input gtf'
-    )
-parser.add_argument('-t', '--txt', type=str, required=True,
-        help='path to writable text file',
     )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
@@ -255,14 +256,13 @@ try:
         else:
             input_stream = sys.stdin
     else:
-        input_stream = open(args.vcf)
+        input_stream = open(args.vcf, "r")
         last_chrom = "None" #Will this work?
         for line in input_stream:
             if not line or line[0] == '#': continue
             vals = line.strip().split('\t')
             (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7]
                 )
-            args.txt.write(str(chrom) + " " + str(pos) + " " + str(alt))
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
