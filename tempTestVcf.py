@@ -4,6 +4,7 @@ import bowtie_index
 import sys
 import math
 import string
+import copy
 #import pickle to unpickle ordered_exon_dict
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
@@ -84,6 +85,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
+        temp_mute_list = copy.deepcopy(mutation_pos_list)
         #Remove all mutations outside of exon boundaries.
         for index in range(len(mutation_pos_list)):
             lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index])-2
@@ -91,6 +93,8 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             if(lower_exon_index < 0 or 
                exon_list[upper_exon_index] < mutation_pos_list[index]):
                 del mute_dict[min(mute_dict)]
+                temp_mute_list.pop(index)
+        mutation_pos_list = temp_mute_list
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
         mutation = mutation_pos_list[index]
