@@ -252,7 +252,7 @@ try:
         else:
             input_stream = sys.stdin
     else:
-        input_stream = open(args.vcf)
+        input_stream = open(args.vcf, "r")
         last_chrom = "None" #Will this work?
         for line in input_stream:
             if not line or line[0] == '#': continue
