@@ -4,6 +4,7 @@ import bowtie_index
 import sys
 import math
 import string
+import copy
 #import pickle to unpickle ordered_exon_dict
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
@@ -78,13 +79,13 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     '''
     ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
-        return [], mute_locs
+        return []
     pos_in_codon = 2 - (seq_length_right%3)
     exon_list = ordered_exon_dict[transcript_id]
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
-        removal_list = []
+        temp_mute_list = copy.deepcopy(mutation_pos_list)
         #Remove all mutations outside of exon boundaries.
         for index in range(len(mutation_pos_list)):
             lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index])-2
@@ -92,9 +93,8 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             if(lower_exon_index < 0 or 
                exon_list[upper_exon_index] < mutation_pos_list[index]):
                 del mute_dict[min(mute_dict)]
-                removal_list.append(index)
-        for index in range(len(removal_list)-1, -1, -1):
-            mutation_pos_list.pop(removal_list[index])
+                temp_mute_list.pop(index)
+        mutation_pos_list = temp_mute_list
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
         mutation = mutation_pos_list[index]
@@ -104,7 +104,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             middle_exon_index -= 2
         #If the biggest position is smaller than the smallest bound, return []
         if middle_exon_index < 0:
-            return [], mute_locs
+            return []
         curr_left_index = middle_exon_index
         curr_right_index = middle_exon_index+1 #Exon boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
@@ -123,7 +123,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index])
             break
     if(mutation_pos == -1):
-        return [], mute_locs
+        return []
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
@@ -210,9 +210,13 @@ def make_mute_seq(orig_seq, mute_locs):
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id):
     wild_seq = ""
+    full_length = 0
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        full_length += seq_length
+    exon_start = exon_list[0][0]
+    print last_chrom, exon_start, full_length+exon_start, wild_seq
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
