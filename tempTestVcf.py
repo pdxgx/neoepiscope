@@ -60,12 +60,12 @@ def kmer(normal_aa, mutated_aa = ""):
     return final_list
 
 def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
-              seq_length_right, exon_dict):
+              seq_length_right, exon_dict, mute_dict):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
             is located on.
-        mutation_pos: (int) Mutation's position on chromosome
+        mutation_pos_list: (int) Mutation's position on chromosome
         seq_length_left: (int) How many bases must be gathered
             to the left of the mutation
         seq_length_right: (int) How many bases must be gathered to
@@ -76,22 +76,34 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-
     ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
         return []
     pos_in_codon = 2 - (seq_length_right%3)
     exon_list = ordered_exon_dict[transcript_id]
     mutation_pos = -1
+    #Don't want to check rightmost since seq. queries based off of it.
+    if len(mutation_pos_list) >= 2:
+        #Remove all mutations outside of exon boundaries.
+        for index in range(len(mutation_pos_list)):
+            lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index])-2
+            upper_exon_index = lower_exon_index+1
+            if(lower_exon_index < 0 or 
+               exon_list[upper_exon_index] < mutation_pos_list[index]):
+                del mute_dict[min(mute_dict)]
+    #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
         mutation = mutation_pos_list[index]
         middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation)-2
-        #If the middle_exon_index is past the last boundary, move it to the last.
+        #If the middle_exon_index is past the last boundary, move it to the last
         if middle_exon_index > len(exon_list)-1:
             middle_exon_index -= 2
+        #If the biggest position is smaller than the smallest bound, return []
+        if middle_exon_index < 0:
+            return []
         curr_left_index = middle_exon_index
-        curr_right_index = middle_exon_index+1 #Exon boundary end indexes\
-        #Increase by one to ensure mutation_pos_list is collected into boundaries.
+        curr_right_index = middle_exon_index+1 #Exon boundary end indexes
+        #Increase by one to ensure mutation_pos_list is collected into boundary
         curr_pos_left = mutation + 1
         curr_pos_right = mutation #Actual number in chromosome
         #If the mutation is not on in exon bounds, return [].
@@ -162,7 +174,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             except IndexError:
                 print("Exceeded all possible exon boundaries!")
                 break
-    return nucleotide_index_list
+    return nucleotide_index_list, mute_dict
 
 
 def get_seq(chrom, start, splice_length, ref_ind):
@@ -271,7 +283,7 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
+                    (exon_list, mute_locs) = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if(len(exon_list) != 0):
                         find_seq_and_kmer(exon_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, trans_id)
