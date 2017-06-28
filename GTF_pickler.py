@@ -40,5 +40,5 @@ for line in my_file:
     
 #@TODO: Don't forget to pickle the chrom_dict also!!!!!!!
 pickle_out = open(args.dump, "wb")
-pickle.dump(exon_dict, pickle_out)
+pickle.dump([exon_dict, orf_dict], pickle_out)
 pickle_out.close()
