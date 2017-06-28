@@ -211,14 +211,11 @@ def make_mute_seq(orig_seq, mute_locs):
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
     wild_seq = ""
-    full_length = 0
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
-        wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-        full_length += seq_length
-    exon_start = exon_list[0][0]
-    #for mute in mute_locs:
-    #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
+        curr_seq = get_seq(last_chrom, seq_start, seq_length, ref_ind)
+    #    wild_seq += austin_script(last_chrom, seq_start,
+    #                              seq_start+seq_length, curr_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id]), 
