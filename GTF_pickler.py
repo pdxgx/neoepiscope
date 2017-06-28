@@ -12,11 +12,11 @@ parser.add_argument('-g', '--gtf', type=str, required=False,
     )
 args = parser.parse_args()
 
-my_file = ""# ex: open("gencode.txt").read()
+my_file = open(args.gtf, "r") # ex: open("gencode.txt").read()
 
 exon_dict = {}
 orf_dict = {}
-for line in my_file.splitlines():
+for line in my_file:
     if not line or line[0] == '#': continue
     tokens = line.strip().split('\t')
     if tokens[2] != "exon": continue
