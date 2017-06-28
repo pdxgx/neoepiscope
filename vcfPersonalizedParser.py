@@ -5,7 +5,7 @@ import sys
 import math
 import string
 import copy
-#import pickle to unpickle ordered_exon_dict
+import pickle
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -217,7 +217,6 @@ def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
         full_length += seq_length
     exon_start = exon_list[0][0]
-    print last_chrom, exon_start, full_length+exon_start, wild_seq
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
@@ -235,36 +234,15 @@ parser.add_argument('-v', '--vcf', type=str, required=False,
 parser.add_argument('-x', '--bowtie-index', type=str, required=True,
         help='path to Bowtie index basename'
     )
-parser.add_argument('-g', '--gtf', type=str, required=False,
-        help='input gtf'
+parser.add_argument('-d', '--dicts', type=str, required=True,
+        help='input path to pickled dictionaries'
     )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
-my_file = open(args.gtf)# ex: open("gencode.txt").read()
 
-exon_dict = {}
-orf_dict = {}
-for line in my_file:
-    if not line or line[0] == '#': continue
-    tokens = line.strip().split('\t')
-    if tokens[2] != "exon": continue
-    read_info = tokens[8].split(';')
-    version_in_id = read_info[1].find('.')
-    if version_in_id == -1:
-        transcript_id = read_info[1][16:]
-    else:
-        transcript_id = read_info[1][16:version_in_id]
-    if transcript_id not in exon_dict:
-        exon_dict[transcript_id] = [int(tokens[3]), int(tokens[4])]
-    else:
-        insert_point = 2*bisect.bisect(exon_dict[transcript_id][0::2],
-                                       int(tokens[3]))
-        #I'm assuming there aren't two exons that start at the same point.
-        exon_dict[transcript_id] = (exon_dict[transcript_id][:insert_point] 
-                                    + [int(tokens[3]), int(tokens[4])] 
-                                    + exon_dict[transcript_id][insert_point:])
-    if transcript_id not in orf_dict:
-        orf_dict[transcript_id] = (tokens[6])
+my_dicts = pickle.load ( open (args.dicts, "rb"))
+(exon_dict, orf_dict) = (my_dicts[0], my_dicts[1])
+
 
 try:
     if args.vcf == '-':
