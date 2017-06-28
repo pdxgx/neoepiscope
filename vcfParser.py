@@ -4,9 +4,8 @@ import bowtie_index
 import sys
 import math
 import string
-#import pickle to unpickle ordered_exon_dict
-#Outline Function
-
+import copy
+import pickle
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -39,7 +38,7 @@ def turn_to_aa(nucleotide_string, strand="+"):
     return aa_string
 
 def my_print_function(kmer_list, mute_posits):
-    print("WILD TYPE" + "\t" + "MUTANT TYPE")
+    if len(kmer_list)==0: return None
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
         print(wt + "\t" + mt + "\t" + str(mute_posits))
@@ -62,7 +61,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     return final_list
 
 def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
-              seq_length_right, mute_dict):
+              seq_length_right, exon_dict, mute_dict):
     ''' References exon_dict to get Exon Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
@@ -78,7 +77,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-    ordered_exon_dict = {}
+    ordered_exon_dict = exon_dict
     if transcript_id not in ordered_exon_dict:
         return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
@@ -182,22 +181,12 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
                 break
     return nucleotide_index_list, mute_dict
 
+
 def get_seq(chrom, start, splice_length, ref_ind):
-    ''' Queries Bowtie Index for a stretch of bases
-
-        chrom: (str) Chromosome number
-        start: (int) Zero-based numbering start index on chromosome
-        splice_length: (int) Number of bases needed
-        ref_ind: Contains reference to bowtie_index
-
-        Return value: Stretch if success; else failure string "No"
-    '''
     chr_name = "chr" + chrom #proper
-    start -= 1 #Adjust for 0-based Bowtie queries
-    print(start, splice_length, chr_name)
+    start -= 1 #adjust for 0-based bowtie queries
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
-        print("THIS ", seq)
         return seq
     except Exception as e:
         #print e
@@ -207,17 +196,10 @@ def get_seq(chrom, start, splice_length, ref_ind):
         #for key in ref_ind.recs:
         #    print(key)
         #raise
-        print(chr_name, start, splice_length)
+        #print("No ", chr_name, start, splice_length)
         return "No"
 
 def make_mute_seq(orig_seq, mute_locs):
-    ''' Creates a mutation seq by changing key values in the original seq
-
-        orig_seq: (string) Normal (non-tumor) string of bases
-        mute_locs: (dictionary) Maps mutation-index-locs to mutated base
-
-        Return value: Completed mutation seq string
-    '''
     mute_seq = ""
     for ind in range(len(orig_seq)):
         if ind in mute_locs:
@@ -227,17 +209,22 @@ def make_mute_seq(orig_seq, mute_locs):
     return mute_seq
 
 def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
-                      orf_dict, trans_id,mute_posits):
+                      orf_dict, trans_id, mute_posits):
     wild_seq = ""
+    full_length = 0
     for exon_stretch in exon_list:
         (seq_start, seq_length) = exon_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        full_length += seq_length
+    exon_start = exon_list[0][0]
+    #for mute in mute_locs:
+    #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id]), 
         turn_to_aa(mute_seq, orf_dict[trans_id])
         )
-    print("")
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--vcf', type=str, required=False,
@@ -247,8 +234,16 @@ parser.add_argument('-v', '--vcf', type=str, required=False,
 parser.add_argument('-x', '--bowtie-index', type=str, required=True,
         help='path to Bowtie index basename'
     )
+parser.add_argument('-g', '--gtf', type=str, required=False,
+        help='input gtf'
+    )
+parser.add_argument('-d', '--dict', type=str, required=True,
+        help='input path to exon_dict'
+    )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
+my_file = open(args.gtf, "r")# ex: open("gencode.txt").read()
+
 
 try:
     if args.vcf == '-':
@@ -265,7 +260,8 @@ try:
             line_count += 1
             if not line or line[0] == '#': continue
             vals = line.strip().split('\t')
-            (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7])
+            (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7]
+                )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
@@ -278,7 +274,7 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    (exon_list,mute_locs) = get_exons(trans_id, mute_posits, left_side, right_side, mute_locs)
+                    (exon_list, mute_locs) = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if(len(exon_list) != 0):
                         find_seq_and_kmer(exon_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, trans_id, mute_posits)
@@ -293,6 +289,7 @@ try:
         if(len(exon_list) != 0):
             find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id)
+
 finally:
     if args.vcf != '-':
         input_stream.close()
