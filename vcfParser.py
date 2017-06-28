@@ -66,9 +66,9 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     my_print_function(final_list, mute_posits)
     return final_list
 
-def get_exons(transcript_id, mutation_pos_list, seq_length_left, 
-              seq_length_right, exon_dict, mute_dict):
-    ''' References exon_dict to get Exon Bounds for later Bowtie query.
+def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
+              seq_length_right, cds_dict, mute_dict):
+    ''' References cds_dict to get cds Bounds for later Bowtie query.
 
         transcript_id: (String) Indicates the transcript the mutation
             is located on.
@@ -79,25 +79,25 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
             the right of the mutation
 
         Return value: List of tuples containing starting indexes and stretch
-        lengths within exon boundaries necessary to acquire the complete 
+        lengths within cds boundaries necessary to acquire the complete 
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
-    ordered_exon_dict = exon_dict
-    if transcript_id not in ordered_exon_dict:
+    ordered_cds_dict = cds_dict
+    if transcript_id not in ordered_cds_dict:
         return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
-    exon_list = ordered_exon_dict[transcript_id]
+    cds_list = ordered_cds_dict[transcript_id]
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
         removal_list = []
-        #Remove all mutations outside of exon boundaries.
+        #Remove all mutations outside of cds boundaries.
         for index in range(len(mutation_pos_list)):
-            lower_exon_index = 2*bisect.bisect(exon_list[::2], mutation_pos_list[index][0])-2
-            upper_exon_index = lower_exon_index+1
-            if(lower_exon_index < 0 or 
-               exon_list[upper_exon_index] < mutation_pos_list[index][0]):
+            lower_cds_index = 2*bisect.bisect(cds_list[::2], mutation_pos_list[index][0])-2
+            upper_cds_index = lower_cds_index+1
+            if(lower_cds_index < 0 or 
+               cds_list[upper_cds_index] < mutation_pos_list[index][0]):
                 del mute_dict[min(mute_dict)]
                 removal_list.append(index)
         for index in range(len(removal_list)-1, -1, -1):
@@ -105,21 +105,21 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
         mutation = mutation_pos_list[index][0]
-        middle_exon_index = 2*bisect.bisect(exon_list[::2], mutation)-2
-        #If the middle_exon_index is past the last boundary, move it to the last
-        if middle_exon_index > len(exon_list)-1:
-            middle_exon_index -= 2
+        middle_cds_index = 2*bisect.bisect(cds_list[::2], mutation)-2
+        #If the middle_cds_index is past the last boundary, move it to the last
+        if middle_cds_index > len(cds_list)-1:
+            middle_cds_index -= 2
         #If the biggest position is smaller than the smallest bound, return []
-        if middle_exon_index < 0:
+        if middle_cds_index < 0:
             return [], mute_locs
-        curr_left_index = middle_exon_index
-        curr_right_index = middle_exon_index+1 #Exon boundary end indexes
+        curr_left_index = middle_cds_index
+        curr_right_index = middle_cds_index+1 #cds boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
         curr_pos_left = mutation + 1
         curr_pos_right = mutation #Actual number in chromosome
-        #If the mutation is not on in exon bounds, return [].
-        if(mutation <= exon_list[curr_right_index] and 
-           mutation >= exon_list[curr_left_index]):
+        #If the mutation is not on in cds bounds, return [].
+        if(mutation <= cds_list[curr_right_index] and 
+           mutation >= cds_list[curr_left_index]):
             mutation_pos = mutation
             if index != len(mutation_pos_list)-1:
                 #shift is the current mutation's position in the codon.
@@ -140,7 +140,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
-        if curr_pos_left-exon_list[curr_left_index] >= seq_length_left:
+        if curr_pos_left-cds_list[curr_left_index] >= seq_length_left:
             if curr_pos_left != mutation_pos+1:
                 nucleotide_index_list.append((curr_pos_left-seq_length_left+1,
                                           seq_length_left))
@@ -149,13 +149,13 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
                                           seq_length_left))
             seq_length_left = 0
         else:
-            nucleotide_index_list.append((exon_list[curr_left_index],
-                                    curr_pos_left-exon_list[curr_left_index]))
-            seq_length_left -= curr_pos_left-exon_list[curr_left_index]
-            curr_pos_left = exon_list[curr_left_index-1]
+            nucleotide_index_list.append((cds_list[curr_left_index],
+                                    curr_pos_left-cds_list[curr_left_index]))
+            seq_length_left -= curr_pos_left-cds_list[curr_left_index]
+            curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
-                print("Exceeded all possible exon boundaries!")
+                print("Exceeded all possible cds boundaries!")
                 #Changed total_seq_length for comparison in next while loop.
                 total_seq_length = (original_length_left
                                       - seq_length_left
@@ -166,7 +166,7 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
     while(len(nucleotide_index_list) == 0 or 
               sum([index[1] for index in nucleotide_index_list]) 
               < (total_seq_length)):
-        if exon_list[curr_right_index] >= curr_pos_right + seq_length_right:
+        if cds_list[curr_right_index] >= curr_pos_right + seq_length_right:
             if curr_pos_right == mutation_pos:
                 nucleotide_index_list.append((curr_pos_right+1,
                                               seq_length_right))
@@ -177,13 +177,13 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
         else:
             try:
                 nucleotide_index_list.append((curr_pos_right+1,
-                                              exon_list[curr_right_index]
+                                              cds_list[curr_right_index]
                                               - curr_pos_right))
-                seq_length_right -= exon_list[curr_right_index]-curr_pos_right
-                curr_pos_right = exon_list[curr_right_index+1]
+                seq_length_right -= cds_list[curr_right_index]-curr_pos_right
+                curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
-                print("Exceeded all possible exon boundaries!")
+                print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
 
@@ -203,17 +203,17 @@ def make_mute_seq(orig_seq, mute_locs):
             mute_seq += orig_seq[ind]
     return mute_seq
 
-def find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
+def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
     wild_seq = ""
     full_length = 0
-    for exon_stretch in exon_list:
-        (seq_start, seq_length) = exon_stretch
+    for cds_stretch in cds_list:
+        (seq_start, seq_length) = cds_stretch
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
         full_length += seq_length
-    exon_start = exon_list[0][0]
+    cds_start = cds_list[0][0]
     #for mute in mute_locs:
-    #   personal_wild_seq_set = austin_script(exon_list, wild_seq)
+    #   personal_wild_seq_set = austin_script(cds_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id]), 
@@ -236,7 +236,7 @@ args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
 
 my_dicts = pickle.load ( open (args.dicts, "rb"))
-(exon_dict, orf_dict) = (my_dicts[0], my_dicts[1])
+(cds_dict, orf_dict) = (my_dicts[0], my_dicts[1])
 
 
 try:
@@ -268,9 +268,9 @@ try:
             else:
                 if last_chrom != "None":
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    (exon_list, mute_locs) = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
-                    if(len(exon_list) != 0):
-                        find_seq_and_kmer(exon_list, last_chrom, ref_ind,
+                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+                    if(len(cds_list) != 0):
+                        find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, trans_id, mute_posits)
                 (mute_locs, mute_posits) = (dict(), [])
                 st_ind = pos-30-pos_in_codon
@@ -279,9 +279,9 @@ try:
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        exon_list = get_exons(trans_id, mute_posits, left_side, right_side, exon_dict)
-        if(len(exon_list) != 0):
-            find_seq_and_kmer(exon_list, last_chrom, ref_ind, mute_locs,
+        cds_list = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict)
+        if(len(cds_list) != 0):
+            find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id)
 
 finally:
