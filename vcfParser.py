@@ -30,7 +30,13 @@ def turn_to_aa(nucleotide_string, strand="+"):
         translation_table = string.maketrans("ATCG", "TAGC")
         nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
-        codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
+        try:
+            codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
+        except KeyError:
+            print >>sys.stderr, (
+                        'Could not translate nucleotide string "{}".'
+                    ).format(nucleotide_string)
+            return False
         if (codon == "Stop"):
             break
         else:
@@ -185,19 +191,8 @@ def get_exons(transcript_id, mutation_pos_list, seq_length_left,
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
     start -= 1 #adjust for 0-based bowtie queries
-    try:
-        seq = ref_ind.get_stretch(chr_name, start, splice_length)
-        return seq
-    except Exception as e:
-        #print e
-        #print chr_name
-        #print start
-        #print splice_length
-        #for key in ref_ind.recs:
-        #    print(key)
-        #raise
-        #print("No ", chr_name, start, splice_length)
-        return "No"
+    seq = ref_ind.get_stretch(chr_name, start, splice_length)
+    return seq
 
 def make_mute_seq(orig_seq, mute_locs):
     mute_seq = ""
