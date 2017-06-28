@@ -234,15 +234,14 @@ parser.add_argument('-v', '--vcf', type=str, required=False,
 parser.add_argument('-x', '--bowtie-index', type=str, required=True,
         help='path to Bowtie index basename'
     )
-parser.add_argument('-g', '--gtf', type=str, required=False,
-        help='input gtf'
-    )
-parser.add_argument('-d', '--dict', type=str, required=True,
-        help='input path to exon_dict'
+parser.add_argument('-d', '--dicts', type=str, required=True,
+        help='input path to pickled dictionaries'
     )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
-my_file = open(args.gtf, "r")# ex: open("gencode.txt").read()
+
+my_dicts = pickle.load ( open (args.dicts, "rb"))
+(exon_dict, orf_dict) = (my_dicts[0], my_dicts[1])
 
 
 try:
