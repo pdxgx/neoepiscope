@@ -239,7 +239,7 @@ parser.add_argument('-g', '--gtf', type=str, required=False,
     )
 args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
-my_file = open(args.gtf)# ex: open("gencode.txt").read()
+my_file = open(args.gtf, "r")# ex: open("gencode.txt").read()
 
 exon_dict = {}
 orf_dict = {}
