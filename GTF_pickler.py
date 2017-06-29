@@ -28,6 +28,7 @@ for line in my_file:
         transcript_id = read_info[1][16:version_in_id]
     if transcript_id not in cds_dict:
         cds_dict[transcript_id] = [int(tokens[3]), int(tokens[4])]
+        orf_dict[transcript_id] = [tokens[6] + str(tokens[7])]
     else:
         insert_point = 2*bisect.bisect(cds_dict[transcript_id][0::2],
                                        int(tokens[3]))
@@ -35,8 +36,9 @@ for line in my_file:
         cds_dict[transcript_id] = (cds_dict[transcript_id][:insert_point] 
                                     + [int(tokens[3]), int(tokens[4])] 
                                     + cds_dict[transcript_id][insert_point:])
-    if transcript_id not in orf_dict:
-        orf_dict[transcript_id] = (tokens[6])
+        orf_dict[transcript_id] = (orf_dict[transcript_id][:insert_point//2]
+                                    + [tokens[6] + str(tokens[7])]
+                                    + orf_dict[transcript_id][insert_point//2:])
     
 #@TODO: Don't forget to pickle the chrom_dict also!!!!!!!
 pickle_out = open(args.dump, "wb")
