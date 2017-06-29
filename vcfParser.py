@@ -27,7 +27,6 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
 def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
     if strand == "-":
-        print("Pos or Neg: ", strand)
         translation_table = string.maketrans("ATCG", "TAGC")
         nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
@@ -156,7 +155,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
-                print("Exceeded all possible cds boundaries!")
+                #print("Exceeded all possible cds boundaries!")
                 #Changed total_seq_length for comparison in next while loop.
                 total_seq_length = (original_length_left
                                       - seq_length_left
@@ -184,7 +183,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
-                print("Exceeded all possible cds boundaries!")
+                #print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
 
@@ -192,7 +191,10 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
     start -= 1 #adjust for 0-based bowtie queries
-    seq = ref_ind.get_stretch(chr_name, start, splice_length)
+    try:
+        seq = ref_ind.get_stretch(chr_name, start, splice_length)
+    except KeyError:
+        return False
     return seq
 
 def make_mute_seq(orig_seq, mute_locs):
@@ -210,15 +212,15 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     full_length = 0
     for cds_stretch in cds_list:
         (seq_start, seq_length) = cds_stretch
-        print seq_start, seq_length
-        wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        try:
+            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        except:
+            return
         full_length += seq_length
     cds_start = cds_list[0][0]
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(cds_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
-    print wild_seq
-    print mute_seq
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
@@ -290,7 +292,6 @@ try:
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
                     if(len(cds_list) != 0):
-                        print(st_ind, end_ind)
                         find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, trans_id, mute_posits)
                 (mute_locs, mute_posits) = (dict(), [])
@@ -300,10 +301,10 @@ try:
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        cds_list = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict)
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_posits)
         if(len(cds_list) != 0):
             find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
-                              orf_dict, trans_id)
+                              orf_dict, trans_id, mute_posits)
 
 finally:
     if args.vcf != '-':
