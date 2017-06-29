@@ -128,6 +128,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 seq_length_right = 30 + new_pos_in_codon
                 seq_length_left -= (mutation_pos_list[-1][0] 
                                     - mutation_pos_list[index][0])
+                print "kkkk"
             break
     if(mutation_pos == -1):
         return [], mute_locs
@@ -215,6 +216,8 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(cds_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
+    print wild_seq
+    print mute_seq
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id]), 
         turn_to_aa(mute_seq, orf_dict[trans_id])
@@ -270,6 +273,7 @@ try:
                     (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
                     if(len(cds_list) != 0):
+                        print(st_ind, end_ind)
                         find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, trans_id, mute_posits)
                 (mute_locs, mute_posits) = (dict(), [])
