@@ -27,6 +27,7 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
 def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
     if strand == "-":
+        print("Pos or Neg: ", strand)
         translation_table = string.maketrans("ATCG", "TAGC")
         nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
@@ -128,7 +129,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 seq_length_right = 30 + new_pos_in_codon
                 seq_length_left -= (mutation_pos_list[-1][0] 
                                     - mutation_pos_list[index][0])
-                print "kkkk"
             break
     if(mutation_pos == -1):
         return [], mute_locs
@@ -210,6 +210,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     full_length = 0
     for cds_stretch in cds_list:
         (seq_start, seq_length) = cds_stretch
+        print seq_start, seq_length
         wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
         full_length += seq_length
     cds_start = cds_list[0][0]
@@ -219,8 +220,8 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     print wild_seq
     print mute_seq
     kmer(mute_posits,
-        turn_to_aa(wild_seq, orf_dict[trans_id]), 
-        turn_to_aa(mute_seq, orf_dict[trans_id])
+        turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
+        turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
 
@@ -263,7 +264,11 @@ try:
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
-            pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
+            pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
+            try:
+                if(orf_dict[trans_id][0][0] == "-"): pos_in_codon = 2-pos_in_codon
+            except:
+                continue
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
