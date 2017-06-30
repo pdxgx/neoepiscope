@@ -287,27 +287,30 @@ try:
                         right_query = 2-(pos_in_codon+len(orig)-len(alt))%3
                     else:
                         right_query = 2-pos_in_codon
-                    intro_bounds = get_cds(trans_id, [pos], 30+(3-pos_in_codon)%3, right_query, cds_dict, {pos: alt})
+                    (cds_list, mute_locs) = get_cds(trans_id, [pos], pos-30-pos_in_codon, pos, cds_dict, {pos: alt})
                     if len(cds_list) != 0:
                         orig_seq = ""
                         for cds_stretch in cds_list:
                             (seq_start, seq_length) = cds_stretch
-                            try:
-                                orig_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
-                            except:
-                                orig_seq += "N"*seq_length
-                    intro_mute_seq = orig_seq[:30+(3-pos_in_codon)%3] + orig_seq[30+(3-pos_in_codon)%3+1:].replace(orig, alt, 1)
-                    intro_aa = turn_to_aa(intro_mute_seq)
-                    if intro_aa < orig_seq//3:
-                        #Need to go straight into making wild type and printing 
-                        pass
-                    else:
-                        stop_encountered = False
-                        while(stop_encountered == False):
-                            # Need to check to see if next mutation is within 3 
-                            # If so, add onto our orig_seq and mutated_seq
-                            # If not, query Bowtie and then add to seqs.
-                            #Check for stop codon.
+                            orig_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+                        ###########################################
+                        try:
+                            start = pos
+                            stop_found = False 
+                            while(stop_found != True):
+                                extra_cods = get_seq(last_chrom, start, 33, ref_ind)
+                                start += 33
+                                count = 0
+                                while(count<33):
+                                    new_codon = extra_cods[count: count+3]
+                                    if(turn_to_aa(new_codon)=="Stop"):
+                                        stop_found = True
+                                        break
+                                    orig_seq += new_codon
+                        except:
+                            break
+                        #NEED TO EDIT try-except so that the sequence upto the stop
+                        # is included, and not breaks
                 else:
                     pos_in_codon = (cds_end - (3-frame)%3 - pos)%3
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
