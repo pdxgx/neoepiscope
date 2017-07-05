@@ -242,7 +242,7 @@ args = parser.parse_args()
 ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
 
 my_dicts = pickle.load ( open (args.dicts, "rb"))
-(cds_dict, orf_dict) = (my_dicts[0], my_dicts[1])
+(cds_dict, orf_dict, exon_dict, exon_orf_dict) = (my_dicts[0], my_dicts[1], my_dicts[2], my_dicts[3])
 
 
 try:
@@ -257,6 +257,9 @@ try:
         last_chrom = "None" #Will this work?
         line_count = 0
         orig_seq = ""
+        #CHECK THESE NEXT TWO LINES!
+        mute_locs = {}
+        mute_posits = []
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': continue
@@ -265,39 +268,42 @@ try:
                 )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
-            if(mute_type != "missense_variant" and len(orig) == len(pos)): 
+            if(mute_type != "missense_variant" and len(orig) == len(alt)): 
                 continue
-            (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
+            (trans_id) = (tokens[6])
             if mute_type == "missense_variant":
+                rel_pos = int(tokens[13])
                 pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
             try:
                 if orf_dict[trans_id][0][0] == "-": 
                     pos_in_codon = 2-pos_in_codon
             except:
                 continue
-            if len(orig) != len(pos):
+            if len(orig) != len(alt):
+                try:
+                    cds_list = cds_dict[trans_id]
+                except:
+                    continue
+                orf_list = orf_dict[trans_id]
                 orf_index = bisect.bisect(cds_list[0:1:2], pos)
                 (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1]) 
-                orf = orf_dict[orf_index]
+                orf = orf_list[orf_index]
                 (strand, frame) = (orf[0], orf[1])
-                pos_in_codon = (pos - cds_start - frame)%3 #check math
+                pos_in_codon = (pos - cds_start - int(frame))%3 #check math
                 if(strand != "+"):
                     pos_in_codon = 2-pos_in_codon
-            if(((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom) and
-                (last_chrom != "None")):
-                    (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
-                    if(len(cds_list) != 0):
-                        find_seq_and_kmer(cds_list, last_chrom, ref_ind,
-                                          mute_locs, orf_dict, trans_id, mute_posits)
-                    (mute_locs, mute_posits) = (dict(), [])
-            if((pos-last_pos <= (32-pos_in_codon)) and (len(orig) != len(pos))
+            if((last_chrom != "None") and ((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom)):
+                (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
+                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+                if(len(cds_list) != 0):
+                    find_seq_and_kmer(cds_list, last_chrom, ref_ind,
+                                      mute_locs, orf_dict, trans_id, mute_posits)
+                (mute_locs, mute_posits) = (dict(), [])
+            if((last_chrom != "None") and (pos-last_pos <= (32-pos_in_codon)) and (len(orig) != len(alt))
                  and (orf[0] != "+")):
                     (mute_locs, mute_posits) = (dict(), [])
             #need to reset st_ind, mute_locs, end_ind, last_pos, last_chrom, mute_locs, mute_posits
-            if len(orig) != len(pos):
-                cds_list = cds_dict[trans_id]
-                orf_list = orf_dict[trans_id]
+            if len(orig) != len(alt):
                 shift = len(alt)-len(orig)
                 mute_posits.append(pos)
                 #This code doesn't work for deletions. Only insertions.
@@ -311,8 +317,9 @@ try:
                     else:
                         end_ind = pos
                         query_st = pos+len(orig)
-                    (l_side r_side) = (pos-st_ind, end_ind-pos)
+                    (l_side, r_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+                    print("We are here")
                     if len(cds_list) != 0:
                         orig_seq = ""
                         for cds_stretch in cds_list:
@@ -351,7 +358,10 @@ try:
                                 seq_pos = missense_pos + shift - st_ind
                                 mute_locs[seq_pos] = alt
                             mute_seq = make_mute_seq(orig_seq, mute_locs)
+                            print("INDEL!!!!!!")
+                            print(orig_seq, mute_seq)
                         except:
+                            print("HERE DELIN")
                             break
                         #NEED TO EDIT try-except so that the sequence upto the stop
                         # is included, and not breaks
