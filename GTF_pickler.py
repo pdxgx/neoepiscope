@@ -33,8 +33,10 @@ for line in my_file:
         cds_dict[transcript_id] = [int(tokens[3]), int(tokens[4])]
     if transcript_id not in exon_dict and tokens[2] == "exon":
         exon_dict[transcript_id] = [int(tokens[3]), int(tokens[4])]
-    if transcript_id not in orf_dict:
-        orf_dict[transcript_id] = [tokens[6] + str(tokens[7])]
+    if transcript_id not in cds_orf_dict:
+        cds_orf_dict[transcript_id] = [tokens[6] + str(tokens[7])]
+    if transcript_id not in exon_orf_dict:
+        exon_orf_dict[transcript_id] = [tokens[6] + str(tokens[7])]
     if transcript_id in cds_dict and tokens[2] == "CDS":
         insert_point = 2*bisect.bisect(cds_dict[transcript_id][0::2],
                                        int(tokens[3]))
@@ -60,5 +62,5 @@ for line in my_file:
     
 #@TODO: Don't forget to pickle the chrom_dict also!!!!!!!
 pickle_out = open(args.dump, "wb")
-pickle.dump([cds_dict, orf_dict, exon_dict, exon_orf_dict], pickle_out)
+pickle.dump([cds_dict, cds_orf_dict, exon_dict, exon_orf_dict], pickle_out)
 pickle_out.close()
