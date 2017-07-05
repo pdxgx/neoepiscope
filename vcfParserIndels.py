@@ -256,6 +256,7 @@ try:
         input_stream = open(args.vcf, "r")
         last_chrom = "None" #Will this work?
         line_count = 0
+        orig_seq = ""
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': continue
@@ -264,7 +265,8 @@ try:
                 )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
-            if(mute_type != "missense_variant" and len(orig) == len(pos)): continue
+            if(mute_type != "missense_variant" and len(orig) == len(pos)): 
+                continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             if mute_type == "missense_variant":
                 pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
@@ -274,20 +276,43 @@ try:
             except:
                 continue
             if len(orig) != len(pos):
-                cds_list = cds_dict[trans_id]
-                orf_list = orf_dict[trans_id]
                 orf_index = bisect.bisect(cds_list[0:1:2], pos)
+                (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1]) 
                 orf = orf_dict[orf_index]
                 (strand, frame) = (orf[0], orf[1])
-                (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1])
+                pos_in_codon = (pos - cds_start - frame)%3 #check math
+                if(strand != "+"):
+                    pos_in_codon = 2-pos_in_codon
+            if(((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom) and
+                (last_chrom != "None")):
+                    (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
+                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+                    if(len(cds_list) != 0):
+                        find_seq_and_kmer(cds_list, last_chrom, ref_ind,
+                                          mute_locs, orf_dict, trans_id, mute_posits)
+                    (mute_locs, mute_posits) = (dict(), [])
+            if((pos-last_pos <= (32-pos_in_codon)) and (len(orig) != len(pos))
+                 and (orf[0] != "+")):
+                    (mute_locs, mute_posits) = (dict(), [])
+            #need to reset st_ind, mute_locs, end_ind, last_pos, last_chrom, mute_locs, mute_posits
+            if len(orig) != len(pos):
+                cds_list = cds_dict[trans_id]
+                orf_list = orf_dict[trans_id]
+                shift = len(alt)-len(orig)
+                mute_posits.append(pos)
                 #This code doesn't work for deletions. Only insertions.
                 if strand == "+":
-                    pos_in_codon = (pos - (cds_start-frame)%3)%3
+                    if(len(mute_locs)==0):
+                        st_ind = pos-30-pos_in_codon
+                    mute_locs[st_ind] = alt
                     if len(alt) > len(orig):
-                        right_query = 2-(pos_in_codon+len(orig)-len(alt))%3
+                        end_ind = pos+len(alt)-1
+                        query_st = end_ind + 1
                     else:
-                        right_query = 2-pos_in_codon
-                    (cds_list, mute_locs) = get_cds(trans_id, [pos], pos-30-pos_in_codon, pos, cds_dict, {pos: alt})
+                        end_ind = pos
+                        query_st = pos+len(orig)
+                    (l_side r_side) = (pos-st_ind, end_ind-pos)
+                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
                     if len(cds_list) != 0:
                         orig_seq = ""
                         for cds_stretch in cds_list:
@@ -295,43 +320,54 @@ try:
                             orig_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
                         ###########################################
                         try:
-                            start = pos
+                            start = query_st
                             stop_found = False 
                             while(stop_found != True):
-                                extra_cods = get_seq(last_chrom, start, 33, ref_ind)
+                                (exon_list, temp_out) = get_cds(trans_id, [start], 0, 33, exon_dict, mute_locs)
+                                extra_cods = ""
+                                for bound_start, bound_stretch in exon_list:
+                                    extra_cods += get_seq(last_chrom, bound_start, bound_stretch, ref_ind)
                                 start += 33
                                 count = 0
                                 while(count<33):
                                     new_codon = extra_cods[count: count+3]
+                                    count += 3
                                     if(turn_to_aa(new_codon)=="Stop"):
                                         stop_found = True
                                         break
                                     orig_seq += new_codon
+                            missense_pos = pos
+                            curr_line = line_count
+                            while(missense_pos < st_ind+len(orig_seq)):
+                                new_line = input_stream[curr_line]
+                                vals = new_line.strip().split('\t')
+                                (missense_pos, alt, info) = (int(vals[1]), vals[4], vals[7]
+                                    )
+                                tokens = info.strip().split('|')
+                                mute_type = tokens[1]
+                                if(mute_type != "missense_variant"): continue
+                                if(missense_pos >= st_ind+len(orig_seq)):
+                                    break
+                                seq_pos = missense_pos + shift - st_ind
+                                mute_locs[seq_pos] = alt
+                            mute_seq = make_mute_seq(orig_seq, mute_locs)
                         except:
                             break
                         #NEED TO EDIT try-except so that the sequence upto the stop
                         # is included, and not breaks
-                else:
-                    pos_in_codon = (cds_end - (3-frame)%3 - pos)%3
+                last_chrom = "None"
+                continue
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
-                #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
                 end_ind = pos+32-pos_in_codon
             else:
-                if last_chrom != "None":
-                    (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
-                    if(len(cds_list) != 0):
-                        find_seq_and_kmer(cds_list, last_chrom, ref_ind,
-                                          mute_locs, orf_dict, trans_id, mute_posits)
-                (mute_locs, mute_posits) = (dict(), [])
                 st_ind = pos-30-pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_posits)
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id, mute_posits)
