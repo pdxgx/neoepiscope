@@ -264,7 +264,7 @@ try:
                 )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
-            if(mute_type != "missense_variant" and mute_type != "GDel"): continue
+            if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             if mute_type == "missense_variant":
                 pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
@@ -273,18 +273,6 @@ try:
                     pos_in_codon = 2-pos_in_codon
             except:
                 continue
-            if mute_type == "GDel":
-                cds_list = cds_dict[trans_id]
-                orf_list = orf_dict[trans_id]
-                orf_index = bisect.bisect(cds_list[0:1:2], pos)
-                orf = orf_dict[orf_index]
-                (strand, frame) = (orf[0], orf[1])
-                (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1])
-                #This code doesn't work for multiple indels in a row. But, if we are just going to pull 3 a lot, then doesn't matter
-                if strand == "+":
-                    pos_in_codon = (pos - (cds_start-frame)%3)%3
-                else:
-                    pos_in_codon = (cds_end - (3-frame)%3 - pos)%3
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
                 #Does it matter if mutations on same transcript?
                 #The order of that if-statement is important! Don't change it!
@@ -303,7 +291,7 @@ try:
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_posits)
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id, mute_posits)
