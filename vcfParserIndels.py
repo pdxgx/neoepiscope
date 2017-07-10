@@ -192,7 +192,25 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 #print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
-
+def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind):
+    until_stop = ""
+    start = query_st
+    stop_found = False 
+    while(stop_found == False):
+        (exon_list, temp_out) = get_cds(trans_id, [(start,line_count)], 0, 33, exon_dict, dict())
+        extra_cods = ""
+        for bound_start, bound_stretch in exon_list:
+            extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
+        start = exon_list[-1][0] + exon_list[-1][1]
+        count = 0
+        while(count<33):
+            new_codon = extra_cods[count: count+3]
+            count += 3
+            if(turn_to_aa(new_codon)==""):
+                stop_found = True
+                break
+            until_stop += new_codon
+    return until_stop
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
@@ -352,25 +370,12 @@ try:
                                 break
                         ###########################################
                         try:
-                            start = query_st
-                            stop_found = False 
-                            while(stop_found == False):
-                                (exon_list, temp_out) = get_cds(trans_id, [(start,line_count)], 0, 33, exon_dict, mute_locs)
-                                extra_cods = ""
-                                for bound_start, bound_stretch in exon_list:
-                                    extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
-                                start = exon_list[-1][0] + exon_list[-1][1]
-                                count = 0
-                                while(count<33):
-                                    new_codon = extra_cods[count: count+3]
-                                    count += 3
-                                    if(turn_to_aa(new_codon)==""):
-                                        stop_found = True
-                                        break
-                                    orig_seq += new_codon
-                            missense_pos = pos
+                            orig_seq += find_stop(query_st, trans_id,
+                                                  line_count, exon_dict, chrom,
+                                                  ref_ind)
+                            '''missense_pos = pos
                             curr_line = line_count
-                            '''while(missense_pos < (st_ind+len(orig_seq))):
+                            while(missense_pos < (st_ind+len(orig_seq))):
                                 try:
                                     new_line = next(input_stream)
                                 except:
