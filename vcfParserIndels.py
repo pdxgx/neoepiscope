@@ -324,7 +324,9 @@ try:
                     continue ## DELETE later
                 pos_in_codon = (pos - cds_start - int(frame))%3 #check math
                 if(strand != "+"):
-                    pos_in_codon = 2-pos_in_codon
+                    #Check math.
+                    pos_in_codon = (3 - (((cds_end-(pos+1)) - frame)%3))%3
+                    #pos_in_codon = 2-pos_in_codon
             ## SOLVE for case in which indel is very first mutation
             '''try:
                 if((pos-last_pos <= (32-pos_in_codon)) and (len(orig) != len(alt))
