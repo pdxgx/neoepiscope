@@ -192,6 +192,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 #print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
+
 def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_locs, reverse):
     until_stop = ""
     start = query_st
@@ -204,7 +205,10 @@ def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_lo
         extra_cods = ""
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
-        start = exon_list[-1][0] + exon_list[-1][1]
+        if reverse:
+            start = exon_list[0][0]
+        else:
+            start = exon_list[-1][0] + exon_list[-1][1]
         count = 0
         while(count<33):
             new_codon = extra_cods[count: count+3]
