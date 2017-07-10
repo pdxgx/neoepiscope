@@ -299,6 +299,7 @@ try:
         orig_seq = ""
         mute_locs = {}
         mute_posits = []
+        my_dict = cds_dict
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': continue
@@ -318,9 +319,39 @@ try:
                     pos_in_codon = 2-pos_in_codon
             except:
                 continue
+            if mute_type == "missense_variant":
+                #Basic code for checking for mutation membership within cds/exon regions
+                #Note: does not work for indels
+                try:
+                    cds_list = cds_dict[trans_id]
+                except KeyError:
+                    print("It seems like that transcript does not exist in the cds_dict!")
+                lower_cds_index = 2*bisect.bisect(cds_list[::2], pos)-2
+                upper_cds_index = lower_cds_index+1
+                if(lower_cds_index >= 0 and cds_list[lower_cds_index] <= pos and
+                    and cds_list[upper_cds_index] >= pos
+                  ):
+                    my_dict = exon_dict
+                else:
+                    exon_list = exon_dict[transcript_id]
+                    lower_exon_index = 2*bisect.bisect(exon_list[::2], pos)-2
+                    upper_exon_index = lower_exon_index+1
+                    if(lower_exon_index >= 0 and exon_list[lower_exon_index] <= pos and
+                        and exon_list[upper_exon_index] >= pos
+                      ):
+                        start = (pos-pos_in_codon if strand=="+" else pos+pos_in_codon)
+                        wild_codon = get_seq(chrom, start, 3, ref_ind)
+                        #If it's a start codon, then good luck!
+                        mutated_codon = turn_to_aa(wild_codon[:pos_in_codon] + alt
+                                        + wild_codon[pos_in_codon+1:])
+                        if mutated_codon == "M":
+                            my_dict = exon_dict
+                        else:
+                            print("Mutation does not lie within coding boundaries!")
+                            continue
             if((last_chrom != "None") and ((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom)):
                 (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
                 if(len(cds_list) != 0):
                     find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                       mute_locs, orf_dict, trans_id, mute_posits)
@@ -457,7 +488,7 @@ try:
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
         print("Final mute_locs: ", str(mute_locs), str(mute_posits))
         if(len(cds_list) != 0):
             find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
