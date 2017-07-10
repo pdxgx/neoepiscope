@@ -9,10 +9,14 @@
 #Description: will apply mutations after searching throught the hapcut2 results
 #Description: applies mutation to the relevant chromosome strand
 
+#Return flags: 0- mutation from Hapcut2 output, 1- mutation from vcf, 2- no mutation
+
 
 def returnphasing(chromosome, startpos, endpos, refseq):
     chrome1 = list(refseq)
     chrome2 = list(refseq)
+    chromepassed1 = [0] * len(refseq)
+    chromepassed2 = [0] * len(refseq)
     chrome1count = 0 #probably unnecessary due to vcflist but good to keep counters for debug purposes
     chrome2count = 0
     chrome1vcflist = []
@@ -22,7 +26,7 @@ def returnphasing(chromosome, startpos, endpos, refseq):
     for line in hapcutfile:
         stripped = line.strip().split()
         if stripped[0] != "********":
-            if stripped[3]  == chromosome and int(stripped[4]) < endpos and int(stripped[4]) > startpos:
+            if stripped[3]  == chromosome and int(stripped[4]) <= endpos and int(stripped[4]) >= startpos:
                 errorflag = 0
                 #print stripped[3], stripped[1], stripped[2], chromosome, stripped[4], endpos, startpos
                 mutpos = int(stripped[4]) - startpos
@@ -30,25 +34,34 @@ def returnphasing(chromosome, startpos, endpos, refseq):
                     chrome1[mutpos] = stripped[6]
                     chrome1count = 1
                     chrome1vcflist.append(int(stripped[0]))
+                    chromepassed1[mutpos] = 1
                 if int(stripped[2]) != 0:
                     chrome2[mutpos] = stripped[6]
                     chrome2count = 1
                     chrome2vcflist.append(int(stripped[0]))
+                    chromepassed2[mutpos] = 1
 
-    '''if chrome1count == 0 and chrome2count == 0:
-        linecount = 0
-        vcffile = open("mutect.vcf", "r")
-        for line in vcffile:
-            if not line or line[0] == '#': continue
-            linecount += 1
-            stripped = line.strip().split()
-            if stripped[0] == chromosome and int(stripped[1]) < endpos and int(stripped[1]) > startpos:
-                mutpos = int(stripped[1]) - startpos
+    linecount = 0
+    vcffile = open("testvcf.vcf", "r")
+    for line in vcffile:
+        #print line
+        if not line or line[0] == '#': continue
+        linecount += 1
+        stripped = line.strip().split()
+        if stripped[0] == chromosome and int(stripped[1]) <= endpos and int(stripped[1]) >= startpos:
+            mutpos = int(stripped[1]) - startpos
+            if chromepassed1[mutpos] != 1:
                 chrome1[mutpos] = stripped[4]
-                chrome1[vcflist].append(linecount)
+                chrome1vcflist.append(linecount)
                 errorflag = 1
+                chromepassed1[mutpos] = 2
+            if chromepassed2[mutpos] != 1:
+                chrome2[mutpos] = stripped[4]
+                chrome2vcflist.append(linecount)
+                errorflag = 1
+                chromepassed2[mutpos] = 2
 
-        vcffile.close()'''
+    vcffile.close()
                 
     hapcutfile.close()
     
@@ -61,11 +74,6 @@ def returnphasing(chromosome, startpos, endpos, refseq):
     if chrome1count == 0 and chrome2count == 1:
         return (chrome2, chrome2vcflist, errorflag)
     else:
-        if errorflag == 1:
-            return (chrome1, chrome1vcflist, errorflag)
-        else:
-            return (refseq,errorflag)
+        return (refseq,errorflag)
             
 
-result = returnphasing("1", 248801634, 248801640, "AAGGTT")
-print result
