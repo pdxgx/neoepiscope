@@ -12,7 +12,7 @@
 #Return flags: 0- mutation from Hapcut2 output, 1- mutation from vcf, 2- no mutation
 
 
-def returnphasing(chromosome, startpos, endpos, refseq):
+def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
     chrome1 = list(refseq)
     chrome2 = list(refseq)
     chromepassed1 = [0] * len(refseq)
@@ -42,7 +42,7 @@ def returnphasing(chromosome, startpos, endpos, refseq):
                     chromepassed2[mutpos] = 1
 
     linecount = 0
-    vcffile = open("testvcf.vcf", "r")
+    vcffile = open(vcfname, "r")
     for line in vcffile:
         #print line
         if not line or line[0] == '#': continue
