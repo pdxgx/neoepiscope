@@ -211,12 +211,21 @@ def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_lo
             start = exon_list[-1][0] + exon_list[-1][1]
         count = 0
         while(count<33):
-            new_codon = extra_cods[count: count+3]
-            count += 3
-            if(turn_to_aa(new_codon)==""):
+            if reverse:
+                new_codon = extra_cods[30-count:33-count]
+                count += 3
+                amino_acid = turn_to_aa(new_codon, "-")
+            else:
+                new_codon = extra_cods[count: count+3]
+                count += 3
+                amino_acid = turn_to_aa(new_codon)
+            if(amino_acid==""):
                 stop_found = True
                 break
-            until_stop += new_codon
+            if reverse:
+                until_stop = new_codon + until_stop
+            else:
+                until_stop += new_codon
     return until_stop
 
 def get_seq(chrom, start, splice_length, ref_ind):
@@ -326,12 +335,12 @@ try:
                 (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1]) 
                 orf = orf_list[orf_index]
                 (strand, frame) = (orf[0], orf[1])
-                if(strand == "-"):
-                    continue ## DELETE later
+                #if(strand == "-"):
+                #    continue ## DELETE later
                 pos_in_codon = (pos - cds_start - int(frame))%3 #check math
                 if(strand != "+"):
                     #Check math.
-                    pos_in_codon = (3 - (((cds_end-(pos+1)) - frame)%3))%3
+                    pos_in_codon = (3 - (((cds_end-(pos+1)) - int(frame))%3))%3
                     #pos_in_codon = 2-pos_in_codon
             ## SOLVE for case in which indel is very first mutation
             '''try:
@@ -366,9 +375,20 @@ try:
                                 print(chrom, seq_start, seq_length)
                                 break
                         try:
-                            orig_seq += find_stop(query_st, trans_id,
+                            right_half = len(orig_seq)
+                            orig_seq = find_stop(query_st, trans_id,
                                                   line_count, exon_dict, chrom,
-                                                  ref_ind, mute_locs, True)
+                                                  ref_ind, mute_locs, True) + orig_seq
+                            adjust_locs = dict()
+                            for key in mute_locs:
+                                adjust_key = key+len(orig_seq)-right_half
+                                adjust_locs[adjust_key] = mute_locs[key]
+                            mute_seq = make_mute_seq(orig_seq, adjust_locs)
+                            print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), str(shift)
+                        except:
+                            (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
+                            print "Reverse Failure"
+                            break
                 if strand == "+":
                     if(len(mute_locs)==0):
                         st_ind = pos-30-pos_in_codon
