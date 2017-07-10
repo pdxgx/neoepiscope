@@ -192,12 +192,15 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 #print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
-def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind):
+def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_locs, reverse):
     until_stop = ""
     start = query_st
-    stop_found = False 
+    stop_found = False
+    (l_query, r_query) = (0, 33)
+    if reverse:
+        (l_query, r_query) = (r_query, l_query)
     while(stop_found == False):
-        (exon_list, temp_out) = get_cds(trans_id, [(start,line_count)], 0, 33, exon_dict, dict())
+        (exon_list, temp_out) = get_cds(trans_id, [(start,line_count)], l_query, r_query, exon_dict, mute_locs)
         extra_cods = ""
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
@@ -278,10 +281,9 @@ try:
             input_stream = sys.stdin
     else:
         input_stream = open(args.vcf, "r")
-        last_chrom = "None" #Will this work?
+        last_chrom = "None"
         line_count = 0
         orig_seq = ""
-        #CHECK THESE NEXT TWO LINES!
         mute_locs = {}
         mute_posits = []
         for line in input_stream:
@@ -299,7 +301,7 @@ try:
                 rel_pos = int(tokens[13])
                 pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
             try:
-                if orf_dict[trans_id][0][0] == "-": 
+                if orf_dict[trans_id][0][0] == "-" and mute_type == "missense_variant": 
                     pos_in_codon = 2-pos_in_codon
             except:
                 continue
@@ -337,30 +339,19 @@ try:
             if((last_chrom != "None") and (pos-last_pos <= (32-pos_in_codon)) and (len(orig) != len(alt))
                  and (orf[0] != "+")):
                     (mute_locs, mute_posits) = (dict(), [])'''
-            #need to reset st_ind, mute_locs, end_ind, last_pos, last_chrom, mute_locs, mute_posits
             if len(orig) != len(alt):
                 shift = len(alt)-len(orig)
                 mute_posits.append((pos, line_count))
-                #This code doesn't work for deletions. Only insertions.
-                if strand == "+":
-                    if(len(mute_locs)==0):
-                        st_ind = pos-30-pos_in_codon
-                    #print(line_count, mute_locs, mute_posits)
+                if strand == "-":
+                    end_ind = pos+32-pos_in_codon
+                    st_ind = query_st = pos-pos_in_codon
                     if len(alt) > len(orig):
-                        end_ind = pos+len(alt)-1
-                        query_st = end_ind + 1
                         mute_locs[pos-st_ind] = alt
                     else:
-                        end_ind = pos
-                        query_st = pos+len(orig)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
-                    (l_side, r_side) = (pos-st_ind, end_ind-pos)
-                    #print("came here first")
+                    (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
-                    #print("got here second ", cds_list)
-                    #print(mute_posits, cds_list)
-                    #print(len(cds_list))
                     if len(cds_list) != 0:
                         orig_seq = ""
                         for cds_stretch in cds_list:
@@ -370,11 +361,38 @@ try:
                             except:
                                 print(chrom, seq_start, seq_length)
                                 break
-                        ###########################################
                         try:
                             orig_seq += find_stop(query_st, trans_id,
                                                   line_count, exon_dict, chrom,
-                                                  ref_ind)
+                                                  ref_ind, mute_locs, True)
+                if strand == "+":
+                    if(len(mute_locs)==0):
+                        st_ind = pos-30-pos_in_codon
+                    if len(alt) > len(orig):
+                        #end_ind = pos + len(alt) - 1
+                        end_ind = pos
+                        query_st = end_ind + 1
+                        mute_locs[pos-st_ind] = alt
+                    else:
+                        end_ind = pos
+                        query_st = pos+len(orig)
+                        for index in range(abs(shift)):
+                            mute_locs[pos-st_ind+1+index] = ""
+                    (left_side, right_side) = (pos-st_ind, end_ind-pos)
+                    (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
+                    if len(cds_list) != 0:
+                        orig_seq = ""
+                        for cds_stretch in cds_list:
+                            (seq_start, seq_length) = cds_stretch
+                            try:
+                                orig_seq += get_seq(chrom, seq_start, seq_length, ref_ind)
+                            except:
+                                print(chrom, seq_start, seq_length)
+                                break
+                        try:
+                            orig_seq += find_stop(query_st, trans_id,
+                                                  line_count, exon_dict, chrom,
+                                                  ref_ind, mute_locs, False)
                             '''missense_pos = pos
                             curr_line = line_count
                             while(missense_pos < (st_ind+len(orig_seq))):
@@ -394,7 +412,7 @@ try:
                                 seq_pos = missense_pos + shift - st_ind
                                 mute_locs[seq_pos] = alt'''
                             mute_seq = make_mute_seq(orig_seq, mute_locs)
-                            print "Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), str(shift)
+                            print "Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), str(shift), pos
                             #print(orig_seq, mute_seq)
                         except:
                             (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
