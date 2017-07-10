@@ -100,8 +100,11 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             if(lower_cds_index < 0 or 
                cds_list[upper_cds_index] < mutation_pos_list[index][0]):
                 #Delete at the current index
-                del mute_dict[mutation_pos_list[index][0] - shift]
-                removal_list.append(index)
+                try:
+                    del mute_dict[mutation_pos_list[index][0] - shift]
+                    removal_list.append(index)
+                except KeyError:
+                    continue
         for index in range(len(removal_list)-1, -1, -1):
             print("made edits to mute pos list")
             mutation_pos_list.pop(removal_list[index])
