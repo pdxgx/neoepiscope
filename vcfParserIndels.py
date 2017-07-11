@@ -319,25 +319,31 @@ try:
                     pos_in_codon = 2-pos_in_codon
             except:
                 continue
+            '''
             if mute_type == "missense_variant":
                 #Basic code for checking for mutation membership within cds/exon regions
-                #Note: does not work for indels
+                #Note: THIS DOES NOT FIX THE ISSUE! It pulls 33 from both sides
+                # while it should only be pulling from one side!
+                # Also, we need to think of what happens if the 33 go past the start codon.
+                # It would read as a "M" in our peptide seqn atm (which is wrong)
+                # Also, changing to the exon_dict() produces the wrong reading frame since
+                # we are starting calculations from the wrong point
                 try:
                     cds_list = cds_dict[trans_id]
                 except KeyError:
                     print("It seems like that transcript does not exist in the cds_dict!")
                 lower_cds_index = 2*bisect.bisect(cds_list[::2], pos)-2
                 upper_cds_index = lower_cds_index+1
-                if(lower_cds_index >= 0 and cds_list[lower_cds_index] <= pos and
+                if(lower_cds_index >= 0 and cds_list[lower_cds_index] <= pos
                     and cds_list[upper_cds_index] >= pos
                   ):
                     my_dict = exon_dict
                 else:
-                    exon_list = exon_dict[transcript_id]
+                    exon_list = exon_dict[trans_id]
                     lower_exon_index = 2*bisect.bisect(exon_list[::2], pos)-2
                     upper_exon_index = lower_exon_index+1
                     if(lower_exon_index >= 0 and exon_list[lower_exon_index] <= pos and
-                        and exon_list[upper_exon_index] >= pos
+                        exon_list[upper_exon_index] >= pos
                       ):
                         start = (pos-pos_in_codon if strand=="+" else pos+pos_in_codon)
                         wild_codon = get_seq(chrom, start, 3, ref_ind)
@@ -349,6 +355,7 @@ try:
                         else:
                             print("Mutation does not lie within coding boundaries!")
                             continue
+            '''
             if((last_chrom != "None") and ((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom)):
                 (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
                 (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
@@ -389,6 +396,7 @@ try:
                 if strand == "-":
                     end_ind = pos+32-pos_in_codon
                     st_ind = query_st = pos-pos_in_codon
+                    print "reverse ", str(st_ind), str(end_ind)
                     if len(alt) > len(orig):
                         mute_locs[pos-st_ind] = alt
                     else:
@@ -425,7 +433,7 @@ try:
                         st_ind = pos-30-pos_in_codon
                     if len(alt) > len(orig):
                         #end_ind = pos + len(alt) - 1
-                        end_ind = pos
+                        end_ind = pos + 2 - pos_in_codon
                         query_st = end_ind + 1
                         mute_locs[pos-st_ind] = alt
                     else:
@@ -433,6 +441,7 @@ try:
                         query_st = pos+len(orig)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
+                    print "forward ", str(st_ind), str(end_ind)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
