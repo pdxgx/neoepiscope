@@ -6,6 +6,7 @@ import math
 import string
 import copy
 import pickle
+import Hapcut2interpreter as hap
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -30,7 +31,13 @@ def turn_to_aa(nucleotide_string, strand="+"):
         translation_table = string.maketrans("ATCG", "TAGC")
         nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
-        codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
+        try:
+            codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
+        except KeyError:
+            print >>sys.stderr, (
+                        'Could not translate nucleotide string "{}".'
+                    ).format(nucleotide_string)
+            return False
         if (codon == "Stop"):
             break
         else:
@@ -149,7 +156,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
-                print("Exceeded all possible cds boundaries!")
                 #Changed total_seq_length for comparison in next while loop.
                 total_seq_length = (original_length_left
                                       - seq_length_left
@@ -177,27 +183,18 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
-                print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
 
 
 def get_seq(chrom, start, splice_length, ref_ind):
-    chr_name = "chr" + chrom #proper
+    chr_name = "chr" + chrom
     start -= 1 #adjust for 0-based bowtie queries
     try:
         seq = ref_ind.get_stretch(chr_name, start, splice_length)
-        return seq
-    except Exception as e:
-        #print e
-        #print chr_name
-        #print start
-        #print splice_length
-        #for key in ref_ind.recs:
-        #    print(key)
-        #raise
-        #print("No ", chr_name, start, splice_length)
-        return "No"
+    except KeyError:
+        return False
+    return seq
 
 def make_mute_seq(orig_seq, mute_locs):
     mute_seq = ""
@@ -210,17 +207,59 @@ def make_mute_seq(orig_seq, mute_locs):
 
 def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
-    wild_seq = ""
-    for cds_stretch in cds_list:
+    #wild_seq = ""
+    hap_seq_list = []
+    #if bam exists:
+    seq_start = cds_list[0][0]
+    (last_start, last_length) = cds_list.pop()
+    seq_end = last_start+last_length
+    cds_list.append((last_start, last_length)) #optional
+    try:
+        new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
+        hap_output = hap.returnphasing(last_chrom, seq_start, seq_end, new_portion, args.vcf)
+        if((len(hap_output) == 2) or (len(hap_output) == 3)):
+            hap_seq_list.append(hap_output[0])
+        else:
+            hap_seq_list.append(hap_output[0])
+            hap_seq_list.append(hap_output[2])
+        for hap_seq in hap_seq_list:
+            wild_seq = ""
+            for cds_stretch in cds_list:
+                (stretch_start, stretch_length) = cds_stretch
+                index_start = stretch_start - seq_start
+                wild_seq += hap_seq[index_start:index_start+stretch_length]
+            mute_seq = make_mute_seq(wild_seq, mute_locs)
+            kmer(mute_posits,
+                turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
+                turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+                )
+        '''if(len(hap_output)==3):
+            print hap_output[2]
+        elif(len(hap_output) == 5):
+            print hap_output[4]
+        else: print hap_output[1]
+        #print "after hap_output ", hap_output
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+        print cds_list
+        for cds_stretch in cds_list:
+            (seq_start, seq_length) = cds_stretch
+            seq_start -= st_ind
+            wild_seq += hap_output[seq_start:seq_start+seq_length]'''
+    except:
+        print "find and print kmers failure"
+        return
+    '''for cds_stretch in cds_list:
         (seq_start, seq_length) = cds_stretch
-        curr_seq = get_seq(last_chrom, seq_start, seq_length, ref_ind)
-    #    wild_seq += austin_script(last_chrom, seq_start,
-    #                              seq_start+seq_length, curr_seq)
+        try:
+            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+        except:
+            return
+    cds_start = cds_list[0][0]
     mute_seq = make_mute_seq(wild_seq,mute_locs)
     kmer(mute_posits,
-        turn_to_aa(wild_seq, orf_dict[trans_id]), 
-        turn_to_aa(mute_seq, orf_dict[trans_id])
-        )
+        turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
+        turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+        )'''
 
 
 parser = argparse.ArgumentParser()
@@ -250,7 +289,7 @@ try:
             input_stream = sys.stdin
     else:
         input_stream = open(args.vcf, "r")
-        last_chrom = "None" #Will this work?
+        last_chrom = "None" 
         line_count = 0
         for line in input_stream:
             line_count += 1
@@ -262,10 +301,14 @@ try:
             mute_type = tokens[1]
             if(mute_type != "missense_variant"): continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
-            pos_in_codon = (rel_pos+2)%3 #ATG --> 0,1,2
+            if mute_type == "missense_variant":
+                pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
+            try:
+                if orf_dict[trans_id][0][0] == "-": 
+                    pos_in_codon = 2-pos_in_codon
+            except:
+                continue
             if last_chrom == chrom and pos-last_pos <= (32-pos_in_codon):
-                #Does it matter if mutations on same transcript?
-                #The order of that if-statement is important! Don't change it!
                 end_ind = pos+32-pos_in_codon
             else:
                 if last_chrom != "None":
@@ -281,10 +324,10 @@ try:
             mute_posits.append((pos, line_count))
             (last_pos,last_chrom) = (pos, chrom)
         (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-        cds_list = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict)
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
-                              orf_dict, trans_id)
+                              orf_dict, trans_id, mute_posits)
 
 finally:
     if args.vcf != '-':
