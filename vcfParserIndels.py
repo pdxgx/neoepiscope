@@ -396,7 +396,7 @@ try:
                 if strand == "-":
                     end_ind = pos+32-pos_in_codon
                     st_ind = query_st = pos-pos_in_codon
-                    print "reverse ", str(st_ind), str(end_ind)
+                    print "reverse ", str(st_ind), str(end_ind), str(end_ind-st_ind)
                     if len(alt) > len(orig):
                         mute_locs[pos-st_ind] = alt
                     else:
@@ -441,7 +441,7 @@ try:
                         query_st = pos+len(orig)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
-                    print "forward ", str(st_ind), str(end_ind)
+                    print "forward ", str(st_ind), str(end_ind), str(end_ind-st_ind)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
