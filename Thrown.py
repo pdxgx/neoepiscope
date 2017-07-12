@@ -252,6 +252,7 @@ try:
         line_count = 0
         seq_list = []
         mute_seq_pos = 0
+        seq_end = 0
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': continue
@@ -270,11 +271,11 @@ try:
             except:
                 continue
             if last_chrom == chrom and pos-last_pos <= seq_end:
-                (cds_list_left, temp) = get_cds(trans_id, [pos],pos-st_ind, 0, cds_dict, dict())
+                (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],pos-st_ind, 0, cds_dict, dict())
                 if(len(cds_list)==0): continue
                 adjusted_start = cds_list_left[0][0]
                 mute_seq_pos = pos - adjusted_start
-                (cds_list_right, temp) = get_cds(trans_id, [pos], 0, 32-pos_in_codon, cds_dict, dict())
+                (cds_list_right, temp) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
                 seq_list.extend(cds_list_right)
                 (last_seq_start, last_seq_length) = cds_list_right.pop()
                 seq_end = last_seq_start+last_seq_length
@@ -284,7 +285,7 @@ try:
                     find_seq_and_kmer(seq_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, last_trans, mute_posits)
                 (mute_locs, mute_posits, seq_list) = (dict(), [], [])
-                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, 30+pos_in_codon, 32-pos_in_codon, cds_dict, mute_locs)
+                (cds_list, mute_locs) = get_cds(trans_id, [(pos, None)], 30+pos_in_codon, 32-pos_in_codon, cds_dict, mute_locs)
                 if(len(cds_list)!=0):
                     seq_list.extend(cds_list)
                     (last_seq_start, last_seq_length) = cds_list.pop()
