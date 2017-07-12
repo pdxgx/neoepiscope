@@ -397,14 +397,18 @@ try:
                 shift = len(alt)-len(orig)
                 mute_posits.append((pos, line_count))
                 if strand == "-":
-                    end_ind = pos+32-pos_in_codon
+                    #end_ind = pos + 32 - (pos_in_codon+shift)%3
                     st_ind = query_st = pos-pos_in_codon
-                    print "reverse ", str(st_ind), str(end_ind), str(end_ind-st_ind)
                     if len(alt) > len(orig):
+                        print "Insertion"
+                        end_ind = pos + 32 - (pos_in_codon+shift)%3
                         mute_locs[pos-st_ind] = alt
                     else:
+                        print "Deletion"
+                        end_ind = pos + 32 - pos_in_codon + abs(shift)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
+                    print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
@@ -437,16 +441,22 @@ try:
                     if(len(mute_locs)==0):
                         st_ind = pos-30-pos_in_codon
                     if len(alt) > len(orig):
+                        print "insertion"
+                        #st_ind = pos - (30+pos_in_codon)
+                        #st_ind = (2-(pos_in_codon + len(alt))%3) + pos + pos_in_codon + len(alt) + 30
                         #end_ind = pos + len(alt) - 1
-                        end_ind = pos + 2 - pos_in_codon
+                        end_ind = pos + 2 - (pos_in_codon+shift)%3
                         query_st = end_ind + 1
                         mute_locs[pos-st_ind] = alt
                     else:
-                        end_ind = pos
-                        query_st = pos+len(orig)
+                        print "deletion"
+                        #st_ind = 30 + pos_in_codon + pos +len(orig) - 1
+                        #st_ind = (2-(pos_in_codon + len(alt))%3) + pos + pos_in_codon + len(alt) + 30
+                        end_ind = pos + 2 - pos_in_codon + abs(shift)
+                        query_st = end_ind + 1
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
-                    print "forward ", str(st_ind), str(end_ind), str(end_ind-st_ind)
+                    print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
