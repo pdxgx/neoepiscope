@@ -26,10 +26,12 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
 
 def turn_to_aa(nucleotide_string, strand="+"):
     aa_string = ""
+    num_aa = 0
     if strand == "-":
         translation_table = string.maketrans("ATCG", "TAGC")
         nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
     for aa in range(len(nucleotide_string)//3):
+        num_aa += 1
         try:
             codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         except KeyError:
@@ -37,7 +39,8 @@ def turn_to_aa(nucleotide_string, strand="+"):
                         'Could not translate nucleotide string "{}".'
                     ).format(nucleotide_string)
             return False
-        if (codon == "Stop"):
+        if codon == "Stop":
+            aa_string += (len(nucleotide_string)//3 - num_aa)*'X'
             break
         else:
             aa_string += codon
@@ -423,6 +426,8 @@ try:
                                 adjust_key = key+len(orig_seq)-right_half
                                 adjust_locs[adjust_key] = mute_locs[key]
                             mute_seq = make_mute_seq(orig_seq, adjust_locs)
+                            wild_seq = get_seq(chrom, end_ind-len(mute_seq), len(mute_seq), ref_ind)
+                            kmer(mute_posits, turn_to_aa(wild_seq, "-"), turn_to_aa(mute_seq, "-"))
                             print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), str(shift)
                         except:
                             (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
@@ -476,6 +481,8 @@ try:
                                 seq_pos = missense_pos + shift - st_ind
                                 mute_locs[seq_pos] = alt'''
                             mute_seq = make_mute_seq(orig_seq, mute_locs)
+                            wild_seq = get_seq(chrom, st_ind, len(mute_seq), ref_ind)
+                            kmer(mute_posits, turn_to_aa(wild_seq, "+"), turn_to_aa(mute_seq, "+"), ref_ind)
                             print "Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), str(shift), pos
                             #print(orig_seq, mute_seq)
                         except:
