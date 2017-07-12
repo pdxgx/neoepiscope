@@ -207,7 +207,6 @@ def make_mute_seq(orig_seq, mute_locs):
 
 def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
-    #wild_seq = ""
     hap_seq_list = []
     #if bam exists:
     seq_start = cds_list[0][0]
