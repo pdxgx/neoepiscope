@@ -400,15 +400,15 @@ try:
                     #end_ind = pos + 32 - (pos_in_codon+shift)%3
                     st_ind = query_st = pos-pos_in_codon
                     if len(alt) > len(orig):
-                        print "Insertion"
+                        #print "Insertion"
                         end_ind = pos + 32 - (pos_in_codon+shift)%3
                         mute_locs[pos-st_ind] = alt
                     else:
-                        print "Deletion"
+                        #print "Deletion"
                         end_ind = pos + 32 - pos_in_codon + abs(shift)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
-                    print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
+                    #print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
@@ -438,10 +438,11 @@ try:
                             print "Reverse Failure"
                             break
                 if strand == "+":
+                    #print(len(mute_locs))
                     if(len(mute_locs)==0):
                         st_ind = pos-30-pos_in_codon
                     if len(alt) > len(orig):
-                        print "insertion"
+                        #print "insertion"
                         #st_ind = pos - (30+pos_in_codon)
                         #st_ind = (2-(pos_in_codon + len(alt))%3) + pos + pos_in_codon + len(alt) + 30
                         #end_ind = pos + len(alt) - 1
@@ -449,14 +450,14 @@ try:
                         query_st = end_ind + 1
                         mute_locs[pos-st_ind] = alt
                     else:
-                        print "deletion"
+                        #print "deletion"
                         #st_ind = 30 + pos_in_codon + pos +len(orig) - 1
                         #st_ind = (2-(pos_in_codon + len(alt))%3) + pos + pos_in_codon + len(alt) + 30
                         end_ind = pos + 2 - pos_in_codon + abs(shift)
                         query_st = end_ind + 1
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
-                    print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
+                    #print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                     if len(cds_list) != 0:
@@ -491,10 +492,10 @@ try:
                                 seq_pos = missense_pos + shift - st_ind
                                 mute_locs[seq_pos] = alt'''
                             mute_seq = make_mute_seq(orig_seq, mute_locs)
+                            #print "Forward ", orig_seq, str(len(orig_seq)), str(len(mute_seq))
                             wild_seq = get_seq(chrom, st_ind, len(mute_seq), ref_ind)
-                            kmer(mute_posits, turn_to_aa(wild_seq, "+"), turn_to_aa(mute_seq, "+"), ref_ind)
+                            kmer(mute_posits, turn_to_aa(wild_seq, "+"), turn_to_aa(mute_seq, "+"))
                             print "Indel ", wild_seq, "\t", mute_seq, len(wild_seq), len(mute_seq), pos
-                            #print(orig_seq, mute_seq)
                         except:
                             (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
                             print("HERE DELIN")
