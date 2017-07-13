@@ -88,6 +88,8 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
         return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
     cds_list = ordered_cds_dict[transcript_id]
+    print(mutation_pos_list)
+    print("I WAS REQUESTED:", seq_length_left)
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
@@ -251,8 +253,10 @@ try:
         last_chrom = "None" 
         line_count = 0
         seq_list = []
+        #Added these vars below
         mute_seq_pos = 0
         seq_end = 0
+        last_trans = 0
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': continue
@@ -269,12 +273,16 @@ try:
                 if orf_dict[trans_id][0][0] == "-": 
                     pos_in_codon = 2-pos_in_codon
             except:
+                #Added this line below
+                trans_id = last_trans
                 continue
             if last_chrom == chrom and pos-last_pos <= seq_end:
+                #Fixed the call with a tuple value instead of just pos
                 (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],pos-st_ind, 0, cds_dict, dict())
                 if(len(cds_list)==0): continue
                 adjusted_start = cds_list_left[0][0]
                 mute_seq_pos = pos - adjusted_start
+                #Fixed the call with a tuple value instead of just pos
                 (cds_list_right, temp) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
                 seq_list.extend(cds_list_right)
                 (last_seq_start, last_seq_length) = cds_list_right.pop()
@@ -285,6 +293,7 @@ try:
                     find_seq_and_kmer(seq_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, last_trans, mute_posits)
                 (mute_locs, mute_posits, seq_list) = (dict(), [], [])
+                #Fixed the call with a tuple value instead of just pos
                 (cds_list, mute_locs) = get_cds(trans_id, [(pos, None)], 30+pos_in_codon, 32-pos_in_codon, cds_dict, mute_locs)
                 if(len(cds_list)!=0):
                     seq_list.extend(cds_list)
@@ -293,7 +302,7 @@ try:
                 else:
                     chrom = "None"
                 st_ind = pos-30-pos_in_codon
-                mute_seq_pos = pos-st_ind
+                mute_seq_pos = 30+pos_in_codon
                 end_ind = pos+32-pos_in_codon
             mute_locs[mute_seq_pos] = alt
             mute_posits.append((pos, line_count))
@@ -305,10 +314,12 @@ try:
             # seq_end = last_seq_start+last_seq_length
             # cds_list.append(seq_end)
             (last_pos,last_chrom, last_trans) = (pos, chrom, trans_id)
-        (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
+        #Below, I changed right_side from end_ind-last_pos to seq_end
+        (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
         (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
-            find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
+            #Below, use seq_list instead of cds_list
+            find_seq_and_kmer(seq_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id, mute_posits)
 
 finally:
