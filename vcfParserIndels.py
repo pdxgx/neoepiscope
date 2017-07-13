@@ -372,9 +372,9 @@ try:
                 except:
                     continue
                 orf_list = orf_dict[trans_id]
-                orf_index = bisect.bisect(cds_list[0:1:2], pos)
-                (cds_start, cds_end) = (cds_list[2*orf_index], cds_list[2*orf_index+1]) 
-                orf = orf_list[orf_index]
+                cds_index = 2*bisect.bisect(cds_list[::2], pos)-2
+                (cds_start, cds_end) = (cds_list[cds_index], cds_list[cds_index+1]) 
+                orf = orf_list[cds_index//2]
                 (strand, frame) = (orf[0], orf[1])
                 #if(strand == "-"):
                 #    continue ## DELETE later
