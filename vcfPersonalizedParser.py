@@ -215,12 +215,13 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     cds_list.append((last_start, last_length)) #optional
     try:
         new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
-        hap_output = hap.returnphasing(last_chrom, seq_start, seq_end, new_portion, args.vcf)
+        hap_output = hap.returnphasing(last_chrom, seq_start, seq_end-1, new_portion, args.vcf)
         if((len(hap_output) == 2) or (len(hap_output) == 3)):
             hap_seq_list.append(hap_output[0])
         else:
             hap_seq_list.append(hap_output[0])
             hap_seq_list.append(hap_output[2])
+        #print(hap_seq_list)
         for hap_seq in hap_seq_list:
             wild_seq = ""
             for cds_stretch in cds_list:
@@ -246,6 +247,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
             wild_seq += hap_output[seq_start:seq_start+seq_length]'''
     except:
         print "find and print kmers failure"
+        raise
         return
     '''for cds_stretch in cds_list:
         (seq_start, seq_length) = cds_stretch
