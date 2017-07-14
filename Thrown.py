@@ -88,8 +88,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
         return [], mute_locs
     pos_in_codon = 2 - (seq_length_right%3)
     cds_list = ordered_cds_dict[transcript_id]
-    print(mutation_pos_list)
-    print("I WAS REQUESTED:", seq_length_left)
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
@@ -217,6 +215,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
             return
     cds_start = cds_list[0][0]
     mute_seq = make_mute_seq(wild_seq,mute_locs)
+    print(wild_seq, mute_seq, mute_locs)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
@@ -278,8 +277,8 @@ try:
                 continue
             if last_chrom == chrom and pos-last_pos <= seq_end:
                 #Fixed the call with a tuple value instead of just pos
-                (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],pos-st_ind, 0, cds_dict, dict())
-                if(len(cds_list)==0): continue
+                (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],30+pos_in_codon, 0, cds_dict, dict())
+                if(len(cds_list_left)==0): continue
                 adjusted_start = cds_list_left[0][0]
                 mute_seq_pos = pos - adjusted_start
                 #Fixed the call with a tuple value instead of just pos
@@ -290,7 +289,22 @@ try:
                 #end_ind = pos+32-pos_in_codon
             else:
                 if len(seq_list) != 0:
-                    find_seq_and_kmer(seq_list, last_chrom, ref_ind,
+                    #(new_list, temp) = get_cds(last_trans, [(seq_list[0][0],None)], 0, last_pos-adjusted_start+32-last_codon_pos, cds_dict, dict())
+                    curr_max = 0
+                    new_list = []
+                    for start_pos,stretch_length in seq_list:
+                        if start_pos > curr_max:
+                            curr_max = start_pos
+                        curr_end = start_pos + stretch_length
+                        if curr_end >= curr_max:
+                            if curr_max == 0:
+                                curr_max = start_pos
+                            new_list.append((curr_max, curr_end-curr_max))
+                            curr_max = curr_end
+                    print('seq list', seq_list)
+                    print('new list', new_list)
+                    print('cds list', cds_dict[last_trans])
+                    find_seq_and_kmer(new_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, last_trans, mute_posits)
                 (mute_locs, mute_posits, seq_list) = (dict(), [], [])
                 #Fixed the call with a tuple value instead of just pos
@@ -301,6 +315,7 @@ try:
                     seq_end = last_seq_start + last_seq_length
                 else:
                     chrom = "None"
+                    continue
                 st_ind = pos-30-pos_in_codon
                 mute_seq_pos = 30+pos_in_codon
                 end_ind = pos+32-pos_in_codon
@@ -313,13 +328,26 @@ try:
             # (last_seq_start, last_seq_length) = cds_list.pop()
             # seq_end = last_seq_start+last_seq_length
             # cds_list.append(seq_end)
-            (last_pos,last_chrom, last_trans) = (pos, chrom, trans_id)
+            (last_pos,last_chrom, last_trans, last_codon_pos) = (pos, chrom, trans_id, pos_in_codon)
         #Below, I changed right_side from end_ind-last_pos to seq_end
         (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
         (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             #Below, use seq_list instead of cds_list
-            find_seq_and_kmer(seq_list, last_chrom, ref_ind, mute_locs,
+            curr_max = 0
+            new_list = []
+            for start_pos,stretch_length in seq_list:
+                if start_pos > curr_max:
+                    curr_max = start_pos
+                curr_end = start_pos + stretch_length
+                if curr_end >= curr_max:
+                    if curr_max == 0:
+                        curr_max = start_pos
+                    new_list.append((curr_max, curr_end-curr_max))
+                    curr_max = curr_end
+            print('seq list', seq_list)
+            print('new list', new_list)
+            find_seq_and_kmer(new_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id, mute_posits)
 
 finally:
