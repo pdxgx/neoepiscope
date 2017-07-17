@@ -84,8 +84,9 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
         of a mutation within a chromosome.
     '''
     ordered_cds_dict = cds_dict
+    bounds_set = set()
     if transcript_id not in ordered_cds_dict:
-        return [], mute_dict
+        return [], mute_dict, bounds_set
     pos_in_codon = 2 - (seq_length_right%3)
     cds_list = ordered_cds_dict[transcript_id]
     mutation_pos = -1
@@ -107,7 +108,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 except KeyError:
                     continue
         for index in range(len(removal_list)-1, -1, -1):
-            print("made edits to mute pos list")
+            #print("made edits to mute pos list")
             mutation_pos_list.pop(removal_list[index])
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
@@ -137,7 +138,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index][0])
             break
     if(mutation_pos == -1):
-        return [], mute_dict
+        return [], mute_dict, bounds_set
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
@@ -154,10 +155,12 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             else:
                 nucleotide_index_list.append((curr_pos_left-seq_length_left,
                                           seq_length_left))
+            bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
             seq_length_left = 0
         else:
             nucleotide_index_list.append((cds_list[curr_left_index],
                                     curr_pos_left-cds_list[curr_left_index]))
+            bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
             seq_length_left -= curr_pos_left-cds_list[curr_left_index]
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
@@ -180,19 +183,21 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             else:
                 nucleotide_index_list.append((curr_pos_right,
                                               seq_length_right))
+            bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
             seq_length_right = 0
         else:
             try:
                 nucleotide_index_list.append((curr_pos_right+1,
                                               cds_list[curr_right_index]
                                               - curr_pos_right))
+                bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
                 seq_length_right -= cds_list[curr_right_index]-curr_pos_right
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
                 #print("Exceeded all possible cds boundaries!")
                 break
-    return nucleotide_index_list, mute_dict
+    return nucleotide_index_list, mute_dict, bounds_set
 
 
 def get_seq(chrom, start, splice_length, ref_ind):
@@ -241,18 +246,6 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                 turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
                 turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
                 )
-        '''if(len(hap_output)==3):
-            print hap_output[2]
-        elif(len(hap_output) == 5):
-            print hap_output[4]
-        else: print hap_output[1]
-        #print "after hap_output ", hap_output
-        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
-        print cds_list
-        for cds_stretch in cds_list:
-            (seq_start, seq_length) = cds_stretch
-            seq_start -= st_ind
-            wild_seq += hap_output[seq_start:seq_start+seq_length]'''
     except:
         print "find and print kmers failure"
         raise
@@ -326,6 +319,7 @@ try:
         seq_end = 0
         last_trans = 0
         total_intron_length = 0
+        bounds_set = set()
         for line in input_stream:
             line_count += 1
             if not line or line[0] == '#': 
@@ -349,33 +343,27 @@ try:
                 continue
             if last_chrom == chrom and pos <= seq_end:
                 #Fixed the call with a tuple value instead of just pos
-                (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],30+pos_in_codon, 0, cds_dict, dict())
+                (cds_list_left, temp, bounds_set) = get_cds(trans_id, [(pos, None)],30+pos_in_codon, 0, cds_dict, dict())
                 if(len(cds_list_left)==0): continue
-                adjusted_start = cds_list_left[0][0]
-
+                adjusted_start = cds_list_left[0][0] # <-- Take out?
                 temp_list = remove_overlaps(seq_list)
                 mute_pos_in_list = bisect.bisect_left([pair[0] for pair in temp_list], pos)
                 total_intron_length = calculate_intron_length(temp_list, mute_pos_in_list)
                 mute_seq_pos = pos-seq_list[0][0]-total_intron_length
-
-                #total_introns = pos-adjusted_start-(30+pos_in_codon)? !!!!!!<----- CHECK THIS PLEASE
-                #50, 31 to 69,31
-                #mute_seq_pos = pos - adjusted_start
-                #Fixed the call with a tuple value instead of just pos
-                (cds_list_right, temp) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
+                (cds_list_right, temp, bounds_set) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
                 seq_list.extend(cds_list_right)
                 (last_seq_start, last_seq_length) = cds_list_right.pop()
                 seq_end = last_seq_start+last_seq_length
                 #end_ind = pos+32-pos_in_codon
             else:
                 if len(seq_list) != 0:
-                    #(new_list, temp) = get_cds(last_trans, [(seq_list[0][0],None)], 0, last_pos-adjusted_start+32-last_codon_pos, cds_dict, dict())
+                    #(new_list, temp, bounds_set) = get_cds(last_trans, [(seq_list[0][0],None)], 0, last_pos-adjusted_start+32-last_codon_pos, cds_dict, dict())
                     new_list = remove_overlaps(seq_list)
                     find_seq_and_kmer(new_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, last_trans, mute_posits)
                 (mute_locs, mute_posits, seq_list) = (dict(), [], [])
                 #Fixed the call with a tuple value instead of just pos
-                (cds_list, mute_locs) = get_cds(trans_id, [(pos, None)], 30+pos_in_codon, 32-pos_in_codon, cds_dict, mute_locs)
+                (cds_list, mute_locs, bounds_set) = get_cds(trans_id, [(pos, None)], 30+pos_in_codon, 32-pos_in_codon, cds_dict, mute_locs)
                 if(len(cds_list)!=0):
                     seq_list.extend(cds_list)
                     (last_seq_start, last_seq_length) = cds_list.pop()
@@ -388,20 +376,13 @@ try:
                 end_ind = pos+32-pos_in_codon
             mute_locs[mute_seq_pos] = alt
             mute_posits.append((pos, line_count))
-            #(cds_list, mute_locs) = get_cds(trans_id, mute_posits, 0, 32-pos_in_codon, cds_dict, mute_locs)
-            # if(len(cds_list)==0):
-            #     (mute_posits, mute_locs) = ([], dict())
-            #     continue
-            # (last_seq_start, last_seq_length) = cds_list.pop()
-            # seq_end = last_seq_start+last_seq_length
-            # cds_list.append(seq_end)
             (last_pos,last_chrom, last_trans, last_codon_pos) = (pos, chrom, trans_id, pos_in_codon)
         #Below, I changed right_side from end_ind-last_pos to seq_end
         try:
             (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
         except NameError:
             pass
-        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+        (cds_list,mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             #Below, use seq_list instead of cds_list
             new_list = remove_overlaps(seq_list)
