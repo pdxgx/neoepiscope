@@ -118,9 +118,9 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
         #If the middle_cds_index is past the last boundary, move it to the last
         if middle_cds_index > len(cds_list)-1:
             middle_cds_index -= 2
-        #If the biggest position is smaller than the smallest bound, return []
+        #If the biggest pogsition is smaller than the smallest bound, return []
         if middle_cds_index < 0:
-            return [], mute_locs
+            return [], mute_dict
         curr_left_index = middle_cds_index
         curr_right_index = middle_cds_index+1 #cds boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
@@ -139,7 +139,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index][0])
             break
     if(mutation_pos == -1):
-        return [], mute_locs
+        return [], mute_dict
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
@@ -269,12 +269,14 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
-def kmerize_trans():
+def kmerize_trans(trans_lines, direct, line_count, trans_id):
     last_chrom = "None"
     orig_seq = ""
     mute_locs = {}
     mute_posits = []
+    print(len(trans_lines))
     for line in trans_lines:
+        #print line
         vals = line.strip().split('\t')
         (chrom, pos, orig, alt, info) = (vals[0], int(vals[1]), vals[3], vals[4], vals[7]
             )
@@ -282,6 +284,7 @@ def kmerize_trans():
         mute_type = tokens[1]
         if(mute_type != "missense_variant" and len(orig) == len(alt)): 
             continue
+        print(line)
         if mute_type == "missense_variant":
             rel_pos = int(tokens[13])
             pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
@@ -290,7 +293,8 @@ def kmerize_trans():
                 pos_in_codon = 2-pos_in_codon
         except:
             continue
-        if((last_chrom != "None") and ((pos-last_pos > (32-pos_in_codon)) or last_chrom != chrom)):
+        if((last_chrom != "None") and (pos-last_pos > (32-pos_in_codon))):
+            print "HHHHHHHHHHHHHHHHHHHHHHHH"
             (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
             (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
             if(len(cds_list) != 0):
@@ -371,7 +375,9 @@ def kmerize_trans():
                         mute_locs[pos-st_ind+1+index] = ""
                 #print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                 (left_side, right_side) = (pos-st_ind, end_ind-pos)
+                print(trans_id, left_side, right_side, mute_locs, mute_posits)
                 (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
+                print("cds list: ", cds_list)
                 if len(cds_list) != 0:
                     orig_seq = ""
                     for cds_stretch in cds_list:
@@ -408,7 +414,10 @@ def kmerize_trans():
         mute_locs[(pos-st_ind)] = alt
         mute_posits.append((pos, line_count))
         (last_pos,last_chrom) = (pos, chrom)
-    (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
+    try:
+        (left_side,right_side) = (pos-st_ind,end_ind-pos)
+    except:
+        return
     (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
     print("Final mute_locs: ", str(mute_locs), str(mute_posits))
     if(len(cds_list) != 0):
@@ -452,12 +461,28 @@ try:
             info = vals[7]
             tokens = info.strip().split('|')
             (trans_id) = (tokens[6])
-            if(len(trans_lines) != 0 and last_trans != trans):
-                #calculate reverse or forward
-                #reverse trans_lines if needed (reverse)
-                #pass into function that outputs kmers for transcript, input includes line_count
-                #set trans_lines = []
-                pass
+            if((len(trans_lines) != 0) and (last_trans != trans_id)):
+                #try:
+                #print last_trans
+                #print last_trans in orf_dict
+                #print last_trans in cds_dict
+                try:
+                    #print last_trans, trans_id, line
+                    #print("orf ", last_trans in orf_dict)
+                    #print(last_trans in cds_dict)
+                    #print(trans_id in orf_dict)
+                    #print(trans_id in cds_dict)
+
+                    direct = orf_dict[last_trans][0][0]
+                except:
+                #    print "orf_dict failure"
+                    last_trans = trans_id
+                    continue
+                #print "here"
+                #if(direct == "-"):
+                #    trans_lines = list(reversed(trans_lines))
+                kmerize_trans(trans_lines, direct, line_count, last_trans)
+                trans_lines = []
             last_trans = trans_id
             trans_lines.append(line)
 
