@@ -70,7 +70,6 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
               seq_length_right, cds_dict, mute_dict):
     ''' References cds_dict to get cds Bounds for later Bowtie query.
-
         transcript_id: (String) Indicates the transcript the mutation
             is located on.
         mutation_pos_list: (int) Mutation's position on chromosome
@@ -78,7 +77,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             to the left of the mutation
         seq_length_right: (int) How many bases must be gathered to
             the right of the mutation
-
         Return value: List of tuples containing starting indexes and stretch
         lengths within cds boundaries necessary to acquire the complete 
         sequence necessary for 8-11' peptide kmerization based on the position 
