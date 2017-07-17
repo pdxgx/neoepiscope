@@ -86,22 +86,29 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
     '''
     ordered_cds_dict = cds_dict
     if transcript_id not in ordered_cds_dict:
-        return [], mute_locs
+        return [], mute_dict
     pos_in_codon = 2 - (seq_length_right%3)
     cds_list = ordered_cds_dict[transcript_id]
     mutation_pos = -1
     #Don't want to check rightmost since seq. queries based off of it.
     if len(mutation_pos_list) >= 2:
         removal_list = []
+        shift = mutation_pos_list[0][0] - min(mute_dict)
+        key_list = list(mute_dict.keys())
         #Remove all mutations outside of cds boundaries.
         for index in range(len(mutation_pos_list)):
             lower_cds_index = 2*bisect.bisect(cds_list[::2], mutation_pos_list[index][0])-2
             upper_cds_index = lower_cds_index+1
             if(lower_cds_index < 0 or 
                cds_list[upper_cds_index] < mutation_pos_list[index][0]):
-                del mute_dict[min(mute_dict)]
-                removal_list.append(index)
+                #Delete at the current index
+                try:
+                    del mute_dict[key_list[index]]
+                    removal_list.append(index)
+                except KeyError:
+                    continue
         for index in range(len(removal_list)-1, -1, -1):
+            print("made edits to mute pos list")
             mutation_pos_list.pop(removal_list[index])
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
@@ -110,9 +117,9 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
         #If the middle_cds_index is past the last boundary, move it to the last
         if middle_cds_index > len(cds_list)-1:
             middle_cds_index -= 2
-        #If the biggest position is smaller than the smallest bound, return []
+        #If the biggest pogsition is smaller than the smallest bound, return []
         if middle_cds_index < 0:
-            return [], mute_locs
+            return [], mute_dict
         curr_left_index = middle_cds_index
         curr_right_index = middle_cds_index+1 #cds boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
@@ -131,7 +138,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index][0])
             break
     if(mutation_pos == -1):
-        return [], mute_locs
+        return [], mute_dict
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
@@ -156,6 +163,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
+                #print("Exceeded all possible cds boundaries!")
                 #Changed total_seq_length for comparison in next while loop.
                 total_seq_length = (original_length_left
                                       - seq_length_left
@@ -183,6 +191,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
+                #print("Exceeded all possible cds boundaries!")
                 break
     return nucleotide_index_list, mute_dict
 
@@ -349,6 +358,7 @@ try:
             (last_pos,last_chrom, last_trans, last_codon_pos) = (pos, chrom, trans_id, pos_in_codon)
         #Below, I changed right_side from end_ind-last_pos to seq_end
         (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
+        print('left side/ right side', left_side, right_side)
         (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             #Below, use seq_list instead of cds_list
