@@ -6,6 +6,7 @@ import math
 import string
 import copy
 import pickle
+import functools
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -33,10 +34,10 @@ def turn_to_aa(nucleotide_string, strand="+"):
         try:
             codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         except KeyError:
-            print >>sys.stderr, (
-                        'Could not translate nucleotide string "{}".'
-                    ).format(nucleotide_string)
-            return False
+            # print >>sys.stderr, (
+            #             'Could not translate nucleotide string "{}".'
+            #         ).format(nucleotide_string)
+            return ""
         if (codon == "Stop"):
             break
         else:
@@ -215,12 +216,31 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
             return
     cds_start = cds_list[0][0]
     mute_seq = make_mute_seq(wild_seq,mute_locs)
-    print(wild_seq, mute_seq, mute_locs)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
+def remove_overlaps(seq_list):
+    curr_max = 0
+    new_list = []
+    for start_pos,stretch_length in seq_list:
+        if start_pos > curr_max:
+            curr_max = start_pos
+        curr_end = start_pos + stretch_length
+        if curr_end >= curr_max:
+            if curr_max == 0:
+                curr_max = start_pos
+            new_list.append((curr_max, curr_end-curr_max))
+            curr_max = curr_end
+    return new_list
+
+def calculate_intron_length(seq_list, mute_index):
+    analysis_list = seq_list[:mute_index+1]
+    total_introns = 0
+    for index in range(len(analysis_list)-2):
+        total_introns += analysis_list[index+1][0]-(analysis_list[index][0]+analysis_list[index][1]-1)
+    return total_introns
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--vcf', type=str, required=False,
@@ -256,15 +276,18 @@ try:
         mute_seq_pos = 0
         seq_end = 0
         last_trans = 0
+        total_intron_length = 0
         for line in input_stream:
             line_count += 1
-            if not line or line[0] == '#': continue
+            if not line or line[0] == '#': 
+                continue
             vals = line.strip().split('\t')
             (chrom, pos, alt, info) = (vals[0], int(vals[1]), vals[4], vals[7]
                 )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
-            if(mute_type != "missense_variant"): continue
+            if(mute_type != "missense_variant"): 
+                continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             if mute_type == "missense_variant":
                 pos_in_codon = (rel_pos+2)%3 #ie: ATG --> 0,1,2
@@ -275,12 +298,20 @@ try:
                 #Added this line below
                 trans_id = last_trans
                 continue
-            if last_chrom == chrom and pos-last_pos <= seq_end:
+            if last_chrom == chrom and pos <= seq_end:
                 #Fixed the call with a tuple value instead of just pos
                 (cds_list_left, temp) = get_cds(trans_id, [(pos, None)],30+pos_in_codon, 0, cds_dict, dict())
                 if(len(cds_list_left)==0): continue
                 adjusted_start = cds_list_left[0][0]
-                mute_seq_pos = pos - adjusted_start
+
+                temp_list = remove_overlaps(seq_list)
+                mute_pos_in_list = bisect.bisect_left([pair[0] for pair in temp_list], pos)
+                total_intron_length = calculate_intron_length(temp_list, mute_pos_in_list)
+                mute_seq_pos = pos-seq_list[0][0]-total_intron_length
+
+                #total_introns = pos-adjusted_start-(30+pos_in_codon)? !!!!!!<----- CHECK THIS PLEASE
+                #50, 31 to 69,31
+                #mute_seq_pos = pos - adjusted_start
                 #Fixed the call with a tuple value instead of just pos
                 (cds_list_right, temp) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
                 seq_list.extend(cds_list_right)
@@ -290,20 +321,7 @@ try:
             else:
                 if len(seq_list) != 0:
                     #(new_list, temp) = get_cds(last_trans, [(seq_list[0][0],None)], 0, last_pos-adjusted_start+32-last_codon_pos, cds_dict, dict())
-                    curr_max = 0
-                    new_list = []
-                    for start_pos,stretch_length in seq_list:
-                        if start_pos > curr_max:
-                            curr_max = start_pos
-                        curr_end = start_pos + stretch_length
-                        if curr_end >= curr_max:
-                            if curr_max == 0:
-                                curr_max = start_pos
-                            new_list.append((curr_max, curr_end-curr_max))
-                            curr_max = curr_end
-                    print('seq list', seq_list)
-                    print('new list', new_list)
-                    print('cds list', cds_dict[last_trans])
+                    new_list = remove_overlaps(seq_list)
                     find_seq_and_kmer(new_list, last_chrom, ref_ind,
                                           mute_locs, orf_dict, last_trans, mute_posits)
                 (mute_locs, mute_posits, seq_list) = (dict(), [], [])
@@ -334,19 +352,7 @@ try:
         (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             #Below, use seq_list instead of cds_list
-            curr_max = 0
-            new_list = []
-            for start_pos,stretch_length in seq_list:
-                if start_pos > curr_max:
-                    curr_max = start_pos
-                curr_end = start_pos + stretch_length
-                if curr_end >= curr_max:
-                    if curr_max == 0:
-                        curr_max = start_pos
-                    new_list.append((curr_max, curr_end-curr_max))
-                    curr_max = curr_end
-            print('seq list', seq_list)
-            print('new list', new_list)
+            new_list = remove_overlaps(seq_list)
             find_seq_and_kmer(new_list, last_chrom, ref_ind, mute_locs,
                               orf_dict, trans_id, mute_posits)
 
