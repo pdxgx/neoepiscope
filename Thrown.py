@@ -7,6 +7,7 @@ import string
 import copy
 import pickle
 import functools
+import Hapcut2interpreter as hap
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -216,8 +217,49 @@ def make_mute_seq(orig_seq, mute_locs):
 
 def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
-    wild_seq = ""
-    for cds_stretch in cds_list:
+    hap_seq_list = []
+    #if bam exists:
+    seq_start = cds_list[0][0]
+    (last_start, last_length) = cds_list.pop()
+    seq_end = last_start+last_length
+    cds_list.append((last_start, last_length)) #optional
+    try:
+        new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
+        hap_output = hap.returnphasing(last_chrom, seq_start, seq_end-1, new_portion, args.vcf)
+        if((len(hap_output) == 2) or (len(hap_output) == 3)):
+            hap_seq_list.append(hap_output[0])
+        else:
+            hap_seq_list.append(hap_output[0])
+            hap_seq_list.append(hap_output[2])
+        #print(hap_seq_list)
+        for hap_seq in hap_seq_list:
+            wild_seq = ""
+            for cds_stretch in cds_list:
+                (stretch_start, stretch_length) = cds_stretch
+                index_start = stretch_start - seq_start
+                wild_seq += hap_seq[index_start:index_start+stretch_length]
+            mute_seq = make_mute_seq(wild_seq, mute_locs)
+            kmer(mute_posits,
+                turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
+                turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+                )
+        '''if(len(hap_output)==3):
+            print hap_output[2]
+        elif(len(hap_output) == 5):
+            print hap_output[4]
+        else: print hap_output[1]
+        #print "after hap_output ", hap_output
+        (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
+        print cds_list
+        for cds_stretch in cds_list:
+            (seq_start, seq_length) = cds_stretch
+            seq_start -= st_ind
+            wild_seq += hap_output[seq_start:seq_start+seq_length]'''
+    except:
+        print "find and print kmers failure"
+        raise
+        return
+    '''for cds_stretch in cds_list:
         (seq_start, seq_length) = cds_stretch
         try:
             wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
@@ -228,7 +270,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
-        )
+        )'''
 
 def remove_overlaps(seq_list):
     curr_max = 0
@@ -357,8 +399,10 @@ try:
             # cds_list.append(seq_end)
             (last_pos,last_chrom, last_trans, last_codon_pos) = (pos, chrom, trans_id, pos_in_codon)
         #Below, I changed right_side from end_ind-last_pos to seq_end
-        (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
-        print('left side/ right side', left_side, right_side)
+        try:
+            (left_side,right_side) = (last_pos-st_ind,seq_end-last_pos)
+        except NameError:
+            pass
         (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, cds_dict, mute_locs)
         if(len(cds_list) != 0):
             #Below, use seq_list instead of cds_list
