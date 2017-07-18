@@ -277,8 +277,15 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
     orig_seq = ""
     mute_locs = {}
     mute_posits = []
+    mute_line_num = 0
     #print(len(trans_lines))
-    for line in trans_lines:
+    for line_num in range(len(trans_lines)):
+        if(mute_line_num != 0):
+            line_num += mute_line_num
+            if(line_num > len(trans_lines)):
+                break
+            mute_line_num = 0
+        line = trans_lines[line_num]
         line_count += 1
         #print line
         vals = line.strip().split('\t')
@@ -396,6 +403,21 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                         orig_seq += find_stop(query_st, trans_id,
                                               line_count, exon_dict, chrom,
                                               ref_ind, mute_locs, False)
+                        mute_line_count = new_mute_pos = 0
+                        while(new_mute_pos < pos + len(orig_seq)):
+                            mute_line_count += 1
+                            if (line_num + mute_line_count) >= len(trans_lines):
+                                break
+                            vals = new_mute.strip().split('\t')
+                            (new_mute_pos, orig, alt, info) = (int(vals[1]), vals[3], vals[4], vals[7]
+                                )
+                            tokens = info.strip().split('|')
+                            mute_type = tokens[1]
+                            if(mute_type != "missense_variant"):
+                                #and len(orig) == len(alt)): 
+                                continue
+                            mute_posits.append((new_mute_pos, line_count))
+                            mute_locs[pos-st_ind+shift] = alt
                         mute_seq = make_mute_seq(orig_seq, mute_locs)
                         #print "Forward ", orig_seq, str(len(orig_seq)), str(len(mute_seq))
                         wild_seq = get_seq(chrom, st_ind, len(mute_seq), ref_ind)
