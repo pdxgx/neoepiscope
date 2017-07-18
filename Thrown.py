@@ -2,11 +2,8 @@ import bisect
 import argparse
 import bowtie_index
 import sys
-import math
 import string
-import copy
 import pickle
-import functools
 import Hapcut2interpreter as hap
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
@@ -183,14 +180,14 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             else:
                 nucleotide_index_list.append((curr_pos_right,
                                               seq_length_right))
-            bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
+            bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
             seq_length_right = 0
         else:
             try:
                 nucleotide_index_list.append((curr_pos_right+1,
                                               cds_list[curr_right_index]
                                               - curr_pos_right))
-                bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
+                bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
                 seq_length_right -= cds_list[curr_right_index]-curr_pos_right
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
