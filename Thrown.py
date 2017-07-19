@@ -2,11 +2,8 @@ import bisect
 import argparse
 import bowtie_index
 import sys
-import math
 import string
-import copy
 import pickle
-import functools
 import Hapcut2interpreter as hap
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
@@ -65,7 +62,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     for WT,MT in kmer_list:
         if (WT != MT):
             final_list.append((WT, MT))
-    my_print_function(final_list, mute_posits)
+    #my_print_function(final_list, mute_posits)
     return final_list
 
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
@@ -183,14 +180,14 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             else:
                 nucleotide_index_list.append((curr_pos_right,
                                               seq_length_right))
-            bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
+            bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
             seq_length_right = 0
         else:
             try:
                 nucleotide_index_list.append((curr_pos_right+1,
                                               cds_list[curr_right_index]
                                               - curr_pos_right))
-                bounds_set.add((cds_list[curr_right_index], cds_list[curr_right_index+1]))
+                bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
                 seq_length_right -= cds_list[curr_right_index]-curr_pos_right
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
@@ -275,13 +272,13 @@ def remove_overlaps(seq_list):
                 curr_max = start_pos
             new_list.append((curr_max, curr_end-curr_max))
             curr_max = curr_end
+    new_list = list(filter(lambda x: x[1] != 0, new_list))
     return new_list
 
-def calculate_intron_length(seq_list, mute_index):
-    analysis_list = seq_list[:mute_index+1]
+def calculate_intron_length(analysis_list):
     total_introns = 0
-    for index in range(len(analysis_list)-2):
-        total_introns += analysis_list[index+1][0]-(analysis_list[index][0]+analysis_list[index][1]-1)
+    for index in range(len(analysis_list)-1):
+        total_introns += analysis_list[index+1][0]-(analysis_list[index][0]+analysis_list[index][1])
     return total_introns
 
 parser = argparse.ArgumentParser()
@@ -329,7 +326,7 @@ try:
                 )
             tokens = info.strip().split('|')
             mute_type = tokens[1]
-            if(mute_type != "missense_variant"): 
+            if(mute_type != "missense_variant"):
                 continue
             (trans_id, rel_pos) = (tokens[6], int(tokens[13]))
             if mute_type == "missense_variant":
@@ -346,14 +343,14 @@ try:
                 (cds_list_left, temp, bounds_set) = get_cds(trans_id, [(pos, None)],30+pos_in_codon, 0, cds_dict, dict())
                 if(len(cds_list_left)==0): continue
                 adjusted_start = cds_list_left[0][0] # <-- Take out?
-                temp_list = remove_overlaps(seq_list)
-                mute_pos_in_list = bisect.bisect_left([pair[0] for pair in temp_list], pos)
-                total_intron_length = calculate_intron_length(temp_list, mute_pos_in_list)
-                mute_seq_pos = pos-seq_list[0][0]-total_intron_length
                 (cds_list_right, temp, bounds_set) = get_cds(trans_id, [(pos, None)], 0, 32-pos_in_codon, cds_dict, dict())
                 seq_list.extend(cds_list_right)
                 (last_seq_start, last_seq_length) = cds_list_right.pop()
                 seq_end = last_seq_start+last_seq_length
+                temp_list = remove_overlaps(seq_list)
+                mute_pos_in_list = bisect.bisect([pair[0] for pair in temp_list], pos) - 1
+                total_intron_length = calculate_intron_length(temp_list[:mute_pos_in_list+1])
+                mute_seq_pos = pos-temp_list[0][0]-total_intron_length
                 #end_ind = pos+32-pos_in_codon
             else:
                 if len(seq_list) != 0:
