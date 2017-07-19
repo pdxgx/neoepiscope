@@ -62,7 +62,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     for WT,MT in kmer_list:
         if (WT != MT):
             final_list.append((WT, MT))
-    #my_print_function(final_list, mute_posits)
+    my_print_function(final_list, mute_posits)
     return final_list
 
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
@@ -116,7 +116,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             middle_cds_index -= 2
         #If the biggest pogsition is smaller than the smallest bound, return []
         if middle_cds_index < 0:
-            return [], mute_dict
+            return [], mute_dict, bounds_set
         curr_left_index = middle_cds_index
         curr_right_index = middle_cds_index+1 #cds boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
