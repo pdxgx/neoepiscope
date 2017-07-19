@@ -408,16 +408,38 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                             mute_line_count += 1
                             if (line_num + mute_line_count) >= len(trans_lines):
                                 break
+                            new_mute = trans_lines[line_num+mute_line_count]
                             vals = new_mute.strip().split('\t')
                             (new_mute_pos, orig, alt, info) = (int(vals[1]), vals[3], vals[4], vals[7]
                                 )
+                            if(new_mute_pos >= pos + len(orig_seq)):
+                                break
                             tokens = info.strip().split('|')
                             mute_type = tokens[1]
-                            if(mute_type != "missense_variant"):
-                                #and len(orig) == len(alt)): 
+                            if(mute_type != "missense_variant" and (len(orig) == len(alt))):
                                 continue
-                            mute_posits.append((new_mute_pos, line_count))
-                            mute_locs[pos-st_ind+shift] = alt
+                            if len(orig) != len(alt):
+                                mute_posits.append((new_mute_pos, line_count))
+                                pos_in_codon = (new_mute_pos-st_ind+shift)%3
+                                if len(alt) > len(orig):
+                                    mute_locs[new_mute_pos-st_ind+shift]
+                                    shift += (len(alt) - len(orig))
+                                    end_ind = new_mute_pos + 2 - (pos_in_codon+shift)%3
+                                    query_st = end_ind + 1
+                                else:
+                                    shift += (len(alt) - len(orig))
+                                    end_ind = new_mute_pos + 2 - pos_in_codon + abs(shift)
+                                    query_st = end_ind + 1
+                                    for index in range(abs(shift)):
+                                        mute_locs[new_mute_pos-st_ind+1+index] = ""
+                                orig_seq = orig_seq[new_mute_pos-st_ind] + get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
+                                orig_seq += find_stop(st_ind+len(orig_seq), trans_id, line_count, exon_dict, chrom, ref_ind, mute_locs, False)
+                            else:
+                                mute_posits.append((new_mute_pos, line_count))
+                                mute_locs[pos-st_ind+shift] = alt
+                            #mute_posits.append((new_mute_pos, line_count))
+                            #mute_locs[pos-st_ind+shift] = alt
+                            print new_mute_pos
                         mute_seq = make_mute_seq(orig_seq, mute_locs)
                         #print "Forward ", orig_seq, str(len(orig_seq)), str(len(mute_seq))
                         wild_seq = get_seq(chrom, st_ind, len(mute_seq), ref_ind)
