@@ -209,9 +209,9 @@ def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_lo
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
         if reverse:
-            start = exon_list[0][0]
-        else:
             start = exon_list[-1][0] + exon_list[-1][1]
+        else:
+            start = exon_list[0][0]
         count = 0
         while(count<33):
             if reverse:
@@ -222,13 +222,16 @@ def find_stop(query_st, trans_id, line_count, exon_dict, chrom, ref_ind, mute_lo
                 new_codon = extra_cods[count: count+3]
                 count += 3
                 amino_acid = turn_to_aa(new_codon)
+            #print(new_codon, amino_acid)
             if(amino_acid==""):
+                print "STOP"
                 stop_found = True
                 break
             if reverse:
                 until_stop = new_codon + until_stop
             else:
                 until_stop += new_codon
+            #print(until_stop)
     return until_stop
 
 def get_seq(chrom, start, splice_length, ref_ind):
@@ -398,16 +401,20 @@ try:
                 mute_posits.append((pos, line_count))
                 if strand == "-":
                     #end_ind = pos + 32 - (pos_in_codon+shift)%3
-                    st_ind = query_st = pos-pos_in_codon
+                    end_ind = 32 - pos_in_codon - shift + pos
+                    st_ind = pos-(2-(pos_in_codon+abs(shift))%3)
+                    query_st = st_ind
+                    #st_ind = query_st = pos-pos_in_codon
                     if len(alt) > len(orig):
                         #print "Insertion"
-                        end_ind = pos + 32 - (pos_in_codon+shift)%3
+                        #end_ind = pos + 32 - (pos_in_codon+shift)%3
                         mute_locs[pos-st_ind] = alt
                     else:
                         #print "Deletion"
-                        end_ind = pos + 32 - pos_in_codon + abs(shift)
+                        #end_ind = pos + 32 - pos_in_codon + abs(shift)
                         for index in range(abs(shift)):
                             mute_locs[pos-st_ind+1+index] = ""
+                    print query_st, st_ind, end_ind, mute_locs
                     #print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                     (left_side, right_side) = (pos-st_ind, end_ind-pos)
                     (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
@@ -421,14 +428,21 @@ try:
                                 print(chrom, seq_start, seq_length)
                                 break
                         try:
-                            right_half = len(orig_seq)
-                            orig_seq = find_stop(query_st, trans_id,
+                            #right_half = end_ind - pos
+                            left_half = find_stop(query_st, trans_id,
                                                   line_count, exon_dict, chrom,
-                                                  ref_ind, mute_locs, True) + orig_seq
+                                                  ref_ind, mute_locs, True)
+                            orig_seq = left_half + orig_seq
+                            #orig_seq = find_stop(query_st, trans_id,
+                            #                      line_count, exon_dict, chrom,
+                            #                      ref_ind, mute_locs, True) + orig_seq
                             adjust_locs = dict()
                             for key in mute_locs:
-                                adjust_key = key+len(orig_seq)-right_half
+                                print "keys ", key, len(left_half), mute_locs[key]
+                                adjust_key = key+len(left_half)
+                                #adjust_key = key+len(orig_seq)-right_half
                                 adjust_locs[adjust_key] = mute_locs[key]
+                            print adjust_locs
                             mute_seq = make_mute_seq(orig_seq, adjust_locs)
                             wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), ref_ind)
                             kmer(mute_posits, turn_to_aa(wild_seq, "-"), turn_to_aa(mute_seq, "-"))
@@ -470,6 +484,7 @@ try:
                                 print(chrom, seq_start, seq_length)
                                 break
                         try:
+                            print pos, end_ind, query_st, right_side, pos_in_codon, shift
                             orig_seq += find_stop(query_st, trans_id,
                                                   line_count, exon_dict, chrom,
                                                   ref_ind, mute_locs, False)
