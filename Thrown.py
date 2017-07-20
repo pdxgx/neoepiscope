@@ -233,12 +233,14 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
             hap_seq_list.append(hap_output[2])
         #print(hap_seq_list)
         for hap_seq in hap_seq_list:
+            mute_seq = ""
             wild_seq = ""
             for cds_stretch in cds_list:
                 (stretch_start, stretch_length) = cds_stretch
                 index_start = stretch_start - seq_start
-                wild_seq += hap_seq[index_start:index_start+stretch_length]
-            mute_seq = make_mute_seq(wild_seq, mute_locs)
+                mute_seq += hap_seq[index_start:index_start+stretch_length]
+                wild_seq += get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
+            #mute_seq = make_mute_seq(wild_seq, mute_locs)
             kmer(mute_posits,
                 turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
                 turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
