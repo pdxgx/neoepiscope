@@ -7,6 +7,7 @@
 #Inputs: string- chromsome#, int- start position, int- end position, string- reference sequence from either reference genome or germline
 #Output: 1 or 2 sequences that include variants, 1 if all variants are on same chromosome, 2 if variants are spread across both chromosome
 #Description: will apply mutations after searching throught the hapcut2 results
+#Description: will apply mutations of both hapcut2 results and vcf file (nonphased mutations)
 #Description: applies mutation to the relevant chromosome strand
 
 #Return flags: 0- mutation from Hapcut2 output, 1- mutation from vcf, 2- no mutation
@@ -16,6 +17,8 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
     chrome1 = list(refseq)
     chrome2 = list(refseq)
     chromepassed1 = [0] * len(refseq)
+    hapscore1 = [0] * len(refseq)
+    hapscore2 = [0] * len(refseq)
     chromepassed2 = [0] * len(refseq)
     chrome1count = 0 #probably unnecessary due to vcflist but good to keep counters for debug purposes
     chrome2count = 0
@@ -35,11 +38,13 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                     chrome1count = 1
                     chrome1vcflist.append(int(stripped[0]))
                     chromepassed1[mutpos] = 1
+                    hapscore1[mutpos] = stripped[10]
                 if int(stripped[2]) != 0:
                     chrome2[mutpos] = stripped[6]
                     chrome2count = 1
                     chrome2vcflist.append(int(stripped[0]))
                     chromepassed2[mutpos] = 1
+                    hapscore2[mutpos] = stripped[10]
 
     linecount = 0
     vcffile = open(vcfname, "r")
@@ -62,17 +67,16 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                 chromepassed2[mutpos] = 2
 
     vcffile.close()
-                
+                   
     hapcutfile.close()
-    
     chrome1 = ''.join(chrome1)
     chrome2 = ''.join(chrome2)
     if chrome1count == 1 and chrome2count == 1:
-        return (chrome1, chrome1vcflist, chrome2, chrome2vcflist, errorflag)
+        return (chrome1, chrome1vcflist, chrome2, chrome2vcflist, errorflag, chromepassed1, chromepassed2, hapscore1, hapscore2)
     if chrome1count == 1 and chrome2count == 0:
-        return (chrome1, chrome1vcflist, errorflag)
+        return (chrome1, chrome1vcflist, errorflag, chromepassed1, hapscore1)
     if chrome1count == 0 and chrome2count == 1:
-        return (chrome2, chrome2vcflist, errorflag)
+        return (chrome2, chrome2vcflist, errorflag, chromepassed2, hapscore2)
     else:
         return (refseq,errorflag)
             
