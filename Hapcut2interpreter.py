@@ -33,6 +33,8 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                 errorflag = 0
                 #print stripped[3], stripped[1], stripped[2], chromosome, stripped[4], endpos, startpos
                 mutpos = int(stripped[4]) - startpos
+                if (stripped[1] == '-' or stripped[2] == '-'):
+                    continue
                 if int(stripped[1]) != 0:
                     chrome1[mutpos] = stripped[6]
                     chrome1count = 1
