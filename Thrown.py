@@ -145,20 +145,23 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
-        if curr_pos_left-cds_list[curr_left_index] >= seq_length_left:
+        if curr_pos_left-cds_list[curr_left_index]+1 >= seq_length_left:
             if curr_pos_left != mutation_pos+1:
                 nucleotide_index_list.append((curr_pos_left-seq_length_left+1,
                                           seq_length_left))
             else:
+
                 nucleotide_index_list.append((curr_pos_left-seq_length_left,
                                           seq_length_left))
             bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
             seq_length_left = 0
         else:
+            if curr_pos_left != mutation_pos+1:
+                curr_pos_left += 1
             nucleotide_index_list.append((cds_list[curr_left_index],
                                     curr_pos_left-cds_list[curr_left_index]))
             bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
-            seq_length_left -= curr_pos_left-cds_list[curr_left_index]
+            seq_length_left -= (curr_pos_left-cds_list[curr_left_index])
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
@@ -184,11 +187,13 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             seq_length_right = 0
         else:
             try:
-                nucleotide_index_list.append((curr_pos_right+1,
+                if curr_pos_right == mutation:
+                    curr_pos_right += 1
+                nucleotide_index_list.append((curr_pos_right,
                                               cds_list[curr_right_index]
-                                              - curr_pos_right))
+                                              - curr_pos_right + 1))
                 bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
-                seq_length_right -= cds_list[curr_right_index]-curr_pos_right
+                seq_length_right -= (cds_list[curr_right_index]-curr_pos_right+1)
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
