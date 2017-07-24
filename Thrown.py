@@ -56,7 +56,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     kmer_list = list()
     #Loop through window sizes
     for ksize in range(8, 12):
-        for startIndex in range(len(mutated_aa)-ksize):
+        for startIndex in range(len(mutated_aa)-ksize+1):
             kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
     final_list = list()
     for WT,MT in kmer_list:
