@@ -231,7 +231,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     try:
         new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
         hap_output = hap.returnphasing(last_chrom, seq_start, seq_end-1, new_portion, args.vcf)
-        if((len(hap_output) == 2) or (len(hap_output) == 3)):
+        if((len(hap_output) == 2) or (len(hap_output) == 5)):
             hap_seq_list.append(hap_output[0])
         else:
             hap_seq_list.append(hap_output[0])
