@@ -40,7 +40,7 @@ def turn_to_aa(nucleotide_string, strand="+"):
                     ).format(nucleotide_string)
             return False
         if codon == "Stop":
-            aa_string += (len(nucleotide_string)//3 - num_aa)*'X'
+            aa_string += (len(nucleotide_string)//3 - num_aa + 1)*'X'
             break
         else:
             aa_string += codon
@@ -64,7 +64,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
             kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
     final_list = list()
     for WT,MT in kmer_list:
-        if (WT != MT):
+        if (WT != MT and 'X' not in MT):
             final_list.append((WT, MT))
     my_print_function(final_list, mute_posits)
     return final_list
@@ -72,7 +72,6 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
               seq_length_right, cds_dict, mute_dict):
     ''' References cds_dict to get cds Bounds for later Bowtie query.
-
         transcript_id: (String) Indicates the transcript the mutation
             is located on.
         mutation_pos_list: (int) Mutation's position on chromosome
@@ -80,15 +79,15 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             to the left of the mutation
         seq_length_right: (int) How many bases must be gathered to
             the right of the mutation
-
         Return value: List of tuples containing starting indexes and stretch
         lengths within cds boundaries necessary to acquire the complete 
         sequence necessary for 8-11' peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
     ordered_cds_dict = cds_dict
+    bounds_set = set()
     if transcript_id not in ordered_cds_dict:
-        return [], mute_locs
+        return [], mute_dict, bounds_set
     pos_in_codon = 2 - (seq_length_right%3)
     cds_list = ordered_cds_dict[transcript_id]
     mutation_pos = -1
@@ -96,6 +95,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
     if len(mutation_pos_list) >= 2:
         removal_list = []
         shift = mutation_pos_list[0][0] - min(mute_dict)
+        key_list = list(mute_dict.keys())
         #Remove all mutations outside of cds boundaries.
         for index in range(len(mutation_pos_list)):
             lower_cds_index = 2*bisect.bisect(cds_list[::2], mutation_pos_list[index][0])-2
@@ -104,12 +104,12 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                cds_list[upper_cds_index] < mutation_pos_list[index][0]):
                 #Delete at the current index
                 try:
-                    del mute_dict[mutation_pos_list[index][0] - shift]
+                    del mute_dict[key_list[index]]
                     removal_list.append(index)
                 except KeyError:
                     continue
         for index in range(len(removal_list)-1, -1, -1):
-            print("made edits to mute pos list")
+            #print("made edits to mute pos list")
             mutation_pos_list.pop(removal_list[index])
     #Loop again, this time from right & correcting seq queries.
     for index in range(len(mutation_pos_list)-1, -1, -1):
@@ -120,7 +120,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             middle_cds_index -= 2
         #If the biggest pogsition is smaller than the smallest bound, return []
         if middle_cds_index < 0:
-            return [], mute_dict
+            return [], mute_dict, bounds_set
         curr_left_index = middle_cds_index
         curr_right_index = middle_cds_index+1 #cds boundary end indexes
         #Increase by one to ensure mutation_pos_list is collected into boundary
@@ -139,7 +139,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                                     - mutation_pos_list[index][0])
             break
     if(mutation_pos == -1):
-        return [], mute_dict
+        return [], mute_dict, bounds_set
     #Increase the seq length by 1 to account for mutation_pos_list collection
     seq_length_left += 1
     total_seq_length = seq_length_right + seq_length_left
@@ -149,18 +149,23 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
     while(len(nucleotide_index_list) == 0 or 
           sum([index[1] for index in nucleotide_index_list]) 
           < (original_length_left)):
-        if curr_pos_left-cds_list[curr_left_index] >= seq_length_left:
+        if curr_pos_left-cds_list[curr_left_index]+1 >= seq_length_left:
             if curr_pos_left != mutation_pos+1:
                 nucleotide_index_list.append((curr_pos_left-seq_length_left+1,
                                           seq_length_left))
             else:
+
                 nucleotide_index_list.append((curr_pos_left-seq_length_left,
                                           seq_length_left))
+            bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
             seq_length_left = 0
         else:
+            if curr_pos_left != mutation_pos+1:
+                curr_pos_left += 1
             nucleotide_index_list.append((cds_list[curr_left_index],
                                     curr_pos_left-cds_list[curr_left_index]))
-            seq_length_left -= curr_pos_left-cds_list[curr_left_index]
+            bounds_set.add((cds_list[curr_left_index], cds_list[curr_left_index+1]))
+            seq_length_left -= (curr_pos_left-cds_list[curr_left_index])
             curr_pos_left = cds_list[curr_left_index-1]
             curr_left_index -= 2
             if curr_left_index < 0:
@@ -182,19 +187,24 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             else:
                 nucleotide_index_list.append((curr_pos_right,
                                               seq_length_right))
+            bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
             seq_length_right = 0
         else:
             try:
-                nucleotide_index_list.append((curr_pos_right+1,
+                print('this one', curr_pos_right+1)
+                if curr_pos_right == mutation:
+                    curr_pos_right += 1
+                nucleotide_index_list.append((curr_pos_right,
                                               cds_list[curr_right_index]
-                                              - curr_pos_right))
-                seq_length_right -= cds_list[curr_right_index]-curr_pos_right
+                                              - curr_pos_right + 1))
+                bounds_set.add((cds_list[curr_right_index-1], cds_list[curr_right_index]))
+                seq_length_right -= (cds_list[curr_right_index]-curr_pos_right+1)
                 curr_pos_right = cds_list[curr_right_index+1]
                 curr_right_index += 2
             except IndexError:
                 #print("Exceeded all possible cds boundaries!")
                 break
-    return nucleotide_index_list, mute_dict
+    return nucleotide_index_list, mute_dict, bounds_set
 
 def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, reverse):
     until_stop = ""
@@ -204,11 +214,11 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
     if reverse:
         (l_query, r_query) = (r_query, l_query)
     while(stop_found == False):
-        (exon_list, temp_out) = get_cds(trans_id, [(start,line_count)], l_query, r_query, exon_dict, mute_locs)
+        (exon_list, temp_out, bounds_set) = get_cds(trans_id, [(start,line_count)], l_query, r_query, exon_dict, mute_locs)
         extra_cods = ""
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
-        print "start ", start
+        #print "start ", start
         if reverse:
             start = exon_list[0][0]
         else:
@@ -232,9 +242,6 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
                 until_stop += new_codon
     return until_stop
 
-def find_indel_seq():
-    return
-
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
     start -= 1 #adjust for 0-based bowtie queries
@@ -255,6 +262,7 @@ def make_mute_seq(orig_seq, mute_locs):
 
 def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits):
+    #print('this is the list', cds_list)
     wild_seq = ""
     full_length = 0
     for cds_stretch in cds_list:
@@ -268,6 +276,8 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
     #for mute in mute_locs:
     #   personal_wild_seq_set = austin_script(cds_list, wild_seq)
     mute_seq = make_mute_seq(wild_seq,mute_locs)
+    print(wild_seq)
+    print(mute_seq)
     kmer(mute_posits,
         turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
@@ -282,6 +292,7 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
     #print(len(trans_lines))
     #for line_num in range(len(trans_lines)):
     line_num = -1
+    bounds_set = set()
     while line_num < len(trans_lines):
         line_num += 1
         if(mute_line_num != 0):
@@ -308,11 +319,13 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                 pos_in_codon = 2-pos_in_codon
         except:
             continue
-        if((last_chrom != "None") and (pos-last_pos > (32-pos_in_codon))):
+        if((last_chrom != "None") and (mute_type=="missense_variant") and (pos-last_pos > (32-pos_in_codon))):
             #print "HHHHHHHHHHHHHHHHHHHHHHHH"
+            print last_pos, pos, st_ind, end_ind
             (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
-            (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
+            (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
             if(len(cds_list) != 0):
+                print(cds_list, '317')
                 find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                   mute_locs, orf_dict, trans_id, mute_posits)
             (mute_locs, mute_posits) = (dict(), [])
@@ -354,7 +367,7 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                 print query_st, st_ind, end_ind, mute_locs
                 #print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                 (left_side, right_side) = (pos-st_ind, end_ind-pos)
-                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
+                (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                 if len(cds_list) != 0:
                     orig_seq = ""
                     for cds_stretch in cds_list:
@@ -405,7 +418,7 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                 #print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                 (left_side, right_side) = (pos-st_ind, end_ind-pos)
                 #print(trans_id, left_side, right_side, mute_locs, mute_posits, exon_dict[trans_id])
-                (cds_list, mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
+                (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
                 #print("cds list: ", cds_list)
                 if len(cds_list) != 0:
                     orig_seq = ""
@@ -475,6 +488,7 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
             continue
         if last_chrom == chrom and abs(pos-last_pos) <= (32-pos_in_codon):
             #The order of that if-statement is important! Don't change it!
+            print "Multiple missenses", pos, last_pos
             end_ind = pos+32-pos_in_codon
         else:
             st_ind = pos-30-pos_in_codon
@@ -486,7 +500,9 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
         (left_side,right_side) = (pos-st_ind,end_ind-pos)
     except:
         return
-    (cds_list,mute_locs) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
+    (cds_list,mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
+    print('cds', cds_list)
+    print(mute_posits, left_side, right_side)
     #print("Final mute_locs: ", str(mute_locs), str(mute_posits))
     if(len(cds_list) != 0):
         find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
