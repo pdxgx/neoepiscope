@@ -408,8 +408,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 else:
                                     for delet in range(len(orig)-len(alt)):
                                         mute_locs[new_mute_pos+1+delet-(st_ind-len(new_left))] = ""
-                                orig_seq = new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
-                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))]
+                                orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
+                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))])
                             else:
                                 mute_posits.append((new_mute_pos, line_count))
                                 mute_locs[new_mute_pos-(end_ind-len(orig_seq))] = alt
