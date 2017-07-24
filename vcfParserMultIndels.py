@@ -60,7 +60,7 @@ def kmer(mute_posits, normal_aa, mutated_aa = ""):
     kmer_list = list()
     #Loop through window sizes
     for ksize in range(8, 12):
-        for startIndex in range(len(mutated_aa)-ksize):
+        for startIndex in range(len(mutated_aa)-ksize+1):
             kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
     final_list = list()
     for WT,MT in kmer_list:
@@ -283,16 +283,16 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
-def kmerize_trans(trans_lines, direct, line_count, trans_id):
+def kmerize_trans(trans_lines, line_count, trans_id):
     last_chrom = "None"
     orig_seq = ""
     mute_locs = {}
     mute_posits = []
     mute_line_num = 0
+    bounds_set = set()
     #print(len(trans_lines))
     #for line_num in range(len(trans_lines)):
     line_num = -1
-    bounds_set = set()
     while line_num < len(trans_lines):
         line_num += 1
         if(mute_line_num != 0):
@@ -319,13 +319,10 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                 pos_in_codon = 2-pos_in_codon
         except:
             continue
-        if((last_chrom != "None") and (mute_type=="missense_variant") and (pos-last_pos > (32-pos_in_codon))):
-            #print "HHHHHHHHHHHHHHHHHHHHHHHH"
-            print last_pos, pos, st_ind, end_ind
+        if((last_chrom != "None") and (mute_type != "missense_variant") and (abs(pos-last_pos) > (32-pos_in_codon))):
             (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
             (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
             if(len(cds_list) != 0):
-                print(cds_list, '317')
                 find_seq_and_kmer(cds_list, last_chrom, ref_ind,
                                   mute_locs, orf_dict, trans_id, mute_posits)
             (mute_locs, mute_posits) = (dict(), [])
@@ -348,8 +345,8 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
             shift = len(alt)-len(orig)
             mute_posits.append((pos, line_count))
             if strand == "-":
+                # (pos_in_codon-shift)%3
                 mute_locs = dict()
-                print "here"
                 #end_ind = pos + 32 - (pos_in_codon+shift)%3
                 end_ind = 32 - pos_in_codon - shift + pos
                 st_ind = pos-(2-(pos_in_codon+abs(shift))%3)
@@ -383,16 +380,47 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, True)
                         orig_seq = left_half + orig_seq
-                        #orig_seq = find_stop(query_st, trans_id,
-                        #                      line_count, exon_dict, chrom,
-                        #                      ref_ind, mute_locs, True) + orig_seq
-                        adjust_locs = dict()
-                        for key in mute_locs:
-                            print "keys ", key, len(left_half), mute_locs[key]
-                            adjust_key = key+len(left_half)
-                            #adjust_key = key+len(orig_seq)-right_half
-                            adjust_locs[adjust_key] = mute_locs[key]
-                        print adjust_locs
+                        mute_line_num = 0
+                        new_mute_pos = pos + 1
+                        while(new_mute_pos > end_ind - len(orig_seq)):
+                            mute_line_num += 1
+                            if (line_num + mute_line_num) >= len(trans_lines):
+                                break
+                            new_mute = trans_lines[line_num+mute_line_num]
+                            vals = new_mute.strip().split('\t')
+                            (new_mute_pos, orig, alt, info) = (int(vals[1]), vals[3], vals[4], vals[7]
+                                )
+                            if(new_mute_pos <= end_ind-len(orig_seq)):
+                                break
+                            tokens = info.strip().split('|')
+                            mute_type = tokens[1]
+                            if(mute_type != "missense_variant" and (len(orig) != len(alt))):
+                                continue
+                            if len(orig) != len(alt):
+                                mute_posits.append((new_mute_pos, line_count))
+                                pos_in_codon = (pos_in_codon - (pos-new_mute_pos-len(orig)+len(alt)))%3
+                                #@TODO check math for pos_in_codon
+                                shift += len(alt) - len(orig)
+                                st_ind = new_mute_pos - pos_in_codon
+                                new_left = find_stop(st_ind, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, True)
+                                if len(alt) > len(orig):
+                                    mute_locs[new_mute_pos-(st_ind-len(new_left))] = alt
+                                else:
+                                    for delet in range(len(orig)-len(alt)):
+                                        mute_locs[new_mute_pos+1+delet-(st_ind-len(new_left))] = ""
+                                orig_seq = new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
+                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))]
+                            else:
+                                mute_posits.append((new_mute_pos, line_count))
+                                mute_locs[new_mute_pos-(end_ind-len(orig_seq))] = alt
+                            pass
+                        # adjust_locs = dict()
+                        # for key in mute_locs:
+                        #     print "keys ", key, len(left_half), mute_locs[key]
+                        #     adjust_key = key+len(left_half)
+                        #     #adjust_key = key+len(orig_seq)-right_half
+                        #     adjust_locs[adjust_key] = mute_locs[key]
+                        # print adjust_locs
                         mute_seq = make_mute_seq(orig_seq, adjust_locs)
                         wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), ref_ind)
                         kmer(mute_posits, turn_to_aa(wild_seq, "-"), turn_to_aa(mute_seq, "-"))
@@ -434,7 +462,7 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, False)
                         mute_line_num = new_mute_pos = 0
-                        while(new_mute_pos < pos + len(orig_seq)):
+                        while(new_mute_pos < st_ind + len(orig_seq)):
                             mute_line_num += 1
                             if (line_num + mute_line_num) >= len(trans_lines):
                                 break
@@ -488,7 +516,6 @@ def kmerize_trans(trans_lines, direct, line_count, trans_id):
             continue
         if last_chrom == chrom and abs(pos-last_pos) <= (32-pos_in_codon):
             #The order of that if-statement is important! Don't change it!
-            print "Multiple missenses", pos, last_pos
             end_ind = pos+32-pos_in_codon
         else:
             st_ind = pos-30-pos_in_codon
@@ -548,24 +575,24 @@ try:
             (trans_id) = (tokens[6])
             if((len(trans_lines) != 0) and (last_trans != trans_id)):
                 try:
-                    print(last_trans)
-                    print(trans_id, len(trans_lines))
                     direct = orf_dict[last_trans][0][0]
                 except:
                 #    print "orf_dict failure"
                     last_trans = trans_id
                     continue
                 #print "here"
-                #if(direct == "-"):
-                #    trans_lines = list(reversed(trans_lines))
+                if(direct == "-"):
+                    trans_lines = list(reversed(trans_lines))
                 begin_line = line_count - len(trans_lines) - 1
-                kmerize_trans(trans_lines, direct, begin_line, last_trans)
+                kmerize_trans(trans_lines, begin_line, last_trans)
                 trans_lines = []
             last_trans = trans_id
             trans_lines.append(line)
         direct = orf_dict[last_trans][0][0]
         begin_line = line_count - len(trans_lines) - 1
-        kmerize_trans(trans_lines, direct, begin_line, last_trans)
+        if(direct == "-"):
+            trans_lines = list(reversed(trans_lines))
+        kmerize_trans(trans_lines, begin_line, last_trans)
 
 finally:
     if args.vcf != '-':
