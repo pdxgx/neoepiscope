@@ -33,10 +33,11 @@ def turn_to_aa(nucleotide_string, strand="+"):
         try:
             codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
         except KeyError:
+            '''
             print >>sys.stderr, (
                         'Could not translate nucleotide string "{}".'
-                    ).format(nucleotide_string)
-            return False
+                    ).format(nucleotide_string)'''
+            return ""
         if (codon == "Stop"):
             break
         else:
