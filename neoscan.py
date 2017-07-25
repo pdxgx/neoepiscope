@@ -191,7 +191,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             seq_length_right = 0
         else:
             try:
-                print('this one', curr_pos_right+1)
                 if curr_pos_right == mutation:
                     curr_pos_right += 1
                 nucleotide_index_list.append((curr_pos_right,
@@ -408,8 +407,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 else:
                                     for delet in range(len(orig)-len(alt)):
                                         mute_locs[new_mute_pos+1+delet-(st_ind-len(new_left))] = ""
-                                orig_seq = new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
-                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))]
+                                orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
+                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))])
                             else:
                                 mute_posits.append((new_mute_pos, line_count))
                                 mute_locs[new_mute_pos-(end_ind-len(orig_seq))] = alt
@@ -480,7 +479,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 mute_posits.append((new_mute_pos, line_count))
                                 pos_in_codon = (new_mute_pos-st_ind+shift)%3
                                 if len(alt) > len(orig):
-                                    mute_locs[new_mute_pos-st_ind+shift] = alt
+                                    mute_locs[new_mute_pos-st_ind] = alt
+                                    #mute_locs[new_mute_pos-st_ind+shift] = alt
                                     shift += (len(alt) - len(orig))
                                     end_ind = new_mute_pos + 2 - (pos_in_codon+shift)%3
                                     query_st = end_ind + 1
@@ -488,7 +488,6 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                     shift += (len(alt) - len(orig))
                                     end_ind = new_mute_pos + 2 - pos_in_codon + abs(shift)
                                     query_st = end_ind + 1
-                                    print "shift ", shift, orig, alt
                                     for index in range(abs(len(alt)-len(orig))):
                                         mute_locs[new_mute_pos-st_ind+1+index] = ""
                                 orig_seq = orig_seq[0:new_mute_pos-st_ind] + get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
