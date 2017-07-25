@@ -191,7 +191,6 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             seq_length_right = 0
         else:
             try:
-                print('this one', curr_pos_right+1)
                 if curr_pos_right == mutation:
                     curr_pos_right += 1
                 nucleotide_index_list.append((curr_pos_right,
@@ -470,6 +469,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                             vals = new_mute.strip().split('\t')
                             (new_mute_pos, orig, alt, info) = (int(vals[1]), vals[3], vals[4], vals[7]
                                 )
+                            print "new pos", new_mute_pos, (st_ind + len(orig_seq))
                             if(new_mute_pos >= st_ind + len(orig_seq)):
                                 break
                             tokens = info.strip().split('|')
@@ -480,7 +480,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 mute_posits.append((new_mute_pos, line_count))
                                 pos_in_codon = (new_mute_pos-st_ind+shift)%3
                                 if len(alt) > len(orig):
-                                    mute_locs[new_mute_pos-st_ind+shift] = alt
+                                    mute_locs[new_mute_pos-st_ind] = alt
+                                    #mute_locs[new_mute_pos-st_ind+shift] = alt
                                     shift += (len(alt) - len(orig))
                                     end_ind = new_mute_pos + 2 - (pos_in_codon+shift)%3
                                     query_st = end_ind + 1
@@ -491,8 +492,10 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                     print "shift ", shift, orig, alt
                                     for index in range(abs(len(alt)-len(orig))):
                                         mute_locs[new_mute_pos-st_ind+1+index] = ""
+                                print "before ", len(orig_seq)
                                 orig_seq = orig_seq[0:new_mute_pos-st_ind] + get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
                                 orig_seq += find_stop(st_ind+len(orig_seq), trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                print "after ", len(orig_seq), new_mute_pos, st_ind+len(orig_seq)
                             else:
                                 ################ @TODO fix line_count to be specific for mute
                                 mute_posits.append((new_mute_pos, line_count))
