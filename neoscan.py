@@ -25,6 +25,11 @@ codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
 
 def turn_to_aa(nucleotide_string, strand="+"):
+    ''' References codon_table to turn codons to amino acids.
+        nucleotide_string: (String) Entire nucleotide sequence made from A,T,C,G
+        strand: (String) Denotes forward or reverse strand
+        Return value: (String) Amino acid sequence 
+    '''
     aa_string = ""
     num_aa = 0
     if strand == "-":
@@ -47,6 +52,13 @@ def turn_to_aa(nucleotide_string, strand="+"):
     return aa_string
 
 def my_print_function(kmer_list, mute_posits):
+    ''' Prints out epitopes in 3 columns: Wild Type, Mutant Type, and
+            Position on chromosome
+        kmer_list: (List) Tuples containing Wild Types and Mutant Types for
+            printing
+        mute_posits: (List) Positions of mutations on chromosome
+        Return value: (String) Amino acid sequence 
+    '''
     if len(kmer_list)==0: return None
     for wtmtPair in kmer_list:
         wt,mt = wtmtPair
@@ -55,6 +67,13 @@ def my_print_function(kmer_list, mute_posits):
 
 
 def kmer(mute_posits, normal_aa, mutated_aa = ""):
+    ''' Generates 8-11' kmers from amino acid sequences.
+        mute_posits: (List) Positions of mutations on chromosome
+        normal_aa: (String) Amino acid sequence of Wild Type
+        mutated_aa: (String) Amino acid sequence of Mutant Type
+        Return value: (List) List of tuples pairing mismatching kmers for a
+            given 8-11' epitope.
+    '''
     if (len(mutated_aa) == 0):
         mutated_aa = normal_aa
     kmer_list = list()
@@ -203,22 +222,38 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             except IndexError:
                 #print("Exceeded all possible cds boundaries!")
                 break
+    print(nucleotide_index_list)
     return nucleotide_index_list, mute_dict, bounds_set
 
+def calculate_intron_length(analysis_list):
+    total_introns = 0
+    for index in range(len(analysis_list)-1):
+        total_introns += analysis_list[index+1][0]-(analysis_list[index][0]+analysis_list[index][1])
+    return total_introns
+
 def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, reverse):
+    ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
+            shift (indel)
+        query_st: (int)
+        trans_id: ()
+        line_count: ()
+        cds_dict: ()
+        chrom: (int) The chromosome that the mutation is located on
+        ref_ind: ()
+        mute_locs: (Dict) Dictionary mapping sequence position to 
+            actual mutation
+        reverse: (Bool) True if mutation represented by reverse strand
+        Return value:  
+    '''
     until_stop = ""
     start = query_st
     stop_found = False
     (l_query, r_query) = (0, 33)
+    total_intron_length = 0
     if reverse:
         (l_query, r_query) = (r_query, l_query)
     while(stop_found == False):
         (exon_list, temp_out, bounds_set) = get_cds(trans_id, [(start,line_count)], l_query, r_query, cds_dict, mute_locs)
-        print(exon_list)
-        # if reverse:
-        #     print('no crash')
-        #     print(cds_dict[trans_id])
-        #     print(start)
         extra_cods = ""
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
@@ -228,6 +263,7 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
         else:
             start = exon_list[-1][0] + exon_list[-1][1] - 1
         count = 0
+        print(exon_list)
         while(count<33):
             if reverse:
                 new_codon = extra_cods[30-count:33-count]
@@ -238,15 +274,28 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
                 count += 3
                 amino_acid = turn_to_aa(new_codon)
             if(amino_acid==""):
-                print('stop found')
-                print(new_codon, 'new codon')
+                if reverse:
+                    tuple_counter = 0
+                    temp = count
+                    while temp > 0:
+                        tuple_counter += 1
+                        temp -= exon_list[-1*tuple_counter][1]
+                    total_intron_length += calculate_intron_length(exon_list[len(exon_list)-tuple_counter:])
+                else:
+                    tuple_counter = 0
+                    temp = count
+                    while temp > 0:
+                        tuple_counter += 1
+                        temp -= exon_list[tuple_counter-1][1]
+                    total_intron_length += calculate_intron_length(exon_list[:tuple_counter])
                 stop_found = True
                 break
             if reverse:
                 until_stop = new_codon + until_stop
             else:
                 until_stop += new_codon
-    return until_stop
+        total_intron_length += calculate_intron_length(exon_list)
+    return until_stop, total_intron_length
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
@@ -353,7 +402,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
             if strand == "-":
                 # (pos_in_codon-shift)%3
                 mute_locs = dict()
-                print "first time", pos_in_codon
+                print "first pos_in_codon", pos_in_codon
                 #end_ind = pos + 32 - (pos_in_codon+shift)%3
                 end_ind = 32 - pos_in_codon + shift + 1 + pos
                 ######################################################## CHECK THIS MATH (SPECIFICALLY, THE +1)
@@ -361,7 +410,6 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 st_ind = pos-(2-(pos_in_codon+abs(shift))%3)
                 query_st = st_ind
                 #st_ind = query_st = pos-pos_in_codon
-                print "There"
                 if len(alt) > len(orig):
                     #print "Insertion"
                     #end_ind = pos + 32 - (pos_in_codon+shift)%3
@@ -375,9 +423,10 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 #print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                 (left_side, right_side) = (pos-st_ind, end_ind-pos)
                 (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
+                total_intron_length = calculate_intron_length(cds_list)
                 if len(cds_list) != 0:
                     orig_seq = ""
-                    print "orig_seq creation", len(cds_list)
+                    print cds_list
                     for cds_stretch in cds_list:
                         (seq_start, seq_length) = cds_stretch
                         try:
@@ -385,13 +434,19 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                         except:
                             print(chrom, seq_start, seq_length)
                             break
-                    print "before try", query_st, mute_locs, cds_list
                     try:
                         #right_half = end_ind - pos
-                        left_half = find_stop(cds_list[0][0], trans_id,
+                        left_half, total_intron_length = find_stop(cds_list[0][0], trans_id,
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, True)
                         orig_seq = left_half + orig_seq
+                        old_locs = mute_locs.copy()
+                        mute_locs.clear()
+                        print(total_intron_length, "total intron length")
+                        print(mute_locs)
+                        for locate in old_locs:
+                            mute_locs[locate+len(left_half)-total_intron_length] = old_locs[locate]
+                        print(mute_locs)
                         mute_line_num = 0
                         new_mute_pos = pos + 1
                         print "HERE IN THE REVERSE"
@@ -420,23 +475,26 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 #@TODO check math for pos_in_codon
                                 shift += len(alt) - len(orig)
                                 st_ind = new_mute_pos - pos_in_codon
-                                new_left = find_stop(st_ind, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, True)
+                                new_left, total_intron_length = find_stop(st_ind, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, True)
                                 prev_leng = len(orig_seq)
-                                print(orig_seq)
-                                print(orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
+                                #print(orig_seq)
+                                #print(orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
+                                #@TODO before get_seq, run get_cds for that seq
                                 orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
                                             orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
-                                print('math', new_mute_pos - (end_ind-len(orig_seq)))
-                                print(orig_seq)
-                                old_locs = mute_locs
-                                mute_locs = dict()
+                                #print('math', new_mute_pos - (end_ind-len(orig_seq)))
+                                print "before ", mute_locs
+                                old_locs = mute_locs.copy()
+                                mute_locs.clear()
                                 for locate in old_locs:
-                                    mute_locs[locate+len(orig_seq)-prev_leng] = old_locs[locate]
+                                    print locate, prev_leng, len(orig_seq), locate-prev_leng+len(orig_seq)
+                                    mute_locs[locate-prev_leng+len(orig_seq)] = old_locs[locate]
                                 if len(alt) > len(orig):
                                     mute_locs[new_mute_pos-(st_ind-len(new_left))] = alt
                                 else:
                                     for delet in range(len(orig)-len(alt)):
                                         mute_locs[new_mute_pos+1+delet-(st_ind-len(new_left))] = ""
+                                print "after ", mute_locs
                             else:
                                 mute_posits.append((new_mute_pos, line_count))
                                 mute_locs[new_mute_pos-(end_ind-len(orig_seq))] = alt
@@ -449,10 +507,10 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                         #     adjust_locs[adjust_key] = mute_locs[key]
                         # print adjust_locs
                         mute_seq = make_mute_seq(orig_seq, mute_locs)
-                        wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), ref_ind)
-                        kmer(mute_posits, turn_to_aa(wild_seq, "-"), turn_to_aa(mute_seq, "-"))
-                        print "Reverse Indel ", wild_seq, "\t", mute_seq, len(wild_seq), len(mute_seq), pos
-                        print(mute_locs)
+                        #wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), ref_ind)
+                        kmer(mute_posits, turn_to_aa(orig_seq, "-"), turn_to_aa(mute_seq, "-"))
+                        print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), pos
+                        print(mute_locs, mute_posits)
                     except Exception as ex:
                         (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
                         print "Reverse Failure"
@@ -487,9 +545,10 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                             print(chrom, seq_start, seq_length)
                             break
                     try:
-                        orig_seq += find_stop(query_st, trans_id,
+                        new, total_intron_length = find_stop(query_st, trans_id,
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, False)
+                        orig_seq += new
                         mute_line_num = new_mute_pos = 0
                         while(new_mute_pos < st_ind + len(orig_seq)):
                             mute_line_num += 1
@@ -521,7 +580,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                     for index in range(abs(len(alt)-len(orig))):
                                         mute_locs[new_mute_pos-st_ind+1+index] = ""
                                 orig_seq = orig_seq[0:new_mute_pos-st_ind] + get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
-                                orig_seq += find_stop(st_ind+len(orig_seq), trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                new,total_intron_length = find_stop(st_ind+len(orig_seq), trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                orig_seq += new
                             else:
                                 ################ @TODO fix line_count to be specific for mute
                                 mute_posits.append((new_mute_pos, line_count))
