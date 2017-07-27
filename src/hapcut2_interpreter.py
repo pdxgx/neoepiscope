@@ -92,9 +92,10 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                     hapscore2[mutpos] = float(stripped[10])
                    
     hapcutfile.close()
-    chrome1 = ''.join(chrome1)
-    chrome2 = ''.join(chrome2)
+    #chrome1 = ''.join(chrome1)
+    #chrome2 = ''.join(chrome2)
     seqlist = []
+    seqset = []
     seqlist.append(chrome1)
     seqlist.append(chrome2)
     linecount = 0
@@ -117,10 +118,14 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                     if len(stripped[3]) > 1:
                         for x in range(0, len(stripped[3])-1):
                             newseq[mutpos+x+1] = ""
-                    newseq = ''.join(newseq)
+                    #newseq = ''.join(newseq)
                     seqlist.append(newseq)
-    seqset = set(seqlist)
+    for seq in seqlist:
+        seqset.append("".join(seq))
+    seqset = set(seqset)
     seqback = list(seqset)
+    #seqset = set(seqlist)
+    #seqback = list(seqset)
     return seqback
 
             
