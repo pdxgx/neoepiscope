@@ -14,3 +14,4 @@ def combinevcf(vcf1, vcf2):
     os.system(command2)
     command3 = "cat header.txt sortedvct.txt > combinedvcf.vcf"
     os.system(command3)
+    cut = "cut -f1,2,3,4,5,6,7,8,9,10 combinedvcf.vcf > cutvcf.vcf"
