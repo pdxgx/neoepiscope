@@ -46,15 +46,18 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
     chrome1 = list(refseq)
     chrome2 = list(refseq)
     chromepassed1 = [0] * len(refseq)
+    chromepassed2 = [0] * len(refseq)
     hapscore1 = [0] * len(refseq)
     hapscore2 = [0] * len(refseq)
-    chromepassed2 = [0] * len(refseq)
+    allelefreq = [0] * len(refseq)
+    allelefreq = [0] * len(refseq)
     chrome1count = 0 #probably unnecessary due to vcflist but good to keep counters for debug purposes
     chrome2count = 0
     chrome1vcflist = []
     chrome2vcflist = []
     chromeflag1 = 0
     chromeflag2 = 0
+    hapflag = 0
     errorflag = 0
     hapcutfile = open("haplotype_output_file", "r")
     for line in hapcutfile:
@@ -66,25 +69,39 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
                 if (stripped[1] == '-' or stripped[2] == '-'):
                     continue
                 if int(stripped[1]) != 0:
+                    hapflag = 1
                     chromeflag1 = 1
                     chrome1[mutpos] = stripped[6]
+                    if len(stripped[5]) > 1:
+                        for x in range(0,len(stripped[5])-1):
+                            chrome1[mutpos+x] = ""
                     chrome1count = 1
                     chrome1vcflist.append(int(stripped[0]))
                     chromepassed1[mutpos] = 1
                     hapscore1[mutpos] = float(stripped[10])
                 if int(stripped[2]) != 0:
+                    hapflag = 1
                     chromeflag2 = 1
                     chrome2[mutpos] = stripped[6]
+                    if len(stripped[5]) > 1:
+                        for x in range(0,len(stripped[5])-1):
+                            chrome1[mutpos+x+1] = ""
                     chrome2count = 1
                     chrome2vcflist.append(int(stripped[0]))
                     chromepassed2[mutpos] = 1
                     hapscore2[mutpos] = float(stripped[10])
-
+                   
+    hapcutfile.close()
+    #chrome1 = ''.join(chrome1)
+    #chrome2 = ''.join(chrome2)
+    seqlist = []
+    seqset = []
+    seqlist.append(chrome1)
+    seqlist.append(chrome2)
     linecount = 0
     vcffile = open(vcfname, "r")
     freqlabel = getfreqlabel(vcfname)
     for line in vcffile:
-        #print line
         if not line or line[0] == '#': continue
         linecount += 1
         infostring = []
@@ -93,57 +110,23 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname):
         allelefreqline = stripped[9].split(':')
         if stripped[0] == chromosome and int(stripped[1]) <= endpos and int(stripped[1]) >= startpos:
             mutpos = int(stripped[1]) - startpos
-            if chromepassed1[mutpos] != 1:
-                chromeflag1 = 1
-                chrome1[mutpos] = stripped[4]
-                chrome1vcflist.append(linecount)
-                #errorflag = 1
-                chromepassed1[mutpos] = 2
-                counter = 0
-                for infos in info:
-                    if infos != freqlabel:
-                        counter += 1
-                    else:
-                         hapscore1[mutpos] = float(allelefreqline[counter].rstrip('%'))
-            if chromepassed2[mutpos] != 1:
-                chromeflag2 = 1
-                chrome2[mutpos] = stripped[4]
-                chrome2vcflist.append(linecount)
-                #errorflag = 1
-                chromepassed2[mutpos] = 2
-                counter = 0
-                for infos in info:
-                    if infos != freqlabel:
-                        counter += 1
-                        #print infos
-                    else:
-                         #print stripped[8], mutpos, counter
-                         hapscore2[mutpos] = float(allelefreqline[counter].rstrip('%'))
-                         #print counter
-                         #print allelefreqline[counter]
-                         #print hapscore2[mutpos]
-
-    vcffile.close()
-                   
-    hapcutfile.close()
-    chrome1 = ''.join(chrome1)
-    chrome2 = ''.join(chrome2)
-    '''if chrome1count == 1 and chrome2count == 1:
-        return (chrome1, chrome1vcflist, chrome2, chrome2vcflist, errorflag, chromepassed1, chromepassed2, hapscore1, hapscore2)
-    if chrome1count == 1 and chrome2count == 0:
-        return (chrome1, chrome1vcflist, errorflag, chromepassed1, hapscore1)
-    if chrome1count == 0 and chrome2count == 1:
-        return (chrome2, chrome2vcflist, errorflag, chromepassed2, hapscore2)
-    else:
-        return (refseq,errorflag)'''
-    if chromeflag1 == 1 and chromeflag2 == 1:
-        return (chrome1, chrome1vcflist, chrome2, chrome2vcflist, errorflag, chromepassed1, chromepassed2, hapscore1, hapscore2)
-    if chromeflag1 == 1 and chromeflag2 == 0:
-        return (chrome1, chrome1vcflist, errorflag, chromepassed1, hapscore1)
-    if chromeflag1 == 0 and chromeflag2 == 1:
-        return (chrome2, chrome2vcflist, errorflag, chromepassed2, hapscore2)
-    else:
-        return (refseq, errorflag)
+            if chromepassed1[mutpos] != 1 and chromepassed2[mutpos] != 1:
+                length = len(seqlist)
+                for x in range(0,length):
+                    newseq = list(seqlist[x])
+                    newseq[mutpos] = stripped[4]
+                    if len(stripped[3]) > 1:
+                        for x in range(0, len(stripped[3])-1):
+                            newseq[mutpos+x+1] = ""
+                    #newseq = ''.join(newseq)
+                    seqlist.append(newseq)
+    for seq in seqlist:
+        seqset.append("".join(seq))
+    seqset = set(seqset)
+    seqback = list(seqset)
+    #seqset = set(seqlist)
+    #seqback = list(seqset)
+    return seqback
 
             
 
