@@ -123,6 +123,15 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                cds_list[upper_cds_index] < mutation_pos_list[index][0]):
                 #Delete at the current index
                 try:
+                    if mute_dict[key_list[index]] == '':
+                        try:
+                            count = 1
+                            while mute_dict[key_list[index+count]] == '':
+                                count += 1
+                                removal_list.append(index+count)
+                                del mute_dict[key_list[index+count]]
+                        except IndexError:
+                            pass
                     del mute_dict[key_list[index]]
                     removal_list.append(index)
                 except KeyError:
@@ -222,8 +231,15 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             except IndexError:
                 #print("Exceeded all possible cds boundaries!")
                 break
-    print(nucleotide_index_list)
     return nucleotide_index_list, mute_dict, bounds_set
+
+def get_introns(start_index, stop_index, cds_list):
+    total_introns = 0
+    index = start_index
+    while index < stop_index:
+        total_introns += cds_list[index+1]-cds_list[index]-1
+        index += 2
+    return total_introns
 
 def calculate_intron_length(analysis_list):
     total_introns = 0
@@ -245,11 +261,12 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
         reverse: (Bool) True if mutation represented by reverse strand
         Return value:  
     '''
+    print('function entry')
     until_stop = ""
     start = query_st
     stop_found = False
     (l_query, r_query) = (0, 33)
-    total_intron_length = 0
+    print("WHAT Im looking for", get_seq(chrom, 70060, 6, ref_ind))
     if reverse:
         (l_query, r_query) = (r_query, l_query)
     while(stop_found == False):
@@ -257,13 +274,16 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
         extra_cods = ""
         for bound_start, bound_stretch in exon_list:
             extra_cods += get_seq(chrom, bound_start, bound_stretch, ref_ind)
+            print('266')
+            print(get_seq(chrom, bound_start, bound_stretch, ref_ind))
+            print(bound_start, bound_stretch)
+            print(extra_cods)
         #print "start ", start
         if reverse:
             start = exon_list[0][0]
         else:
             start = exon_list[-1][0] + exon_list[-1][1] - 1
         count = 0
-        print(exon_list)
         while(count<33):
             if reverse:
                 new_codon = extra_cods[30-count:33-count]
@@ -274,28 +294,13 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, ref_ind, mute_loc
                 count += 3
                 amino_acid = turn_to_aa(new_codon)
             if(amino_acid==""):
-                if reverse:
-                    tuple_counter = 0
-                    temp = count
-                    while temp > 0:
-                        tuple_counter += 1
-                        temp -= exon_list[-1*tuple_counter][1]
-                    total_intron_length += calculate_intron_length(exon_list[len(exon_list)-tuple_counter:])
-                else:
-                    tuple_counter = 0
-                    temp = count
-                    while temp > 0:
-                        tuple_counter += 1
-                        temp -= exon_list[tuple_counter-1][1]
-                    total_intron_length += calculate_intron_length(exon_list[:tuple_counter])
                 stop_found = True
                 break
             if reverse:
                 until_stop = new_codon + until_stop
             else:
                 until_stop += new_codon
-        total_intron_length += calculate_intron_length(exon_list)
-    return until_stop, total_intron_length
+    return until_stop
 
 def get_seq(chrom, start, splice_length, ref_ind):
     chr_name = "chr" + chrom #proper
@@ -338,7 +343,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
-def kmerize_trans(trans_lines, line_count, trans_id):
+def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list):
     last_chrom = "None"
     orig_seq = ""
     mute_locs = {}
@@ -374,6 +379,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 pos_in_codon = 2-pos_in_codon
         except:
             continue
+        #(cds_list, temp, bounds_set) = get_cds(trans_id, [(last_pos, line_count)], left_side, right_side, my_dict, mute_locs)
         if((last_chrom != "None") and (mute_type != "missense_variant") and (abs(pos-last_pos) > (32-pos_in_codon))):
             (left_side,right_side) = (last_pos-st_ind,end_ind-last_pos)
             (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, my_dict, mute_locs)
@@ -384,10 +390,12 @@ def kmerize_trans(trans_lines, line_count, trans_id):
         if len(orig) != len(alt):
             try:
                 cds_list = cds_dict[trans_id]
-            except:
+            except KeyError:
                 continue
             orf_list = orf_dict[trans_id]
             cds_index = 2*bisect.bisect(cds_list[::2], pos)-2
+            if cds_index < 0:
+                continue
             (cds_start, cds_end) = (cds_list[cds_index], cds_list[cds_index+1]) 
             orf = orf_list[cds_index//2]
             (strand, frame) = (orf[0], orf[1])
@@ -408,6 +416,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 ######################################################## CHECK THIS MATH (SPECIFICALLY, THE +1)
                 print "end ind", end_ind
                 st_ind = pos-(2-(pos_in_codon+abs(shift))%3)
+                upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
                 query_st = st_ind
                 #st_ind = query_st = pos-pos_in_codon
                 if len(alt) > len(orig):
@@ -423,8 +432,8 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 #print "reverse", str(end_ind-st_ind), str(shift), str(pos_in_codon)
                 (left_side, right_side) = (pos-st_ind, end_ind-pos)
                 (cds_list, mute_locs, bounds_set) = get_cds(trans_id, mute_posits, left_side, right_side, exon_dict, mute_locs)
-                total_intron_length = calculate_intron_length(cds_list)
                 if len(cds_list) != 0:
+                    upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], cds_list[0][0])-1
                     orig_seq = ""
                     print cds_list
                     for cds_stretch in cds_list:
@@ -436,21 +445,23 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                             break
                     try:
                         #right_half = end_ind - pos
-                        left_half, total_intron_length = find_stop(cds_list[0][0], trans_id,
+                        left_half = find_stop(cds_list[0][0], trans_id,
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, True)
                         orig_seq = left_half + orig_seq
                         old_locs = mute_locs.copy()
                         mute_locs.clear()
-                        print(total_intron_length, "total intron length")
                         print(mute_locs)
                         for locate in old_locs:
-                            mute_locs[locate+len(left_half)-total_intron_length] = old_locs[locate]
+                            mute_locs[locate+len(left_half)] = old_locs[locate]
                         print(mute_locs)
                         mute_line_num = 0
                         new_mute_pos = pos + 1
+                        tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], cds_list[0][0])-1,
+                                                        2*bisect.bisect(trans_cds_list[::2], end_ind)-1,
+                                                        trans_cds_list)
                         print "HERE IN THE REVERSE"
-                        while(new_mute_pos > end_ind - len(orig_seq)):
+                        while(new_mute_pos > end_ind - len(orig_seq)-tot_introns):
                             mute_line_num += 1
                             print "IN WHILE LOOP", new_mute_pos, end_ind-len(orig_seq)
                             if (line_num + mute_line_num) >= len(trans_lines):
@@ -475,15 +486,23 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                 #@TODO check math for pos_in_codon
                                 shift += len(alt) - len(orig)
                                 st_ind = new_mute_pos - pos_in_codon
-                                new_left, total_intron_length = find_stop(st_ind, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, True)
+                                upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
+                                new_left = find_stop(st_ind, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, True)
                                 prev_leng = len(orig_seq)
                                 #print(orig_seq)
                                 #print(orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
                                 #@TODO before get_seq, run get_cds for that seq
+                                tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], new_mute_pos)-1,
+                                                        2*bisect.bisect(trans_cds_list[::2], end_ind)-1,
+                                                        trans_cds_list)
+                                print("THIS IS THE TOTAL AMOUNT WE HAVE", tot_introns)
                                 orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
-                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
+                                            orig_seq[new_mute_pos - (end_ind-len(orig_seq))+tot_introns:])
                                 #print('math', new_mute_pos - (end_ind-len(orig_seq)))
                                 print "before ", mute_locs
+                                print("I got", new_left)
+                                print(get_seq(chrom, st_ind, pos_in_codon, ref_ind))
+                                print(orig_seq[new_mute_pos - (end_ind-len(orig_seq)):])
                                 old_locs = mute_locs.copy()
                                 mute_locs.clear()
                                 for locate in old_locs:
@@ -496,8 +515,11 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                         mute_locs[new_mute_pos+1+delet-(st_ind-len(new_left))] = ""
                                 print "after ", mute_locs
                             else:
+                                tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], new_mute_pos)-1,
+                                                        2*bisect.bisect(trans_cds_list[::2], end_ind)-1,
+                                                        trans_cds_list)
                                 mute_posits.append((new_mute_pos, line_count))
-                                mute_locs[new_mute_pos-(end_ind-len(orig_seq))] = alt
+                                mute_locs[new_mute_pos-(end_ind-len(orig_seq))+tot_introns] = alt
                         print "past while loop, before make mute"
                         # adjust_locs = dict()
                         # for key in mute_locs:
@@ -506,6 +528,37 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                         #     #adjust_key = key+len(orig_seq)-right_half
                         #     adjust_locs[adjust_key] = mute_locs[key]
                         # print adjust_locs
+                        try:
+                            print(upper_st_ind_in_cds)
+                        except NameError:
+                            print("Yeah it failed right here 509")
+                        # locs_keys = sorted(list(mute_locs.keys()))
+                        # mute_posits.sort()
+                        # curr_index = 0
+                        # adjusted_mute_locs = {}
+                        # print(trans_cds_list)
+                        # print("BEFORE", mute_locs)
+                        # print(locs_keys)
+                        # print(mute_posits)
+                        # for mutation in mute_posits:
+                        #     upper_mut_in_cds = 2*bisect.bisect(trans_cds_list[::2], mutation)-1
+                        #     tot_introns = get_introns(upper_st_ind_in_cds, upper_mut_in_cds, trans_cds_list)
+                        #     print(locs_keys[curr_index])
+                        #     print(tot_introns)
+                        #     if mute_locs[locs_keys[curr_index]] == '':
+                        #         try:
+                        #             while locs_keys[curr_index+1]-locs_keys[curr_index] == 1:
+                        #                 adjusted_mute_locs[locs_keys[curr_index] + tot_introns] = ''
+                        #                 curr_index += 1
+                        #         except IndexError:
+                        #             print('index error 525')
+                        #     adjusted_mute_locs[locs_keys[curr_index] + tot_introns] = mute_locs[locs_keys[curr_index]]
+                        #     curr_index += 1
+                        # print("AFTER", adjusted_mute_locs)
+                        # complete_cds_list = cds_dict[trans_id]
+                        # lo = bisect.bisect(complete_cds_list[::2], st_ind)
+                        # hi = bisect.bisect(complete_cds_list[1::2], end_ind) + 1
+                        # return complete_cds_list[lo:hi]
                         mute_seq = make_mute_seq(orig_seq, mute_locs)
                         #wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), ref_ind)
                         kmer(mute_posits, turn_to_aa(orig_seq, "-"), turn_to_aa(mute_seq, "-"))
@@ -521,13 +574,14 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 #pos, pos_in_codon, shift, mute_locs, alt, orig, chrom, ref_ind, line_count, exon_dict
                 if(len(mute_locs)==0):
                     st_ind = pos-30-pos_in_codon
+                    upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
                 if len(alt) > len(orig):
                     end_ind = pos + 2 - (pos_in_codon+shift)%3
-                    query_st = end_ind + 1
+                    #query_st = end_ind + 1
                     mute_locs[pos-st_ind] = alt
                 else:
                     end_ind = pos + 2 - pos_in_codon + abs(shift)
-                    query_st = end_ind + 1
+                    #query_st = end_ind + 1
                     for index in range(abs(shift)):
                         mute_locs[pos-st_ind+1+index] = ""
                 #print "forward ", str(end_ind-st_ind), str(shift), str(pos_in_codon)
@@ -537,6 +591,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                 #print("cds list: ", cds_list)
                 if len(cds_list) != 0:
                     orig_seq = ""
+                    new_start = cds_list[0][0]
                     for cds_stretch in cds_list:
                         (seq_start, seq_length) = cds_stretch
                         try:
@@ -545,12 +600,27 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                             print(chrom, seq_start, seq_length)
                             break
                     try:
-                        new, total_intron_length = find_stop(query_st, trans_id,
+                        tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], st_ind)-1,
+                                                        2*bisect.bisect(trans_cds_list[::2], end_ind)-1,
+                                                        trans_cds_list)
+                        new = find_stop(end_ind+1+tot_introns, trans_id,
                                               line_count, cds_dict, chrom,
                                               ref_ind, mute_locs, False)
+                        '''print("THIS IS WHAT I HAD BEFORE")
+                        print(orig_seq)
+                        print("THIS IS WHAT I AM ADDING")
+                        print('line', end_ind+1+tot_introns)
+                        print(new)
+                        print("THIS IS WHERE NEW STARTS")
+                        print(end_ind + 1 +tot_introns)
+                        print('end_end', end_ind)
+                        print('tot_introns', tot_introns)'''
                         orig_seq += new
+                        print('Curr orig seq')
+                        print(orig_seq)
+                        print "FDSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
                         mute_line_num = new_mute_pos = 0
-                        while(new_mute_pos < st_ind + len(orig_seq)):
+                        while(new_mute_pos < st_ind + len(orig_seq)+tot_introns):
                             mute_line_num += 1
                             if (line_num + mute_line_num) >= len(trans_lines):
                                 break
@@ -567,8 +637,11 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                             if len(orig) != len(alt):
                                 mute_posits.append((new_mute_pos, line_count))
                                 pos_in_codon = (new_mute_pos-st_ind+shift)%3
+                                tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], st_ind)-1,
+                                                                2*bisect.bisect(trans_cds_list[::2], new_mute_pos)-1,
+                                                                trans_cds_list)
                                 if len(alt) > len(orig):
-                                    mute_locs[new_mute_pos-st_ind] = alt
+                                    mute_locs[new_mute_pos-st_ind-tot_introns] = alt
                                     #mute_locs[new_mute_pos-st_ind+shift] = alt
                                     shift += (len(alt) - len(orig))
                                     end_ind = new_mute_pos + 2 - (pos_in_codon+shift)%3
@@ -578,24 +651,67 @@ def kmerize_trans(trans_lines, line_count, trans_id):
                                     end_ind = new_mute_pos + 2 - pos_in_codon + abs(shift)
                                     query_st = end_ind + 1
                                     for index in range(abs(len(alt)-len(orig))):
-                                        mute_locs[new_mute_pos-st_ind+1+index] = ""
-                                orig_seq = orig_seq[0:new_mute_pos-st_ind] + get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
-                                new,total_intron_length = find_stop(st_ind+len(orig_seq), trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                        mute_locs[new_mute_pos-st_ind+1+index-tot_introns] = ""
+                                (cds_list, temp, bounds_set) = get_cds(trans_id, [(new_mute_pos, line_count)], 0, 2-pos_in_codon, cds_dict, dict())
+                                if len(cds_list)==0: continue
+                                codon = ""
+                                for bound_start, bound_length in cds_list:
+                                    codon += get_seq(chrom, bound_start, bound_length, ref_ind)
+                                print new_mute_pos, codon, pos_in_codon, st_ind, new_mute_pos-st_ind
+                                final_st, final_leng = cds_list.pop()
+                                #there was a +1
+                                print "646", orig_seq
+                                orig_seq = orig_seq[0:new_mute_pos-st_ind-tot_introns] + codon #get_seq(chrom, new_mute_pos, 2-pos_in_codon, ref_ind)
+                                print 648, orig_seq
+                                '''print("ORIG SEQ after slicing 640")
+                                print(orig_seq)
+                                print("part 1 of it")
+                                print(orig_seq[0:new_mute_pos-st_ind+1])
+                                print("part 2 of it")
+                                print(codon)
+                                print("it ends on ")
+                                print(new_mute_pos-st_ind+1)
+                                print("it picks up on")
+                                print(new_mute_pos-st_ind)'''
+                                #new = find_stop(st_ind+len(orig_seq)+tot_introns, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                new = find_stop(final_st+final_leng, trans_id, line_count, cds_dict, chrom, ref_ind, mute_locs, False)
+                                print 661, new
                                 orig_seq += new
+                                print("Final orig_seq 644", orig_seq)
                             else:
                                 ################ @TODO fix line_count to be specific for mute
+                                tot_introns = get_introns(2*bisect.bisect(trans_cds_list[::2], st_ind)-1,
+                                                        2*bisect.bisect(trans_cds_list[::2], new_mute_pos)-1,
+                                                        trans_cds_list)
                                 mute_posits.append((new_mute_pos, line_count))
-                                mute_locs[pos-st_ind+shift] = alt
+                                mute_locs[pos-st_ind+shift-tot_introns] = alt
                             # mute_posits.append((new_mute_pos, line_count))
                             # mute_locs[pos-st_ind+shift] = alt
                         print mute_locs
+                        print "Everywhere ###################"
+                        print orig_seq
+                        # locs_keys = sorted(list(mute_locs.keys()))
+                        # mute_posits.sort()
+                        # curr_index = 0
+                        # adjusted_mute_locs = {}
+                        # for mutation in mute_posits:
+                        #     upper_mut_in_cds = 2*bisect.bisect(trans_cds_list[::2], mutation)-1
+                        #     tot_intron = get_introns(upper_st_ind_in_cds, upper_mut_in_cds, trans_cds_list)
+                        #     if mute_locs[locs_keys[curr_index]] == '':
+                        #         while locs_keys[curr_index+1]-locs_keys[curr_index] == 1:
+                        #             adjusted_mute_locs[locs_keys[curr_index] - tot_introns] = ''
+                        #             curr_index += 1
+                        #     adjusted_mute_locs[locs_keys[curr_index] - tot_introns] = mute_locs[locs_keys[curr_index]]
                         mute_seq = make_mute_seq(orig_seq, mute_locs)
                         #print "Forward ", orig_seq, str(len(orig_seq)), str(len(mute_seq))
                         wild_seq = get_seq(chrom, st_ind, len(mute_seq), ref_ind)
                         kmer(mute_posits, turn_to_aa(wild_seq, "+"), turn_to_aa(mute_seq, "+"))
                         print "Indel ", wild_seq, "\t", mute_seq, len(wild_seq), len(mute_seq), pos
-                    except:
+                        print mute_locs
+                    except Exception as ex:
+                        print mute_locs, len(orig_seq)
                         (mute_locs, mute_posits, last_chrom) = (dict(), [], "None")
+                        print type(ex)
                         print("HERE DELIN")
                         pass
                     #NEED TO EDIT try-except so that the sequence upto the stop
@@ -608,6 +724,7 @@ def kmerize_trans(trans_lines, line_count, trans_id):
             end_ind = pos+32-pos_in_codon
         else:
             st_ind = pos-30-pos_in_codon
+            upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
             end_ind = pos+32-pos_in_codon
         mute_locs[(pos-st_ind)] = alt
         mute_posits.append((pos, line_count))
@@ -665,6 +782,7 @@ try:
             if((len(trans_lines) != 0) and (last_trans != trans_id)):
                 try:
                     direct = orf_dict[last_trans][0][0]
+                    cds_list = cds_dict[last_trans]
                 except:
                 #    print "orf_dict failure"
                     last_trans = trans_id
@@ -673,7 +791,7 @@ try:
                 if(direct == "-"):
                     trans_lines = list(reversed(trans_lines))
                 begin_line = line_count - len(trans_lines) - 1
-                kmerize_trans(trans_lines, begin_line, last_trans)
+                kmerize_trans(trans_lines, begin_line, last_trans, cds_list)
                 trans_lines = []
             last_trans = trans_id
             trans_lines.append(line)
@@ -681,7 +799,11 @@ try:
         begin_line = line_count - len(trans_lines) - 1
         if(direct == "-"):
             trans_lines = list(reversed(trans_lines))
-        kmerize_trans(trans_lines, begin_line, last_trans)
+        try:
+            cds_list = cds_dict[trans_id]
+            kmerize_trans(trans_lines, begin_line, last_trans, cds_list)
+        except KeyError:
+            pass
 
 finally:
     if args.vcf != '-':
