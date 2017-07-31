@@ -336,7 +336,7 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
         turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
         )
 
-def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list):
+def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
     last_chrom = "None"
     orig_seq = ""
     mute_locs = {}
@@ -733,7 +733,7 @@ try:
                 if(direct == "-"):
                     trans_lines = list(reversed(trans_lines))
                 begin_line = line_count - len(trans_lines) - 1
-                kmerize_trans(trans_lines, begin_line, last_trans, cds_list)
+                kmerize_trans(trans_lines, begin_line, last_trans, cds_list, direct)
                 trans_lines = []
             last_trans = trans_id
             trans_lines.append(line)
@@ -746,7 +746,7 @@ try:
             trans_lines = list(reversed(trans_lines))
         try:
             cds_list = cds_dict[trans_id]
-            kmerize_trans(trans_lines, begin_line, last_trans, cds_list)
+            kmerize_trans(trans_lines, begin_line, last_trans, cds_list, direct)
         except KeyError:
             pass
 
