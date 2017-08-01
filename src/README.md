@@ -10,23 +10,38 @@ License
 
 Other Software
 -----
-[netMHC]  for predicting Binding Affinities
-[hapCUT 2] (https://github.com/vibansal/HapCUT2) interpretation of max-cut algorithm for phasing.
+* [netMHC]  for predicting Binding Affinities
+* [hapCUT 2] interpretation of max-cut algorithm for phasing.
+
+[hapCUT 2]: https://github.com/vibansal/HapCUT2
 
 Using Neoscan
 -----
+
 GTF_pickler.py
+
 Inputs: gtf files, name of file to be pickled into
+
 Outputs: pickled file
+
 Command Line (In Bash): ```python /PATH/TO/GTF_pickler.py -g PATH/TO/GTF -d PATH/TO/PICKLE_FILE.p```
 
+
 bowtie_index.py
+
 Instruction: Save to same directory as neoscan.py; contains the bowtie query sequences
 
+
 neoscan.py - MAIN FILE
+
 Command line (In Bash): ```python /PATH/TO/neoscan.py -x /PATH/TO/BOWTIE/BASENAME -v PATH/TO/VCF -d PATH/TO/PICKLE_FILE.p > OUTPUT_FILE.txt```
+
 Inputs: vcf file, pickled dictionaries from GTF_pickler.py, path to bowtie index basename
+
 Outputs:
+
   Column 1 - wild type amino acid epitope/ kmer
+  
   Column 2 - corresponding mutant type amino acid epitope/ kmer
+  
   Column 3 - list of tuples in format (mutation position, corresponding vcf line)
