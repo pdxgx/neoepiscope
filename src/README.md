@@ -1,3 +1,11 @@
+#NEOSCAN
+Neoscan is an epitope-prediction software for use in cancer immunotherapy research. It is useful in checkpoint blockade therapy
+and identifying targets for vaccines. Neoscan works with both missense and indel mutations.
+
+License
+-----
+MIT License
+
 GTF_pickler.py
 Inputs: gtf files, name of file to be pickled into
 Outputs: pickled file
