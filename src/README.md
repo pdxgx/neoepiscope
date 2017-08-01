@@ -18,7 +18,7 @@ Other Software
 Using Neoscan
 -----
 
-GTF_pickler.py
+**GTF_pickler.py**
 
 Inputs: gtf files, name of file to be pickled into
 
@@ -27,12 +27,12 @@ Outputs: pickled file
 Command Line (In Bash): ```python /PATH/TO/GTF_pickler.py -g PATH/TO/GTF -d PATH/TO/PICKLE_FILE.p```
 
 
-bowtie_index.py
+**bowtie_index.py**
 
 Instruction: Save to same directory as neoscan.py; contains the bowtie query sequences
 
 
-neoscan.py - MAIN FILE
+**neoscan.py - MAIN FILE**
 
 Command line (In Bash): ```python /PATH/TO/neoscan.py -x /PATH/TO/BOWTIE/BASENAME -v PATH/TO/VCF -d PATH/TO/PICKLE_FILE.p > OUTPUT_FILE.txt```
 
