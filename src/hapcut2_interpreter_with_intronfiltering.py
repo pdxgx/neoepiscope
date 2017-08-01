@@ -3,6 +3,7 @@
 #Description: Returns phased segment of queried data.
 #Input: Takes in chromosome, pos:start-end, and reference/germline sequence
 
+import re
         
 
 
@@ -19,15 +20,19 @@ def getfreqlabel(vcffile):
     for read in vcf:
         flag = 1
         if 'allele frequency' in read.lower():
-                startchar = 11
+                freqlabel = re.sub(r'.*ID=([A-Z]+)[,].*', r'\1', read)
+                '''if 'info' in read.lower():
+                    startchar = 11
+                else:
+                    startchar = 13
                 freqlabel = ""
                 while read[startchar] != ',':
                     freqlabel = freqlabel + read[startchar] 
-                    startchar += 1
+                    startchar += 1'''
                 #print freqlabel
                 flag = 0
                 break
-
+    vcf.close()
     if flag == 1:
         print "Raise runtime error"
     return freqlabel
@@ -38,9 +43,7 @@ def getfreqlabel(vcffile):
 #Output: 1 or 2 sequences that include variants, 1 if all variants are on same chromosome, 2 if variants are spread across both chromosome
 #Description: will apply mutations after searching throught the hapcut2 results
 #Description: will apply mutations of both hapcut2 results and vcf file (nonphased mutations)
-#Description: applies mutation to the relevant chromosome strand
-
-#Return flags: 0- mutation from Hapcut2 output, 1- mutation from vcf, 2- no mutation
+#Description: applies mutation to the relevant chromosome strand or new combinatorial option
 
 def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
     chrome1 = list(refseq)
@@ -49,8 +52,8 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
     chromepassed2 = [0] * len(refseq)
     hapscore1 = [0] * len(refseq)
     hapscore2 = [0] * len(refseq)
-    allelefreq = [0] * len(refseq)
-    allelefreq = [0] * len(refseq)
+    allelefreq1 = [0] * len(refseq)
+    allelefreq2 = [0] * len(refseq)
     chrome1count = 0 #probably unnecessary due to vcflist but good to keep counters for debug purposes
     chrome2count = 0
     chrome1vcflist = []
@@ -59,6 +62,22 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
     chromeflag2 = 0
     hapflag = 0
     errorflag = 0
+    freqlabel = getfreqlabel(vcfname)
+    freqpos = 0
+    openvcf = open(vcfname, "r")
+    for line in openvcf:
+        if not line or line[0] == '#': continue
+        stripped = line.strip().split()
+        info = stripped[8].split(':')
+        counter = 0
+        for infos in info:
+            if infos.strip() != freqlabel.strip():
+                counter += 1
+            else:
+                freqpos = counter
+                break
+        break
+
     hapcutfile = open("haplotype_output_file", "r")
     for line in hapcutfile:
         stripped = line.strip().split()
@@ -83,6 +102,9 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                     chrome1vcflist.append(int(stripped[0]))
                     chromepassed1[mutpos] = 1
                     hapscore1[mutpos] = float(stripped[10])
+                    vcfline = stripped[7].strip().split(':')
+                    #print vcfline
+                    allelefreq1[mutpos] = float(vcfline[freqpos].rstrip('%'))
                 if int(stripped[2]) != 0:
                     hapflag = 1
                     chromeflag2 = 1
@@ -94,7 +116,10 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                     chrome2vcflist.append(int(stripped[0]))
                     chromepassed2[mutpos] = 1
                     hapscore2[mutpos] = float(stripped[10])
-                   
+                    vcfline = stripped[7].strip().split(':')
+                    #print vcfline
+                    allelefreq2[mutpos] = float(vcfline[freqpos].rstrip('%'))
+    print allelefreq1, allelefreq2                  
     hapcutfile.close()
     #chrome1 = ''.join(chrome1)
     #chrome2 = ''.join(chrome2)
@@ -108,7 +133,6 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
     for line in vcffile:
         if not line or line[0] == '#': continue
         linecount += 1
-        infostring = []
         stripped = line.strip().split()
         in_exon_flag = 0
         for (exonstart, exonend) in exonlist:
@@ -128,6 +152,7 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                             newseq[mutpos+x+1] = ""
                     #newseq = ''.join(newseq)
                     seqlist.append(newseq)
+                
     for seq in seqlist:
         seqset.append("".join(seq))
     seqset = set(seqset)
