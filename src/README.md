@@ -1,20 +1,25 @@
-#NEOSCAN
+NEOSCAN
+-----
 Neoscan is an epitope-prediction software for use in cancer immunotherapy research. It is useful in checkpoint blockade therapy
 and identifying targets for vaccines. Neoscan works with both missense and indel mutations.
 
 License
 -----
-MIT License
+[MIT](http://choosealicense.com/licenses/mit/) License
 
+
+Using Neoscan
+-----
 GTF_pickler.py
 Inputs: gtf files, name of file to be pickled into
 Outputs: pickled file
+Command Line (In Bash): '''python /PATH/TO/GTF_pickler.py -g PATH/TO/GTF -d PATH/TO/PICKLE_FILE.p'''
 
 bowtie_index.py
 Instruction: Save to same directory as neoscan.py; contains the bowtie query sequences
 
 neoscan.py - MAIN FILE
-Command line call: python /PATH/TO/neoscan.py -x /PATH/TO/BOWTIE/BASENAME -v PATH/TO/VCF -d PATH/TO/PICKLED/DICTIONARY/FILE > OUTPUT_FILE.txt
+Command line (In Bash): '''python /PATH/TO/neoscan.py -x /PATH/TO/BOWTIE/BASENAME -v PATH/TO/VCF -d PATH/TO/PICKLE_FILE.p > OUTPUT_FILE.txt'''
 Inputs: vcf file, pickled dictionaries from GTF_pickler.py, path to bowtie index basename
 Outputs:
   column 1 - wild type amino acid epitope/ kmer
