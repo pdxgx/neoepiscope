@@ -119,14 +119,23 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                     vcfline = stripped[7].strip().split(':')
                     #print vcfline
                     allelefreq2[mutpos] = float(vcfline[freqpos].rstrip('%'))
-    print allelefreq1, allelefreq2                  
+    #print hapscore1, hapscore2
+    #print allelefreq1, allelefreq2                  
     hapcutfile.close()
     #chrome1 = ''.join(chrome1)
     #chrome2 = ''.join(chrome2)
     seqlist = []
     seqset = []
+    allelefreqlist = []
+    #print chrome1
+    #print chrome2
+    #print allelefreq1
+    #print allelefreq2
     seqlist.append(chrome1)
     seqlist.append(chrome2)
+    allelefreqlist.append(allelefreq1)
+    allelefreqlist.append(allelefreq2)
+    #print allelefreqlist
     linecount = 0
     vcffile = open(vcfname, "r")
     freqlabel = getfreqlabel(vcfname)
@@ -147,19 +156,25 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                 for x in range(0,length):
                     newseq = list(seqlist[x])
                     newseq[mutpos] = stripped[4]
+                    newallelescores = list(allelefreqlist[x])
+                    #print newallelescores
                     if len(stripped[3]) > 1:
                         for x in range(0, len(stripped[3])-1):
                             newseq[mutpos+x+1] = ""
                     #newseq = ''.join(newseq)
+                    newallelescores[mutpos] = float(allelefreqline[freqpos].rstrip('%'))
+                    #print newallelescores
+                    allelefreqlist.append(newallelescores)
+                    #print seqlist
                     seqlist.append(newseq)
-                
+    print allelefreqlist             
     for seq in seqlist:
         seqset.append("".join(seq))
-    seqset = set(seqset)
-    seqback = list(seqset)
+    #seqset = set(seqset)
+    #seqback = list(seqset)
     #seqset = set(seqlist)
     #seqback = list(seqset)
-    return seqback
+    return seqset
 
             
 
