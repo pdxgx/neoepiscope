@@ -13,7 +13,7 @@ import re
 #Description: will read to header file and pattern match on the line
 
 #pattern match beginning of header file VCF
-#Note: check if all vcf have the the header file format
+#Note: check if all vcf have the the header file format (either info or format)
 #if not, we're in trouble....
 def getfreqlabel(vcffile):
     vcf = open(vcffile, "r")
@@ -167,7 +167,16 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                     allelefreqlist.append(newallelescores)
                     #print seqlist
                     seqlist.append(newseq)
-    print allelefreqlist             
+    print allelefreqlist
+
+    for seq in seqlist:
+        for x in range(len(seq)):
+            in_exon = 0
+            for (start, end) in exonlist:
+                if x+startpos >= start and x+startpos <= end:
+                    in_exon = 1
+            if in_exon == 0:
+                seq[x] == ""
     for seq in seqlist:
         seqset.append("".join(seq))
     #seqset = set(seqset)
