@@ -6,6 +6,32 @@ import math
 import string
 import copy
 import pickle
+#import Hapcut2interpreter as hap
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--vcf', type=str, required=True,
+        default='-',
+        help='input vcf or "-" for stdin'
+    )
+parser.add_argument('-x', '--bowtie-index', type=str, required=True,
+        help='path to Bowtie index basename'
+    )
+parser.add_argument('-d', '--dicts', type=str, required=True,
+        help='input path to pickled dictionaries'
+    )
+parser.add_argument('-b', '--bam', action='store_true', required=False,
+        default = False, help='T/F bam is used'
+    )
+args = parser.parse_args()
+ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
+
+if args.bam:
+    try:
+        import Hapcut2interpreter as hap
+    except:
+        raise RuntimeError('Hapcut2interpreter was not run')
+
+my_dicts = pickle.load ( open (args.dicts, "rb"))
+(cds_dict, orf_dict, exon_dict, exon_orf_dict) = (my_dicts[0], my_dicts[1], my_dicts[2], my_dicts[3])
 
 codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
     "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
@@ -331,48 +357,54 @@ def make_mute_seq(orig_seq, mute_locs, reverse):
 def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                       orf_dict, trans_id, mute_posits, direct):
     #if bam exists:
-    seq_start = cds_list[0][0]
-    (last_start, last_length) = cds_list.pop()
-    seq_end = last_start+last_length
-    cds_list.append((last_start, last_length)) #optional
-    try:
-        new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
-        hap_output = hap.returnphasing(last_chrom, seq_start, seq_end-1, new_portion, args.vcf)
-        hap_seq_list = hap_output[0]
-        for hap_seq in hap_seq_list:
-            mute_seq = ""
-            wild_seq = ""
-            for cds_stretch in cds_list:
-                (stretch_start, stretch_length) = cds_stretch
-                index_start = stretch_start - seq_start
-                mute_seq += hap_seq[index_start:index_start+stretch_length]
-                wild_seq += get_seq(last_chrom, stretch_start, stretch_length, ref_ind)
-             #mute_seq = make_mute_seq(wild_seq, mute_locs)
-            kmer(mute_posits,
-                turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
-                turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
-                )
-    #if no bam: 
-    '''wild_seq = ""
-    full_length = 0
-    for cds_stretch in cds_list:
-        (seq_start, seq_length) = cds_stretch
+    if args.bam:
+        seq_start = cds_list[0][0]
+        (last_start, last_length) = cds_list.pop()
+        seq_end = last_start+last_length
+        cds_list.append((last_start, last_length)) #optional
         try:
-            wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+            new_portion = get_seq(last_chrom, seq_start, seq_end-seq_start, ref_ind)
+            hap_output = hap.returnphasing(last_chrom, seq_start, seq_end-1, new_portion, args.vcf)
+            hap_seq_list = hap_output[0]
+            for hap_seq in hap_seq_list:
+                mute_seq = ""
+                wild_seq = ""
+                for cds_stretch in cds_list:
+                    (stretch_start, stretch_length) = cds_stretch
+                    index_start = stretch_start - seq_start
+                    mute_seq += hap_seq[index_start:index_start+stretch_length]
+                    wild_seq += get_seq(last_chrom, stretch_start, stretch_length, ref_ind)
+                kmer(mute_posits,
+                    turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
+                    turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+                    )
         except:
+            print "find and print kmers failure"
+            raise
             return
-        full_length += seq_length
-    cds_start = cds_list[0][0]
-    if direct == "-":
-        mute_seq = make_mute_seq(wild_seq, mute_locs, True)
+    #if no bam: 
     else:
-        mute_seq = make_mute_seq(wild_seq, mute_locs, False)
-    print(wild_seq, len(wild_seq))
-    print(mute_seq, len(mute_seq))
-    kmer(mute_posits,
-        turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
-        turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
-        )'''
+        wild_seq = ""
+        full_length = 0
+        for cds_stretch in cds_list:
+            (seq_start, seq_length) = cds_stretch
+            try:
+                wild_seq += get_seq(last_chrom, seq_start, seq_length, ref_ind)
+            except:
+                return
+            full_length += seq_length
+        cds_start = cds_list[0][0]
+        if direct == "-":
+            mute_seq = make_mute_seq(wild_seq, mute_locs, True)
+        else:
+            mute_seq = make_mute_seq(wild_seq, mute_locs, False)
+        print(wild_seq, len(wild_seq))
+        print(mute_seq, len(mute_seq))
+        kmer(mute_posits,
+            turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
+            turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+            )
+    
 
 def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
     last_chrom = "None"
@@ -507,7 +539,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
                         #print "first left", left_half
                         #print "first orig", orig_seq
                         orig_seq = left_half + orig_seq
-                        print len(left_half), len(orig_seq)
+                        print 515, len(left_half), len(orig_seq)
                         old_locs = mute_locs.copy()
                         mute_locs.clear()
                         for locate in old_locs:
@@ -550,18 +582,26 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
                                                         2*bisect.bisect(trans_cds_list[::2], end_ind)-1,
                                                         trans_cds_list)
                                 #print('orig_seq is being constructed with', pos_in_codon)
-                                #print('new left', new_left)
+                                print('new left', new_left)
+                                print('tot_introns', tot_introns)
                                 #print('get_seq', st_ind, pos_in_codon, get_seq(chrom, st_ind, pos_in_codon, ref_ind))
                                 #print('spliced orig', orig_seq[new_mute_pos - (end_ind-len(orig_seq))+tot_introns-1:])
                                 #print('normal prev orig', orig_seq)
                                 #orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) + right_half)
                                 #orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
                                 #            orig_seq[new_mute_pos - (end_ind-len(orig_seq))+tot_introns+shift:])
+                                print(len(orig_seq), 'before orig_seq len')
+                                new_var = len(orig_seq)
                                 orig_seq = (new_left + get_seq(chrom, st_ind, pos_in_codon, ref_ind) +
                                             orig_seq[new_mute_pos - (end_ind-len(orig_seq))+tot_introns-1:])
+                                print(len(orig_seq), 'after orig_seq len')
+                                print('new_mute_pos, end_ind, old len(orig_seq), tot_introns', new_mute_pos, end_ind, new_var, tot_introns)
+                                print(end_ind-new_var, 'end_ind-new_var')
+                                print(new_mute_pos-(end_ind-new_var), 'new_mute_pos-above')
+                                print(new_mute_pos - (end_ind-new_var)+tot_introns, 'final. -1 needs to be added')
                                 old_locs = mute_locs.copy()
                                 mute_locs.clear()
-                                print old_locs
+                                print 569, len(orig_seq), old_locs
                                 for locate in old_locs:
                                     #print locate, prev_leng, len(orig_seq), locate-prev_leng+len(orig_seq)
                                     mute_locs[locate-prev_leng+len(orig_seq)] = old_locs[locate]
@@ -782,22 +822,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
         find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
                           orf_dict, trans_id, mute_posits, direct)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--vcf', type=str, required=False,
-        default='-',
-        help='input vcf or "-" for stdin'
-    )
-parser.add_argument('-x', '--bowtie-index', type=str, required=True,
-        help='path to Bowtie index basename'
-    )
-parser.add_argument('-d', '--dicts', type=str, required=True,
-        help='input path to pickled dictionaries'
-    )
-args = parser.parse_args()
-ref_ind = bowtie_index.BowtieIndexReference(args.bowtie_index)
 
-my_dicts = pickle.load ( open (args.dicts, "rb"))
-(cds_dict, orf_dict, exon_dict, exon_orf_dict) = (my_dicts[0], my_dicts[1], my_dicts[2], my_dicts[3])
 
 
 try:
