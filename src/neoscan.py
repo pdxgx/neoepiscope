@@ -429,7 +429,33 @@ def find_seq_and_kmer(cds_list, last_chrom, ref_ind, mute_locs,
             turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
             turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
             )
-    
+
+# def check_stop():
+#     #Note: check slack for how to call return hapcut phasing. Edit get
+#            find_seq_and_kmer, cause that is not calling it correctly rn.
+#     #Needs st_ind, end_ind, the hapcut return line named "line", ref_ind, get_cds stuff
+#     #chrom, find_stop stuff
+#     com_codon = len(line) % 3
+#     #complete_codon + 1 so that you know where to have the start (chrom position) for find_stop
+#     if reverse:
+#         (l_side, r_side) = (com_codon+1, 0)
+#     else:
+#         (l_side, r_side) = (0, com_codon+1)
+#     (cds_list, t1, t2) = get_cds(trans_id, [(st_ind, fake_line_number)], l_side, r_side, cds_dict, mute_locs)
+#     #NOTE: don't want the st_ind itself included
+#     finish_cod = ""
+#     for bound_st, bound_len in cds_list:
+#         finish_cod += get_seq(chrom, bound_st, bound_len, ref_ind)
+#     line = finish_cod[1:] + line
+#     #Now run find_stop
+#     #For the wild_seq:
+#     #   If forward strand: Use st_ind, find len(mute_seq), use get_cds to find 
+#     #                      that many to the right from the st_ind, use get_seq
+#     #                      to construct the actual seq, print output
+#     #   If reverse strand: Use end_ind, find len(mute_seq), do opposite of above
+
+
+ 
 
 def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct):
     last_chrom = "None"
