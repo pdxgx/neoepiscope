@@ -74,18 +74,19 @@ def my_print_function(kmer_list, mute_posits):
     return None
 
 
-def kmer(mute_posits, size_min, size_max, normal_aa, mutated_aa = ""):
-    ''' Generates kmers of size size_min to size_max (e.g. 8-11) from amino acid sequences.
+def kmer(mute_posits, normal_aa, mutated_aa = ""):
+    ''' Generates 8-11' kmers from amino acid sequences.
         mute_posits: (List) Positions of mutations on chromosome
         normal_aa: (String) Amino acid sequence of Wild Type
         mutated_aa: (String) Amino acid sequence of Mutant Type
-        Return value: (List) List of tuples pairing mismatching kmers for a given epitope.
+        Return value: (List) List of tuples pairing mismatching kmers for a
+            given 8-11' epitope.
     '''
     if (len(mutated_aa) == 0):
         mutated_aa = normal_aa
     kmer_list = list()
     #Loop through window sizes
-    for ksize in range(size_min, size_max+1):
+    for ksize in range(8, 12):
         for startIndex in range(len(mutated_aa)-ksize+1):
             kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
     final_list = list()
@@ -172,7 +173,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
                 #shift is the current mutation's position in the codon.
                 new_pos_in_codon = (mutation_pos_list[-1][0]
                                     - pos_in_codon-mutation_pos_list[index][0]) % 3
-                seq_length_right = (_size_max-1)*3 + new_pos_in_codon
+                seq_length_right = 30 + new_pos_in_codon
                 seq_length_left -= (mutation_pos_list[-1][0] 
                                     - mutation_pos_list[index][0])
             break
@@ -379,7 +380,7 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mute_locs,
                     index_start = stretch_start - seq_start
                     mute_seq += hap_seq[index_start:index_start+stretch_length]
                     wild_seq += get_seq(last_chrom, stretch_start, stretch_length, reference_index)
-                kmer(mute_posits, _size_min, _size_max,
+                kmer(mute_posits,
                     seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]),
                     seq_to_peptide(mute_seq, orf_dict[trans_id][0][0])
                     )
@@ -410,7 +411,7 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mute_locs,
             reverse_strand = True
         else:
             reverse_strand = False
-        kmer(mute_posits, _size_min, _size_max,
+        kmer(mute_posits,
             seq_to_peptide(wild_seq, reverse_strand=reverse_strand), 
             seq_to_peptide(mute_seq, reverse_strand=reverse_strand)
             )
@@ -478,10 +479,10 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
         if last_chrom != "None":
             try:
                 if direct == "+":
-                    seq_end_cds_list,temp1,temp2 = get_cds(trans_id, [(last_pos, None)], 0, (3*_size_max-1)-pos_in_codon, cds_dict, {})
+                    seq_end_cds_list,temp1,temp2 = get_cds(trans_id, [(last_pos, None)], 0, 32-pos_in_codon, cds_dict, {})
                     seq_end = seq_end_cds_list[-1][0] + seq_end_cds_list[-1][1] - 1
                 else:
-                    seq_end_cds_list,temp1,temp2 = get_cds(trans_id, [(last_pos, None)], (_size_max-1)*3+pos_in_codon, 0, cds_dict, {})
+                    seq_end_cds_list,temp1,temp2 = get_cds(trans_id, [(last_pos, None)], 30+pos_in_codon, 0, cds_dict, {})
                     seq_end = seq_end_cds_list[0][0]
             except Exception as ex:
                 print(type(ex))
@@ -539,7 +540,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
             mute_posits.append((pos, line_count))
             if strand == "-":
                 if len(mute_locs) == 0:
-                    end_ind = pos+pos_in_codon-shift+(_size_max-1)*3
+                    end_ind = pos+pos_in_codon-shift+30
                     st_ind = pos - (2-pos_in_codon)
                 else:
                     old_start = st_ind
@@ -694,7 +695,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print "HAPCUT INPUT VARIABLES REVERSE < MUST INCLUDE", seq_st_pos, end_ind, tupled_list, full_seq
                         mute_seq = make_mute_seq(orig_seq, mute_locs, False)
                         #wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), reference_index)
-                        kmer(mute_posits, _size_min, _size_max, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mute_seq, reverse_strand=True))
+                        kmer(mute_posits, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mute_seq, reverse_strand=True))
                         print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), pos
                         print(mute_locs, mute_posits)
                     except Exception as ex:
@@ -705,7 +706,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
             if strand == "+":
                 #pos, pos_in_codon, shift, mute_locs, alt, orig, chrom, reference_index, line_count, exon_dict
                 if(len(mute_locs)==0):
-                    st_ind = pos-(_size_max-1)*3-pos_in_codon
+                    st_ind = pos-30-pos_in_codon
                     upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
                 if len(alt) > len(orig):
                     end_ind = pos + 2 - (pos_in_codon+shift)%3
@@ -820,19 +821,19 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
         if (direct == "+"):
             if last_chrom == chrom and seq_end != None and pos <= seq_end:
                 #The order of that if-statement is important! Don't change it!
-                end_ind = pos+(3*_size_max-1)-pos_in_codon
+                end_ind = pos+32-pos_in_codon
             else:
-                st_ind = pos-(_size_max-1)*3-pos_in_codon
+                st_ind = pos-30-pos_in_codon
                 #(cds_list, temp, temp2) = get_cds(trans_id, [(pos, line_count)], pos-30-pos_in_codon, 0, cds_dict, mute_locs)
                 #st_ind = cds_list[0][0] + cds_list[0][1]
                 upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
-                end_ind = pos+(3*_size_max-1)-pos_in_codon
+                end_ind = pos+32-pos_in_codon
             mute_locs[(pos-st_ind)] = alt
         else:
             if last_chrom == chrom and seq_end != None and pos >= seq_end:
                 #The order of that if-statement is important! Don't change it!
                 old_start = st_ind
-                st_ind = pos-(_size_max-1)*3-pos_in_codon
+                st_ind = pos-30-pos_in_codon
                 upper_st_ind_in_cds = 2*bisect.bisect(trans_cds_list[::2], st_ind)-1
                 old_locs = mute_locs.copy()
                 mute_locs.clear()
@@ -840,10 +841,10 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                     mute_locs[key+old_start-st_ind] = old_locs[key]
             else:
                 #@TODO check
-                st_ind = pos-(_size_max-1)*3-pos_in_codon
+                st_ind = pos-30-pos_in_codon
                 #(cds_list, temp, temp2) = get_cds(trans_id, [(pos, line_count)], 0, pos+32-pos_in_codon, cds_dict, mute_locs)
                 #end_ind = cds_list[-1][0] + cds_list[-1][1] - 1
-                end_ind = pos+(3*_size_max-1)-pos_in_codon
+                end_ind = pos+32-pos_in_codon
                 print "696 after calculations were made here is here", pos, st_ind, end_ind
             mute_locs[pos-st_ind] = alt
         mute_posits.append((pos, line_count))
@@ -940,8 +941,6 @@ def go():
     finally:
         if args.vcf != '-':
             input_stream.close()
-    [_size_min, _size_max] = split(args.kmer, ",")
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -957,9 +956,6 @@ if __name__ == '__main__':
         )
     parser.add_argument('-b', '--bam', action='store_true', required=False,
             default = False, help='T/F bam is used'
-        )
-    parser.add_argument('-k', '--kmer-size', type=str, required=False,
-            default='8,11', help='kmer size for epitope calculation'
         )
     args = parser.parse_args()
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
