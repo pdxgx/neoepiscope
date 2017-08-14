@@ -355,22 +355,32 @@ def get_seq(chrom, start, splice_length, reference_index):
     return seq
 
 def make_mutation_seq(orig_seq, mutation_locs, reverse):
-    mutation_seq = ""
-    if(reverse):
-        orig_seq = orig_seq[::1]
-        for ind in range(len(orig_seq)):
-            if ind in mutation_locs:
-                mutation_seq = mutation_locs[ind]+mutation_seq
-            else:
-                mutation_seq = orig_seq[ind] + mutation_seq 
+    if (reverse):
+        mutation_seq = orig_seq[::-1]
+    else:
+        mutation_seq = orig_seq
+    for ind in mutation_locs:
+        mutation_seq[ind] = mutation_locs[ind]
+    if (reverse):
         return mutation_seq[::-1]
     else:
-        for ind in range(len(orig_seq)):
-            if ind in mutation_locs:
-                mutation_seq += mutation_locs[ind]
-            else:
-                mutation_seq += orig_seq[ind]
         return mutation_seq
+
+#    if(reverse):
+ #       orig_seq = orig_seq[::-1]
+  #      for ind in range(len(orig_seq)):
+   #         if ind in mutation_locs:
+    #            mutation_seq = mutation_locs[ind]+mutation_seq
+     #       else:
+      #          mutation_seq = orig_seq[ind] + mutation_seq 
+       # return mutation_seq[::-1]
+#    else:
+ #       for ind in range(len(orig_seq)):
+  #          if ind in mutation_locs:
+   #             mutation_seq += mutation_locs[ind]
+    #        else:
+     #           mutation_seq += orig_seq[ind]
+      #  return mutation_seq
 
 def find_seq_and_kmer(cds_list, last_chrom, reference_index, mutation_locs,
                       orf_dict, trans_id, mutation_posits, direct):
