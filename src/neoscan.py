@@ -96,7 +96,7 @@ def get_cds(transcript_id, mutation_pos_list, seq_length_left,
             the right of the mutation
         Return value: List of tuples containing starting indexes and stretch
         lengths within cds boundaries necessary to acquire the complete 
-        sequence necessary for 8-11' peptide kmerization based on the position 
+        sequence necessary for peptide kmerization based on the position 
         of a mutation within a chromosome.
     '''
     bounds_set = set()
@@ -259,7 +259,7 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, 
     start = query_st
     stop_found = False
     cds_end = False
-    (l_query, r_query) = (0, 33)
+    (l_query, r_query) = (0, 3*_size_max)
     if reverse:
         (l_query, r_query) = (r_query, l_query)
     while(stop_found == False):
@@ -285,7 +285,7 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, 
         else:
             start = exon_list[-1][0] + exon_list[-1][1] - 1
         print 'extra cods', extra_cods
-        if len(extra_cods) != 33:
+        if len(extra_cods) != 3*_size_max:
             print 'triggered', len(extra_cods)
             cds_end = True
         count = 0
