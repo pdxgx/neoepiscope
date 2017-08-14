@@ -929,11 +929,7 @@ def go():
     finally:
         if args.vcf != '-':
             input_stream.close()
-    try:
-        (_size_min, _size_max) = split(args.kmer, ",")
-        _size_min = int(_size_min)
-        _size_max = int(_size_max)
-
+    (_size_min, _size_max) = split(args.kmer, ",")
 
 
 if __name__ == '__main__':
