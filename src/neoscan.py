@@ -951,7 +951,26 @@ def go():
     finally:
         if args.vcf != '-':
             input_stream.close()
-    (_size_min, _size_max) = split(args.kmer, ",")
+    try:
+        if "," in args.kmer_size:
+            (_size_min, _size_max) = args.kmer_size.split(",")
+            _size_min = int(_size_min)
+            _size_max = int(_size_max)
+        else:
+            _size_min = int(args.kmer_size)
+            _size_max = _size_min
+        if (_size_min < 1 or _size_max < 1):
+            except ValueError:
+                print "Kmer size(s) must be >= 1"
+                pass
+        if (_size_max < _size_min):
+            except ValueError:
+                print "Max kmer size cannot be less than min kmer size"
+                pass
+    except:
+        print "Unable to import kmer size from command line parameter, defaulting to 8-11aa kmers"
+        _size_min = 8
+        _size_max = 11
 
 
 if __name__ == '__main__':
