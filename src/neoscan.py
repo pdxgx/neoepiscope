@@ -64,9 +64,9 @@ def seq_to_peptide(seq, reverse_strand=False):
     return ''.join(peptide)
 
 
-def kmer(mute_posits, size_min, size_max, normal_aa, mutated_aa = ""):
+def kmer(mutation_posits, size_min, size_max, normal_aa, mutated_aa = ""):
     ''' Generates kmers of size size_min to size_max (e.g. 8-11) from amino acid sequences.
-        mute_posits: (List) Positions of mutations on chromosome
+        mutation_posits: (List) Positions of mutations on chromosome
         normal_aa: (String) Amino acid sequence of Wild Type
         mutated_aa: (String) Amino acid sequence of Mutant Type
         Return value: (List) List of tuples pairing mismatching kmers for a given epitope.
@@ -368,7 +368,7 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mutation_locs,
                     index_start = stretch_start - seq_start
                     mutation_seq += hap_seq[index_start:index_start+stretch_length]
                     wild_seq += get_seq(last_chrom, stretch_start, stretch_length, reference_index)
-                kmer(mute_posits, _size_min, _size_max,
+                kmer(mutation_posits, _size_min, _size_max,
                     seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]),
                     seq_to_peptide(mutation_seq, orf_dict[trans_id][0][0])
                     )
@@ -399,7 +399,7 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mutation_locs,
             reverse_strand = True
         else:
             reverse_strand = False
-        kmer(mute_posits, _size_min, _size_max,
+        kmer(mutation_posits, _size_min, _size_max,
             seq_to_peptide(wild_seq, reverse_strand=reverse_strand), 
             seq_to_peptide(mutation_seq, reverse_strand=reverse_strand)
             )
@@ -527,7 +527,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
             shift = len(alt)-len(orig)
             mutation_posits.append((pos, line_count))
             if strand == "-":
-                if len(mute_locs) == 0:
+                if len(mutation_locs) == 0:
                     end_ind = pos+pos_in_codon-shift+(_size_max-1)*3
                     st_ind = pos - (2-pos_in_codon)
                 else:
@@ -683,7 +683,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print "HAPCUT INPUT VARIABLES REVERSE < MUST INCLUDE", seq_st_pos, end_ind, tupled_list, full_seq
                         mutation_seq = make_mutation_seq(orig_seq, mutation_locs, False)
                         #wild_seq = get_seq(chrom, end_ind-len(mutation_seq)+1, len(mutation_seq), reference_index)
-                        kmer(mutation_posits, _size_min, _size_max, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mute_seq, reverse_strand=True))
+                        kmer(mutation_posits, _size_min, _size_max, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mutation_seq, reverse_strand=True))
                         print "Reverse Indel ", orig_seq, "\t", mutation_seq, len(orig_seq), len(mutation_seq), pos
                         print(mutation_locs, mutation_posits)
                     except Exception as ex:
