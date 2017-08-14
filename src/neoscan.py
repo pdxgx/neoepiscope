@@ -64,7 +64,7 @@ def seq_to_peptide(seq, reverse_strand=False):
     return ''.join(peptide)
 
 def kmerize_peptide(peptide, min_size=8, max_size=11):
-    """ Writes subsequences of a peptide.
+    """ Obtains subsequences of a peptide.
 
         normal_peptide: normal peptide seq
         min_size: minimum subsequence size
@@ -80,7 +80,19 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
             for item in sublist if 'X' not in item]
 
 def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
-                        reverse_strand=False, min_size=8, max_size=11):
+                        reverse_strand=False, min_size=8, max_size=11,
+                        output_stream=sys.stdout):
+    """ Prints neoepitopes from normal and mutated seqs.
+
+        mutation_positions: list of mutation positions
+        normal_seq: normal nucleotide sequence
+        mutated_seq: mutated nucelotide sequence
+        reverse_strand: True iff strand is -
+        min_size: minimum peptide kmer size to write
+        max_size: maximum petide kmer size to write
+
+        No return value.
+    """
     for normal_kmer, mutated_kmer in zip(
             kmerize_peptide(
                 seq_to_peptide(
@@ -93,7 +105,8 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
                 min_size=min_size,
                 max_size=max_size
             )):
-        print '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)])
+        print >>sys.stdout, (
+            '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
               seq_length_right, ordered_cds_dict, mutation_dict):
