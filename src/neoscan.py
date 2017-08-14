@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+"""
+neoscan
+
+Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
+"""
 import bisect
 import argparse
 import bowtie_index
