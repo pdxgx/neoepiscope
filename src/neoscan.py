@@ -63,26 +63,37 @@ def seq_to_peptide(seq, reverse_strand=False):
         peptide.append('X')
     return ''.join(peptide)
 
+def kmerize_peptide(peptide, min_size=8, max_size=11):
+    """ Writes subsequences of a peptide.
 
-def kmer(mutation_posits, size_min, size_max, normal_aa, mutated_aa = ""):
-    ''' Generates kmers of size size_min to size_max (e.g. 8-11) from amino acid sequences.
-        mutation_posits: (List) Positions of mutations on chromosome
-        normal_aa: (String) Amino acid sequence of Wild Type
-        mutated_aa: (String) Amino acid sequence of Mutant Type
-        Return value: (List) List of tuples pairing mismatching kmers for a given epitope.
-    '''
-    if (len(mutated_aa) == 0):
-        mutated_aa = normal_aa
-    kmer_list = list()
-    #Loop through window sizes
-    for ksize in range(size_min, size_max+1):
-        for startIndex in range(len(mutated_aa)-ksize+1):
-            kmer_list.append((normal_aa[startIndex:startIndex+ksize], mutated_aa[startIndex:startIndex+ksize]))
-    final_list = list()
-    for WT,MT in kmer_list:
-        if (WT != MT and 'X' not in MT):
-            final_list.append((WT, MT))
-    return final_list
+        normal_peptide: normal peptide seq
+        min_size: minimum subsequence size
+        max_size: maximum subsequence size
+
+        Return value: list of all possible subsequences of size between
+            min_size and max_size
+    """
+    peptide_size = len(peptide)
+    return [item for sublist in
+                [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
+                    for size in xrange(min_size, max_size + 1)]
+            for item in sublist if 'X' not in item]
+
+def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
+                        reverse_strand=False, min_size=8, max_size=11):
+    for normal_kmer, mutated_kmer in zip(
+            kmerize_peptide(
+                seq_to_peptide(
+                    normal_seq, reverse_strand=reverse_strand),
+                min_size=min_size,
+                max_size=max_size
+            ), kmerize_peptide(
+                seq_to_peptide(
+                    mutated_seq, reverse_strand=reverse_strand),
+                min_size=min_size,
+                max_size=max_size
+            )):
+        print '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)])
 
 def get_cds(transcript_id, mutation_pos_list, seq_length_left, 
               seq_length_right, ordered_cds_dict, mutation_dict):
@@ -368,10 +379,14 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mutation_locs,
                     index_start = stretch_start - seq_start
                     mutation_seq += hap_seq[index_start:index_start+stretch_length]
                     wild_seq += get_seq(last_chrom, stretch_start, stretch_length, reference_index)
-                kmer(mutation_posits, _size_min, _size_max,
-                    seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]),
-                    seq_to_peptide(mutation_seq, orf_dict[trans_id][0][0])
-                    )
+                if orf_dict[trans_id][0][0] == '-':
+                    reverse_strand = True
+                else:
+                    reverse_strand = False
+                write_neoepitopes(mutation_posits, wild_seq, mutation_seq,
+                                    reverse_strand=reverse_strand,
+                                    min_size=_size_min,
+                                    max_size=_size_max)
         except:
             print "find and print kmers failure"
             raise
@@ -399,10 +414,9 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mutation_locs,
             reverse_strand = True
         else:
             reverse_strand = False
-        kmer(mutation_posits, _size_min, _size_max,
-            seq_to_peptide(wild_seq, reverse_strand=reverse_strand), 
-            seq_to_peptide(mutation_seq, reverse_strand=reverse_strand)
-            )
+        write_neoepitopes(mutation_posits, wild_seq, mutation_seq,
+                            reverse_strand=reverse_strand,
+                            min_size=_size_min, max_size=_size_max)
 
 # def check_stop():
 #     #Note: check slack for how to call return hapcut phasing. Edit get
@@ -683,7 +697,11 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print "HAPCUT INPUT VARIABLES REVERSE < MUST INCLUDE", seq_st_pos, end_ind, tupled_list, full_seq
                         mutation_seq = make_mutation_seq(orig_seq, mutation_locs, False)
                         #wild_seq = get_seq(chrom, end_ind-len(mutation_seq)+1, len(mutation_seq), reference_index)
-                        kmer(mutation_posits, _size_min, _size_max, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mutation_seq, reverse_strand=True))
+                        write_neoepitopes(mutation_posits, wild_seq,
+                                            mutation_seq,
+                                            reverse_strand=reverse_strand,
+                                            min_size=_size_min,
+                                            max_size=_size_max)
                         print "Reverse Indel ", orig_seq, "\t", mutation_seq, len(orig_seq), len(mutation_seq), pos
                         print(mutation_locs, mutation_posits)
                     except Exception as ex:
@@ -798,7 +816,11 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print(mutation_seq)
                         print("len of wild_seq", len(wild_seq))
                         print("len of mutation_seq", len(mutation_seq))
-                        kmer(mutation_posits, seq_to_peptide(wild_seq), seq_to_peptide(mutation_seq))
+                        write_neoepitopes(mutation_posits,
+                                            wild_seq, mutation_seq,
+                                            reverse_strand=False,
+                                            min_size=_size_min,
+                                            max_size=_size_max)
                         print "Indel ", wild_seq, "\t", mutation_seq, len(wild_seq), len(mutation_seq), pos
                         print mutation_locs
                     except KeyError:
@@ -949,8 +971,6 @@ def go():
         print "Unable to import kmer size from command line parameter, defaulting to 8-11aa kmers"
         _size_min = 8
         _size_max = 11
-
-
 
 
 if __name__ == '__main__':
