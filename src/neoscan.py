@@ -34,19 +34,20 @@ def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
 
-def seq_to_peptide(seq, strand='+'):
+def seq_to_peptide(seq, reverse_strand=False):
     """ Translates nucleotide sequence into peptide sequence.
 
         All codons including and after stop codon are recorded as X's.
 
         seq: nucleotide sequence
+        strand: 
 
         nucleotide_string: (String) Entire nucleotide sequence made from A,T,C,G
         strand: (String) Denotes forward or reverse strand
         Return value: (String) Amino acid sequence 
     """
     seq_size = len(seq)
-    if strand == '-':
+    if reverse_strand:
         seq = seq[::-1].translate(_complement_table)
     peptide = []
     for i in xrange(0, seq_size - seq_size % 3, 3):
@@ -304,7 +305,7 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, 
             if reverse:
                 new_codon = extra_cods[len(extra_cods)-3-count:len(extra_cods)-count]
                 count += 3
-                amino_acid = seq_to_peptide(new_codon, "-")
+                amino_acid = seq_to_peptide(new_codon, reverse_strand=True)
             else:
                 new_codon = extra_cods[count: count+3]
                 count += 3
@@ -406,9 +407,13 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mute_locs,
         print(wild_seq, len(wild_seq))
         print(mute_seq, len(mute_seq))
         print mute_locs
+        if orf_dict[trans_id][0][0] == '-':
+            reverse_strand = True
+        else:
+            reverse_strand = False
         kmer(mute_posits,
-            seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]), 
-            seq_to_peptide(mute_seq, orf_dict[trans_id][0][0])
+            seq_to_peptide(wild_seq, reverse_strand=reverse_strand), 
+            seq_to_peptide(mute_seq, reverse_strand=reverse_strand)
             )
 
 # def check_stop():
@@ -690,7 +695,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print "HAPCUT INPUT VARIABLES REVERSE < MUST INCLUDE", seq_st_pos, end_ind, tupled_list, full_seq
                         mute_seq = make_mute_seq(orig_seq, mute_locs, False)
                         #wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), reference_index)
-                        kmer(mute_posits, seq_to_peptide(orig_seq, "-"), seq_to_peptide(mute_seq, "-"))
+                        kmer(mute_posits, seq_to_peptide(orig_seq, reverse_strand=True), seq_to_peptide(mute_seq, reverse_strand=True))
                         print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), pos
                         print(mute_locs, mute_posits)
                     except Exception as ex:
@@ -805,7 +810,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print(mute_seq)
                         print("len of wild_seq", len(wild_seq))
                         print("len of mute_seq", len(mute_seq))
-                        kmer(mute_posits, seq_to_peptide(wild_seq, "+"), seq_to_peptide(mute_seq, "+"))
+                        kmer(mute_posits, seq_to_peptide(wild_seq), seq_to_peptide(mute_seq))
                         print "Indel ", wild_seq, "\t", mute_seq, len(wild_seq), len(mute_seq), pos
                         print mute_locs
                     except KeyError:
