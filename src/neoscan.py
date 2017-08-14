@@ -6,55 +6,57 @@ import math
 import string
 import copy
 import pickle
-import Hapcut2interpreter as hap
+#import Hapcut2interpreter as hap
 
+# X below denotes a stop codon
+_codon_table = {
+        "TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
+        "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
+        "TAT":"Y", "TAC":"Y", "TAA":"X", "TAG":"X",
+        "TGT":"C", "TGC":"C", "TGA":"X", "TGG":"W",
+        "CTT":"L", "CTC":"L", "CTA":"L", "CTG":"L",
+        "CCT":"P", "CCC":"P", "CCA":"P", "CCG":"P",
+        "CAT":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
+        "CGT":"R", "CGC":"R", "CGA":"R", "CGG":"R",
+        "ATT":"I", "ATC":"I", "ATA":"I", "ATG":"M",
+        "ACT":"T", "ACC":"T", "ACA":"T", "ACG":"T",
+        "AAT":"N", "AAC":"N", "AAA":"K", "AAG":"K",
+        "AGT":"S", "AGC":"S", "AGA":"R", "AGG":"R",
+        "GTT":"V", "GTC":"V", "GTA":"V", "GTG":"V",
+        "GCT":"A", "GCC":"A", "GCA":"A", "GCG":"A",
+        "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
+        "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"
+    }
+_complement_table = string.maketrans("ATCG", "TAGC")
 
-my_dicts = pickle.load ( open (args.dicts, "rb"))
-(cds_dict, orf_dict, exon_dict, exon_orf_dict) = (my_dicts[0], my_dicts[1], my_dicts[2], my_dicts[3])
+_help_intro = """neoscan searches for neoepitopes in seq data."""
+def help_formatter(prog):
+    """ So formatter_class's max_help_position can be changed. """
+    return argparse.HelpFormatter(prog, max_help_position=40)
 
-codon_table = {"TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
-    "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
-    "TAT":"Y", "TAC":"Y", "TAA":"Stop", "TAG":"Stop",
-    "TGT":"C", "TGC":"C", "TGA":"Stop", "TGG":"W",
-    "CTT":"L", "CTC":"L", "CTA":"L", "CTG":"L",
-    "CCT":"P", "CCC":"P", "CCA":"P", "CCG":"P",
-    "CAT":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
-    "CGT":"R", "CGC":"R", "CGA":"R", "CGG":"R",
-    "ATT":"I", "ATC":"I", "ATA":"I", "ATG":"M",
-    "ACT":"T", "ACC":"T", "ACA":"T", "ACG":"T",
-    "AAT":"N", "AAC":"N", "AAA":"K", "AAG":"K",
-    "AGT":"S", "AGC":"S", "AGA":"R", "AGG":"R",
-    "GTT":"V", "GTC":"V", "GTA":"V", "GTG":"V",
-    "GCT":"A", "GCC":"A", "GCA":"A", "GCG":"A",
-    "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
-    "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"}
+def seq_to_peptide(seq, strand='+'):
+    """ Translates nucleotide sequence into peptide sequence.
 
-def turn_to_aa(nucleotide_string, strand="+"):
-    ''' References codon_table to turn codons to amino acids.
+        All codons including and after stop codon are recorded as X's.
+
+        seq: nucleotide sequence
+
         nucleotide_string: (String) Entire nucleotide sequence made from A,T,C,G
         strand: (String) Denotes forward or reverse strand
         Return value: (String) Amino acid sequence 
-    '''
-    aa_string = ""
-    num_aa = 0
-    if strand == "-":
-        translation_table = string.maketrans("ATCG", "TAGC")
-        nucleotide_string = nucleotide_string.translate(translation_table)[::-1]
-    for aa in range(len(nucleotide_string)//3):
-        num_aa += 1
-        try:
-            codon = codon_table[nucleotide_string[3*aa:3*aa+3]]
-        except KeyError:
-            print >>sys.stderr, (
-                        'Could not translate nucleotide string "{}".'
-                    ).format(nucleotide_string)
-            return False
-        if codon == "Stop":
-            aa_string += (len(nucleotide_string)//3 - num_aa + 1)*'X'
+    """
+    seq_size = len(seq)
+    if strand == '-':
+        seq = seq[::-1].translate(_complement_table)
+    peptide = []
+    for i in xrange(0, seq_size - seq_size % 3, 3):
+        codon = _codon_table[seq[i:i+3]]
+        peptide.append(codon)
+        if codon == 'X':
             break
-        else:
-            aa_string += codon
-    return aa_string
+    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+        peptide.append('X')
+    return ''.join(peptide)
 
 def my_print_function(kmer_list, mute_posits):
     ''' Prints out epitopes in 3 columns: Wild Type, Mutant Type, and
@@ -302,11 +304,11 @@ def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, 
             if reverse:
                 new_codon = extra_cods[len(extra_cods)-3-count:len(extra_cods)-count]
                 count += 3
-                amino_acid = turn_to_aa(new_codon, "-")
+                amino_acid = seq_to_peptide(new_codon, "-")
             else:
                 new_codon = extra_cods[count: count+3]
                 count += 3
-                amino_acid = turn_to_aa(new_codon)
+                amino_acid = seq_to_peptide(new_codon)
             if(amino_acid==""):
                 print 317, "found stop", new_codon, extra_cods, extra_cods[len(extra_cods)-3-count:len(extra_cods)-count], count
                 stop_found = True
@@ -378,8 +380,8 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mute_locs,
                     mute_seq += hap_seq[index_start:index_start+stretch_length]
                     wild_seq += get_seq(last_chrom, stretch_start, stretch_length, reference_index)
                 kmer(mute_posits,
-                    turn_to_aa(wild_seq, orf_dict[trans_id][0][0]),
-                    turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+                    seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]),
+                    seq_to_peptide(mute_seq, orf_dict[trans_id][0][0])
                     )
         except:
             print "find and print kmers failure"
@@ -405,8 +407,8 @@ def find_seq_and_kmer(cds_list, last_chrom, reference_index, mute_locs,
         print(mute_seq, len(mute_seq))
         print mute_locs
         kmer(mute_posits,
-            turn_to_aa(wild_seq, orf_dict[trans_id][0][0]), 
-            turn_to_aa(mute_seq, orf_dict[trans_id][0][0])
+            seq_to_peptide(wild_seq, orf_dict[trans_id][0][0]), 
+            seq_to_peptide(mute_seq, orf_dict[trans_id][0][0])
             )
 
 # def check_stop():
@@ -688,7 +690,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print "HAPCUT INPUT VARIABLES REVERSE < MUST INCLUDE", seq_st_pos, end_ind, tupled_list, full_seq
                         mute_seq = make_mute_seq(orig_seq, mute_locs, False)
                         #wild_seq = get_seq(chrom, end_ind-len(mute_seq)+1, len(mute_seq), reference_index)
-                        kmer(mute_posits, turn_to_aa(orig_seq, "-"), turn_to_aa(mute_seq, "-"))
+                        kmer(mute_posits, seq_to_peptide(orig_seq, "-"), seq_to_peptide(mute_seq, "-"))
                         print "Reverse Indel ", orig_seq, "\t", mute_seq, len(orig_seq), len(mute_seq), pos
                         print(mute_locs, mute_posits)
                     except Exception as ex:
@@ -803,7 +805,7 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                         print(mute_seq)
                         print("len of wild_seq", len(wild_seq))
                         print("len of mute_seq", len(mute_seq))
-                        kmer(mute_posits, turn_to_aa(wild_seq, "+"), turn_to_aa(mute_seq, "+"))
+                        kmer(mute_posits, seq_to_peptide(wild_seq, "+"), seq_to_peptide(mute_seq, "+"))
                         print "Indel ", wild_seq, "\t", mute_seq, len(wild_seq), len(mute_seq), pos
                         print mute_locs
                     except KeyError:
@@ -875,62 +877,65 @@ def kmerize_trans(trans_lines, line_count, trans_id, trans_cds_list, direct, ref
                           orf_dict, trans_id, mute_posits, direct)
 
 
-
-
-try:
-    if args.vcf == '-':
-        if sys.stdin.isatty():
-            raise RuntimeError('Nothing piped into this script, but input is '
-                               'to be read from stdin')
+def go():
+    """ Entry point """
+    # Print file's docstring if -h is invoked
+    parser = argparse.ArgumentParser(description=_help_intro, 
+                formatter_class=help_formatter)
+    try:
+        if args.vcf == '-':
+            if sys.stdin.isatty():
+                raise RuntimeError('Nothing piped into this script, but input is '
+                                   'to be read from stdin')
+            else:
+                input_stream = sys.stdin
         else:
-            input_stream = sys.stdin
-    else:
-        input_stream = open(args.vcf, "r")
-        line_count = 0
-        trans_lines = []
-        my_dict = cds_dict
-        #print(get_seq("3", 69990, 20, reference_index))
-        for line in input_stream:
-            line_count += 1
-            if not line or line[0] == '#': continue
-            vals = line.strip().split('\t')
-            info = vals[7]
-            tokens = info.strip().split('|')
-            (trans_id) = (tokens[6])
-            if((len(trans_lines) != 0) and (last_trans != trans_id)):
-                try:
-                    direct = orf_dict[last_trans][0][0]
-                    cds_list = cds_dict[last_trans]
-                except:
-                    print "orf_dict failure"
-                    last_trans = trans_id
+            input_stream = open(args.vcf, "r")
+            line_count = 0
+            trans_lines = []
+            my_dict = cds_dict
+            #print(get_seq("3", 69990, 20, reference_index))
+            for line in input_stream:
+                line_count += 1
+                if not line or line[0] == '#': continue
+                vals = line.strip().split('\t')
+                info = vals[7]
+                tokens = info.strip().split('|')
+                (trans_id) = (tokens[6])
+                if((len(trans_lines) != 0) and (last_trans != trans_id)):
+                    try:
+                        direct = orf_dict[last_trans][0][0]
+                        cds_list = cds_dict[last_trans]
+                    except:
+                        print "orf_dict failure"
+                        last_trans = trans_id
+                        trans_lines = []
+                        continue
+                    #print "here"
+                    if(direct == "-"):
+                        trans_lines = list(reversed(trans_lines))
+                    begin_line = line_count - len(trans_lines) - 1
+                    print "Before kmerize trans", last_trans, len(trans_lines)
+                    kmerize_trans(trans_lines, begin_line, last_trans, cds_list, direct)
                     trans_lines = []
-                    continue
-                #print "here"
-                if(direct == "-"):
-                    trans_lines = list(reversed(trans_lines))
-                begin_line = line_count - len(trans_lines) - 1
-                print "Before kmerize trans", last_trans, len(trans_lines)
+                last_trans = trans_id
+                trans_lines.append(line)
+            try:
+                direct = orf_dict[last_trans][0][0]
+            except KeyError:
+                pass
+            begin_line = line_count - len(trans_lines) - 1
+            if(direct == "-"):
+                trans_lines = list(reversed(trans_lines))
+            try:
+                cds_list = cds_dict[trans_id]
                 kmerize_trans(trans_lines, begin_line, last_trans, cds_list, direct)
-                trans_lines = []
-            last_trans = trans_id
-            trans_lines.append(line)
-        try:
-            direct = orf_dict[last_trans][0][0]
-        except KeyError:
-            pass
-        begin_line = line_count - len(trans_lines) - 1
-        if(direct == "-"):
-            trans_lines = list(reversed(trans_lines))
-        try:
-            cds_list = cds_dict[trans_id]
-            kmerize_trans(trans_lines, begin_line, last_trans, cds_list, direct)
-        except KeyError:
-            pass
+            except KeyError:
+                pass
 
-finally:
-    if args.vcf != '-':
-        input_stream.close()
+    finally:
+        if args.vcf != '-':
+            input_stream.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -949,8 +954,6 @@ if __name__ == '__main__':
         )
     args = parser.parse_args()
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
-    if args.bam:
-        try:
-            import Hapcut2interpreter as hap
-        except:
-            raise RuntimeError('Hapcut2interpreter was not run')
+    with open(args.dicts, 'rb') as dict_stream:
+        (cds_dict, orf_dict,
+            exon_dict, exon_orf_dict) = pickle.load(dict_stream)
