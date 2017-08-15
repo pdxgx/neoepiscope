@@ -45,7 +45,7 @@ def getfreqlabel(vcffile):
 #Description: will apply mutations of both hapcut2 results and vcf file (nonphased mutations)
 #Description: applies mutation to the relevant chromosome strand or new combinatorial option
 
-def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
+def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist, hapcutname="Haplotype_output_file"):
     chrome1 = list(refseq)
     chrome2 = list(refseq)
     chromepassed1 = [0] * len(refseq)
@@ -77,8 +77,8 @@ def returnphasing(chromosome, startpos, endpos, refseq, vcfname, exonlist):
                 freqpos = counter
                 break
         break
-
-    hapcutfile = open("haplotype_output_file", "r")
+    
+    hapcutfile = open(hapcutname, "r")
     for line in hapcutfile:
         stripped = line.strip().split()
         if stripped[0] != "********":
