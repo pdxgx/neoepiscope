@@ -125,6 +125,9 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
     '''
 #    return nucleotide_index_list, mutation_dict, bounds_set
 
+# Input = mutation list (e.g. = [[chr1, position1, orig seq1, alt seq1], [chr2, pos2, orig2, alt2]])
+def Abhi_function():
+        return
 
 #def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, mutation_locs, reverse):
     ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
