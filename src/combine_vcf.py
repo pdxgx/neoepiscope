@@ -1,6 +1,6 @@
 import os
 
-def combinevcf(vcf1, vcf2, outfile):
+def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     vcffile = open(vcf2, "r")
     temp = open(vcf2 + ".temp", "w+");
     for lines in vcffile:
