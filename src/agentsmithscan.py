@@ -136,10 +136,19 @@ class Transcript(object):
             CDS: list of all CDS lines for exactly one transcript from GTF
         """
         self.bowtie_reference_index = bowtie_reference_index
+        self.intervals = []
+        for line in CDS:
+            tokens = line.strip().split('\t')
+            self.intervals.append((int(tokens[3]), int(tokens[4])))
+        self._ordered_edits = {}
         self.edits = []
 
-    def reset():
-        """ Resets to reference transcript (i.e., removes all edits).
+    def reset(reference=False):
+        """ Resets to last save point or reference (i.e., removes all edits).
+
+            reference: if False, tries to reset to last save point, and if that
+                doesn't exist, resets to reference. If True, resets to 
+                reference.
 
             No return value.
         """
@@ -161,6 +170,12 @@ class Transcript(object):
             No return value.
         """
         pass
+
+    def save():
+        """ Creates save point for edits.
+
+            No return value.
+        """
 
     def seq(start=0, end=-1, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
