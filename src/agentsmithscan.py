@@ -215,6 +215,23 @@ def get_seq(chrom, start, splice_length, reference_index):
     except KeyError:
         return False
     return seq
+    
+    
+def get_affinity(peptides, allele, method):
+	''' Takes in peptides and returns their binding affinities to the specified allele 
+			based on some prediction method
+		peptides: peptides of interest (list of strings)
+		allele: HLA allele to use for binding affinity (string) ### May change to list of equal length to peptides
+		method: Program to use for binding affinity (string)
+	'''
+	### Check if allele is valid
+	### Check if method is valid
+	#peptides.sort(key=len)
+	### Break up list into peptides of same length
+	### Use subprocess or similar to call the program for each set
+	### Parse output of program and store affinity
+	# return affinities
+	pass
 
 
 def go():
