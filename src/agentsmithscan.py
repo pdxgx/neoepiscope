@@ -126,8 +126,55 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
 #    return nucleotide_index_list, mutation_dict, bounds_set
 
 # Input = mutation list (e.g. = [[chr1, position1, orig seq1, alt seq1], [chr2, pos2, orig2, alt2]])
-def Abhi_function():
-        return
+class Transcript(object):
+    """ Transforms transcript with edits (SNPs, indels) from haplotype """
+    def __init__(bowtie_reference_index, CDS):
+        """ Initializes Transcript object
+
+            bowtie_reference_index: BowtieIndexReference object for retrieving
+                reference genome sequence
+            CDS: list of all CDS lines for exactly one transcript from GTF
+        """
+        self.bowtie_reference_index = bowtie_reference_index
+        self.edits = []
+
+    def reset():
+        """ Resets to reference transcript (i.e., removes all edits).
+
+            No return value.
+        """
+        self.edits = []
+
+    def add_edit(seq, pos, mutation_type='V', genome=False):
+        """ Adds an edit to the transcript. 
+
+            seq: sequence to add or delete from reference; for deletions, all
+                that matters is this sequence has the same length as the 
+                sequence to delete
+            pos: 0-based coordinate. For insertions, this is the coordinate 
+                directly preceding the inserted sequence. For deletions, this 
+                is the coordinate of the first base of the transcript to be
+                deleted.
+            mutation_type: V for SNV, I for insertion, D for deletion
+            genome: True iff genome coordinates are specified
+
+            No return value.
+        """
+        pass
+
+    def seq(start=0, end=-1, genome=False):
+        """ Retrieves transcript sequence between start and end coordinates.
+
+            start: start position (0-indexed); can be negative to measure from
+                end of transcript, so -1 means the last base of the transcript,
+                etc. Negative coordinates are always transcript coordinates.
+            end: end position (0-indexed); can be negative to measure from
+                end of transcript
+            genome: True iff genome coordinates are specified
+
+            Return value: transcript (sub)sequence
+        """
+        pass
 
 #def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, mutation_locs, reverse):
     ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
