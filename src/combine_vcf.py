@@ -20,7 +20,8 @@ def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
         if (lines[0] == '#'):
             header.write(lines)
     header.close()
-    command2 = "sort -k1,1 -k2,2n " + vcf2 + ".temp2 > " + vcf2 + ".sorted"
+    vcffile.close()
+    command2 = "sort -k1,1 -k2,2n " + vcf2 + ".combine1 > " + vcf2 + ".sorted"
     os.system(command2)
     command3 = "cat " + vcf2 + ".header " + vcf2 + ".sorted > " + vcf2 + ".combine2"
     os.system(command3)
