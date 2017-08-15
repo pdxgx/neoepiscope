@@ -208,13 +208,15 @@ def get_affinity(peptides, allele, method):
 		peptides: peptides of interest (list of strings)
 		allele: HLA allele to use for binding affinity (string) ### May change to list of equal length to peptides
 		method: Program to use for binding affinity (string)
+		
+		Return value: affinities, a list of binding affinities (strings)
 	'''
 	### Check if allele is valid
 	### Check if method is valid
 	#peptides.sort(key=len)
 	### Break up list into peptides of same length
 	### Use subprocess or similar to call the program for each set
-	### Parse output of program and store affinity
+	### Parse output of program and store affinities in a list
 	# return affinities
 	pass
 
