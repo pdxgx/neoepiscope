@@ -8,7 +8,7 @@ def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
             temp.write(lines)
     vcffile.close()
     temp.close()
-    markgermline = '''awk '{print $0, "0"}' ''' + vcf1 + "> " + vcf2 + ".germline"
+    markgermline = '''awk '{print $0, "0"}' ''' + vcf1 + " > " + vcf2 + ".germline"
     marktumor    = '''awk '{print $0, "1"}' ''' + vcf2 + ".temp > " + vcf2 + ".temp2"
     os.system(markgermline)
     os.system(marktumor)
