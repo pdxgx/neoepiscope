@@ -26,6 +26,6 @@ def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     os.system(command3)
     cut = "cut -f1,2,3,4,5,6,7,8,9,10 " + vcf2 + ".combine2 > " + outfile
     os.system(cut)
-    for file in [".temp", ".temp2", ".combine2", ".combine1", ".sorted", ".germline", ".header"]:
-        cleanup = "rm " + vcf2 + file
-        os.system(cleanup)
+#    for file in [".temp", ".temp2", ".combine2", ".combine1", ".sorted", ".germline", ".header"]:
+ #       cleanup = "rm " + vcf2 + file
+  #      os.system(cleanup)
