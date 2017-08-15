@@ -176,6 +176,7 @@ class Transcript(object):
 
             No return value.
         """
+        pass
 
     def seq(start=0, end=-1, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
