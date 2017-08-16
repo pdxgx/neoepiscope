@@ -227,14 +227,33 @@ def get_affinity(peptides, allele, method):
 		
 		Return value: affinities, a list of binding affinities (strings)
 	'''
-	### Check if allele is valid
-	### Check if method is valid
-	#peptides.sort(key=len)
-	### Break up list into peptides of same length
-	### Use subprocess or similar to call the program for each set
-	### Parse output of program and store affinities in a list
-	# return affinities
-	pass
+	###  Need to check if method/allele combo is valid ###
+	
+	affinities = []
+	
+	if method == "netMHC" or method == "netMHCpan":
+		# Write one peptide per line to a temporary file for input to netMHCpan
+		peptide_file = "/PATH/TO/TEMPORARY/FILE" ### How should we specify this? ####
+		with open(peptide_file, "w") as f:
+			for sequence in peptides:
+				f.write(sequence + "\n")
+		# Establish temporary file to hold output from netMHCpan
+		mhc_out = "/PATH/TO/MHC/OUTPUT" ### How should we specify this? ####
+		if method == "netMHC":
+			# Run netMHC (### How to establish path? ####)
+			subprocess.call(["/PATH/TO/NETMHC", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
+		else:
+			# Run netMHCpan (### How to establish path? ####)
+			subprocess.call(["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
+		with open(mhc_out, "r") as f:
+			for line in f:
+				if line[0] == "0":
+					line = line.strip("\n").split("\t")
+					nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
+					affinities.append(nM)
+					
+	### Other methods?? ###			
+	return affinities
 
 
 def go():
