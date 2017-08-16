@@ -41,10 +41,17 @@ def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
                 else:
                     transcript2.edit(hapdict.items()[x][1][2][1:], hapdict.items()[x][0][1]+1, mute_type)
             else:
-                print "Mutation error in phase_mutations"
-            
+                print "Mutation type error in phase_mutations"
+    
+    return transcript1, transcript2
+
+
+def combinatorics_mutations(transcript, start, end, vcffile, combinations_limit = 20)
+    '''
+    '''
+    initial_seq = transcript.seq(start, end, genome=True)
+    sequence_list = [initial_seq]
+    
+    
     
     return
-
-
-def combinatorics_mutations()
