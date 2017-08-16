@@ -12,6 +12,8 @@ import math
 import string
 import copy
 import pickle
+import defaultdict
+import copy
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -125,7 +127,6 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
     '''
 #    return nucleotide_index_list, mutation_dict, bounds_set
 
-# Input = mutation list (e.g. = [[chr1, position1, orig seq1, alt seq1], [chr2, pos2, orig2, alt2]])
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
     def __init__(bowtie_reference_index, CDS):
@@ -139,9 +140,24 @@ class Transcript(object):
         self.intervals = []
         for line in CDS:
             tokens = line.strip().split('\t')
-            self.intervals.append((int(tokens[3]), int(tokens[4])))
-        self._ordered_edits = {}
-        self.edits = []
+            self.intervals.extend(
+                    [(int(tokens[3]), True), (int(tokens[4]), True)]
+                )
+        self.edits = defaultdict(list)
+        self.reference_intervals = copy.copy(self.intervals)
+        '''Assume intervals are nonoverlapping! Uncomment following lines to
+        check (slower).'''
+        # for i in xrange(1, len(self.intervals)):
+        #    if self.intervals[i-1] <= self.intervals[i]:
+        #        raise RuntimeError(
+        #                ('CDS intervals list '
+        #                 '"{}" has overlapping intervals.').format(
+        #                            self.intervals
+        #                        )
+        #            )
+        # For retrieving save point
+        self.last_edits = None
+        self.last_intervals = None
 
     def reset(reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
@@ -152,9 +168,14 @@ class Transcript(object):
 
             No return value.
         """
-        self.edits = []
+        if reference or self.last_edits is None:
+            self.edits = []
+            self.last_intervals = self.reference_intervals
+        else:
+            self.edits = self.last_edits
+            self.intervals = self.last_intervals
 
-    def add_edit(seq, pos, mutation_type='V', genome=False):
+    def edit(seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
 
             seq: sequence to add or delete from reference; for deletions, all
@@ -163,34 +184,57 @@ class Transcript(object):
             pos: 0-based coordinate. For insertions, this is the coordinate 
                 directly preceding the inserted sequence. For deletions, this 
                 is the coordinate of the first base of the transcript to be
-                deleted.
+                deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
-            genome: True iff genome coordinates are specified
 
             No return value.
         """
-        pass
+        self.intervals.append((pos, False))
+        self.edits[pos].append((seq, mutation_type))
 
     def save():
         """ Creates save point for edits.
 
             No return value.
         """
-        pass
+        self.last_edits = copy.copy(self.edits)
+        self.last_intervals = copy.copy(self.intervals)
 
-    def seq(start=0, end=-1, genome=False):
+    def seq(start=0, end=None, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
 
             start: start position (0-indexed); can be negative to measure from
                 end of transcript, so -1 means the last base of the transcript,
                 etc. Negative coordinates are always transcript coordinates.
-            end: end position (0-indexed); can be negative to measure from
-                end of transcript
+            end: end position (0-indexed); None means end of transcript
             genome: True iff genome coordinates are specified
 
             Return value: transcript (sub)sequence
         """
-        pass
+        raise NotImplementedError
+        assert end is None or end >= start
+        self.intervals.sort()
+        if genome:
+            started = False
+            start_index, end_index = 0, len(intervals) - 1
+            for i, point in enumerate(self.intervals):
+                if point[0] < start:
+                    continue
+                elif started:
+                    if point[0] > end:
+                        end_index = i
+                else:
+                    started = True
+                    start_index = i
+            # Accumulate transcript sequence
+            seq = []
+            reference_index.get_stretch(start, self.intervals[i])
+
+
+        raise NotImplementedError(
+                'Retrieving sequence with transcript coordinates not '
+                'yet supported.'
+            )
 
 #def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, mutation_locs, reverse):
     ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
