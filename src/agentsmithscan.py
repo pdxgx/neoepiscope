@@ -195,7 +195,7 @@ class Transcript(object):
 	'''
 	    modifies allele freq value at location
 	'''
-    def get_freq(start = 0, end = None)
+    def get_freq(start = 0, end = None, genome=True)
 	"""
 	    Retrieves allele frequency list between start and end coordinates
 	"""
