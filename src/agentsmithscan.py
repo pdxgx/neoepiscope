@@ -191,7 +191,14 @@ class Transcript(object):
         """
         self.intervals.append((pos, False))
         self.edits[pos].append((seq, mutation_type))
-
+    def edit_freq(pos, val):
+	'''
+	    modifies allele freq value at location
+	'''
+    def get_freq(start = 0, end = None)
+	"""
+	    Retrieves allele frequency list between start and end coordinates
+	"""
     def save():
         """ Creates save point for edits.
 
