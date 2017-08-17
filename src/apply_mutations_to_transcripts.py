@@ -46,12 +46,52 @@ def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
     return transcript1, transcript2
 
 
-def combinatorics_mutations(transcript, start, end, vcffile, combinations_limit = 20)
+def combinatorics_mutations(transcript_list, exon_list, chromosome, start, end, vcf, freqpos, combinations_limit = None)
     '''
+        Takes non-phased mutations from VCF and applies to all transcripts that apply 
     '''
-    initial_seq = transcript.seq(start, end, genome=True)
-    sequence_list = [initial_seq]
-    
+    sequence_list = []
+    allele_list = []
+    for transcripts in transcript_list:
+        sequence_list.append(transcript.seq(start, end, genome=True))
+        allele_list.append(transcript.get_frez(start, end, genome=True))
+
+        vcffile = open(vcf, "r")
+        for line in vcffile:
+            if not line or line[0] == '#':
+                continue
+            stripped = line.strip().split()
+            in_exon = 0
+            for (exonstart, exonend) in exonlist:
+                if int(stripped[1]) >= exonstart and int(stripped[1]) <= exonend:
+                    in_exon_flag = 1
+            if in_exon_flag != 1:
+                continue
+            info = stripped[8].split(':')
+            allelefreqline = stripped[9].split(':')
+            freqscore = float(allelefreqline[freqpos].rstrip('%'))
+            mutpos = int(stripped[1]) - start
+            for sequences in sequence_list:
+                if stripped[0] == chromosome and int(stripped[1]) <= end and int(stripped[1]) >= start and in_exon_flag == 1:
+                    if allele_list[transcript_counter][mutpos] == 0:
+                        allele_list[transcript_counter][mutpos] = freqscore
+                    
+
+        vcffile.close()
+        
     
     
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
