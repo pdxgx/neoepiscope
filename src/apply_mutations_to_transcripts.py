@@ -50,12 +50,16 @@ def combinatorics_mutations(transcript_list, exon_list, chromosome, start, end, 
     '''
         Takes non-phased mutations from VCF and applies to all transcripts that apply 
     '''
-    sequence_list = []
-    allele_list = []
+    masterseqlist = []
+    masterallelelist = []
+    mastertranscripttag = []
+    transcript_tag = 0
     for transcripts in transcript_list:
+        sequence_list = []
+        allele_list = []
         sequence_list.append(transcript.seq(start, end, genome=True))
-        allele_list.append(transcript.get_frez(start, end, genome=True))
-
+        allele_list.append(transcript.get_freq(start, end, genome=True))
+        
         vcffile = open(vcf, "r")
         for line in vcffile:
             if not line or line[0] == '#':
@@ -73,13 +77,24 @@ def combinatorics_mutations(transcript_list, exon_list, chromosome, start, end, 
             mutpos = int(stripped[1]) - start
             for sequences in sequence_list:
                 if stripped[0] == chromosome and int(stripped[1]) <= end and int(stripped[1]) >= start and in_exon_flag == 1:
-                    if allele_list[transcript_counter][mutpos] == 0:
-                        allele_list[transcript_counter][mutpos] = freqscore
-                    
+                    numseq = len(sequence_list)
+                    for x in range(0, numseq):
+                        if allele_list[x][mutpos] == 0:
+                            newseq = list(sequence_list[x])
+                            newallele = list(allele_list[x])
+                            newallele[mutpos] = freqscore
+                            newseq[mutpos] = stripped[4]
+                            if len(stripped[3]) > 1:
+                                for x in range(0, len(stripped[3])-1):
+                                    newseq[mutpos+x+1] = ""
+                        sequence_list.append(newseq)
+                        allele_list.append(newallele)
 
         vcffile.close()
-        
-    
+        masterseqlist.append(sequence_list)
+        masterallelelist.append(allelelist)
+        mastertranscripttag.append(transcript_tag)
+        transcript_tag += 1
     
     return
 
