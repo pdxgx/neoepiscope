@@ -28,18 +28,24 @@ def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
             if mute_type = 'V':
                 if hapdict.items()[x][1][0] == 1:
                     transcript1.edit(hapdict.items()[x][1][3], hapdict.items()[x][0][1], mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1], hapdict.items()[x][1][5])
                 else:
                     transcript2.edit(hapdict.items()[x][1][3], hapdict.items()[x][0][1], mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1], hapdict.items()[x][1][5])
             if mute_type = 'I':
                 if hapdict.items()[x][1][0] == 1:
                     transcript1.edit(hapdict.items()[x][1][3][1:], hapdict.items()[x][0][1]+1, mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, hapdict.items()[x][1][5])
                 else:
                     transcript2.edit(hapdict.items()[x][1][3][1:], hapdict.items()[x][0][1]+1, mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1]+1, hapdict.items()[x][1][5])
             elif mute_type = 'D':
                 if hapdict.items()[x][1][0] == 1:
                     transcript1.edit(hapdict.items()[x][1][2][1:], hapdict.items()[x][0][1]+1, mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, hapdict.items()[x][1][5])
                 else:
                     transcript2.edit(hapdict.items()[x][1][2][1:], hapdict.items()[x][0][1]+1, mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1]+1 hapdict.items()[x][1][5])
             else:
                 print "Mutation type error in phase_mutations"
     
