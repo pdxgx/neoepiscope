@@ -54,7 +54,14 @@ def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
 
 def combinatorics_mutations(transcript_list, exon_list, chromosome, start, end, vcf, freqpos, combinations_limit = None)
     '''
-        Takes non-phased mutations from VCF and applies to all transcripts that apply 
+        Takes non-phased mutations from VCF and applies to all transcripts that apply.  Currently goes through VCF multiple times but it can be changed I think?
+        transcriptlist: list of all transcripts submitted
+        exonlist: list of exons associated with start/end on the chromosome
+        chromosome: chromosome of transcripts (can we make it not use chromosomes..??)
+        start/end: chromosomal positions of start end, if we want to make all changes... then just put 0 and a very large number
+        vcf: vcf file name
+        freqpos: gotten from get_freq_pos
+        combinations_limit: not yet implemented
     '''
     masterseqlist = []
     masterallelelist = []
