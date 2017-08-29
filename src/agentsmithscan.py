@@ -164,9 +164,9 @@ def gtf_to_cds(gtf_file, pickle_dict = ""):
                         cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]]]
         else:
 		if tokens[2] == "CDS":
-                        cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
+                        cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
                 elif tokens[2] == "stop_codon":
-                        cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
+                        cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
 
     # sort cds_dict coordinates (left -> right) for each transcript                                
     for transcript_id in cds_dict:
