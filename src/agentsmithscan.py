@@ -269,7 +269,7 @@ def get_seq(chrom, start, splice_length, reference_index):
     return seq
     
     
-def get_affinity(peptides, allele, method):
+def get_affinity(peptides, allele, method, remove_files = True):
 	''' Takes in peptides and returns their binding affinities to the specified allele 
 			based on some prediction method
 		peptides: peptides of interest (list of strings)
@@ -279,6 +279,7 @@ def get_affinity(peptides, allele, method):
 		Return value: affinities, a list of binding affinities (strings)
 	'''
 	###  Need to check if method/allele combo is valid ###
+	###  Set a random seed to create unique name for output files ###
 	
 	affinities = []
 	
@@ -302,6 +303,12 @@ def get_affinity(peptides, allele, method):
 					line = line.strip("\n").split("\t")
 					nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
 					affinities.append(nM)
+		
+		# Remove temporary files			
+		if remove_files == True:
+			subprocess.call(["rm", peptide_file])
+			subprocess.call(["rm", mhc_out])
+			
 					
 	### Other methods?? ###			
 	return affinities
