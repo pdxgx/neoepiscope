@@ -122,9 +122,8 @@ def gtf_to_cds(gtf_file, pickle_dict = ""):
 	    exons composing each transcript.
     '''
         gtf_data = open(gtf_file, "r")
-        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), reading frame, +/-], ...]
+        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
         cds_dict = {}
-        relevant_identifiers = set(["CDS", "start_codon", "stop_codon"])
         for line in gtf_data:
                 if not line or line[0] == '#':
                         continue
@@ -134,14 +133,14 @@ def gtf_to_cds(gtf_file, pickle_dict = ""):
                 transcript_id = re.sub(r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', r'\1', tokens[8])
                 if transcript_id not in cds_dict:
                         if tokens[2] == "CDS":
-                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])]]
+                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]]]
                         elif tokens[2] == "stop_codon":
-                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])]]
+                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]]]
                 else:
                         if tokens[2] == "CDS":
-                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])])
+                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
                         elif tokens[2] == "stop_codon":
-                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])])
+                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
 
         # sort cds_dict coordinates (left -> right) for each transcript                                
         for transcript_id in cds_dict:
