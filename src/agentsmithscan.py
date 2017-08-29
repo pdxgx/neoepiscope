@@ -15,6 +15,7 @@ import pickle
 import defaultdict
 import copy
 import re
+from intervaltree import Interval, IntervalTree
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
