@@ -14,6 +14,18 @@ args = parser.parse_args()
 
 my_file = open(args.gtf, "r") # ex: open("gencode.txt").read()
 
+def gtf_to_cds(gtf_file, write_pickle_dict = False):
+        gtf_data = open(gtf_file, "r")
+        cds_dict = {}
+        relevant_identifiers = set(["CDS", "start_codon", "stop_codon"])
+        for line in gtf_data:
+                if not line or line[0] == '#':
+                        continue
+                tokens = line.strip().split('\t')
+                if (tokens[2] != 'CDS' and tokens[2] != 'stop_codon'):
+                        continue                
+        return cds_dict
+
 #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), reading frame, +/-], ...]
 cds_dict = {}
 for line in my_file:
