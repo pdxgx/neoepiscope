@@ -111,6 +111,18 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         print >>sys.stdout, (
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
+	
+def cds_to_searchable_tree(cds_dict):
+    ''' Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
+    	    intervals, indexed by chromosome/contig ID.
+        cds_dict: (Dict) See output format of gtf_to_cds.
+        Return value: searchable_tree indexed by transcript ID, containing a sorted list of
+	    exons composing each transcript.
+    '''
+	searchable_tree = {}
+	
+	return searchable_tree
+
 def gtf_to_cds(gtf_file, pickle_dict = ""):
     ''' Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
         gtf_file: (String) Indicates the location/name of the GTF file (does not require it to be sorted).
