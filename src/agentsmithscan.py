@@ -14,6 +14,7 @@ import copy
 import pickle
 import defaultdict
 import copy
+import re
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -109,6 +110,54 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
             )):
         print >>sys.stdout, (
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
+
+def gtf_to_cds(gtf_file, pickle_dict = ""):
+    ''' References cds_dict to get cds Bounds for later Bowtie query.
+        transcript_id: (String) Indicates the transcript the mutation
+            is located on.
+        mutation_pos_list: (int) Mutation's position on chromosome
+        seq_length_left: (int) How many bases must be gathered
+            to the left of the mutation
+        seq_length_right: (int) How many bases must be gathered to
+            the right of the mutation
+        Return value: List of tuples containing starting indexes and stretch
+        lengths within cds boundaries necessary to acquire the complete 
+        sequence necessary for peptide kmerization based on the position 
+        of a mutation within a chromosome.
+    '''
+        gtf_data = open(gtf_file, "r")
+        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), reading frame, +/-], ...]
+        cds_dict = {}
+        relevant_identifiers = set(["CDS", "start_codon", "stop_codon"])
+        for line in gtf_data:
+                if not line or line[0] == '#':
+                        continue
+                tokens = line.strip().split('\t')
+                if (tokens[2] != 'CDS' and tokens[2] != 'stop_codon'):
+                        continue    
+                transcript_id = re.sub(r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', r'\1', tokens[8])
+                if transcript_id not in cds_dict:
+                        if tokens[2] == "CDS":
+                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])]]
+                        elif tokens[2] == "stop_codon":
+                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])]]
+                else:
+                        if tokens[2] == "CDS":
+                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])])
+                        elif tokens[2] == "stop_codon":
+                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])])
+
+        # sort cds_dict coordinates (left -> right) for each transcript                                
+        for transcript_id in cds_dict:
+                cds_dict[transcript_id].sort(key=lambda x: x[0])
+        gtf_data.close()
+        
+        if pickle_dict != "":
+                pickle_out = open(pickle_dict, "wb")
+                pickle.dump(cds_dict, pickle_out)
+                pickle_out.close()    
+                
+        return cds_dict
 
 #def get_cds(transcript_id, mutation_pos_list, seq_length_left,
 #              seq_length_right, ordered_cds_dict, mutation_dict):
