@@ -278,19 +278,22 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		
 		Return value: affinities, a list of binding affinities (strings)
 	'''
+	
 	###  Need to check if method/allele combo is valid ###
-	###  Set a random seed to create unique name for output files ###
+	
+	# Set identifying information for sample
+	id = allele + "." + peptides[0]
 	
 	affinities = []
 	
 	if method == "netMHC" or method == "netMHCpan":
 		# Write one peptide per line to a temporary file for input to netMHCpan
-		peptide_file = "/PATH/TO/TEMPORARY/FILE" ### How should we specify this? ####
+		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
 		with open(peptide_file, "w") as f:
 			for sequence in peptides:
 				f.write(sequence + "\n")
 		# Establish temporary file to hold output from netMHCpan
-		mhc_out = "/PATH/TO/MHC/OUTPUT" ### How should we specify this? ####
+		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
 		if method == "netMHC":
 			# Run netMHC (### How to establish path? ####)
 			subprocess.call(["/PATH/TO/NETMHC", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
