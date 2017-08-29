@@ -112,18 +112,14 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
 def gtf_to_cds(gtf_file, pickle_dict = ""):
-    ''' References cds_dict to get cds Bounds for later Bowtie query.
-        transcript_id: (String) Indicates the transcript the mutation
-            is located on.
-        mutation_pos_list: (int) Mutation's position on chromosome
-        seq_length_left: (int) How many bases must be gathered
-            to the left of the mutation
-        seq_length_right: (int) How many bases must be gathered to
-            the right of the mutation
-        Return value: List of tuples containing starting indexes and stretch
-        lengths within cds boundaries necessary to acquire the complete 
-        sequence necessary for peptide kmerization based on the position 
-        of a mutation within a chromosome.
+    ''' Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
+        gtf_file: (String) Indicates the location/name of the GTF file (does not require it to be sorted).
+        pickle_dict: (String [default ""]) Changes behavior of gtf_to_cds() function 
+	    - if a filename is specified, then the function will write cds_dict to 
+	    the pickle_dict file; otherwise, the function will only keep cds_dict
+	    in memory and not output intermediate pickle_dict file
+        Return value: cds_dict indexed by transcript ID, containing a sorted list of
+	    exons composing each transcript.
     '''
         gtf_data = open(gtf_file, "r")
         #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), reading frame, +/-], ...]
