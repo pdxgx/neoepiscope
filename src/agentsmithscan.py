@@ -112,6 +112,9 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         print >>sys.stdout, (
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
+
+#def get_transcripts(chr, start, end, searchable_tree):
+#	return searchable_tree[chr].search(start, end)
 	
 def cds_to_searchable_tree(cds_dict):
     ''' Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
