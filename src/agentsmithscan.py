@@ -14,6 +14,8 @@ import copy
 import pickle
 import defaultdict
 import copy
+import os
+import random
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -275,14 +277,40 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		peptides: peptides of interest (list of strings)
 		allele: HLA allele to use for binding affinity (string) ### May change to list of equal length to peptides
 		method: Program to use for binding affinity (string)
+			Available methods: 	NetMHC v4.0
+								NetMHCpan v3.0
 		
 		Return value: affinities, a list of binding affinities (strings)
 	'''
 	
-	###  Need to check if method/allele combo is valid ###
+	# Check whether allele/method combo is valid
+	if method == "netMHC":
+		allele = "".join(allele.split(":"))
+		tooldir = os.path.dirname("/PATH/TO/NETMHC")
+		allele_list = tooldir + "/data/allelelist"
+		avail_alleles = []
+		with open(allele_list, "r") as f:
+			for line in f:
+				line = line.strip("\n").split("\t")
+				avail_alleles.append(line[0])
+		if allele not in avail_alleles:
+			sys.exit(allele + " is not a valid allele for netMHC")
+	elif method == "netMHCpan":
+		tooldir = os.path.dirname("/PATH/TO/NETMHCpan")
+		allele_list = tooldir + "/data/allelenames"
+		avail_alleles = []
+		with open(allele_list, "r") as f:
+			for line in f:
+				line = line.strip("\n").split()
+				avail_alleles.append(line[0])
+		if allele not in avail_alleles:
+			sys.exit(allele + " is not a valid allele for netMHCpan")
+	else:
+		sys.exit(method + " is not a valid method")
+	
 	
 	# Set identifying information for sample
-	id = allele + "." + peptides[0]
+	id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
 	
 	affinities = []
 	
@@ -297,21 +325,26 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		if method == "netMHC":
 			# Run netMHC (### How to establish path? ####)
 			subprocess.call(["/PATH/TO/NETMHC", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
+			with open(mhc_out, "r") as f:
+				for line in f:
+					if line[0] == "0":
+						line = line.strip("\n").split("\t")
+						nM = line[3] ### This in the nM affinity - do we want rank (index 4)? ###
+						affinities.append(nM)
 		else:
 			# Run netMHCpan (### How to establish path? ####)
 			subprocess.call(["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
-		with open(mhc_out, "r") as f:
-			for line in f:
-				if line[0] == "0":
-					line = line.strip("\n").split("\t")
-					nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
-					affinities.append(nM)
+			with open(mhc_out, "r") as f:
+				for line in f:
+					if line[0] == "0":
+						line = line.strip("\n").split("\t")
+						nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
+						affinities.append(nM)
 		
-		# Remove temporary files			
-		if remove_files == True:
-			subprocess.call(["rm", peptide_file])
-			subprocess.call(["rm", mhc_out])
-			
+	# Remove temporary files			
+	if remove_files == True:
+		subprocess.call(["rm", peptide_file])
+		subprocess.call(["rm", mhc_out])	
 					
 	### Other methods?? ###			
 	return affinities
