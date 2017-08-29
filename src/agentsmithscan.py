@@ -117,67 +117,66 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
 #	return searchable_tree[chr].search(start, end)
 	
 def cds_to_searchable_tree(cds_dict):
-    ''' Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
+    """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
     	    intervals, indexed by chromosome/contig ID.
         cds_dict: (Dict) See output format of gtf_to_cds.
         Return value: (Dict) a dictionary of IntervalTree() objects containing 
 	    transcript IDs as a function of exon coordinates indexed by chr/contig ID.
-    '''
-	searchable_tree = {}
-	for transcript_id in cds_dict:
-		transcript = cds_dict[transcript_id]
-		# assume that entire transcript comes from single chromosome!!
-		# [will need to update this to handle gene fusions!!]
-		chrom = transcript[0][5] 
-		if chrom not in searchable_tree:
-			searchable_tree[chrom] = IntervalTree()
-		for cds in transcript:
-			searchable_tree[chrom].addi(cds[0], cds[1], transcript_id)
-	
-	return searchable_tree
+    """
+    searchable_tree = {}
+    for transcript_id in cds_dict:
+	transcript = cds_dict[transcript_id]
+	# assume that entire transcript comes from single chromosome!!
+	# [will need to update this to handle gene fusions!!]
+	chrom = transcript[0][5] 
+	if chrom not in searchable_tree:
+		searchable_tree[chrom] = IntervalTree()
+	for cds in transcript:
+		searchable_tree[chrom].addi(cds[0], cds[1], transcript_id)
+    return searchable_tree
 
 def gtf_to_cds(gtf_file, pickle_dict = ""):
-    ''' Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
+    """ Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
         gtf_file: (String) Indicates the location/name of the GTF file (does not require it to be sorted).
-        pickle_dict: (String [default ""]) Changes behavior of gtf_to_cds() function 
+        pickle_dict: (String [default '']) Changes behavior of gtf_to_cds() function 
 	    - if a filename is specified, then the function will write cds_dict to 
 	    the pickle_dict file; otherwise, the function will only keep cds_dict
 	    in memory and not output intermediate pickle_dict file
         Return value: cds_dict indexed by transcript ID, containing a sorted list of
 	    exons composing each transcript.
-    '''
-        gtf_data = open(gtf_file, "r")
-        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
-        cds_dict = {}
-        for line in gtf_data:
-                if not line or line[0] == '#':
-                        continue
-                tokens = line.strip().split('\t')
-                if (tokens[2] != 'CDS' and tokens[2] != 'stop_codon'):
-                        continue    
-                transcript_id = re.sub(r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', r'\1', tokens[8])
-                if transcript_id not in cds_dict:
-                        if tokens[2] == "CDS":
-                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]]]
-                        elif tokens[2] == "stop_codon":
-                                cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]]]
-                else:
-                        if tokens[2] == "CDS":
-                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
-                        elif tokens[2] == "stop_codon":
-                                cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
+    """
+    gtf_data = open(gtf_file, "r")
+    #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
+    cds_dict = {}
+    for line in gtf_data:
+    	if not line or line[0] == '#':
+        	continue
+        tokens = line.strip().split('\t')
+        if (tokens[2] != 'CDS' and tokens[2] != 'stop_codon'):
+                continue    
+        transcript_id = re.sub(r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', r'\1', tokens[8])
+        if transcript_id not in cds_dict:
+                if tokens[2] == "CDS":
+			cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]]]
+                elif tokens[2] == "stop_codon":
+                        cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]]]
+        else:
+		if tokens[2] == "CDS":
+                        cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
+                elif tokens[2] == "stop_codon":
+                        cds_dict[transcript_id] = cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
 
-        # sort cds_dict coordinates (left -> right) for each transcript                                
-        for transcript_id in cds_dict:
-                cds_dict[transcript_id].sort(key=lambda x: x[0])
-        gtf_data.close()
+    # sort cds_dict coordinates (left -> right) for each transcript                                
+    for transcript_id in cds_dict:
+    	cds_dict[transcript_id].sort(key=lambda x: x[0])
+    gtf_data.close()
         
-        if pickle_dict != "":
-                pickle_out = open(pickle_dict, "wb")
-                pickle.dump(cds_dict, pickle_out)
-                pickle_out.close()    
+    if pickle_dict != "":
+    	pickle_out = open(pickle_dict, "wb")
+        pickle.dump(cds_dict, pickle_out)
+        pickle_out.close()    
                 
-        return cds_dict
+    return cds_dict
 
 
 class Transcript(object):
