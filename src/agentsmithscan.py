@@ -134,7 +134,7 @@ def cds_to_searchable_tree(cds_dict):
 	if chrom not in searchable_tree:
 		searchable_tree[chrom] = IntervalTree()
 	for cds in transcript:
-		searchable_tree[chrom].addi(cds[0], cds[1], transcript_id)
+		searchable_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
     return searchable_tree
 
 def gtf_to_cds(gtf_file, pickle_dict = ""):
