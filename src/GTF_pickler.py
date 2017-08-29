@@ -42,3 +42,8 @@ for transcript_id in cds_dict:
 pickle_out = open(args.dump, "wb")
 pickle.dump(cds_dict, pickle_out)
 pickle_out.close()
+
+
+
+#    with open(args.dicts, 'rb') as dict_stream:
+ #       (cds_dict) = pickle.load(dict_stream)
