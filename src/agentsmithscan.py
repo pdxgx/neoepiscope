@@ -117,10 +117,19 @@ def cds_to_searchable_tree(cds_dict):
     ''' Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
     	    intervals, indexed by chromosome/contig ID.
         cds_dict: (Dict) See output format of gtf_to_cds.
-        Return value: searchable_tree indexed by transcript ID, containing a sorted list of
-	    exons composing each transcript.
+        Return value: (Dict) a dictionary of IntervalTree() objects containing 
+	    transcript IDs as a function of exon coordinates indexed by chr/contig ID.
     '''
 	searchable_tree = {}
+	for transcript_id in cds_dict:
+		transcript = cds_dict[transcript_id]
+		# assume that entire transcript comes from single chromosome!!
+		# [will need to update this to handle gene fusions!!]
+		chrom = transcript[0][5] 
+		if chrom not in searchable_tree:
+			searchable_tree[chrom] = IntervalTree()
+		for cds in transcript:
+			searchable_tree[chrom].addi(cds[0], cds[1], transcript_id)
 	
 	return searchable_tree
 
@@ -135,7 +144,7 @@ def gtf_to_cds(gtf_file, pickle_dict = ""):
 	    exons composing each transcript.
     '''
         gtf_data = open(gtf_file, "r")
-        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), reading frame, +/-], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
+        #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
         cds_dict = {}
         for line in gtf_data:
                 if not line or line[0] == '#':
@@ -167,22 +176,6 @@ def gtf_to_cds(gtf_file, pickle_dict = ""):
                 
         return cds_dict
 
-#def get_cds(transcript_id, mutation_pos_list, seq_length_left,
-#              seq_length_right, ordered_cds_dict, mutation_dict):
-    ''' References cds_dict to get cds Bounds for later Bowtie query.
-        transcript_id: (String) Indicates the transcript the mutation
-            is located on.
-        mutation_pos_list: (int) Mutation's position on chromosome
-        seq_length_left: (int) How many bases must be gathered
-            to the left of the mutation
-        seq_length_right: (int) How many bases must be gathered to
-            the right of the mutation
-        Return value: List of tuples containing starting indexes and stretch
-        lengths within cds boundaries necessary to acquire the complete 
-        sequence necessary for peptide kmerization based on the position 
-        of a mutation within a chromosome.
-    '''
-#    return nucleotide_index_list, mutation_dict, bounds_set
 
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
