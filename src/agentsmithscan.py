@@ -510,7 +510,7 @@ if __name__ == '__main__':
 	if args.dicts is not None:
 		with open(args.dicts, 'rb') as dict_stream:
 			cds_dict = pickle.load(dict_stream)
-	elsif args.gtf is not None:
+	elif args.gtf is not None:
 		cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
 	else:
 		raise ValueError("No CDS data available (-d or -g argument must be specified)"
