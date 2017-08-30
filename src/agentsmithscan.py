@@ -120,21 +120,19 @@ def cds_to_searchable_tree(cds_dict):
     	    intervals, indexed by chromosome/contig ID.
         cds_dict: (Dict) See output format of gtf_to_cds.
         Return value: (Dict) a dictionary of IntervalTree() objects containing 
-	    transcript IDs as a function of exon coordinates indexed by chr/contig ID.
+	    transcript IDs as function of exon coords indexed by chr/contig ID.
 	    Query the returned searchable_tree as follows:
 	        searchable_tree[chr].search(start, end)
     """
     searchable_tree = {}
     for transcript_id in cds_dict:
 	transcript = cds_dict[transcript_id]
-	# assume that entire transcript comes from single chromosome!!
-	# [will need to update this to handle gene fusions!!]
-	chrom = transcript[0][5] 
-	if chrom not in searchable_tree:
-		searchable_tree[chrom] = IntervalTree()
 	for cds in transcript:
-		# coordinates of Interval are inclusive of start, exclusive of end
-		searchable_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
+            chrom = cds[5] 
+            if chrom not in searchable_tree:
+		searchable_tree[chrom] = IntervalTree()
+            # coordinates of Interval are inclusive of start, exclusive of end
+            searchable_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
     return searchable_tree
 
 def gtf_to_cds(gtf_file, pickle_dict = ""):
