@@ -114,45 +114,45 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         print >>sys.stdout, (
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
-def get_transcripts_from_tree(chr, start, end, searchable_tree):
-    """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
-    	    intervals, indexed by chromosome/contig ID.
+def get_transcripts_from_tree(chr, start, end, cds_tree):
+    """ Takes an input cds_tree and chr coordinates and outputs a set of
+    	    unique transcript IDs.
         chr: (String) Specify chr to use for transcript search.
 	start: (Int) Specify start position to use for transcript search.
 	end: (Int) Specify ending position to use for transcript search
-	searchable_tree: (Dict) dictionary of IntervalTree() objects containing
+	cds_tree: (Dict) dictionary of IntervalTree() objects containing
 	    transcript IDs as function of exon coords indexed by chr/contig ID.
         Return value: (set) a set of matching unique transcript IDs.
     """
     transcript_ids = set()
     if end <= start:
 	end = start
-    cds = searchable_tree[chr].search(start, end)
+    cds = cds_tree[chr].search(start, end)
     for cd in cds:
 	if cd.data in transcript_ids:
 	    continue
 	transcript_ids.add(cd.data)
     return transcript_ids
 
-def cds_to_searchable_tree(cds_dict):
+def cds_to_tree(cds_dict):
     """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
     	    intervals, indexed by chromosome/contig ID.
         cds_dict: (Dict) See output format of gtf_to_cds.
         Return value: (Dict) a dictionary of IntervalTree() objects containing 
 	    transcript IDs as function of exon coords indexed by chr/contig ID.
 	    Query the returned searchable_tree as follows:
-	        searchable_tree[chr].search(start, end)
+	        cds_tree[chr].search(start, end)
     """
-    searchable_tree = {}
+    cds_tree = {}
     for transcript_id in cds_dict:
 	transcript = cds_dict[transcript_id]
 	for cds in transcript:
             chrom = cds[5] 
-            if chrom not in searchable_tree:
-		searchable_tree[chrom] = IntervalTree()
+            if chrom not in cds_tree:
+		cds_tree[chrom] = IntervalTree()
             # coordinates of Interval are inclusive of start, exclusive of end
-            searchable_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
-    return searchable_tree
+            cds_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
+    return cds_tree
 
 def gtf_to_cds(gtf_file, pickle_dict = ""):
     """ Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
@@ -531,7 +531,7 @@ if __name__ == '__main__':
 		cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
 	else:
 		raise ValueError("No CDS data available (-d or -g argument must be specified)"
-	exon_tree = cds_to_searchabletree(cds_dict)
+	cds_tree = cds_to_tree(cds_dict)
     except:
 	print "Unable to import CDS data from GTF file " + args.gtf
 	
