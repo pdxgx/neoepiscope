@@ -364,8 +364,9 @@ def get_affinity(peptides, allele, method, remove_files = True):
 				avail_alleles.append(line[0])
 		if allele not in avail_alleles:
 			sys.exit(allele + " is not a valid allele for netMHC")
+	
 	elif method == "netMHCpan":
-		tooldir = os.path.dirname("/PATH/TO/NETMHCpan")
+		tooldir = os.path.dirname("/PATH/TO/NETMHCPAN")
 		allele_list = tooldir + "/data/allelenames"
 		avail_alleles = []
 		with open(allele_list, "r") as f:
@@ -374,6 +375,19 @@ def get_affinity(peptides, allele, method, remove_files = True):
 				avail_alleles.append(line[0])
 		if allele not in avail_alleles:
 			sys.exit(allele + " is not a valid allele for netMHCpan")
+	
+	elif method == "MixMHCpred":
+		allele = "".join(allele.replace("HLA-", "").split(":"))
+		tooldir = os.path.dirname("/PATH/TO/MIXMHCPRED")
+		allele_list = tooldir + "/lib/pwm/allele_list.txt"
+		avail_alleles = []
+		with open(allele_list, "r") as f:
+			for line in f:
+				line = line.strip("\n").split("\t")
+				avail_alleles.append(line[2])
+		if allele not in avail_alleles:
+			sys.exit(allele + " is not a valid allele for MixMHCpred")
+	
 	else:
 		sys.exit(method + " is not a valid method")
 	
@@ -409,6 +423,42 @@ def get_affinity(peptides, allele, method, remove_files = True):
 						line = line.strip("\n").split("\t")
 						nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
 						affinities.append(nM)
+	
+	elif method == "MixMHCpred":
+		print "Warning: MixMHCpred does not produce binding affinities, but rather binding scores"
+		# Write 9mer and 10mer peptides to temporary file for input to MixMHCpred
+		# Count instances of non-9mer/10mer peptides
+		na_count = 0
+		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
+		with open(peptide_file, "w") as f:
+			for sequence in peptides:
+				if len(sequence) == 9 or len(sequence) == 10:
+					f.write(sequence + "\n")
+				else:
+					na_count += 1
+		if na_count > 0:
+			print "Warning: " + str(na_count) + " peptides not compatible with MixMHCpred - will not receive score"
+		# Establish temporary file to hold output from netMHCpan
+		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
+		# Run MixMHCpred ### How to establish path? ####)
+		subprocess.call(["/PATH/TO/MIXMHCPRED", "-i", peptide_file, "-o", mhc_out, "-h", allele])
+		# Retrieve scores for valid peptides
+		score_dict = {}
+		with open(mhc_out, "r") as f:
+			for line in f:
+				if line[0] != "#" and "Peptide" not in line:
+					line = line.strip("\n").split("\t")
+					pep = line[0]
+					score = line[1]
+					score_dict[pep] = score
+		# Produce list of scores for valid peptides
+		# Invalid peptides receive "NA" score
+		for sequence in peptides:
+			if sequence in score_dict:
+				score = score_dict[sequence]
+			else:
+				score = "NA"
+			affinities.append(score)
 		
 	# Remove temporary files			
 	if remove_files == True:
