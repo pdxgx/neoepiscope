@@ -114,6 +114,25 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         print >>sys.stdout, (
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
+def get_transcripts_from_tree(chr, start, end, searchable_tree):
+    """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
+    	    intervals, indexed by chromosome/contig ID.
+        chr: (String) Specify chr to use for transcript search.
+	start: (Int) Specify start position to use for transcript search.
+	end: (Int) Specify ending position to use for transcript search
+	searchable_tree: (Dict) dictionary of IntervalTree() objects containing
+	    transcript IDs as function of exon coords indexed by chr/contig ID.
+        Return value: (set) a set of matching unique transcript IDs.
+    """
+    transcript_ids = set()
+    if end <= start:
+	end = start
+    cds = searchable_tree[chr].search(start, end)
+    for cd in cds:
+	if cd.data in transcript_ids:
+	    continue
+	transcript_ids.add(cd.data)
+    return transcript_ids
 
 def cds_to_searchable_tree(cds_dict):
     """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
