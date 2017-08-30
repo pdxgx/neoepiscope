@@ -115,15 +115,14 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
             '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
 
 
-#def get_transcripts(chr, start, end, searchable_tree):
-#	return searchable_tree[chr].search(start, end)
-	
 def cds_to_searchable_tree(cds_dict):
     """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
     	    intervals, indexed by chromosome/contig ID.
         cds_dict: (Dict) See output format of gtf_to_cds.
         Return value: (Dict) a dictionary of IntervalTree() objects containing 
 	    transcript IDs as a function of exon coordinates indexed by chr/contig ID.
+	    Query the returned searchable_tree as follows:
+	        searchable_tree[chr].search(start, end)
     """
     searchable_tree = {}
     for transcript_id in cds_dict:
@@ -134,6 +133,7 @@ def cds_to_searchable_tree(cds_dict):
 	if chrom not in searchable_tree:
 		searchable_tree[chrom] = IntervalTree()
 	for cds in transcript:
+		# coordinates of Interval are inclusive of start, exclusive of end
 		searchable_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
     return searchable_tree
 
@@ -487,14 +487,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--vcf', type=str, required=True,
             default='-',
-            help='input vcf or "-" for stdin'
+            help='input VCF or "-" for stdin'
         )
     parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
         )
-    parser.add_argument('-d', '--dicts', type=str, required=True,
-            help='input path to pickled dictionaries'
+    parser.add_argument('-d', '--dicts', type=str, required=False,
+            help='input path to pickled CDS dictionary'
         )
+    parser.add_argument('-g', '--gtf', type=str, required=False,
+            help='input path to GTF file'
+        )	
     parser.add_argument('-b', '--bam', action='store_true', required=False,
             default = False, help='T/F bam is used'
         )
@@ -503,6 +506,15 @@ if __name__ == '__main__':
         )
     args = parser.parse_args()
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
-    with open(args.dicts, 'rb') as dict_stream:
-        (cds_dict, orf_dict,
-            exon_dict, exon_orf_dict) = pickle.load(dict_stream)
+    try:
+	if args.dicts is not None:
+		with open(args.dicts, 'rb') as dict_stream:
+			cds_dict = pickle.load(dict_stream)
+	elsif args.gtf is not None:
+		cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
+	else:
+		raise ValueError("No CDS data available (-d or -g argument must be specified)"
+	exon_tree = cds_to_searchabletree(cds_dict)
+    except:
+	print "Unable to import CDS data from GTF file " + args.gtf
+	
