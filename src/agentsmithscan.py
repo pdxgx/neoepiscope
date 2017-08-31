@@ -355,53 +355,32 @@ def get_affinity(peptides, allele, method, remove_files = True):
 	'''
 	
 	# Check whether allele/method combo is valid #### NEED TO ADD TOOL PATHS ####
+	avail_alleles = pickle.load(open(os.path.dirname(__file__)+"/availableAlleles.pickle", "rb"))
+	
 	if method == "netMHC":
-		allele = "".join(allele.split(":"))
-		tooldir = os.path.dirname("/PATH/TO/NETMHC")
-		allele_list = tooldir + "/data/allelelist"
-		avail_alleles = []
-		with open(allele_list, "r") as f:
-			for line in f:
-				line = line.strip("\n").split("\t")
-				avail_alleles.append(line[0])
-		if allele not in avail_alleles:
+		allele = allele.replace("*","").replace(":", "")
+		if allele not in avail_alleles[method]:
 			sys.exit(allele + " is not a valid allele for netMHC")
 	
 	elif method == "netMHCpan":
-		tooldir = os.path.dirname("/PATH/TO/NETMHCPAN")
-		allele_list = tooldir + "/data/allelenames"
-		avail_alleles = []
-		with open(allele_list, "r") as f:
-			for line in f:
-				line = line.strip("\n").split()
-				avail_alleles.append(line[0])
-		if allele not in avail_alleles:
+		allele = allele.replace("*", "")
+		if allele not in avail_alleles[method]:
 			sys.exit(allele + " is not a valid allele for netMHCpan")
 			
-	#### NEED CHECK FOR NETMHCIIPAN ####
+	elif method == "netMHCIIpan":
+		allele = allele.replace("HLA-", "")
+		if allele not in avail_alleles[method]:
+			sys.exit(allele + " is not a valid allele for netMHCIIpan")
 	
 	elif method == "MixMHCpred":
-		allele = "".join(allele.replace("HLA-", "").split(":"))
-		tooldir = os.path.dirname("/PATH/TO/MIXMHCPRED")
-		allele_list = tooldir + "/lib/pwm/allele_list.txt"
-		avail_alleles = []
-		with open(allele_list, "r") as f:
-			for line in f:
-				line = line.strip("\n").split("\t")
-				avail_alleles.append(line[2])
-		if allele not in avail_alleles:
+		allele = allele.replace("HLA-", "").replace("*","").replace(":", "")
+		if allele not in avail_alleles[method]:
 			sys.exit(allele + " is not a valid allele for MixMHCpred")
 	
 	elif method == "mhcflurry":
-		allele = allele.replace("HLA-A", "HLA-A*").replace("HLA-B", "HLA-B*").replace("HLA-C", "HLA-C*")
-		valid_alleles = "/PATH/TO/mhcflurry.validalleles" ### How should we specify this? ####
-		subprocess.call(["/PATH/TO/MHCFLURRY-PREDICT", "--list-supported-alleles", ">", valid_alleles])
-		allele_list = []
-		with open(valid_allele, "r") as f:
-			for line in f:
-				line = line.strip("\n")
-				allele_list.append(line)
-		if allele not in allele_list:
+		if "*" not in allele:
+			allele = allele.replace("HLA-A", "HLA-A*").replace("HLA-B", "HLA-B*").replace("HLA-C", "HLA-C*").replace("Mamu-A", "Mamu-A*").replace("Mamu-B", "Mamu-B*").replace("Patr-A", "Patr-A*").replace("Patr-B", "Patr-B*").replace("Eqca-1", "Eqca-1*")
+		if allele not in avail_alleles[method]:
 			sys.exit(allele + " is not a valid allele for mhcflurry")
 	
 	else:
