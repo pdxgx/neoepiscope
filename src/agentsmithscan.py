@@ -344,15 +344,17 @@ def get_affinity(peptides, allele, method, remove_files = True):
 	''' Takes in peptides and returns their binding affinities to the specified allele 
 			based on some prediction method
 		peptides: peptides of interest (list of strings)
-		allele: HLA allele to use for binding affinity (string) ### May change to list of equal length to peptides
+		allele: HLA allele to use for binding affinity (string, format HLA-A02:01)
 		method: Program to use for binding affinity (string)
-			Available methods: 	NetMHC v4.0
-								NetMHCpan v3.0
+			Available methods: 	NetMHC v4.0 ("netMHC")
+								NetMHCpan v3.0 ("netMHCpan")
+								MixMHCpred v1.0 ("MixMHCpred")
+								mhcflurry v0.9.1 ("mhcflurry")
 		
 		Return value: affinities, a list of binding affinities (strings)
 	'''
 	
-	# Check whether allele/method combo is valid
+	# Check whether allele/method combo is valid #### NEED TO ADD TOOL PATHS ####
 	if method == "netMHC":
 		allele = "".join(allele.split(":"))
 		tooldir = os.path.dirname("/PATH/TO/NETMHC")
@@ -388,6 +390,18 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		if allele not in avail_alleles:
 			sys.exit(allele + " is not a valid allele for MixMHCpred")
 	
+	elif method == "mhcflurry":
+		allele = allele.replace("HLA-A", "HLA-A*").replace("HLA-B", "HLA-B*").replace("HLA-C", "HLA-C*")
+		valid_alleles = "/PATH/TO/mhcflurry.validalleles" ### How should we specify this? ####
+		subprocess.call(["/PATH/TO/MHCFLURRY-PREDICT", "--list-supported-alleles", ">", valid_alleles])
+		allele_list = []
+		with open(valid_allele, "r") as f:
+			for line in f:
+				line = line.strip("\n")
+				allele_list.append(line)
+		if allele not in allele_list:
+			sys.exit(allele + " is not a valid allele for mhcflurry")
+	
 	else:
 		sys.exit(method + " is not a valid method")
 	
@@ -412,7 +426,7 @@ def get_affinity(peptides, allele, method, remove_files = True):
 				for line in f:
 					if line[0] == "0":
 						line = line.strip("\n").split("\t")
-						nM = line[3] ### This in the nM affinity - do we want rank (index 4)? ###
+						nM = line[3]
 						affinities.append(nM)
 		else:
 			# Run netMHCpan (### How to establish path? ####)
@@ -421,11 +435,11 @@ def get_affinity(peptides, allele, method, remove_files = True):
 				for line in f:
 					if line[0] == "0":
 						line = line.strip("\n").split("\t")
-						nM = line[5] ### This in the nM affinity - do we want rank (index 6)? ###
+						nM = line[5]
 						affinities.append(nM)
 	
 	elif method == "MixMHCpred":
-		print "Warning: MixMHCpred does not produce binding affinities, but rather binding scores"
+		print "Warning: MixMHCpred scores are NOT nM binding affinities"
 		# Write 9mer and 10mer peptides to temporary file for input to MixMHCpred
 		# Count instances of non-9mer/10mer peptides
 		na_count = 0
@@ -459,13 +473,49 @@ def get_affinity(peptides, allele, method, remove_files = True):
 			else:
 				score = "NA"
 			affinities.append(score)
+	
+	elif method == "mhcflurry":
+		reduced_peps = []
+		na_count = 0
+		for sequence in peptides:
+			if len(sequence) < 8 or len(sequence) > 15:
+				na_count +=1
+			else:
+				reduced_peptides.append(sequence)
+		if na_count > 0:
+			print "Warning: " + str(na_count) + " peptides not compatible with mhcflurry - will not receive score"
+		# Join list of peptides to string for command line
+		input_peps = " ".join(reduced_peps)
+		# Establish temporary file to 
+		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
+		# Run mhcflurry ### How to establish path? ####)
+		subprocess.call(["/PATH/TO/MHCFLURRY-PREDICT", "--alleles", allele, "--peptides", input_peps, ">", mhc_out])
+		# Retrieve scores for valid peptides
+		score_dict = {}
+		with open(mhc_out, "r") as f:
+			for line in f:
+				if "allele" not in line:
+					line = line.strip("\n").split(",")
+					pep = line[1]
+					score = line[2]
+					score_dict[pep] = score
+		# Produce list of scores for valid peptides
+		# Invalid peptides receive "NA" score
+		for sequence in peptides:
+			if sequence in score_dict:
+				score = score_dict[sequence]
+			else:
+				score = "NA"
+			affinities.append(score)
 		
 	# Remove temporary files			
 	if remove_files == True:
-		subprocess.call(["rm", peptide_file])
+		if method != "mhcflurry":
+			subprocess.call(["rm", peptide_file])
 		subprocess.call(["rm", mhc_out])	
-					
-	### Other methods?? ###			
+		if method == "mhcflurry":
+			subprocess.call("rm", valid_alleles)
+		
 	return affinities
 
 
