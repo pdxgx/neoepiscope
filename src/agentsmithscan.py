@@ -377,6 +377,8 @@ def get_affinity(peptides, allele, method, remove_files = True):
 				avail_alleles.append(line[0])
 		if allele not in avail_alleles:
 			sys.exit(allele + " is not a valid allele for netMHCpan")
+			
+	#### NEED CHECK FOR NETMHCIIPAN ####
 	
 	elif method == "MixMHCpred":
 		allele = "".join(allele.replace("HLA-", "").split(":"))
@@ -412,12 +414,12 @@ def get_affinity(peptides, allele, method, remove_files = True):
 	affinities = []
 	
 	if method == "netMHC" or method == "netMHCpan":
-		# Write one peptide per line to a temporary file for input to netMHCpan
+		# Write one peptide per line to a temporary file for input
 		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
 		with open(peptide_file, "w") as f:
 			for sequence in peptides:
 				f.write(sequence + "\n")
-		# Establish temporary file to hold output from netMHCpan
+		# Establish temporary file to hold output
 		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
 		if method == "netMHC":
 			# Run netMHC (### How to establish path? ####)
@@ -438,6 +440,41 @@ def get_affinity(peptides, allele, method, remove_files = True):
 						nM = line[5]
 						affinities.append(nM)
 	
+	elif method == "netMHCIIpan":
+		# Write one peptide per line to a temporary file for input if peptide length is at least 9
+		# Count instances of smaller peptides
+		na_count = 0
+		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
+		with open(peptide_file, "w") as f:
+			for sequence in peptides:
+				if len(sequence) >= 9:
+					f.write(sequence + "\n")
+				else:
+					na_count += 1
+		if na_count > 0:
+			print "Warning: " + str(na_count) + " peptides not compatible with netMHCIIpan - will not receive score"
+		# Establish temporary file to hold output
+		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
+		# Run netMHCIIpan (### How to establish path? ####)
+		subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", "-xls", "-xlsfile", mhc_out, peptide_file])
+		# Retrieve scores for valid peptides
+		score_dict = {}
+		with open(mhc_out, "r") as f:
+			for line in f:
+				line = line.split("\t")
+				if line[0] != "" and line[0] != "Pos":
+					pep = line[1]
+					score = line[4]
+					score_dict[pep] = score
+		# Produce list of scores for valid peptides
+		# Invalid peptides receive "NA" score
+		for sequence in peptides:
+			if sequence in score_dict:
+				nM = score_dict[sequence]
+			else:
+				nM = "NA"
+			affinities.append(nM)
+	
 	elif method == "MixMHCpred":
 		print "Warning: MixMHCpred scores are NOT nM binding affinities"
 		# Write 9mer and 10mer peptides to temporary file for input to MixMHCpred
@@ -452,7 +489,7 @@ def get_affinity(peptides, allele, method, remove_files = True):
 					na_count += 1
 		if na_count > 0:
 			print "Warning: " + str(na_count) + " peptides not compatible with MixMHCpred - will not receive score"
-		# Establish temporary file to hold output from netMHCpan
+		# Establish temporary file to hold output
 		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
 		# Run MixMHCpred ### How to establish path? ####)
 		subprocess.call(["/PATH/TO/MIXMHCPRED", "-i", peptide_file, "-o", mhc_out, "-h", allele])
@@ -469,10 +506,10 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		# Invalid peptides receive "NA" score
 		for sequence in peptides:
 			if sequence in score_dict:
-				score = score_dict[sequence]
+				nM = score_dict[sequence]
 			else:
-				score = "NA"
-			affinities.append(score)
+				nM = "NA"
+			affinities.append(nM)
 	
 	elif method == "mhcflurry":
 		reduced_peps = []
@@ -503,10 +540,10 @@ def get_affinity(peptides, allele, method, remove_files = True):
 		# Invalid peptides receive "NA" score
 		for sequence in peptides:
 			if sequence in score_dict:
-				score = score_dict[sequence]
+				nM = score_dict[sequence]
 			else:
-				score = "NA"
-			affinities.append(score)
+				nM = "NA"
+			affinities.append(nM)
 		
 	# Remove temporary files			
 	if remove_files == True:
