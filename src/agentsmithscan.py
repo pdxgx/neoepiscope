@@ -553,6 +553,9 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
         )
+    parser.add_argument('-m', '--method', type=str, required=False,
+            default='-', help='method for calculating epitope binding affinities'
+        )
     args = parser.parse_args()
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     try:
