@@ -18,6 +18,7 @@ import os
 import random
 import re
 from intervaltree import Interval, IntervalTree
+import tempfile
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -338,201 +339,116 @@ def get_seq(chrom, start, splice_length, reference_index):
     except KeyError:
         return False
     return seq
+
+
+def get_affinity_netmhcpan(peptides, allele, remove_files=True):
+    ''' Takes in a list of peptides and returns their binding affinities to an allele as predicted by netMHCpan
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string, format HLA-A02:01)
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities as strings)
+    '''
+
+    # Check that allele is valid for method
+    avail_alleles = pickle.load(open(os.path.dirname(__file__) + "/availableAlleles.pickle", "rb"))
+    allele = allele.replace("*", "")
+    if allele not in avail_alleles["netMHCpan"]:
+        sys.exit(allele + " is not a valid allele for netMHC")
+
+    # Establish return list and sample id
+    id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
+    affinities = []
+
+    # Write one peptide per line to a temporary file for input
+    peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides"  ### How should we specify this? ####
+    with open(peptide_file, "w") as f:
+        for sequence in peptides:
+            f.write(sequence + "\n")
+
+    # Establish temporary file to hold output
+    mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out"  ### How should we specify this? ####
+
+    # Run netMHCpan #### How do we establish the path? ####
+    subprocess.call(
+        ["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
+    with open(mhc_out, "r") as f:
+        for line in f:
+            if line[0] == "0":
+                line = line.strip("\n").split("\t")
+                nM = line[5]
+                affinities.append(nM)
+
+    # Remove temporary files
+    if remove_files == True:
+        subprocess.call(["rm", peptide_file])
+        subprocess.call(["rm", mhc_out])
+
+    return affinities
+
     
-    
-def get_affinity(peptides, allele, method, remove_files = True):
-	''' Takes in peptides and returns their binding affinities to the specified allele 
-			based on some prediction method
-		peptides: peptides of interest (list of strings)
-		allele: HLA allele to use for binding affinity (string, format HLA-A02:01)
-		method: Program to use for binding affinity (string)
-			Available methods: 	NetMHC v4.0 ("netMHC")
-								NetMHCpan v3.0 ("netMHCpan")
-								MixMHCpred v1.0 ("MixMHCpred")
-								mhcflurry v0.9.1 ("mhcflurry")
-		
-		Return value: affinities, a list of binding affinities (strings)
-	'''
-	
-	# Check whether allele/method combo is valid #### NEED TO ADD TOOL PATHS ####
-	avail_alleles = pickle.load(open(os.path.dirname(__file__)+"/availableAlleles.pickle", "rb"))
-	
-	if method == "netMHC":
-		allele = allele.replace("*","").replace(":", "")
-		if allele not in avail_alleles[method]:
-			sys.exit(allele + " is not a valid allele for netMHC")
-	
-	elif method == "netMHCpan":
-		allele = allele.replace("*", "")
-		if allele not in avail_alleles[method]:
-			sys.exit(allele + " is not a valid allele for netMHCpan")
-			
-	elif method == "netMHCIIpan":
-		allele = allele.replace("HLA-", "")
-		if allele not in avail_alleles[method]:
-			sys.exit(allele + " is not a valid allele for netMHCIIpan")
-	
-	elif method == "MixMHCpred":
-		allele = allele.replace("HLA-", "").replace("*","").replace(":", "")
-		if allele not in avail_alleles[method]:
-			sys.exit(allele + " is not a valid allele for MixMHCpred")
-	
-	elif method == "mhcflurry":
-		if "*" not in allele:
-			allele = allele.replace("HLA-A", "HLA-A*").replace("HLA-B", "HLA-B*").replace("HLA-C", "HLA-C*").replace("Mamu-A", "Mamu-A*").replace("Mamu-B", "Mamu-B*").replace("Patr-A", "Patr-A*").replace("Patr-B", "Patr-B*").replace("Eqca-1", "Eqca-1*")
-		if allele not in avail_alleles[method]:
-			sys.exit(allele + " is not a valid allele for mhcflurry")
-	
-	else:
-		sys.exit(method + " is not a valid method")
-	
-	
-	# Set identifying information for sample
-	id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
-	
-	affinities = []
-	
-	if method == "netMHC" or method == "netMHCpan":
-		# Write one peptide per line to a temporary file for input
-		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
-		with open(peptide_file, "w") as f:
-			for sequence in peptides:
-				f.write(sequence + "\n")
-		# Establish temporary file to hold output
-		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
-		if method == "netMHC":
-			# Run netMHC (### How to establish path? ####)
-			subprocess.call(["/PATH/TO/NETMHC", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
-			with open(mhc_out, "r") as f:
-				for line in f:
-					if line[0] == "0":
-						line = line.strip("\n").split("\t")
-						nM = line[3]
-						affinities.append(nM)
-		else:
-			# Run netMHCpan (### How to establish path? ####)
-			subprocess.call(["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
-			with open(mhc_out, "r") as f:
-				for line in f:
-					if line[0] == "0":
-						line = line.strip("\n").split("\t")
-						nM = line[5]
-						affinities.append(nM)
-	
-	elif method == "netMHCIIpan":
-		# Write one peptide per line to a temporary file for input if peptide length is at least 9
-		# Count instances of smaller peptides
-		na_count = 0
-		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
-		with open(peptide_file, "w") as f:
-			for sequence in peptides:
-				if len(sequence) >= 9:
-					f.write(sequence + "\n")
-				else:
-					na_count += 1
-		if na_count > 0:
-			print "Warning: " + str(na_count) + " peptides not compatible with netMHCIIpan - will not receive score"
-		# Establish temporary file to hold output
-		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
-		# Run netMHCIIpan (### How to establish path? ####)
-		subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", "-xls", "-xlsfile", mhc_out, peptide_file])
-		# Retrieve scores for valid peptides
-		score_dict = {}
-		with open(mhc_out, "r") as f:
-			for line in f:
-				line = line.split("\t")
-				if line[0] != "" and line[0] != "Pos":
-					pep = line[1]
-					score = line[4]
-					score_dict[pep] = score
-		# Produce list of scores for valid peptides
-		# Invalid peptides receive "NA" score
-		for sequence in peptides:
-			if sequence in score_dict:
-				nM = score_dict[sequence]
-			else:
-				nM = "NA"
-			affinities.append(nM)
-	
-	elif method == "MixMHCpred":
-		print "Warning: MixMHCpred scores are NOT nM binding affinities"
-		# Write 9mer and 10mer peptides to temporary file for input to MixMHCpred
-		# Count instances of non-9mer/10mer peptides
-		na_count = 0
-		peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
-		with open(peptide_file, "w") as f:
-			for sequence in peptides:
-				if len(sequence) == 9 or len(sequence) == 10:
-					f.write(sequence + "\n")
-				else:
-					na_count += 1
-		if na_count > 0:
-			print "Warning: " + str(na_count) + " peptides not compatible with MixMHCpred - will not receive score"
-		# Establish temporary file to hold output
-		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
-		# Run MixMHCpred ### How to establish path? ####)
-		subprocess.call(["/PATH/TO/MIXMHCPRED", "-i", peptide_file, "-o", mhc_out, "-h", allele])
-		# Retrieve scores for valid peptides
-		score_dict = {}
-		with open(mhc_out, "r") as f:
-			for line in f:
-				if line[0] != "#" and "Peptide" not in line:
-					line = line.strip("\n").split("\t")
-					pep = line[0]
-					score = line[1]
-					score_dict[pep] = score
-		# Produce list of scores for valid peptides
-		# Invalid peptides receive "NA" score
-		for sequence in peptides:
-			if sequence in score_dict:
-				nM = score_dict[sequence]
-			else:
-				nM = "NA"
-			affinities.append(nM)
-	
-	elif method == "mhcflurry":
-		reduced_peps = []
-		na_count = 0
-		for sequence in peptides:
-			if len(sequence) < 8 or len(sequence) > 15:
-				na_count +=1
-			else:
-				reduced_peptides.append(sequence)
-		if na_count > 0:
-			print "Warning: " + str(na_count) + " peptides not compatible with mhcflurry - will not receive score"
-		# Join list of peptides to string for command line
-		input_peps = " ".join(reduced_peps)
-		# Establish temporary file to 
-		mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
-		# Run mhcflurry ### How to establish path? ####)
-		subprocess.call(["/PATH/TO/MHCFLURRY-PREDICT", "--alleles", allele, "--peptides", input_peps, ">", mhc_out])
-		# Retrieve scores for valid peptides
-		score_dict = {}
-		with open(mhc_out, "r") as f:
-			for line in f:
-				if "allele" not in line:
-					line = line.strip("\n").split(",")
-					pep = line[1]
-					score = line[2]
-					score_dict[pep] = score
-		# Produce list of scores for valid peptides
-		# Invalid peptides receive "NA" score
-		for sequence in peptides:
-			if sequence in score_dict:
-				nM = score_dict[sequence]
-			else:
-				nM = "NA"
-			affinities.append(nM)
-		
-	# Remove temporary files			
-	if remove_files == True:
-		if method != "mhcflurry":
-			subprocess.call(["rm", peptide_file])
-		subprocess.call(["rm", mhc_out])	
-		if method == "mhcflurry":
-			subprocess.call("rm", valid_alleles)
-		
-	return affinities
+def get_affinity_netmhciipan(peptides, allele, remove_files=True):
+    ''' Takes in a list of peptides and returns their binding affinities to an allele as predicted by netMHCIIpan
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string)
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities as strings)
+    '''
+
+    # Check that allele is valid for method
+    avail_alleles = pickle.load(open(os.path.dirname(__file__)+"/availableAlleles.pickle", "rb"))
+    allele = allele.replace("HLA-", "")
+    if allele not in avail_alleles["netMHCIIpan"]:
+        sys.exit(allele + " is not a valid allele for netMHCIIpan")
+
+    # Establish return list and sample id
+    id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
+    affinities = []
+
+    # Write one peptide per line to a temporary file for input if peptide length is at least 9
+	# Count instances of smaller peptides
+    na_count = 0
+    peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
+    with open(peptide_file, "w") as f:
+        for sequence in peptides:
+            if len(sequence) >= 9:
+                f.write(sequence + "\n")
+            else:
+                na_count += 1
+    if na_count > 0:
+        print "Warning: " + str(na_count) + " peptides not compatible with netMHCIIpan - will not receive score"
+
+    # Establish temporary file to hold output
+    mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
+    # Run netMHCIIpan (### How to establish path? ####)
+    subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", "-xls", "-xlsfile", mhc_out, peptide_file])
+    # Retrieve scores for valid peptides
+    score_dict = {}
+    with open(mhc_out, "r") as f:
+        for line in f:
+            line = line.split("\t")
+            if line[0] != "" and line[0] != "Pos":
+                pep = line[1]
+                score = line[4]
+                score_dict[pep] = score
+
+    # Produce list of scores for valid peptides
+    # Invalid peptides receive "NA" score
+    for sequence in peptides:
+        if sequence in score_dict:
+            nM = score_dict[sequence]
+        else:
+            nM = "NA"
+            affinities.append(nM)  # Remove temporary files
+
+    if remove_files == True:
+        subprocess.call(["rm", peptide_file])
+        subprocess.call(["rm", mhc_out])
+
+    return affinities
 
 
 def go():
