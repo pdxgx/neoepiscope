@@ -362,18 +362,18 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
     affinities = []
 
     # Write one peptide per line to a temporary file for input
-    peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides"  ### How should we specify this? ####
-    with open(peptide_file, "w") as f:
+    peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
+    with open(peptide_file[1], "w") as f:
         for sequence in peptides:
             f.write(sequence + "\n")
 
     # Establish temporary file to hold output
-    mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out"  ### How should we specify this? ####
+    mhc_out = tempfile.mkstemp(suffix=".netMHCpan.out", prefix="id.", text=True)
 
     # Run netMHCpan #### How do we establish the path? ####
     subprocess.call(
         ["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
-    with open(mhc_out, "r") as f:
+    with open(mhc_out[1], "r") as f:
         for line in f:
             if line[0] == "0":
                 line = line.strip("\n").split("\t")
@@ -382,8 +382,8 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
 
     # Remove temporary files
     if remove_files == True:
-        subprocess.call(["rm", peptide_file])
-        subprocess.call(["rm", mhc_out])
+        subprocess.call(["rm", peptide_file[1]])
+        subprocess.call(["rm", mhc_out[1]])
 
     return affinities
 
@@ -411,8 +411,8 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
     # Write one peptide per line to a temporary file for input if peptide length is at least 9
 	# Count instances of smaller peptides
     na_count = 0
-    peptide_file = "/PATH/TO/TEMPORARY/FILE" + id + ".peptides" ### How should we specify this? ####
-    with open(peptide_file, "w") as f:
+    peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
+    with open(peptide_file[1], "w") as f:
         for sequence in peptides:
             if len(sequence) >= 9:
                 f.write(sequence + "\n")
@@ -422,12 +422,12 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
         print "Warning: " + str(na_count) + " peptides not compatible with netMHCIIpan - will not receive score"
 
     # Establish temporary file to hold output
-    mhc_out = "/PATH/TO/MHC/OUTPUT" + id + ".mhc.out" ### How should we specify this? ####
+    mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", prefix="id.", text=True)
     # Run netMHCIIpan (### How to establish path? ####)
     subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", "-xls", "-xlsfile", mhc_out, peptide_file])
     # Retrieve scores for valid peptides
     score_dict = {}
-    with open(mhc_out, "r") as f:
+    with open(mhc_out[1], "r") as f:
         for line in f:
             line = line.split("\t")
             if line[0] != "" and line[0] != "Pos":
@@ -445,8 +445,8 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
             affinities.append(nM)  # Remove temporary files
 
     if remove_files == True:
-        subprocess.call(["rm", peptide_file])
-        subprocess.call(["rm", mhc_out])
+        subprocess.call(["rm", peptide_file[1]])
+        subprocess.call(["rm", mhc_out[1]])
 
     return affinities
 
