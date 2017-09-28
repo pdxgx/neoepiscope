@@ -86,10 +86,10 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
                     for size in xrange(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
-def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
+def neoepitopes(mutation_positions, normal_seq, mutated_seq,
                         reverse_strand=False, min_size=8, max_size=11,
                         output_stream=sys.stdout):
-    """ Prints neoepitopes from normal and mutated seqs.
+    """ Finds neoepitopes from normal and mutated seqs.
 
         mutation_positions: list of mutation positions
         normal_seq: normal nucleotide sequence
@@ -98,110 +98,24 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         min_size: minimum peptide kmer size to write
         max_size: maximum petide kmer size to write
 
-        No return value.
+        Return value: List of tuples (normal_kmer, mutated_kmer)
     """
-    for normal_kmer, mutated_kmer in zip(
-            kmerize_peptide(
-                seq_to_peptide(
-                    normal_seq, reverse_strand=reverse_strand),
-                min_size=min_size,
-                max_size=max_size
-            ), kmerize_peptide(
-                seq_to_peptide(
-                    mutated_seq, reverse_strand=reverse_strand),
-                min_size=min_size,
-                max_size=max_size
-            )):
-        print >>sys.stdout, (
-            '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
-
-def get_transcripts_from_tree(chr, start, end, cds_tree):
-    """ Takes an input cds_tree and chr coordinates and outputs a set of
-    	    unique transcript IDs.
-        chr: (String) Specify chr to use for transcript search.
-	start: (Int) Specify start position to use for transcript search.
-	end: (Int) Specify ending position to use for transcript search
-	cds_tree: (Dict) dictionary of IntervalTree() objects containing
-	    transcript IDs as function of exon coords indexed by chr/contig ID.
-        Return value: (set) a set of matching unique transcript IDs.
-    """
-    transcript_ids = set()
-    if end <= start:
-	end = start
-    cds = cds_tree[chr].search(start, end)
-    for cd in cds:
-	if cd.data in transcript_ids:
-	    continue
-	transcript_ids.add(cd.data)
-    return transcript_ids
-
-def cds_to_tree(cds_dict):
-    """ Takes an input cds_dict and outputs a sorted searchable tree of chromosomal
-    	    intervals, indexed by chromosome/contig ID.
-        cds_dict: (Dict) See output format of gtf_to_cds.
-        Return value: (Dict) a dictionary of IntervalTree() objects containing 
-	    transcript IDs as function of exon coords indexed by chr/contig ID.
-	    Query the returned searchable_tree as follows:
-	        cds_tree[chr].search(start, end)
-    """
-    cds_tree = {}
-    for transcript_id in cds_dict:
-	transcript = cds_dict[transcript_id]
-	for cds in transcript:
-            chrom = cds[5] 
-            if chrom not in cds_tree:
-		cds_tree[chrom] = IntervalTree()
-            # coordinates of Interval are inclusive of start, exclusive of end
-            cds_tree[chrom].addi(cds[0], cds[1]+1, transcript_id)
-    return cds_tree
-
-def gtf_to_cds(gtf_file, pickle_dict = ""):
-    """ Takes an input gtf_file and outputs a dictionary of transcript coordinate definitions.
-        gtf_file: (String) Indicates the location/name of the GTF file (does not require it to be sorted).
-        pickle_dict: (String [default '']) Changes behavior of gtf_to_cds() function 
-	    - if a filename is specified, then the function will write cds_dict to 
-	    the pickle_dict file; otherwise, the function will only keep cds_dict
-	    in memory and not output intermediate pickle_dict file
-        Return value: cds_dict indexed by transcript ID, containing a sorted list of
-	    exons composing each transcript.
-    """
-    gtf_data = open(gtf_file, "r")
-    #cds_dict[transcript_id]= [[start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], [start, stop, 1(if CDS)/0(if stop), +/-, reading frame, chr], ...]
-    cds_dict = {}
-    for line in gtf_data:
-    	if not line or line[0] == '#':
-        	continue
-        tokens = line.strip().split('\t')
-        if (tokens[2] != 'CDS' and tokens[2] != 'stop_codon'):
-                continue    
-        transcript_id = re.sub(r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', r'\1', tokens[8])
-        if transcript_id not in cds_dict:
-                if tokens[2] == "CDS":
-			cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]]]
-                elif tokens[2] == "stop_codon":
-                        cds_dict[transcript_id] = [[int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]]]
-        else:
-		if tokens[2] == "CDS":
-                        cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7]), tokens[0]])
-                elif tokens[2] == "stop_codon":
-                        cds_dict[transcript_id].append([int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7]), tokens[0]])
-
-    # sort cds_dict coordinates (left -> right) for each transcript                                
-    for transcript_id in cds_dict:
-    	cds_dict[transcript_id].sort(key=lambda x: x[0])
-    gtf_data.close()
-        
-    if pickle_dict != "":
-    	pickle_out = open(pickle_dict, "wb")
-        pickle.dump(cds_dict, pickle_out)
-        pickle_out.close()    
-                
-    return cds_dict
+    return zip(kmerize_peptide(
+        seq_to_peptide(
+            normal_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size
+    ), kmerize_peptide(
+        seq_to_peptide(
+            mutated_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size))
 
 
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
-    def __init__(bowtie_reference_index, CDS):
+
+    def __init__(self, bowtie_reference_index, CDS):
         """ Initializes Transcript object
 
             bowtie_reference_index: BowtieIndexReference object for retrieving
@@ -213,8 +127,8 @@ class Transcript(object):
         for line in CDS:
             tokens = line.strip().split('\t')
             self.intervals.extend(
-                    [(int(tokens[3]), True), (int(tokens[4]), True)]
-                )
+                [(int(tokens[3]), True), (int(tokens[4]), True)]
+            )
         self.edits = defaultdict(list)
         self.reference_intervals = copy.copy(self.intervals)
         '''Assume intervals are nonoverlapping! Uncomment following lines to
@@ -231,7 +145,7 @@ class Transcript(object):
         self.last_edits = None
         self.last_intervals = None
 
-    def reset(reference=False):
+    def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
 
             reference: if False, tries to reset to last save point, and if that
@@ -247,7 +161,7 @@ class Transcript(object):
             self.edits = self.last_edits
             self.intervals = self.last_intervals
 
-    def edit(seq, pos, mutation_type='V'):
+    def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
 
             seq: sequence to add or delete from reference; for deletions, all
@@ -263,14 +177,15 @@ class Transcript(object):
         """
         self.intervals.append((pos, False))
         self.edits[pos].append((seq, mutation_type))
-    def edit_freq(pos, val):
-	'''
-	    modifies allele freq value at location
-	'''
-    def get_freq(start = 0, end = None, genome=True)
-	"""
-	    Retrieves allele frequency list between start and end coordinates
-	"""
+
+    def edit_freq(self, pos, val):
+        """modifies allele freq value at location """
+        pass
+
+    def get_freq(start=0, end=None, genome=True):
+        """ Retrieves allele frequency list between start and end coordinates """
+        pass
+
     def save():
         """ Creates save point for edits.
 
@@ -309,26 +224,11 @@ class Transcript(object):
             seq = []
             reference_index.get_stretch(start, self.intervals[i])
 
-
         raise NotImplementedError(
-                'Retrieving sequence with transcript coordinates not '
-                'yet supported.'
-            )
+            'Retrieving sequence with transcript coordinates not '
+            'yet supported.'
+        )
 
-#def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, mutation_locs, reverse):
-    ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
-            shift (indel)
-        query_st: (int)
-        trans_id: ()
-        line_count: ()
-        cds_dict: ()
-        chrom: (int) The chromosome that the mutation is located on
-        reference_index: ()
-        mutation_locs: (Dict) Dictionary mapping sequence position to 
-            actual mutation
-        reverse: (Bool) True if mutation represented by reverse strand
-        Return value:  
-    '''
 
 
 def get_seq(chrom, start, splice_length, reference_index):
@@ -556,6 +456,9 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--method', type=str, required=False,
             default='-', help='method for calculating epitope binding affinities'
         )
+    parser.add_argument('-a', '--affinity-predictor', type=str, required=False,
+            default='netMHCpan', help='path to executable for binding affinity prediction software'
+                                      '')
     args = parser.parse_args()
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     try:
