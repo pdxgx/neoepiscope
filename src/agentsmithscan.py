@@ -242,7 +242,8 @@ def get_seq(chrom, start, splice_length, reference_index):
 
 
 def get_affinity_netmhcpan(peptides, allele, remove_files=True):
-    ''' Takes in a list of peptides and returns their binding affinities to an allele as predicted by netMHCpan
+    ''' Takes in a list of peptides and returns their binding affinities to an 
+            allele as predicted by netMHCpan
 
         peptides: peptides of interest (list of strings)
         allele: Allele to use for binding affinity (string, format HLA-A02:01)
@@ -252,7 +253,8 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
     '''
 
     # Check that allele is valid for method
-    avail_alleles = pickle.load(open(os.path.dirname(__file__) + "/availableAlleles.pickle", "rb"))
+    avail_alleles = pickle.load(open(os.path.dirname(__file__) + 
+        "/availableAlleles.pickle", "rb"))
     allele = allele.replace("*", "")
     if allele not in avail_alleles["netMHCpan"]:
         sys.exit(allele + " is not a valid allele for netMHC")
@@ -272,7 +274,8 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
 
     # Run netMHCpan #### How do we establish the path? ####
     subprocess.call(
-        ["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", "-xlsfile", mhc_out, peptide_file])
+        ["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", 
+            "-xlsfile", mhc_out, peptide_file])
     with open(mhc_out[1], "r") as f:
         for line in f:
             if line[0] == "0":
@@ -289,7 +292,8 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
 
     
 def get_affinity_netmhciipan(peptides, allele, remove_files=True):
-    ''' Takes in a list of peptides and returns their binding affinities to an allele as predicted by netMHCIIpan
+    ''' Takes in a list of peptides and returns their binding affinities to an 
+            allele as predicted by netMHCIIpan
 
         peptides: peptides of interest (list of strings)
         allele: Allele to use for binding affinity (string)
@@ -299,7 +303,8 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
     '''
 
     # Check that allele is valid for method
-    avail_alleles = pickle.load(open(os.path.dirname(__file__)+"/availableAlleles.pickle", "rb"))
+    avail_alleles = pickle.load(open(os.path.dirname(__file__)+
+        "/availableAlleles.pickle", "rb"))
     allele = allele.replace("HLA-", "")
     if allele not in avail_alleles["netMHCIIpan"]:
         sys.exit(allele + " is not a valid allele for netMHCIIpan")
@@ -308,7 +313,8 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
     id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
     affinities = []
 
-    # Write one peptide per line to a temporary file for input if peptide length is at least 9
+    # Write one peptide per line to a temporary file for input if peptide 
+    #   length is at least 9
 	# Count instances of smaller peptides
     na_count = 0
     peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
@@ -319,12 +325,15 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
             else:
                 na_count += 1
     if na_count > 0:
-        print "Warning: " + str(na_count) + " peptides not compatible with netMHCIIpan - will not receive score"
+        print "Warning: " + str(na_count) + 
+            " peptides not compatible with netMHCIIpan - will not receive score"
 
     # Establish temporary file to hold output
-    mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", prefix="id.", text=True)
+    mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", prefix="id.", 
+        text=True)
     # Run netMHCIIpan (### How to establish path? ####)
-    subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", "-xls", "-xlsfile", mhc_out, peptide_file])
+    subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", 
+        "-xls", "-xlsfile", mhc_out, peptide_file])
     # Retrieve scores for valid peptides
     score_dict = {}
     with open(mhc_out[1], "r") as f:
@@ -432,6 +441,21 @@ def go():
         _size_max = 11
 
 
+def which(path):
+    """ Searches for whether executable is present and returns version
+
+        path: path to executable
+
+        Return value: None if executable not found, else string with software
+            name and version number
+    """
+    try:
+        subprocess.check_call([path])
+    except OSError as e:
+        return None
+    else:
+        return path
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--vcf', type=str, required=True,
@@ -454,12 +478,19 @@ if __name__ == '__main__':
             default='8,11', help='kmer size for epitope calculation'
         )
     parser.add_argument('-m', '--method', type=str, required=False,
-            default='-', help='method for calculating epitope binding affinities'
+            default='-', 
+            help='method for calculating epitope binding affinities'
         )
     parser.add_argument('-a', '--affinity-predictor', type=str, required=False,
-            default='netMHCpan', help='path to executable for binding affinity prediction software'
-                                      '')
+            default='netMHCpan', 
+            help='path to executable for binding affinity prediction software'
+        )
     args = parser.parse_args()
+    
+    # Check affinity predictor
+    if which(args.affinity-predictor) == None:
+        raise ValueError(args.affinity-predictor + " is not a valid software")
+    
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     try:
 	if args.dicts is not None:
