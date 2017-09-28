@@ -488,8 +488,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # Check affinity predictor
-    if which(args.affinity-predictor) == None:
-        raise ValueError(args.affinity-predictor + " is not a valid software")
+    program = which(args.affinity-predictor)
+    if program == None:
+        raise ValueError(program + " is not a valid software")
+    elif "netMHCIIpan" in program:
+        method = "netMHCIIpan"
+    elif "netMHCpan" in program:
+        method = "netMHCpan"
+    else:
+        raise ValueError(program + " is not a valid software")
     
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     try:
