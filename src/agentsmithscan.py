@@ -141,10 +141,13 @@ class Transcript(object):
         for line in CDS:
             tokens = line.strip().split('\t')
             self.intervals.extend(
-                    [(int(tokens[3]), True), (int(tokens[4]), True)]
+                    [(int(tokens[3]), True), (int(tokens[4]) + 1, True)]
                 )
         self.edits = defaultdict(list)
         self.reference_intervals = copy.copy(self.intervals)
+        intervals_size = len(self.reference_intervals)
+        assert intervals_size >= 2 and intervals_size % 2 == 0
+        self.chrom = CDS[0][1]
         '''Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower).'''
         # for i in xrange(1, len(self.intervals)):
@@ -182,7 +185,7 @@ class Transcript(object):
                 that matters is this sequence has the same length as the 
                 sequence to delete
             pos: 0-based coordinate. For insertions, this is the coordinate 
-                directly preceding the inserted sequence. For deletions, this 
+                directly following the inserted sequence. For deletions, this 
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
@@ -200,34 +203,110 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_intervals = copy.copy(self.intervals)
 
-    def seq(start=0, end=None, genome=False):
+    def seq(start=None, end=None, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
 
-            start: start position (0-indexed); can be negative to measure from
-                end of transcript, so -1 means the last base of the transcript,
-                etc. Negative coordinates are always transcript coordinates.
-            end: end position (0-indexed); None means end of transcript
+            start: start position (0-indexed, inclusive); None means start of
+                transcript
+            end: end position (0-indexed, exclusive); None means end of
+                transcript
             genome: True iff genome coordinates are specified
 
             Return value: transcript (sub)sequence
         """
-        raise NotImplementedError
         assert end is None or end >= start
         self.intervals.sort()
+        # Segregate edits by stretch
+        on, edits, edit_group = False, [], []
+        for i in xrange(len(self.intervals)):
+            if self.intervals[i][1]:
+                if on:
+                    edits.append(edit_group)
+                    edit_group = []
+                on = not on
+            else:
+                edit_group.append(i)
+        # Get all CDS stretches
+        cds_stretches = [bowtie_reference_index.get_stretch(
+                                self.chrom,
+                                self.reference_intervals[i][0],
+                                self.reference_intervals[i+1][0]
+                                    - self.reference_intervals[i][0]
+                            ) for i in xrange(
+                                        len(self.reference_intervals) - 1)]
         if genome:
-            started = False
+            if start is None:
+                start = self.reference_intervals[0][0]
+            if end is None:
+                end = self.reference_intervals[-1][0]
+            # Mutate all CDSes between start and end
+            edited_cds_stretches, break_outer = [], False
+            for i, edit_group in enumerate(edits):
+                bounds = (self.reference_intervals[i*2][0],
+                            self.reference_intervals[i*2+1][0])
+                cds_stretch = cds_stretches[i]
+                edited_cds_stretch = []
+                cds_start = 0
+                for j in edit_group:
+                    if self.intervals[j][0] < start:
+                        continue
+                    if self.intervals[j][0] >= end:
+                        # no need to continue
+                        break_outer = True
+                        break
+                    else:
+                        pos = self.intervals[j][0]
+                        for mutation in self.edits[pos]:
+                            if mutation[1] == 'V':
+                                edited_cds_stretch.append(
+
+                                    )
+                                edited_cds_stretches[
+                                    mutation[0] - bounds[0]] = mutation[0]
+                            elif mutation[1] == 'I':
+                                edited_cds_stretches.append(
+
+                                    )
+                                edited_cds_stretches[
+
+                                ]
+                if break_outer:
+                    break
+            started, on, on_at_start = False, False, True
             start_index, end_index = 0, len(intervals) - 1
             for i, point in enumerate(self.intervals):
+                if point[1]:
+                    on = not on
                 if point[0] < start:
                     continue
                 elif started:
-                    if point[0] > end:
+                    if point[0] >= end:
                         end_index = i
                 else:
                     started = True
+                    on_at_start = on
                     start_index = i
             # Accumulate transcript sequence
+            if start < self.intervals[0][0] and self.intervals[0][1]:
+                self.intervals = [(start, True)] + self.intervals[1:]
+            elif self.intervals[start_index] != (start, True):
+                self.intervals = [(start, True)] + self.intervals[start_index:]
+            if end > self.intervals[-1][0] and self.intervals[-1][1]:
+                self.intervals = self.intervals[:-1] + [(end, True)]
+            elif self.intervals[end_index] != (end, True):
+                self.intervals = self.intervals[:end_index] + [(end, True)]
             seq = []
+            on, i, start = on_at_start, 0, None
+            while True:
+                if not self.intervals[i][1]:
+                    seq.append(self.bowtie_reference_index.get_stretch(
+                                                    start, self.intervals[i][]
+                                                )
+                        )
+                if on:
+                    reference_index.get_stretch()
+                on = not on
+            reference_index.get_stretch()
             reference_index.get_stretch(start, self.intervals[i])
 
 
