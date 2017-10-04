@@ -394,7 +394,7 @@ def get_affinity_netmhciipan(peptides, allele, netmhciipan, remove_files=True):
 
     # Write one peptide per line to a temporary file for input if peptide 
     #   length is at least 9
-	# Count instances of smaller peptides
+    # Count instances of smaller peptides
     na_count = 0
     peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
     with open(peptide_file[1], "w") as f:
@@ -549,7 +549,7 @@ if __name__ == '__main__':
         )
     parser.add_argument('-g', '--gtf', type=str, required=False,
             help='input path to GTF file'
-        )	
+        )    
     parser.add_argument('-b', '--bam', action='store_true', required=False,
             default = False, help='T/F bam is used'
         )
@@ -579,14 +579,14 @@ if __name__ == '__main__':
     
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     try:
-	if args.dicts is not None:
-		with open(args.dicts, 'rb') as dict_stream:
-			cds_dict = pickle.load(dict_stream)
-	elif args.gtf is not None:
-		cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
-	else:
-		raise ValueError("No CDS data available (-d or -g argument must be specified)"
-	cds_tree = cds_to_tree(cds_dict)
+    if args.dicts is not None:
+        with open(args.dicts, 'rb') as dict_stream:
+            cds_dict = pickle.load(dict_stream)
+    elif args.gtf is not None:
+        cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
+    else:
+        raise ValueError("No CDS data available (-d or -g argument must be specified)"
+    cds_tree = cds_to_tree(cds_dict)
     except:
-	print "Unable to import CDS data from GTF file " + args.gtf
-	
+    print "Unable to import CDS data from GTF file " + args.gtf
+    
