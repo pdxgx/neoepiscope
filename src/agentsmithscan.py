@@ -308,56 +308,6 @@ class Transcript(object):
             'yet supported.'
         )
 
-def get_affinity_netmhcpan(peptides, allele, netmhcpan, remove_files=True):
-    """ Takes in a list of peptides and returns their binding affinities to an 
-            allele as predicted by netMHCpan
-
-        peptides: peptides of interest (list of strings)
-        allele: Allele to use for binding affinity (string, format HLA-A02:01)
-        remove_files: option to remove intermediate files
-
-        Return value: affinities (a list of binding affinities as strings)
-    """
-
-    # Check that allele is valid for method
-    avail_alleles = pickle.load(open(os.path.dirname(__file__) + 
-        "/availableAlleles.pickle", "rb"))
-    allele = allele.replace("*", "")
-    if allele not in avail_alleles["netMHCpan"]:
-        sys.exit(allele + " is not a valid allele for netMHC")
-
-    # Establish return list and sample id
-    id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
-    affinities = []
-
-    # Write one peptide per line to a temporary file for input
-    peptide_file = tempfile.mkstemp(
-                            suffix=".peptides", prefix="id.", text=True)
-    with open(peptide_file[1], "w") as f:
-        for sequence in peptides:
-            f.write(sequence + "\n")
-
-    # Establish temporary file to hold output
-    mhc_out = tempfile.mkstemp(
-                            suffix=".netMHCpan.out", prefix="id.", text=True)
-
-    # Run netMHCpan #### How do we establish the path? ####
-    subprocess.call(
-        [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
-            "-xlsfile", mhc_out, peptide_file])
-    with open(mhc_out[1], "r") as f:
-        for line in f:
-            if line[0] == "0":
-                line = line.strip("\n").split("\t")
-                nM = line[5]
-                affinities.append(nM)
-
-    # Remove temporary files
-    if remove_files == True:
-        subprocess.call(["rm", peptide_file[1]])
-        subprocess.call(["rm", mhc_out[1]])
-
-    return affinities
 
 def which(path):
     """ Searches for whether executable is present and returns version
