@@ -14,6 +14,11 @@ import copy
 import pickle
 import defaultdict
 import copy
+import os
+import random
+import re
+from intervaltree import Interval, IntervalTree
+import tempfile
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -81,10 +86,10 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
                     for size in xrange(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
-def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
+def neoepitopes(mutation_positions, normal_seq, mutated_seq,
                         reverse_strand=False, min_size=8, max_size=11,
                         output_stream=sys.stdout):
-    """ Prints neoepitopes from normal and mutated seqs.
+    """ Finds neoepitopes from normal and mutated seqs.
 
         mutation_positions: list of mutation positions
         normal_seq: normal nucleotide sequence
@@ -93,43 +98,24 @@ def write_neoepitopes(mutation_positions, normal_seq, mutated_seq,
         min_size: minimum peptide kmer size to write
         max_size: maximum petide kmer size to write
 
-        No return value.
+        Return value: List of tuples (normal_kmer, mutated_kmer)
     """
-    for normal_kmer, mutated_kmer in zip(
-            kmerize_peptide(
-                seq_to_peptide(
-                    normal_seq, reverse_strand=reverse_strand),
-                min_size=min_size,
-                max_size=max_size
-            ), kmerize_peptide(
-                seq_to_peptide(
-                    mutated_seq, reverse_strand=reverse_strand),
-                min_size=min_size,
-                max_size=max_size
-            )):
-        print >>sys.stdout, (
-            '\t'.join([normal_kmer, mutated_kmer, str(mutation_posits)]))
+    return zip(kmerize_peptide(
+        seq_to_peptide(
+            normal_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size
+    ), kmerize_peptide(
+        seq_to_peptide(
+            mutated_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size))
 
-#def get_cds(transcript_id, mutation_pos_list, seq_length_left,
-#              seq_length_right, ordered_cds_dict, mutation_dict):
-    ''' References cds_dict to get cds Bounds for later Bowtie query.
-        transcript_id: (String) Indicates the transcript the mutation
-            is located on.
-        mutation_pos_list: (int) Mutation's position on chromosome
-        seq_length_left: (int) How many bases must be gathered
-            to the left of the mutation
-        seq_length_right: (int) How many bases must be gathered to
-            the right of the mutation
-        Return value: List of tuples containing starting indexes and stretch
-        lengths within cds boundaries necessary to acquire the complete 
-        sequence necessary for peptide kmerization based on the position 
-        of a mutation within a chromosome.
-    '''
-#    return nucleotide_index_list, mutation_dict, bounds_set
 
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
-    def __init__(bowtie_reference_index, CDS):
+
+    def __init__(self, bowtie_reference_index, CDS):
         """ Initializes Transcript object
 
             bowtie_reference_index: BowtieIndexReference object for retrieving
@@ -162,7 +148,7 @@ class Transcript(object):
         self.last_edits = None
         self.last_intervals = None
 
-    def reset(reference=False):
+    def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
 
             reference: if False, tries to reset to last save point, and if that
@@ -178,7 +164,7 @@ class Transcript(object):
             self.edits = self.last_edits
             self.intervals = self.last_intervals
 
-    def edit(seq, pos, mutation_type='V'):
+    def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
 
             seq: sequence to add or delete from reference; for deletions, all
@@ -194,6 +180,14 @@ class Transcript(object):
         """
         self.intervals.append((pos, False))
         self.edits[pos].append((seq, mutation_type))
+
+    def edit_freq(self, pos, val):
+        """modifies allele freq value at location """
+        pass
+
+    def get_freq(start=0, end=None, genome=True):
+        """ Retrieves allele frequency list between start and end coordinates """
+        pass
 
     def save():
         """ Creates save point for edits.
@@ -309,26 +303,11 @@ class Transcript(object):
             reference_index.get_stretch()
             reference_index.get_stretch(start, self.intervals[i])
 
-
         raise NotImplementedError(
-                'Retrieving sequence with transcript coordinates not '
-                'yet supported.'
-            )
+            'Retrieving sequence with transcript coordinates not '
+            'yet supported.'
+        )
 
-#def find_stop(query_st, trans_id, line_count, cds_dict, chrom, reference_index, mutation_locs, reverse):
-    ''' Queries get_cds() and Bowtie to find a stop codon in the case of a phase
-            shift (indel)
-        query_st: (int)
-        trans_id: ()
-        line_count: ()
-        cds_dict: ()
-        chrom: (int) The chromosome that the mutation is located on
-        reference_index: ()
-        mutation_locs: (Dict) Dictionary mapping sequence position to 
-            actual mutation
-        reverse: (Bool) True if mutation represented by reverse strand
-        Return value:  
-    '''
 
 
 def get_seq(chrom, start, splice_length, reference_index):
@@ -339,25 +318,125 @@ def get_seq(chrom, start, splice_length, reference_index):
     except KeyError:
         return False
     return seq
+
+
+def get_affinity_netmhcpan(peptides, allele, netmhcpan, remove_files=True):
+    ''' Takes in a list of peptides and returns their binding affinities to an 
+            allele as predicted by netMHCpan
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string, format HLA-A02:01)
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities as strings)
+    '''
+
+    # Check that allele is valid for method
+    avail_alleles = pickle.load(open(os.path.dirname(__file__) + 
+        "/availableAlleles.pickle", "rb"))
+    allele = allele.replace("*", "")
+    if allele not in avail_alleles["netMHCpan"]:
+        sys.exit(allele + " is not a valid allele for netMHC")
+
+    # Establish return list and sample id
+    id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
+    affinities = []
+
+    # Write one peptide per line to a temporary file for input
+    peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
+    with open(peptide_file[1], "w") as f:
+        for sequence in peptides:
+            f.write(sequence + "\n")
+
+    # Establish temporary file to hold output
+    mhc_out = tempfile.mkstemp(suffix=".netMHCpan.out", prefix="id.", text=True)
+
+    # Run netMHCpan #### How do we establish the path? ####
+    subprocess.call(
+        [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
+            "-xlsfile", mhc_out, peptide_file])
+    with open(mhc_out[1], "r") as f:
+        for line in f:
+            if line[0] == "0":
+                line = line.strip("\n").split("\t")
+                nM = line[5]
+                affinities.append(nM)
+
+    # Remove temporary files
+    if remove_files == True:
+        subprocess.call(["rm", peptide_file[1]])
+        subprocess.call(["rm", mhc_out[1]])
+
+    return affinities
+
     
-    
-def get_affinity(peptides, allele, method):
-	''' Takes in peptides and returns their binding affinities to the specified allele 
-			based on some prediction method
-		peptides: peptides of interest (list of strings)
-		allele: HLA allele to use for binding affinity (string) ### May change to list of equal length to peptides
-		method: Program to use for binding affinity (string)
-		
-		Return value: affinities, a list of binding affinities (strings)
-	'''
-	### Check if allele is valid
-	### Check if method is valid
-	#peptides.sort(key=len)
-	### Break up list into peptides of same length
-	### Use subprocess or similar to call the program for each set
-	### Parse output of program and store affinities in a list
-	# return affinities
-	pass
+def get_affinity_netmhciipan(peptides, allele, netmhciipan, remove_files=True):
+    ''' Takes in a list of peptides and returns their binding affinities to an 
+            allele as predicted by netMHCIIpan
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string)
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities as strings)
+    '''
+
+    # Check that allele is valid for method
+    avail_alleles = pickle.load(open(os.path.dirname(__file__)+
+        "/availableAlleles.pickle", "rb"))
+    allele = allele.replace("HLA-", "")
+    if allele not in avail_alleles["netMHCIIpan"]:
+        sys.exit(allele + " is not a valid allele for netMHCIIpan")
+
+    # Establish return list and sample id
+    id = peptides[0] + "." + str(len(peptides)) + "." + allele + "." + method
+    affinities = []
+
+    # Write one peptide per line to a temporary file for input if peptide 
+    #   length is at least 9
+	# Count instances of smaller peptides
+    na_count = 0
+    peptide_file = tempfile.mkstemp(suffix=".peptides", prefix="id.", text=True)
+    with open(peptide_file[1], "w") as f:
+        for sequence in peptides:
+            if len(sequence) >= 9:
+                f.write(sequence + "\n")
+            else:
+                na_count += 1
+    if na_count > 0:
+        print "Warning: " + str(na_count) + 
+            " peptides not compatible with netMHCIIpan - will not receive score"
+
+    # Establish temporary file to hold output
+    mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", prefix="id.", 
+        text=True)
+    # Run netMHCIIpan (### How to establish path? ####)
+    subprocess.call([netmhciipan, "-a", allele, "-inptype", "1", 
+        "-xls", "-xlsfile", mhc_out, peptide_file])
+    # Retrieve scores for valid peptides
+    score_dict = {}
+    with open(mhc_out[1], "r") as f:
+        for line in f:
+            line = line.split("\t")
+            if line[0] != "" and line[0] != "Pos":
+                pep = line[1]
+                score = line[4]
+                score_dict[pep] = score
+
+    # Produce list of scores for valid peptides
+    # Invalid peptides receive "NA" score
+    for sequence in peptides:
+        if sequence in score_dict:
+            nM = score_dict[sequence]
+        else:
+            nM = "NA"
+            affinities.append(nM)  # Remove temporary files
+
+    if remove_files == True:
+        subprocess.call(["rm", peptide_file[1]])
+        subprocess.call(["rm", mhc_out[1]])
+
+    return affinities
 
 
 def go():
@@ -441,26 +520,73 @@ def go():
         _size_max = 11
 
 
+def which(path):
+    """ Searches for whether executable is present and returns version
+
+        path: path to executable
+
+        Return value: None if executable not found, else string with software
+            name and version number
+    """
+    try:
+        subprocess.check_call([path])
+    except OSError as e:
+        return None
+    else:
+        return path
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--vcf', type=str, required=True,
             default='-',
-            help='input vcf or "-" for stdin'
+            help='input VCF or "-" for stdin'
         )
     parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
         )
-    parser.add_argument('-d', '--dicts', type=str, required=True,
-            help='input path to pickled dictionaries'
+    parser.add_argument('-d', '--dicts', type=str, required=False,
+            help='input path to pickled CDS dictionary'
         )
+    parser.add_argument('-g', '--gtf', type=str, required=False,
+            help='input path to GTF file'
+        )	
     parser.add_argument('-b', '--bam', action='store_true', required=False,
             default = False, help='T/F bam is used'
         )
     parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
         )
+    parser.add_argument('-m', '--method', type=str, required=False,
+            default='-', 
+            help='method for calculating epitope binding affinities'
+        )
+    parser.add_argument('-a', '--affinity-predictor', type=str, required=False,
+            default='netMHCpan', 
+            help='path to executable for binding affinity prediction software'
+        )
     args = parser.parse_args()
+    
+    # Check affinity predictor
+    program = which(args.affinity-predictor)
+    if program == None:
+        raise ValueError(program + " is not a valid software")
+    elif "netMHCIIpan" in program:
+        method = "netMHCIIpan"
+    elif "netMHCpan" in program:
+        method = "netMHCpan"
+    else:
+        raise ValueError(program + " is not a valid software")
+    
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
-    with open(args.dicts, 'rb') as dict_stream:
-        (cds_dict, orf_dict,
-            exon_dict, exon_orf_dict) = pickle.load(dict_stream)
+    try:
+	if args.dicts is not None:
+		with open(args.dicts, 'rb') as dict_stream:
+			cds_dict = pickle.load(dict_stream)
+	elif args.gtf is not None:
+		cds_dict = gtf_to_cds(args.gtf) # gtf_to_cds(args.gtf, args.gtf + "pickle")
+	else:
+		raise ValueError("No CDS data available (-d or -g argument must be specified)"
+	cds_tree = cds_to_tree(cds_dict)
+    except:
+	print "Unable to import CDS data from GTF file " + args.gtf
+	
