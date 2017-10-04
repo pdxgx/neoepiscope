@@ -241,7 +241,7 @@ def get_seq(chrom, start, splice_length, reference_index):
     return seq
 
 
-def get_affinity_netmhcpan(peptides, allele, remove_files=True):
+def get_affinity_netmhcpan(peptides, allele, netmhcpan, remove_files=True):
     ''' Takes in a list of peptides and returns their binding affinities to an 
             allele as predicted by netMHCpan
 
@@ -274,7 +274,7 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
 
     # Run netMHCpan #### How do we establish the path? ####
     subprocess.call(
-        ["/PATH/TO/NETMHCPAN", "-a", allele, "-inptype", "1", "-p", "-xls", 
+        [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
             "-xlsfile", mhc_out, peptide_file])
     with open(mhc_out[1], "r") as f:
         for line in f:
@@ -291,7 +291,7 @@ def get_affinity_netmhcpan(peptides, allele, remove_files=True):
     return affinities
 
     
-def get_affinity_netmhciipan(peptides, allele, remove_files=True):
+def get_affinity_netmhciipan(peptides, allele, netmhciipan, remove_files=True):
     ''' Takes in a list of peptides and returns their binding affinities to an 
             allele as predicted by netMHCIIpan
 
@@ -332,7 +332,7 @@ def get_affinity_netmhciipan(peptides, allele, remove_files=True):
     mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", prefix="id.", 
         text=True)
     # Run netMHCIIpan (### How to establish path? ####)
-    subprocess.call(["/PATH/TO/NETMHCIIPAN", "-a", allele, "-inptype", "1", 
+    subprocess.call([netmhciipan, "-a", allele, "-inptype", "1", 
         "-xls", "-xlsfile", mhc_out, peptide_file])
     # Retrieve scores for valid peptides
     score_dict = {}
