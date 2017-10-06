@@ -508,3 +508,16 @@ if __name__ == '__main__':
     # For retrieving genome sequence
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     
+
+    ## Run hapcut2 on bam if present 
+    ## (change command line option to be an optional flad to add bam rather than T/F?)
+    ## Run haplotype_dictionary to produce dictionary
+    ## (Create option to make both somatic and germline hapcut calls/dictioaries?)
+
+    ## Create relevant transcript objects based on hapcut output
+    ## Translate sequence
+    ## Kmerize peptides
+    ## Get binding affinities
+
+    ## Prioritize output based on: affinity, VAF, more?
+
