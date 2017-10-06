@@ -339,8 +339,8 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gtf', type=str, required=False,
             help='input path to GTF file'
         )    
-    parser.add_argument('-b', '--bam', action='store_true', required=False,
-            default = False, help='T/F bam is used'
+    parser.add_argument('-b', '--bam', action='store_true',
+            default=False, help='T/F bam is used'
         )
     parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
@@ -349,9 +349,12 @@ if __name__ == '__main__':
             default='-', 
             help='method for calculating epitope binding affinities'
         )
-    parser.add_argument('-a', '--affinity-predictor', type=str, required=False,
+    parser.add_argument('-p', '--affinity-predictor', type=str, required=False,
             default='netMHCpan', 
             help='path to executable for binding affinity prediction software'
+        )
+    parser.add_argument('-a', '--allele', type=str, required=True,
+            help='allele; see documentation online for more information'
         )
     args = parser.parse_args()
     
@@ -359,9 +362,8 @@ if __name__ == '__main__':
     program = which(args.affinity_predictor)
     if program is None:
         raise ValueError(program + " is not a valid software")
-    
     elif "netMHCIIpan" in program:
-        def get_affinity_netmhciipan(peptides, allele, netmhciipan,
+        def get_affinity(peptides, allele, netmhciipan,
                                         remove_files=True):
             """ Obtains binding affinities from list of peptides
 
@@ -375,8 +377,11 @@ if __name__ == '__main__':
             files_to_remove = []
             try:
                 # Check that allele is valid for method
-                avail_alleles = pickle.load(open(os.path.dirname(__file__)+
-                    "/availableAlleles.pickle", "rb"))
+                with open(os.path.dirname(__file__)
+                            + "/availableAlleles.pickle", "rb"
+                        ) as allele_stream:
+                    avail_alleles = pickle.load(allele_stream)
+                # Homogenize format
                 allele = allele.replace("HLA-", "")
                 if allele not in avail_alleles["netMHCIIpan"]:
                     sys.exit(allele + " is not a valid allele for netMHCIIpan")
@@ -437,7 +442,6 @@ if __name__ == '__main__':
                 if remove_files:
                     for file_to_remove in files_to_remove:
                         os.remove(file_to_remove)
-
     elif "netMHCpan" in program:
         # define different affinity prediction function here
         def get_affinity(peptides, allele, netmhcpan=program,
@@ -455,8 +459,10 @@ if __name__ == '__main__':
             files_to_remove = []
             try:
                 # Check that allele is valid for method
-                avail_alleles = pickle.load(open(os.path.dirname(__file__) + 
-                    "/availableAlleles.pickle", "rb"))
+                with open(os.path.dirname(__file__)
+                            + "/availableAlleles.pickle", "rb"
+                        ) as allele_stream:
+                    avail_alleles = pickle.load(allele_stream)
                 allele = allele.replace("*", "")
                 if allele not in avail_alleles["netMHCpan"]:
                     sys.exit(allele + " is not a valid allele for netMHC")
@@ -480,7 +486,7 @@ if __name__ == '__main__':
                                                 prefix="id.", text=True)
                 files_to_remove.append(mhc_out)
                 # Run netMHCpan
-                subprocess.call(
+                subprocess.check_call(
                     [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
                         "-xlsfile", mhc_out, peptide_file])
                 with open(mhc_out[1], "r") as f:
@@ -496,10 +502,9 @@ if __name__ == '__main__':
                 if remove_files:
                     for file_to_remove in files_to_remove:
                         os.remove(file_to_remove)
-
     else:
         raise ValueError(program + " is not a valid software")
     
-    # For retrieving genome sequene
+    # For retrieving genome sequence
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     
