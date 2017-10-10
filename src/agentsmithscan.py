@@ -17,6 +17,8 @@ import copy
 import os
 import random
 import re
+import collections
+from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 import tempfile
 #import Hapcut2interpreter as hap
@@ -308,6 +310,27 @@ class Transcript(object):
             'yet supported.'
         )
 
+def create_haplotype_dictionary(haplooutfile, freqpos):
+    """
+        Returns dictionary of haplotype information
+        haplooutfile: name of haplotype output file
+        freqpos: location in genotype field where allele frequency is (0 based)
+
+        outputs: dictionary with key of (chrome, pos) and value of 
+            (allele on chrome A, allele on chrome B, position, reference, 
+            variant, allele frequency, phasing score)
+    """
+    hapfile = open(haplooutfile, "r")
+    haplotype_dict = collections.OrderedDict()
+    for line in hapfile:
+        hapline = line.strip().split()
+        if hapline[0] != "********" and hapline[0] != "BLOCK:":
+            infoline = hapline[7].strip().split(':')
+            haplotype_dict[(int(hapline[3]), 
+                int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
+                hapline[5], hapline[6], float(infoline[freqpos].rstrip('%')), 
+                float(hapline[10]))
+    return SortedDict(haplotype_dict)
 
 def which(path):
     """ Searches for whether executable is present and returns version
@@ -339,8 +362,8 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gtf', type=str, required=False,
             help='input path to GTF file'
         )    
-    parser.add_argument('-b', '--bam', action='store_true',
-            default=False, help='T/F bam is used'
+    parser.add_argument('-b', '--bam', required=False,
+            default=None, help='input path to bam file'
         )
     parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
@@ -356,14 +379,18 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--allele', type=str, required=True,
             help='allele; see documentation online for more information'
         )
+    parser.add_argument('-h', '--hapcut2', type=str, required=False,
+            default='HAPCUT2', 
+            help='path to executable for HAPCUT2'
+        )
     args = parser.parse_args()
     
     # Check affinity predictor
     program = which(args.affinity_predictor)
     if program is None:
-        raise ValueError(program + " is not a valid software")
+        raise ValueError(" ".join([program, "is not a valid software"]))
     elif "netMHCIIpan" in program:
-        def get_affinity(peptides, allele, netmhciipan,
+        def get_affinity(peptides, allele, netmhciipan=program,
                                         remove_files=True):
             """ Obtains binding affinities from list of peptides
 
@@ -377,21 +404,21 @@ if __name__ == '__main__':
             files_to_remove = []
             try:
                 # Check that allele is valid for method
-                with open(os.path.dirname(__file__)
-                            + "/availableAlleles.pickle", "rb"
+                with open("".join([os.path.dirname(__file__),
+                         "/availableAlleles.pickle"]), "rb"
                         ) as allele_stream:
                     avail_alleles = pickle.load(allele_stream)
                 # Homogenize format
                 allele = allele.replace("HLA-", "")
                 if allele not in avail_alleles["netMHCIIpan"]:
-                    sys.exit(allele + " is not a valid allele for netMHCIIpan")
-
+                    sys.exit(" ".join([allele,
+                             " is not a valid allele for netMHCIIpan"])
+                            )
                 # Establish return list and sample id
                 sample_id = '.'.join([peptides[0],
                                         str(len(peptides)), allele,
                                         'netmhciipan'])
                 affinities = []
-
                 # Write one peptide per line to a temporary file for 
                 #   input if peptide length is at least 9
                 # Count instances of smaller peptides
@@ -459,23 +486,24 @@ if __name__ == '__main__':
             files_to_remove = []
             try:
                 # Check that allele is valid for method
-                with open(os.path.dirname(__file__)
-                            + "/availableAlleles.pickle", "rb"
+                with open("".join([os.path.dirname(__file__),
+                         "/availableAlleles.pickle"]), "rb"
                         ) as allele_stream:
                     avail_alleles = pickle.load(allele_stream)
                 allele = allele.replace("*", "")
                 if allele not in avail_alleles["netMHCpan"]:
-                    sys.exit(allele + " is not a valid allele for netMHC")
-
+                    sys.exit(" ".join([allele,
+                             " is not a valid allele for netMHC"])
+                            )
                 # Establish return list and sample id
-                sample_id = '.'.join([peptides[0],
-                                        str(len(peptides)), allele,
-                                        'netmhcpan'])
+                sample_id = '.'.join([peptides[0], str(len(peptides)), allele,
+                                    'netmhcpan'])
                 affinities = []
 
                 # Write one peptide per line to a temporary file for input
                 peptide_file = tempfile.mkstemp(suffix=".peptides", 
-                                                    prefix="id.", text=True)
+                                            prefix="".join([sample_id, "."]), 
+                                            text=True)
                 files_to_remove.append(peptide_file)
                 with open(peptide_file[1], "w") as f:
                     for sequence in peptides:
@@ -483,7 +511,8 @@ if __name__ == '__main__':
 
                 # Establish temporary file to hold output
                 mhc_out = tempfile.mkstemp(suffix=".netMHCpan.out", 
-                                                prefix="id.", text=True)
+                                            prefix="".join([sample_id, "."]), 
+                                            text=True)
                 files_to_remove.append(mhc_out)
                 # Run netMHCpan
                 subprocess.check_call(
@@ -503,16 +532,39 @@ if __name__ == '__main__':
                     for file_to_remove in files_to_remove:
                         os.remove(file_to_remove)
     else:
-        raise ValueError(program + " is not a valid software")
+        raise ValueError(" ".join([program, "is not a valid software"]))
     
+    # Check HAPCUT2 path is valid, and if so, run HAPCUT2 if bam is present
+    if args.bam is not None:
+        hapcut2 = which(args.hapcut2)
+        if hapcut2 is None:
+            raise ValueError(" ".join([hapcut2, "is not a valid software"]))
+        else:
+            extracthairs = hapcut2.replace("HAPCUT2", "extractHAIRS")
+            try:
+                sample_id = "ID" #### WHAT TO USE AS ID?? ####
+                fragment_file = tempfile.mkstemp(suffix=".fragments", 
+                                                    prefix="".join([sample_id, 
+                                                    "."]), text=True)
+                hapcut_output = tempfile.mkstemp(suffix=".hapcut.out", 
+                                                    prefix="".join([sample_id, 
+                                                    "."]), text=True)
+                subprocess.check_call([extracthairs, "--bam", args.bam, 
+                                        "--VCF", args.vcf, "--out", 
+                                        fragment_file])
+                subprocess.check_call([hapcut2, "--fragments", fragment_file, 
+                                        "--VCF", args.vcf, "--out", 
+                                        hapcut_output])
+
+                ### This function assumes VAF is always in same spot in the VCF
+                ### It may not be, so we need to deal with this...
+                hap_dict = create_haplotype_dictionary(hapcut_output, 5)
+    
+    ## (Create option to make both somatic and germline hapcut calls/dictioaries?)
+
     # For retrieving genome sequence
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
     
-
-    ## Run hapcut2 on bam if present 
-    ## (change command line option to be an optional flad to add bam rather than T/F?)
-    ## Run haplotype_dictionary to produce dictionary
-    ## (Create option to make both somatic and germline hapcut calls/dictioaries?)
 
     ## Create relevant transcript objects based on hapcut output
     ## Translate sequence
