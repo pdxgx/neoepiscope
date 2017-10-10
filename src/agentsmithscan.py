@@ -332,6 +332,25 @@ def create_haplotype_dictionary(haplooutfile, freqpos):
                 float(hapline[10]))
     return SortedDict(haplotype_dict)
 
+def get_VAF_pos(VCF):
+    VAF_check = False
+    with open(VCF) as f:
+        for line in f:
+            if line[0] == "#":
+                if "FREQ" in line:
+                    VAF_check = True
+            else:
+                tokens = line.strip("\n").split("\t")
+                format_field = tokens[8].split(":")
+                if VAF_check:
+                    for i in range(0,len(format_field)):
+                        if format_field[i] == "FREQ":
+                            VAF_pos = i
+                            break
+                else:
+                    break ### WHAT TO DO ABOUT THIS? ###
+    return VAF_pos
+
 def which(path):
     """ Searches for whether executable is present and returns version
 
@@ -556,9 +575,8 @@ if __name__ == '__main__':
                                         "--VCF", args.vcf, "--out", 
                                         hapcut_output])
 
-                ### This function assumes VAF is always in same spot in the VCF
-                ### It may not be, so we need to deal with this...
-                hap_dict = create_haplotype_dictionary(hapcut_output, 5)
+                ### NEED A FUNCTION TO DEAL WITH DETERMINING VAF POS
+                hap_dict = create_haplotype_dictionary(hapcut_output, VAF_pos)
     
     ## (Create option to make both somatic and germline hapcut calls/dictioaries?)
 
