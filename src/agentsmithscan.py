@@ -313,11 +313,12 @@ class Transcript(object):
 def create_haplotype_dictionary(haplooutfile, freqpos):
     """
         Returns dictionary of haplotype information
+        
         haplooutfile: name of haplotype output file
         freqpos: location in genotype field where allele frequency is (0 based)
 
         outputs: dictionary with key of (chrome, pos) and value of 
-            (allele on chrome A, allele on chrome B, position, reference, 
+            (allele on chrome A, allele on chrome B, reference, 
             variant, allele frequency, phasing score)
     """
     hapfile = open(haplooutfile, "r")
@@ -326,29 +327,108 @@ def create_haplotype_dictionary(haplooutfile, freqpos):
         hapline = line.strip().split()
         if hapline[0] != "********" and hapline[0] != "BLOCK:":
             infoline = hapline[7].strip().split(':')
-            haplotype_dict[(int(hapline[3]), 
-                int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
-                hapline[5], hapline[6], float(infoline[freqpos].rstrip('%')), 
-                float(hapline[10]))
+            if freqpos is None:
+                haplotype_dict[(int(hapline[3]), 
+                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
+                    hapfileapline[5], hapline[6], 
+                    None, float(hapline[10]))
+            else:
+                haplotype_dict[(int(hapline[3]), 
+                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
+                    hapfileapline[5], hapline[6], 
+                    float(infoline[freqpos].rstrip('%')), float(hapline[10]))
     return SortedDict(haplotype_dict)
 
+def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
+    '''
+        Applies phased mutations to 2 transcripts
+        
+        transcript1: transcript object for first chromosome
+        transcript2: transcript object for second chromosome
+        hapdict: haplotype dictionary
+        chromosome: chromosome of transcript
+        start: start of applying mutations
+        end: end of applying mutations
+
+        Return values: transcript1, transcript2 (edited)
+    '''
+    startindex = hapdict.bisect((chromosome, start)) - 1
+    endindex = hapdict.bisect((chromosome, end)) + 1
+    for x in range(startindex, endindex):
+        mute_type = 'V'
+        if start <= hapdict.items()[x][0][1] <= end:
+            # Determine mutation type - default = SNV ("V")
+            if len(hapdict.items()[x][1][3]) > len(hapdict.items()[x][1][2]):
+                mute_type = 'I'
+            elif len(hapdict.items()[x][1][3]) < len(hapdict.items()[x][1][2]):
+                mute_type = 'D'
+            # Edit transcripts based on mutation type
+            if mute_type = 'V':
+                if hapdict.items()[x][1][0] == 1:
+                    transcript1.edit(hapdict.items()[x][1][3], 
+                                        hapdict.items()[x][0][1], mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1], 
+                                            hapdict.items()[x][1][5])
+                else:
+                    transcript2.edit(hapdict.items()[x][1][3], 
+                                        hapdict.items()[x][0][1], mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1], 
+                                            hapdict.items()[x][1][5])
+            if mute_type = 'I':
+                if hapdict.items()[x][1][0] == 1:
+                    transcript1.edit(hapdict.items()[x][1][3][1:], 
+                                        hapdict.items()[x][0][1]+1, mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, 
+                                            hapdict.items()[x][1][5])
+                else:
+                    transcript2.edit(hapdict.items()[x][1][3][1:], 
+                                        hapdict.items()[x][0][1]+1, mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1]+1, 
+                                            hapdict.items()[x][1][5])
+            elif mute_type = 'D':
+                if hapdict.items()[x][1][0] == 1:
+                    transcript1.edit(hapdict.items()[x][1][2][1:], 
+                                        hapdict.items()[x][0][1]+1, mute_type)
+                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, 
+                                            hapdict.items()[x][1][5])
+                else:
+                    transcript2.edit(hapdict.items()[x][1][2][1:], 
+                                        hapdict.items()[x][0][1]+1, mute_type)
+                    transcript2.edit_freq(hapdict.items()[x][0][1]+1, 
+                                            hapdict.items()[x][1][5])
+            else:
+                raise ValueError(" ".join(["Invalid mutation type encountered:",
+                                            mute_type]))
+    return transcript1, transcript2
+
 def get_VAF_pos(VCF):
+    """ Obtains position in VCF format/genotype fields of VAF
+
+        VCF: path to input VCF
+
+        Return value: None if VCF does not contain VAF, 
+                        otherwise position of VAF
+    """
     VAF_check = False
     with open(VCF) as f:
         for line in f:
+            # Check header lines to see if FREQ exits in FORMAT fields
             if line[0] == "#":
                 if "FREQ" in line:
                     VAF_check = True
             else:
-                tokens = line.strip("\n").split("\t")
-                format_field = tokens[8].split(":")
+                # Check first entry to get position of FREQ if it exists
                 if VAF_check:
+                    tokens = line.strip("\n").split("\t")
+                    format_field = tokens[8].split(":")
                     for i in range(0,len(format_field)):
                         if format_field[i] == "FREQ":
                             VAF_pos = i
                             break
+                # Return None if VCF does not contain VAF data
                 else:
-                    break ### WHAT TO DO ABOUT THIS? ###
+                    VAF_pos = None
+                    break
     return VAF_pos
 
 def which(path):
@@ -398,9 +478,8 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--allele', type=str, required=True,
             help='allele; see documentation online for more information'
         )
-    parser.add_argument('-h', '--hapcut2', type=str, required=False,
-            default='HAPCUT2', 
-            help='path to executable for HAPCUT2'
+    parser.add_argument('-h', '--hapcut2-output', type=str, required=True,
+            help='path to output from HAPCUT2 run on input VCF'
         )
     args = parser.parse_args()
     
@@ -553,32 +632,9 @@ if __name__ == '__main__':
     else:
         raise ValueError(" ".join([program, "is not a valid software"]))
     
-    # Check HAPCUT2 path is valid, and if so, run HAPCUT2 if bam is present
-    if args.bam is not None:
-        hapcut2 = which(args.hapcut2)
-        if hapcut2 is None:
-            raise ValueError(" ".join([hapcut2, "is not a valid software"]))
-        else:
-            extracthairs = hapcut2.replace("HAPCUT2", "extractHAIRS")
-            try:
-                sample_id = "ID" #### WHAT TO USE AS ID?? ####
-                fragment_file = tempfile.mkstemp(suffix=".fragments", 
-                                                    prefix="".join([sample_id, 
-                                                    "."]), text=True)
-                hapcut_output = tempfile.mkstemp(suffix=".hapcut.out", 
-                                                    prefix="".join([sample_id, 
-                                                    "."]), text=True)
-                subprocess.check_call([extracthairs, "--bam", args.bam, 
-                                        "--VCF", args.vcf, "--out", 
-                                        fragment_file])
-                subprocess.check_call([hapcut2, "--fragments", fragment_file, 
-                                        "--VCF", args.vcf, "--out", 
-                                        hapcut_output])
-
-                ### NEED A FUNCTION TO DEAL WITH DETERMINING VAF POS
-                hap_dict = create_haplotype_dictionary(hapcut_output, VAF_pos)
-    
-    ## (Create option to make both somatic and germline hapcut calls/dictioaries?)
+    # Obtain VAF frequency VCF position and parse hapcut2 output
+    VAF_pos = get_VAF_pos(args.vcf)
+    hap_dict = create_haplotype_dictionary(args.hapcut2_output, VAF_pos)
 
     # For retrieving genome sequence
     reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
