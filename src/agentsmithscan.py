@@ -49,6 +49,17 @@ def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
 
+
+def intervals_to_transcripts(gtf, dictdir):
+    """
+    """
+    return None
+
+def transcripts_to_CDS(gtf, dictdir):
+    """
+    """
+    return None
+
 def seq_to_peptide(seq, reverse_strand=False):
     """ Translates nucleotide sequence into peptide sequence.
 
@@ -447,203 +458,224 @@ def which(path):
         return path
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--vcf', type=str, required=True,
+    parser = argparse.ArgumentParser(description=_help_intro, 
+                                        formatter_class=help_formatter)
+    subparsers = parser.add_subparsers(help=(
+                                    'subcommands; add "-h" or "--help" '
+                                    'after a subcommand for its parameters'),
+                                     dest='subparser_name')
+    index_parser = subparsers.add_parser('idx',
+                                        help=('produces pickled dictionaries '
+                                        'linking transcripts to intervals and '
+                                        ' CDS lines in a GTF'), 
+                                        dest='subparser_name')
+    call_parser = subparsers.add_parser('call', help=('calls neoepitopes'))
+    index_parser.add_argument('-g', '--gtf', type=str, required=False,
+            help='input path to GTF file'
+        )  
+    index_parser.add_argument('-d', '--dicts', type=str, required=False,
+            help='output path to pickled CDS dictionary'
+        )
+    call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
+            help='path to Bowtie index basename'
+        )
+    call_parser.add_argument('-d', '--dicts', type=str, required=False,
+            help='input path to pickled CDS dictionary'
+        )
+    call_parser.add_argument('-h', '--hapcut2-output', type=str, required=True,
+            help='path to output from HAPCUT2 run on input VCF'
+        )
+    call_parser.add_argument('-b', '--bam', required=False,
+            default=None, help='input path to bam file'
+        )
+    call_parser.add_argument('-v', '--vcf', type=str, required=True,
             default='-',
             help='input VCF or "-" for stdin'
         )
-    parser.add_argument('-x', '--bowtie-index', type=str, required=True,
-            help='path to Bowtie index basename'
-        )
-    parser.add_argument('-d', '--dicts', type=str, required=False,
-            help='input path to pickled CDS dictionary'
-        )
-    parser.add_argument('-g', '--gtf', type=str, required=False,
-            help='input path to GTF file'
-        )    
-    parser.add_argument('-b', '--bam', required=False,
-            default=None, help='input path to bam file'
-        )
-    parser.add_argument('-k', '--kmer-size', type=str, required=False,
+    call_parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
         )
-    parser.add_argument('-m', '--method', type=str, required=False,
+    call_parser.add_argument('-m', '--method', type=str, required=False,
             default='-', 
             help='method for calculating epitope binding affinities'
         )
-    parser.add_argument('-p', '--affinity-predictor', type=str, required=False,
-            default='netMHCpan', 
+    call_parser.add_argument('-p', '--affinity-predictor', type=str, 
+            required=False, default='netMHCpan', 
             help='path to executable for binding affinity prediction software'
         )
-    parser.add_argument('-a', '--allele', type=str, required=True,
+    call_parser.add_argument('-a', '--allele', type=str, required=True,
             help='allele; see documentation online for more information'
-        )
-    parser.add_argument('-h', '--hapcut2-output', type=str, required=True,
-            help='path to output from HAPCUT2 run on input VCF'
         )
     args = parser.parse_args()
     
-    # Check affinity predictor
-    program = which(args.affinity_predictor)
-    if program is None:
-        raise ValueError(" ".join([program, "is not a valid software"]))
-    elif "netMHCIIpan" in program:
-        def get_affinity(peptides, allele, netmhciipan=program,
-                                        remove_files=True):
-            """ Obtains binding affinities from list of peptides
+    if args.subparser_name == 'idx':
+        intervals_to_transcripts(args.gtf, args.dicts)
+        transcripts_to_CDS(args.gtf, args.dicts)
+    
+    elif args.subparser_name == 'call':
+        # Check affinity predictor
+        program = which(args.affinity_predictor)
+        if program is None:
+            raise ValueError(" ".join([program, "is not a valid software"]))
+        elif "netMHCIIpan" in program:
+            def get_affinity(peptides, allele, netmhciipan=program,
+                                            remove_files=True):
+                """ Obtains binding affinities from list of peptides
 
-                peptides: peptides of interest (list of strings)
-                allele: Allele to use for binding affinity (string)
-                remove_files: option to remove intermediate files
+                    peptides: peptides of interest (list of strings)
+                    allele: Allele to use for binding affinity (string)
+                    remove_files: option to remove intermediate files
 
-                Return value: affinities (a list of binding affinities 
-                                as strings)
-            """
-            files_to_remove = []
-            try:
-                # Check that allele is valid for method
-                with open("".join([os.path.dirname(__file__),
-                         "/availableAlleles.pickle"]), "rb"
-                        ) as allele_stream:
-                    avail_alleles = pickle.load(allele_stream)
-                # Homogenize format
-                allele = allele.replace("HLA-", "")
-                if allele not in avail_alleles["netMHCIIpan"]:
-                    sys.exit(" ".join([allele,
-                             " is not a valid allele for netMHCIIpan"])
-                            )
-                # Establish return list and sample id
-                sample_id = '.'.join([peptides[0],
-                                        str(len(peptides)), allele,
-                                        'netmhciipan'])
-                affinities = []
-                # Write one peptide per line to a temporary file for 
-                #   input if peptide length is at least 9
-                # Count instances of smaller peptides
-                na_count = 0
-                peptide_file = tempfile.mkstemp(
-                                suffix=".peptides", prefix="id.", text=True)
-                files_to_remove.append(peptide_file)
-                with open(peptide_file[1], "w") as f:
+                    Return value: affinities (a list of binding affinities 
+                                    as strings)
+                """
+                files_to_remove = []
+                try:
+                    # Check that allele is valid for method
+                    with open("".join([os.path.dirname(__file__),
+                             "/availableAlleles.pickle"]), "rb"
+                            ) as allele_stream:
+                        avail_alleles = pickle.load(allele_stream)
+                    # Homogenize format
+                    allele = allele.replace("HLA-", "")
+                    if allele not in avail_alleles["netMHCIIpan"]:
+                        sys.exit(" ".join([allele,
+                                 " is not a valid allele for netMHCIIpan"])
+                                )
+                    # Establish return list and sample id
+                    sample_id = '.'.join([peptides[0],
+                                            str(len(peptides)), allele,
+                                            'netmhciipan'])
+                    affinities = []
+                    # Write one peptide per line to a temporary file for 
+                    #   input if peptide length is at least 9
+                    # Count instances of smaller peptides
+                    na_count = 0
+                    peptide_file = tempfile.mkstemp(
+                                    suffix=".peptides", prefix="id.", text=True)
+                    files_to_remove.append(peptide_file)
+                    with open(peptide_file[1], "w") as f:
+                        for sequence in peptides:
+                            if len(sequence) >= 9:
+                                print >>f, sequence
+                            else:
+                                na_count += 1
+                    if na_count > 0:
+                        print ' ' .join(['Warning:', str(na_count),
+                                        'peptides not compatible with'
+                                        'netMHCIIpan will not receive score'])
+                    # Establish temporary file to hold output
+                    mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", 
+                                                prefix="id.", text=True)
+                    files_to_remove.append(mhc_out)
+                    # Run netMHCIIpan
+                    subprocess.check_call(
+                                    [netmhciipan, "-a", allele, "-inptype", "1", 
+                                     "-xls", "-xlsfile", mhc_out, peptide_file]
+                                )
+                    # Retrieve scores for valid peptides
+                    score_dict = {}
+                    with open(mhc_out[1], "r") as f:
+                        # Skip headers
+                        f.readline()
+                        f.readline()
+                        for line in f:
+                            tokens = line.split('\t'):
+                            # token 1 is peptide; token 4 is score
+                            score_dict[tokens[1]] = tokens[4]
+
+                    # Produce list of scores for valid peptides
+                    # Invalid peptides receive "NA" score
                     for sequence in peptides:
-                        if len(sequence) >= 9:
-                            print >>f, sequence
+                        if sequence in score_dict:
+                            nM = score_dict[sequence]
                         else:
-                            na_count += 1
-                if na_count > 0:
-                    print ' ' .join(['Warning:', str(na_count),
-                                    'peptides not compatible with netMHCIIpan'
-                                    'will not receive score'])
-                # Establish temporary file to hold output
-                mhc_out = tempfile.mkstemp(suffix=".netMHCIIpan.out", 
-                                            prefix="id.", text=True)
-                files_to_remove.append(mhc_out)
-                # Run netMHCIIpan
-                subprocess.check_call(
-                                [netmhciipan, "-a", allele, "-inptype", "1", 
-                                 "-xls", "-xlsfile", mhc_out, peptide_file]
-                            )
-                # Retrieve scores for valid peptides
-                score_dict = {}
-                with open(mhc_out[1], "r") as f:
-                    # Skip headers
-                    f.readline()
-                    f.readline()
-                    for line in f:
-                        tokens = line.split('\t'):
-                        # token 1 is peptide; token 4 is score
-                        score_dict[tokens[1]] = tokens[4]
+                            nM = "NA"
+                            affinities.append(nM)
+                    return affinities
+                finally:
+                    if remove_files:
+                        for file_to_remove in files_to_remove:
+                            os.remove(file_to_remove)
+        elif "netMHCpan" in program:
+            # define different affinity prediction function here
+            def get_affinity(peptides, allele, netmhcpan=program,
+                                remove_files=True):
+                """ Obtains binding affinities from list of peptides
 
-                # Produce list of scores for valid peptides
-                # Invalid peptides receive "NA" score
-                for sequence in peptides:
-                    if sequence in score_dict:
-                        nM = score_dict[sequence]
-                    else:
-                        nM = "NA"
-                        affinities.append(nM)
-                return affinities
-            finally:
-                if remove_files:
-                    for file_to_remove in files_to_remove:
-                        os.remove(file_to_remove)
-    elif "netMHCpan" in program:
-        # define different affinity prediction function here
-        def get_affinity(peptides, allele, netmhcpan=program,
-                            remove_files=True):
-            """ Obtains binding affinities from list of peptides
+                    peptides: peptides of interest (list of strings)
+                    allele: allele to use for binding affinity 
+                                (string, format HLA-A02:01)
+                    remove_files: option to remove intermediate files
 
-                peptides: peptides of interest (list of strings)
-                allele: allele to use for binding affinity (string,
-                                                            format HLA-A02:01)
-                remove_files: option to remove intermediate files
+                    Return value: affinities (a list of binding affinities 
+                                    as strings)
+                """
+                files_to_remove = []
+                try:
+                    # Check that allele is valid for method
+                    with open("".join([os.path.dirname(__file__),
+                             "/availableAlleles.pickle"]), "rb"
+                            ) as allele_stream:
+                        avail_alleles = pickle.load(allele_stream)
+                    allele = allele.replace("*", "")
+                    if allele not in avail_alleles["netMHCpan"]:
+                        sys.exit(" ".join([allele,
+                                 " is not a valid allele for netMHC"])
+                                )
+                    # Establish return list and sample id
+                    sample_id = '.'.join([peptides[0], str(len(peptides)), 
+                                            allele, 'netmhcpan'])
+                    affinities = []
 
-                Return value: affinities (a list of binding affinities 
-                                as strings)
-            """
-            files_to_remove = []
-            try:
-                # Check that allele is valid for method
-                with open("".join([os.path.dirname(__file__),
-                         "/availableAlleles.pickle"]), "rb"
-                        ) as allele_stream:
-                    avail_alleles = pickle.load(allele_stream)
-                allele = allele.replace("*", "")
-                if allele not in avail_alleles["netMHCpan"]:
-                    sys.exit(" ".join([allele,
-                             " is not a valid allele for netMHC"])
-                            )
-                # Establish return list and sample id
-                sample_id = '.'.join([peptides[0], str(len(peptides)), allele,
-                                    'netmhcpan'])
-                affinities = []
+                    # Write one peptide per line to a temporary file for input
+                    peptide_file = tempfile.mkstemp(suffix=".peptides", 
+                                                    prefix="".join([sample_id, 
+                                                                    "."]), 
+                                                    text=True)
+                    files_to_remove.append(peptide_file)
+                    with open(peptide_file[1], "w") as f:
+                        for sequence in peptides:
+                            print >>f, sequence
 
-                # Write one peptide per line to a temporary file for input
-                peptide_file = tempfile.mkstemp(suffix=".peptides", 
-                                            prefix="".join([sample_id, "."]), 
-                                            text=True)
-                files_to_remove.append(peptide_file)
-                with open(peptide_file[1], "w") as f:
-                    for sequence in peptides:
-                        print >>f, sequence
+                    # Establish temporary file to hold output
+                    mhc_out = tempfile.mkstemp(suffix=".netMHCpan.out", 
+                                                prefix="".join([sample_id, 
+                                                                "."]), 
+                                                text=True)
+                    files_to_remove.append(mhc_out)
+                    # Run netMHCpan
+                    subprocess.check_call(
+                        [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
+                            "-xlsfile", mhc_out, peptide_file])
+                    with open(mhc_out[1], "r") as f:
+                        f.readline()
+                        f.readline()
+                        for line in f:
+                            line = line.strip("\n").split("\t")
+                            nM = line[5]
+                            affinities.append(nM)
+                    return affinities
+                finally:
+                    # Remove temporary files
+                    if remove_files:
+                        for file_to_remove in files_to_remove:
+                            os.remove(file_to_remove)
+        else:
+            raise ValueError(" ".join([program, "is not a valid software"]))
+        
+        # Obtain VAF frequency VCF position and parse hapcut2 output
+        VAF_pos = get_VAF_pos(args.vcf)
+        hap_dict = create_haplotype_dictionary(args.hapcut2_output, VAF_pos)
 
-                # Establish temporary file to hold output
-                mhc_out = tempfile.mkstemp(suffix=".netMHCpan.out", 
-                                            prefix="".join([sample_id, "."]), 
-                                            text=True)
-                files_to_remove.append(mhc_out)
-                # Run netMHCpan
-                subprocess.check_call(
-                    [netmhcpan, "-a", allele, "-inptype", "1", "-p", "-xls", 
-                        "-xlsfile", mhc_out, peptide_file])
-                with open(mhc_out[1], "r") as f:
-                    f.readline()
-                    f.readline()
-                    for line in f:
-                        line = line.strip("\n").split("\t")
-                        nM = line[5]
-                        affinities.append(nM)
-                return affinities
-            finally:
-                # Remove temporary files
-                if remove_files:
-                    for file_to_remove in files_to_remove:
-                        os.remove(file_to_remove)
-    else:
-        raise ValueError(" ".join([program, "is not a valid software"]))
-    
-    # Obtain VAF frequency VCF position and parse hapcut2 output
-    VAF_pos = get_VAF_pos(args.vcf)
-    hap_dict = create_haplotype_dictionary(args.hapcut2_output, VAF_pos)
+        # For retrieving genome sequence
+        reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
+        
 
-    # For retrieving genome sequence
-    reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
-    
+        ## Create relevant transcript objects based on hapcut output
+        ## Translate sequence
+        ## Kmerize peptides
+        ## Get binding affinities
 
-    ## Create relevant transcript objects based on hapcut output
-    ## Translate sequence
-    ## Kmerize peptides
-    ## Get binding affinities
-
-    ## Prioritize output based on: affinity, VAF, more?
+        ## Prioritize output based on: affinity, VAF, more?
 
