@@ -49,16 +49,93 @@ def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
 
+def gtf_to_cds(gtf_file, dictdir):
+    """ References cds_dict to get cds bounds for later Bowtie query
 
-def intervals_to_transcripts(gtf, dictdir):
-    """
-    """
-    return None
+        Keys in the dictionary are transcript IDs, while entries are lists of
+            relevant CDS/stop codon data
+            Data: [start, stop, 1(CDS)/0(Stop codon), reading frame, +/1 strand]
+        Writes cds_dict as a pickled dictionary
 
-def transcripts_to_CDS(gtf, dictdir):
+        gtf_file: input gtf file to process
+        dictdir: path to directory to store pickled dicts
+
+        Return value: dictionary
     """
+    cds_dict = {}
+    # Parse GTF to obtain CDS/stop codon info
+    with open(gtf_file, "r") as f:
+        for line in gtf_data:
+            if line != '#':
+                tokens = line.strip().split('\t')
+                if tokens[2] == "CDS" or tokens[2] == "stop_codon":
+                    transcript_id = re.sub(
+                                r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
+                                r'\1', tokens[8]
+                                )
+                    # Create new dictionary entry for new transcripts
+                    if transcript_id not in cds_dict:
+                        if tokens[2] == "CDS":
+                            cds_dict[transcript_id] = [[int(tokens[3]), 
+                                                        int(tokens[4]), 1, 
+                                                        tokens[6], 
+                                                        int(tokens[7])]]
+                        else:
+                            cds_dict[transcript_id] = [[int(tokens[3]), 
+                                                        int(tokens[4]), 0, 
+                                                        tokens[6], 
+                                                        int(tokens[7])]]
+                    # Append previous entry for old transcripts
+                    else:
+                        if tokens[2] == "CDS":
+                            cds_dict[transcript_id] = cds_dict[
+                                                transcript_id
+                                                ].append([int(tokens[3]), 
+                                                int(tokens[4]), 1, 
+                                                tokens[6], int(tokens[7])])
+                        else:
+                            cds_dict[transcript_id] = cds_dict[
+                                                transcript_id
+                                                ].append([int(tokens[3]), 
+                                                int(tokens[4]), 0, 
+                                                tokens[6], int(tokens[7])])
+    # Sort cds_dict coordinates (left -> right) for each transcript                                
+    for transcript_id in cds_dict:
+            cds_dict[transcript_id].sort(key=lambda x: x[0])
+    # Write to pickled dictionary
+    pickle_dict = "".join(dictdir, "/", "transcript_to_CDS.pickle")
+    with open(pickle_dict, "wb") as f:
+        pickle.dump(cds_dict, f)
+    return cds_dict
+
+def cds_to_tree(cds_dict, dictdir):
+    """ Creates searchable tree of chromosome intervals from CDS dictionary
+
+        Each chromosome is stored in the dictionary as an interval tree object
+            Intervals are added for each CDS, with the associated transcript ID
+        Writes the searchable tree as a pickled dictionary
+
+        dict: CDS dictionary produced by gtf_to_cds()
+
+        No return value.
     """
-    return None
+    searchable_tree = {}
+    # Add genomic intervals to the tree for each transcript
+    for transcript_id in cds_dict:
+        transcript = cds_dict[transcript_id]
+        chrom = transcript[0][5]
+        # Add new entry for chromosome if not already encountered
+        if chrom not in searchable_tree:
+            searchable_tree[chrom] = IntervalTree()
+        # Add CDS interval to tree with transcript ID
+        for cds in transcript:
+            start = cds[0]
+            stop = cds[1]
+            searchable_tree[chrom][start:stop] = transcript_id
+    # Write to pickled dictionary
+    pickle_dict = "".join(dictdir, "/", "intervals_to_transcript.pickle")
+    with open(pickle_dict, "wb") as f:
+        pickle.dump(searchable_tree, f)
 
 def seq_to_peptide(seq, reverse_strand=False):
     """ Translates nucleotide sequence into peptide sequence.
@@ -509,8 +586,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.subparser_name == 'idx':
+        cds_dict = gtf_to_cds(args.gtf, args.dicts)
         intervals_to_transcripts(args.gtf, args.dicts)
         transcripts_to_CDS(args.gtf, args.dicts)
+        # FM indexing of proteome??
     
     elif args.subparser_name == 'call':
         # Check affinity predictor
@@ -671,11 +750,12 @@ if __name__ == '__main__':
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         
-
+        ## Find transcripts the haplotype blocks overlap
         ## Create relevant transcript objects based on hapcut output
         ## Translate sequence
         ## Kmerize peptides
         ## Get binding affinities
+        ## Find multi-mapping rate of neoepitopes to proteome?
 
-        ## Prioritize output based on: affinity, VAF, more?
+        ## Prioritize output based on: affinity, VAF, peptide similarity?
 
