@@ -113,6 +113,8 @@ def cds_to_tree(cds_dict, dictdir):
 
         Each chromosome is stored in the dictionary as an interval tree object
             Intervals are added for each CDS, with the associated transcript ID
+            Assumes transcript is all on one chromosome - does not work for
+                gene fusions
         Writes the searchable tree as a pickled dictionary
 
         dict: CDS dictionary produced by gtf_to_cds()
@@ -137,70 +139,129 @@ def cds_to_tree(cds_dict, dictdir):
     with open(pickle_dict, "wb") as f:
         pickle.dump(searchable_tree, f)
 
-def seq_to_peptide(seq, reverse_strand=False):
-    """ Translates nucleotide sequence into peptide sequence.
+def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
+    """ Combines VCFs
+        
+        #### WE NEED TO ADJUST THIS ####
+        ## Where are header lines going? ##
+        ## Position of tumor vs. normal in somatic vcf is variable ##
 
-        All codons including and after stop codon are recorded as X's.
-
-        seq: nucleotide sequence
-        reverse_strand: True iff strand is -
-
-        Return value: peptide string
+        No return value.
     """
-    seq_size = len(seq)
-    if reverse_strand:
-        seq = seq[::-1].translate(_complement_table)
-    peptide = []
-    for i in xrange(0, seq_size - seq_size % 3, 3):
-        codon = _codon_table[seq[i:i+3]]
-        peptide.append(codon)
-        if codon == 'X':
-            break
-    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
-        peptide.append('X')
-    return ''.join(peptide)
+    vcffile = open(vcf2, "r")
+    temp = open(vcf2 + ".tumortemp", "w+");
+    header = open(vcf2 + ".header", "w+");
+    for lines in vcffile:
+        if (lines[0] != '#'):
+            temp.write(lines)
+        else:
+            header.write(lines)
+    vcffile.close()
+    temp.close()
+    header.close()
+    vcffile = open(vcf1, "r")
+    temp = open(vcf2 + ".germlinetemp", "w+");
+    for lines in vcffile:
+        if (lines[0] != '#'):
+            temp.write(lines)
+    vcffile.close()
+    temp.close()    
+    markgermline = "".join(['''awk '{print $0, "0"}' ''', vcf2, 
+                            ".germlinetemp > ", vcf2, ".germline"])
+    marktumor    = "".join(['''awk '{print $0, "1"}' ''', vcf2, 
+                            ".tumortemp > ", vcf2, ".tumor"])
+    os.system(markgermline)
+    os.system(marktumor)
+    command = "".join(["cat ", vcf2, ".germline ", vcf2, ".tumor > ", 
+                        vcf2, ".combine1"])
+    os.system(command)
+    command2 = "".join(["sort -k1,1 -k2,2n ", vcf2, ".combine1 > ", 
+                        vcf2, ".sorted"])
+    os.system(command2)
+    command3 = "".join(["cat ", vcf2, ".header ", vcf2, ".sorted > ", 
+                        vcf2, ".combine2"])
+    os.system(command3)
+    cut = "".join(["cut -f1,2,3,4,5,6,7,8,9,10 ", vcf2, 
+                    ".combine2 > ", outfile])
+    os.system(cut)
+    for file in [".tumortemp", ".germlinetemp", ".combine1", ".combine2", 
+                    ".sorted", ".tumor", ".germline", ".header"]:
+        cleanup = "".join(["rm ", vcf2, file])
+        os.system(cleanup)
 
-def kmerize_peptide(peptide, min_size=8, max_size=11):
-    """ Obtains subsequences of a peptide.
+def which(path):
+    """ Searches for whether executable is present and returns version
 
-        normal_peptide: normal peptide seq
-        min_size: minimum subsequence size
-        max_size: maximum subsequence size
+        path: path to executable
 
-        Return value: list of all possible subsequences of size between
-            min_size and max_size
+        Return value: None if executable not found, else string with software
+            name and version number
     """
-    peptide_size = len(peptide)
-    return [item for sublist in
-                [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
-                    for size in xrange(min_size, max_size + 1)]
-            for item in sublist if 'X' not in item]
+    try:
+        subprocess.check_call([path])
+    except OSError as e:
+        return None
+    else:
+        return path
 
-def neoepitopes(mutation_positions, normal_seq, mutated_seq,
-                        reverse_strand=False, min_size=8, max_size=11,
-                        output_stream=sys.stdout):
-    """ Finds neoepitopes from normal and mutated seqs.
+def get_VAF_pos(VCF):
+    """ Obtains position in VCF format/genotype fields of VAF
 
-        mutation_positions: list of mutation positions
-        normal_seq: normal nucleotide sequence
-        mutated_seq: mutated nucelotide sequence
-        reverse_strand: True iff strand is -
-        min_size: minimum peptide kmer size to write
-        max_size: maximum petide kmer size to write
+        VCF: path to input VCF
 
-        Return value: List of tuples (normal_kmer, mutated_kmer)
+        Return value: None if VCF does not contain VAF, 
+                        otherwise position of VAF
     """
-    return zip(kmerize_peptide(
-        seq_to_peptide(
-            normal_seq, reverse_strand=reverse_strand),
-        min_size=min_size,
-        max_size=max_size
-    ), kmerize_peptide(
-        seq_to_peptide(
-            mutated_seq, reverse_strand=reverse_strand),
-        min_size=min_size,
-        max_size=max_size))
+    VAF_check = False
+    with open(VCF) as f:
+        for line in f:
+            # Check header lines to see if FREQ exits in FORMAT fields
+            if line[0] == "#":
+                if "FREQ" in line:
+                    VAF_check = True
+            else:
+                # Check first entry to get position of FREQ if it exists
+                if VAF_check:
+                    tokens = line.strip("\n").split("\t")
+                    format_field = tokens[8].split(":")
+                    for i in range(0,len(format_field)):
+                        if format_field[i] == "FREQ":
+                            VAF_pos = i
+                            break
+                # Return None if VCF does not contain VAF data
+                else:
+                    VAF_pos = None
+                    break
+    return VAF_pos
 
+def create_haplotype_dictionary(haplooutfile, freqpos):
+    """
+        Returns dictionary of haplotype information
+        
+        haplooutfile: name of haplotype output file
+        freqpos: location in genotype field where allele frequency is (0 based)
+
+        outputs: dictionary with key of (chrome, pos) and value of 
+            (allele on chrome A, allele on chrome B, reference, 
+            variant, allele frequency, phasing score)
+    """
+    hapfile = open(haplooutfile, "r")
+    haplotype_dict = collections.OrderedDict()
+    for line in hapfile:
+        hapline = line.strip().split()
+        if hapline[0] != "********" and hapline[0] != "BLOCK:":
+            infoline = hapline[7].strip().split(':')
+            if freqpos is None:
+                haplotype_dict[(int(hapline[3]), 
+                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
+                    hapfileapline[5], hapline[6], 
+                    None, float(hapline[10]))
+            else:
+                haplotype_dict[(int(hapline[3]), 
+                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
+                    hapfileapline[5], hapline[6], 
+                    float(infoline[freqpos].rstrip('%')), float(hapline[10]))
+    return SortedDict(haplotype_dict)
 
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
@@ -398,35 +459,6 @@ class Transcript(object):
             'yet supported.'
         )
 
-def create_haplotype_dictionary(haplooutfile, freqpos):
-    """
-        Returns dictionary of haplotype information
-        
-        haplooutfile: name of haplotype output file
-        freqpos: location in genotype field where allele frequency is (0 based)
-
-        outputs: dictionary with key of (chrome, pos) and value of 
-            (allele on chrome A, allele on chrome B, reference, 
-            variant, allele frequency, phasing score)
-    """
-    hapfile = open(haplooutfile, "r")
-    haplotype_dict = collections.OrderedDict()
-    for line in hapfile:
-        hapline = line.strip().split()
-        if hapline[0] != "********" and hapline[0] != "BLOCK:":
-            infoline = hapline[7].strip().split(':')
-            if freqpos is None:
-                haplotype_dict[(int(hapline[3]), 
-                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
-                    hapfileapline[5], hapline[6], 
-                    None, float(hapline[10]))
-            else:
-                haplotype_dict[(int(hapline[3]), 
-                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
-                    hapfileapline[5], hapline[6], 
-                    float(infoline[freqpos].rstrip('%')), float(hapline[10]))
-    return SortedDict(haplotype_dict)
-
 def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
     '''
         Applies phased mutations to 2 transcripts
@@ -489,50 +521,70 @@ def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
                                             mute_type]))
     return transcript1, transcript2
 
-def get_VAF_pos(VCF):
-    """ Obtains position in VCF format/genotype fields of VAF
+def seq_to_peptide(seq, reverse_strand=False):
+    """ Translates nucleotide sequence into peptide sequence.
 
-        VCF: path to input VCF
+        All codons including and after stop codon are recorded as X's.
 
-        Return value: None if VCF does not contain VAF, 
-                        otherwise position of VAF
+        seq: nucleotide sequence
+        reverse_strand: True iff strand is -
+
+        Return value: peptide string
     """
-    VAF_check = False
-    with open(VCF) as f:
-        for line in f:
-            # Check header lines to see if FREQ exits in FORMAT fields
-            if line[0] == "#":
-                if "FREQ" in line:
-                    VAF_check = True
-            else:
-                # Check first entry to get position of FREQ if it exists
-                if VAF_check:
-                    tokens = line.strip("\n").split("\t")
-                    format_field = tokens[8].split(":")
-                    for i in range(0,len(format_field)):
-                        if format_field[i] == "FREQ":
-                            VAF_pos = i
-                            break
-                # Return None if VCF does not contain VAF data
-                else:
-                    VAF_pos = None
-                    break
-    return VAF_pos
+    seq_size = len(seq)
+    if reverse_strand:
+        seq = seq[::-1].translate(_complement_table)
+    peptide = []
+    for i in xrange(0, seq_size - seq_size % 3, 3):
+        codon = _codon_table[seq[i:i+3]]
+        peptide.append(codon)
+        if codon == 'X':
+            break
+    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+        peptide.append('X')
+    return ''.join(peptide)
 
-def which(path):
-    """ Searches for whether executable is present and returns version
+def kmerize_peptide(peptide, min_size=8, max_size=11):
+    """ Obtains subsequences of a peptide.
 
-        path: path to executable
+        normal_peptide: normal peptide seq
+        min_size: minimum subsequence size
+        max_size: maximum subsequence size
 
-        Return value: None if executable not found, else string with software
-            name and version number
+        Return value: list of all possible subsequences of size between
+            min_size and max_size
     """
-    try:
-        subprocess.check_call([path])
-    except OSError as e:
-        return None
-    else:
-        return path
+    peptide_size = len(peptide)
+    return [item for sublist in
+                [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
+                    for size in xrange(min_size, max_size + 1)]
+            for item in sublist if 'X' not in item]
+
+def neoepitopes(mutation_positions, normal_seq, mutated_seq,
+                        reverse_strand=False, min_size=8, max_size=11,
+                        output_stream=sys.stdout):
+    """ Finds neoepitopes from normal and mutated seqs.
+
+        mutation_positions: list of mutation positions
+        normal_seq: normal nucleotide sequence
+        mutated_seq: mutated nucelotide sequence
+        reverse_strand: True iff strand is -
+        min_size: minimum peptide kmer size to write
+        max_size: maximum petide kmer size to write
+
+        Return value: List of tuples (normal_kmer, mutated_kmer)
+    """
+    return zip(kmerize_peptide(
+        seq_to_peptide(
+            normal_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size
+    ), kmerize_peptide(
+        seq_to_peptide(
+            mutated_seq, reverse_strand=reverse_strand),
+        min_size=min_size,
+        max_size=max_size))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
@@ -546,12 +598,26 @@ if __name__ == '__main__':
                                         'linking transcripts to intervals and '
                                         ' CDS lines in a GTF'), 
                                         dest='subparser_name')
+    merge_parser = subparsers.add_parser('merge',
+                                        help=('merges germline and somatic '
+                                            'VCFS for combined mutation '
+                                            'phasing with HAPCUT2'), 
+                                        dest='subparser_name')
     call_parser = subparsers.add_parser('call', help=('calls neoepitopes'))
     index_parser.add_argument('-g', '--gtf', type=str, required=False,
             help='input path to GTF file'
         )  
     index_parser.add_argument('-d', '--dicts', type=str, required=False,
             help='output path to pickled CDS dictionary'
+        )
+    merge_parser.add_argument('-g', '--germline', type=str, required=False,
+            help='input path to germline VCF'
+        )
+    merge_parser.add_argument('-s', '--somatic', type=str, required=False,
+            help='input path to somatic VCF'
+        )
+    merge_parser.add_argument('-o', '--output', type=str, required=False,
+            help='output path to combined VCF'
         )
     call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
@@ -587,9 +653,11 @@ if __name__ == '__main__':
     
     if args.subparser_name == 'idx':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
-        intervals_to_transcripts(args.gtf, args.dicts)
-        transcripts_to_CDS(args.gtf, args.dicts)
+        cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
+
+    elif args.subparser_name == 'merge':
+        pass
     
     elif args.subparser_name == 'call':
         # Check affinity predictor
