@@ -54,7 +54,7 @@ def gtf_to_cds(gtf_file, dictdir):
 
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
-            Data: [start, stop, 1(CDS)/0(Stop codon), reading frame, +/1 strand]
+            Data: [chromosome, start, stop, 1(CDS)/0(Stop codon), reading frame, +/1 strand]
         Writes cds_dict as a pickled dictionary
 
         gtf_file: input gtf file to process
@@ -65,8 +65,8 @@ def gtf_to_cds(gtf_file, dictdir):
     cds_dict = {}
     # Parse GTF to obtain CDS/stop codon info
     with open(gtf_file, "r") as f:
-        for line in gtf_data:
-            if line != '#':
+        for line in f:
+            if line[0] != '#':
                 tokens = line.strip().split('\t')
                 if tokens[2] == "CDS" or tokens[2] == "stop_codon":
                     transcript_id = re.sub(
@@ -76,34 +76,20 @@ def gtf_to_cds(gtf_file, dictdir):
                     # Create new dictionary entry for new transcripts
                     if transcript_id not in cds_dict:
                         if tokens[2] == "CDS":
-                            cds_dict[transcript_id] = [[int(tokens[3]), 
-                                                        int(tokens[4]), 1, 
-                                                        tokens[6], 
-                                                        int(tokens[7])]]
+                            cds_dict[transcript_id] = [[tokens[0], int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])]]
                         else:
-                            cds_dict[transcript_id] = [[int(tokens[3]), 
-                                                        int(tokens[4]), 0, 
-                                                        tokens[6], 
-                                                        int(tokens[7])]]
+                            cds_dict[transcript_id] = [[tokens[0], int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])]]
                     # Append previous entry for old transcripts
                     else:
                         if tokens[2] == "CDS":
-                            cds_dict[transcript_id] = cds_dict[
-                                                transcript_id
-                                                ].append([int(tokens[3]), 
-                                                int(tokens[4]), 1, 
-                                                tokens[6], int(tokens[7])])
+                            cds_dict[transcript_id].append([tokens[0], int(tokens[3]), int(tokens[4]), 1, tokens[6], int(tokens[7])])
                         else:
-                            cds_dict[transcript_id] = cds_dict[
-                                                transcript_id
-                                                ].append([int(tokens[3]), 
-                                                int(tokens[4]), 0, 
-                                                tokens[6], int(tokens[7])])
+                            cds_dict[transcript_id].append([tokens[0], int(tokens[3]), int(tokens[4]), 0, tokens[6], int(tokens[7])])
     # Sort cds_dict coordinates (left -> right) for each transcript                                
     for transcript_id in cds_dict:
             cds_dict[transcript_id].sort(key=lambda x: x[0])
     # Write to pickled dictionary
-    pickle_dict = "".join(dictdir, "/", "transcript_to_CDS.pickle")
+    pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
     with open(pickle_dict, "wb") as f:
         pickle.dump(cds_dict, f)
     return cds_dict
@@ -125,17 +111,18 @@ def cds_to_tree(cds_dict, dictdir):
     # Add genomic intervals to the tree for each transcript
     for transcript_id in cds_dict:
         transcript = cds_dict[transcript_id]
-        chrom = transcript[0][5]
+        chrom = transcript[0][0]
         # Add new entry for chromosome if not already encountered
         if chrom not in searchable_tree:
             searchable_tree[chrom] = IntervalTree()
         # Add CDS interval to tree with transcript ID
         for cds in transcript:
-            start = cds[0]
-            stop = cds[1]
-            searchable_tree[chrom][start:stop] = transcript_id
+            start = cds[1]
+            stop = cds[2]
+            if stop-start != 0:
+                searchable_tree[chrom][start:stop] = transcript_id
     # Write to pickled dictionary
-    pickle_dict = "".join(dictdir, "/", "intervals_to_transcript.pickle")
+    pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
     with open(pickle_dict, "wb") as f:
         pickle.dump(searchable_tree, f)
 
@@ -660,6 +647,11 @@ if __name__ == '__main__':
         pass
     
     elif args.subparser_name == 'call':
+        # Load pickled dictionaries
+        interval_dict = pickle.load(open(args.dicts + "".join([dictdir, 
+                                "/", "intervals_to_transcript.pickle"]), "rb"))
+        cds_dict = pickle.load(open(args.dicts + "".join([dictdir, 
+                                "/", "transcript_to_CDS.pickle"]), "rb"))
         # Check affinity predictor
         program = which(args.affinity_predictor)
         if program is None:
@@ -819,6 +811,15 @@ if __name__ == '__main__':
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         
         ## Find transcripts the haplotype blocks overlap
+        transcript_list = []
+        for locus in hap_dict:
+            overlapping_intervals = interval_dict[locus[0]][locus[1]]
+            for interval in overlapping_intervals:
+                transcript = interval[2]
+                if transcript not in transcript_list:
+                    transcript_list.append(transcript)
+        # Create a separate list for unphased mutations??
+
         ## Create relevant transcript objects based on hapcut output
         ## Translate sequence
         ## Kmerize peptides
