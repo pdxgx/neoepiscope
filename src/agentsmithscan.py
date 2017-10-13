@@ -77,13 +77,15 @@ def gtf_to_cds(gtf_file, dictdir):
                     # Create new dictionary entry for new transcripts
                     if transcript_id not in cds_dict:
                         if tokens[2] == "CDS":
-                            cds_dict[transcript_id] = [[tokens[0], 
+                            cds_dict[transcript_id] = [[tokens[0].replace(
+                                                                    "chr", ""), 
                                                         int(tokens[3]), 
                                                         int(tokens[4]), 1, 
                                                         tokens[6], 
                                                         int(tokens[7])]]
                         else:
-                            cds_dict[transcript_id] = [[tokens[0], 
+                            cds_dict[transcript_id] = [[tokens[0].replace(
+                                                                    "chr", ""), 
                                                         int(tokens[3]), 
                                                         int(tokens[4]), 0, 
                                                         tokens[6], 
@@ -91,13 +93,15 @@ def gtf_to_cds(gtf_file, dictdir):
                     # Append previous entry for old transcripts
                     else:
                         if tokens[2] == "CDS":
-                            cds_dict[transcript_id].append([tokens[0], 
+                            cds_dict[transcript_id].append([tokens[0].replace(
+                                                                    "chr", ""), 
                                                             int(tokens[3]), 
                                                             int(tokens[4]), 1, 
                                                             tokens[6], 
                                                             int(tokens[7])])
                         else:
-                            cds_dict[transcript_id].append([tokens[0], 
+                            cds_dict[transcript_id].append([tokens[0].replace(
+                                                                    "chr", ""), 
                                                             int(tokens[3]), 
                                                             int(tokens[4]), 0, 
                                                             tokens[6], 
@@ -828,14 +832,15 @@ if __name__ == '__main__':
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         
-        ## Find transcripts that mutations overlap
-        ## Create relevant transcript objects
+        # Find transcripts that mutations overlap 
+        # Create relevant transcript objects
         transcript_dict = {}
         with open(args.vcf, "r") as f:
             for line in f:
                 if line[0] != "#":
                     tokens = line.strip("\n").split("\t")
-                    overlapping_intervals = interval_dict[tokens[0]][tokens[1]]
+                    overlapping_intervals = interval_dict[tokens[0].replace(
+                                                    "chr", "")][int(tokens[1])]
                     for interval in overlapping_intervals:
                         transcript = interval[2]
                         if transcript not in transcript_dict:
@@ -845,8 +850,12 @@ if __name__ == '__main__':
                                                             )
         ### Create separate dicts for phased vs. unphased mutations?? ###
 
+        # Edit transcript objects based on hapcut output
+        for locus in hap_dict:
+            transcript = transcript_dict[interval_dict[locus[0]][locus[1]]]
+            ## PHASE MUTATIONS ##
+        ## MAKE COMBINATORIAL EDITS FOR UNPHASED MUTATIONS ##
         
-        ## Edit transcript objects based on hapcut output
         ## Translate sequence
         ## Kmerize peptides
         ## Get binding affinities
