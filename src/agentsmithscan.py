@@ -124,28 +124,27 @@ def cds_to_tree(cds_dict, dictdir):
                 gene fusions
         Writes the searchable tree as a pickled dictionary
 
-        dict: CDS dictionary produced by gtf_to_cds()
+        cds_dict: CDS dictionary produced by gtf_to_cds()
 
-        No return value.
+        Return value: searchable tree
     """
     searchable_tree = {}
     # Add genomic intervals to the tree for each transcript
     for transcript_id in cds_dict:
         transcript = cds_dict[transcript_id]
-        chrom = transcript[0][0]
+        chrom = transcript[0][0] # assumes same chrom for all cds in transcript
         # Add new entry for chromosome if not already encountered
         if chrom not in searchable_tree:
             searchable_tree[chrom] = IntervalTree()
         # Add CDS interval to tree with transcript ID
         for cds in transcript:
-            start = cds[1]
-            stop = cds[2]
-            if stop-start != 0:
-                searchable_tree[chrom][start:stop] = transcript_id
+            # coordinates of Interval are inclusive of start, exclusive of end
+            searchable_tree[chrom][cds[1]:cds[2]+1] = transcript_id
     # Write to pickled dictionary
     pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
     with open(pickle_dict, "wb") as f:
         pickle.dump(searchable_tree, f)
+    return searchable_tree
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
