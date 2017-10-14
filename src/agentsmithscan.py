@@ -132,19 +132,47 @@ def cds_to_tree(cds_dict, dictdir):
     # Add genomic intervals to the tree for each transcript
     for transcript_id in cds_dict:
         transcript = cds_dict[transcript_id]
-        chrom = transcript[0][0] # assumes same chrom for all cds in transcript
+        chrom = transcript[0][0]
         # Add new entry for chromosome if not already encountered
         if chrom not in searchable_tree:
             searchable_tree[chrom] = IntervalTree()
         # Add CDS interval to tree with transcript ID
         for cds in transcript:
-            # coordinates of Interval are inclusive of start, exclusive of end
-            searchable_tree[chrom][cds[1]:cds[2]+1] = transcript_id
+            start = cds[1]
+            stop = cds[2]
+            # Interval coordinates are inclusive of start, exclusive of stop
+            if stop > start:
+                searchable_tree[chrom][start:stop] = transcript_id
+            # else:
+                # report an error?
     # Write to pickled dictionary
     pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
     with open(pickle_dict, "wb") as f:
         pickle.dump(searchable_tree, f)
     return searchable_tree
+
+def get_transcripts_from_tree(chrom, start, stop, cds_tree):
+    """ Takes an input cds_tree and chrom coordinates and outputs a set of
+    	    unique transcript IDs.
+            
+        chrom: (String) Specify chrom to use for transcript search.
+	start: (Int) Specify start position to use for transcript search.
+	stop: (Int) Specify ending position to use for transcript search
+	cds_tree: (Dict) dictionary of IntervalTree() objects containing
+	    transcript IDs as function of exon coords indexed by chr/contig ID.
+            
+        Return value: (set) a set of matching unique transcript IDs.
+    """
+    transcript_ids = set()
+    if stop <= start:
+	return transcript_ids
+    # Interval coordinates are inclusive of start, exclusive of stop
+    cds = cds_tree[chrom].search(start, stop)
+    for cd in cds:
+	if cd.data in transcript_ids:
+	    continue
+	transcript_ids.add(cd.data)
+    return transcript_ids
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
