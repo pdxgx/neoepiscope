@@ -18,6 +18,7 @@ import os
 import random
 import re
 import collections
+
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 import tempfile
@@ -623,19 +624,33 @@ if __name__ == '__main__':
                                         formatter_class=help_formatter)
     subparsers = parser.add_subparsers(help=(
                                     'subcommands; add "-h" or "--help" '
-                                    'after a subcommand for its parameters'),
-                                     dest='subparser_name')
-    index_parser = subparsers.add_parser('idx',
+                                    'after a subcommand for its parameters'
+                                ), dest='subparser_name')
+    index_parser = subparsers.add_parser('index',
                                         help=('produces pickled dictionaries '
                                         'linking transcripts to intervals and '
                                         ' CDS lines in a GTF'), 
+                                        dest='subparser_name')
+    prep_parser = subparsers.add_parser('prep',
+                                        help=('combines HAPCUT2 output with '
+                                              'unphased variants for call mode'),
                                         dest='subparser_name')
     merge_parser = subparsers.add_parser('merge',
                                         help=('merges germline and somatic '
                                             'VCFS for combined mutation '
                                             'phasing with HAPCUT2'), 
                                         dest='subparser_name')
-    call_parser = subparsers.add_parser('call', help=('calls neoepitopes'))
+    call_parser = subparsers.add_parser('call', help='calls neoepitopes', 
+                                        dest='subparser_name')
+    prep_parser.add_argument('-v', '--vcf', type=str, required=True,
+            help='input VCF'
+        )
+    prep_parser.add_argument('-c', '--hapcut2-output', type=str, required=True,
+            help='path to output file of HAPCUT2 run on input VCF'
+        )
+    prep_parser.add_argument('-o', '--output', type=str, required=True,
+            help='path to output file to be input to call mode'
+        )
     index_parser.add_argument('-g', '--gtf', type=str, required=False,
             help='input path to GTF file'
         )  
@@ -660,13 +675,6 @@ if __name__ == '__main__':
     call_parser.add_argument('-h', '--hapcut2-output', type=str, required=True,
             help='path to output from HAPCUT2 run on input VCF'
         )
-    call_parser.add_argument('-b', '--bam', required=False,
-            default=None, help='input path to bam file'
-        )
-    call_parser.add_argument('-v', '--vcf', type=str, required=True,
-            default='-',
-            help='input VCF or "-" for stdin'
-        )
     call_parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
         )
@@ -683,14 +691,53 @@ if __name__ == '__main__':
         )
     args = parser.parse_args()
     
-    if args.subparser_name == 'idx':
+    if args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
-
+    elif args.subparser_name == 'prep':
+        phased = collections.defaultdict(set)
+        with open(args.output, 'w') as output_stream:
+            with open(args.hapcut2_output) as hapcut2_stream:
+                for line in hapcut2_stream:
+                    if line[0] != '*' and not line.startswith('BLOCK'):
+                        tokens = line.strip().split('\t')
+                        phased[(tokens[3], int(tokens[4]))].add(
+                                                        (tokens[5], tokens[6])
+                                                    )
+                    print >>output_stream, line,
+        with open(args.vcf) as vcf_stream:
+            first_char = '#'
+            while first_char == '#':
+                line = vcf_stream.readline().strip()
+                try:
+                    first_char = line[0]
+                except IndexError:
+                    first_char = '#'
+            counter = 1
+            while line:
+                tokens = line.split('\t')
+                pos = int(tokens[1])
+                if (tokens[3], tokens[4]) not in phased[
+                                            (tokens[0], pos)
+                                        ]:
+                    print >>output_stream, '********'
+                    print >>output_stream, 'BLOCK: unphased'
+                    print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
+                                           '{pos}\t{ref}\t{alt}\t'
+                                           '{genotype}\tNA\tNA\tNA').format(
+                                                vcf_line=counter,
+                                                chrom=tokens[0],
+                                                pos=pos,
+                                                ref=tokens[3],
+                                                alt=tokens[4],
+                                                genotype=tokens[9]
+                                            )
+                    print >>output_stream, '********' 
+                line = vcf_stream.readline().strip()
+                counter += 1
     elif args.subparser_name == 'merge':
         pass
-    
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
         interval_dict = pickle.load(open(args.dicts + "".join([dictdir, 
