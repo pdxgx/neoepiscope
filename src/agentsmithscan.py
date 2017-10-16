@@ -594,12 +594,10 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
                     for size in xrange(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
-def neoepitopes(mutation_positions, normal_seq, mutated_seq,
-                        reverse_strand=False, min_size=8, max_size=11,
-                        output_stream=sys.stdout):
+def neoepitopes(normal_seq, mutated_seq,
+                        reverse_strand=False, min_size=8, max_size=11,):
     """ Finds neoepitopes from normal and mutated seqs.
 
-        mutation_positions: list of mutation positions
         normal_seq: normal nucleotide sequence
         mutated_seq: mutated nucelotide sequence
         reverse_strand: True iff strand is -
@@ -858,28 +856,34 @@ if __name__ == '__main__':
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         
         # Find transcripts that mutations overlap 
-        # Create relevant transcript objects
+        # Create relevant transcript objects and store in dictionary
+        # Store coordinates of unphased mutations
         transcript_dict = {}
+        unphased_mutations = {}
         with open(args.vcf, "r") as f:
             for line in f:
                 if line[0] != "#":
                     tokens = line.strip("\n").split("\t")
-
+                    locus = (tokens[0].replace("chr", ""), int(tokens[1]))
                     overlapping_transcripts = get_transcripts_from_tree(
-                                                tokens[0].replace("chr", ""), 
-                                                int(tokens[1]), interval_dict)
+                                                                locus[0], 
+                                                                locus[1], 
+                                                                interval_dict)
                     for transcript in overlapping_transcripts:
                         if transcript not in transcript_dict:
                             transcript_dict[transcript] = Transcript(
                                                             reference_index, 
                                                             cds_dict[transcript]
                                                             )
-        ### Create separate dicts for phased vs. unphased mutations?? ###
+                        if locus not in hap_dict:
+                            if locus not in unphased_mutations:
+                                unphased_mutations[locus] = [transcript]
+                            else:
+                                unphased_mutations[locus].append(transcript)
+                        else:
+                            ## PHASE MUTATIONS
+                            pass
 
-        # Edit transcript objects based on hapcut output
-        for locus in hap_dict:
-            transcript = transcript_dict[interval_dict[locus[0]][locus[1]]]
-            ## PHASE MUTATIONS ##
         ## MAKE COMBINATORIAL EDITS FOR UNPHASED MUTATIONS ##
         
         ## Translate sequence
