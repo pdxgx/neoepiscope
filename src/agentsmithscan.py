@@ -672,8 +672,9 @@ if __name__ == '__main__':
     call_parser.add_argument('-d', '--dicts', type=str, required=False,
             help='input path to pickled CDS dictionary'
         )
-    call_parser.add_argument('-h', '--hapcut2-output', type=str, required=True,
-            help='path to output from HAPCUT2 run on input VCF'
+    call_parser.add_argument('-c', '--merged-hapcut2-output', type=str,
+            required=True,
+            help='path to output of prep subcommand'
         )
     call_parser.add_argument('-k', '--kmer-size', type=str, required=False,
             default='8,11', help='kmer size for epitope calculation'
