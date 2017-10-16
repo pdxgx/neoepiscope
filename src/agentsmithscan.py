@@ -880,15 +880,15 @@ if __name__ == '__main__':
                                 unphased_mutations[locus] = [transcript]
                             else:
                                 unphased_mutations[locus].append(transcript)
-                        else:
-                            ## PHASE MUTATIONS
-                            pass
 
+
+        ## PHASE MUTATIONS FROM HAPCUT2 ##
         ## MAKE COMBINATORIAL EDITS FOR UNPHASED MUTATIONS ##
         
-        ## Translate sequence
-        ## Kmerize peptides
+        ## TRANSLATE PEPTIDES SEQUENCES ##
 
+        ## KMERIZE PEPTIDES ##
+        # Call neoepitopes function to produce paired_peptides list
         paired_peptides =[] # unique set of tuples [(norm, tum), (norm, tum)]
         peptide_lists = map(list, zip(*paired_peptides)) # normal then tumor
 
@@ -896,7 +896,7 @@ if __name__ == '__main__':
         normal_affinities = get_affinity(peptides_lists[0], args.allele)
         tumor_affinities = get_affinity(peptides_lists[1], args.allele)
 
-        ## Find multi-mapping rate of neoepitopes to proteome?
 
+        ## Find multi-mapping rate of neoepitopes to proteome?
         ## Prioritize output based on: affinity, VAF, peptide similarity?
 
