@@ -888,7 +888,14 @@ if __name__ == '__main__':
         
         ## Translate sequence
         ## Kmerize peptides
-        ## Get binding affinities
+
+        paired_peptides =[] # unique set of tuples [(norm, tum), (norm, tum)]
+        peptide_lists = map(list, zip(*paired_peptides)) # normal then tumor
+
+        ## Get binding affinities for neoepitopes and paired normal epitopes
+        normal_affinities = get_affinity(peptides_lists[0], args.allele)
+        tumor_affinities = get_affinity(peptides_lists[1], args.allele)
+
         ## Find multi-mapping rate of neoepitopes to proteome?
 
         ## Prioritize output based on: affinity, VAF, peptide similarity?
