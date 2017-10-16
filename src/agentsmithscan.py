@@ -151,27 +151,25 @@ def cds_to_tree(cds_dict, dictdir):
         pickle.dump(searchable_tree, f)
     return searchable_tree
 
-def get_transcripts_from_tree(chrom, start, stop, cds_tree):
-    """ Takes an input cds_tree and chrom coordinates and outputs a set of
-    	    unique transcript IDs.
+def get_transcripts_from_tree(chrom, start, cds_tree):
+    """ Uses cds tree to btain transcript IDs from genomic coordinates
             
         chrom: (String) Specify chrom to use for transcript search.
-	start: (Int) Specify start position to use for transcript search.
-	stop: (Int) Specify ending position to use for transcript search
-	cds_tree: (Dict) dictionary of IntervalTree() objects containing
-	    transcript IDs as function of exon coords indexed by chr/contig ID.
+        start: (Int) Specify start position to use for transcript search.
+        stop: (Int) Specify ending position to use for transcript search
+        cds_tree: (Dict) dictionary of IntervalTree() objects containing
+            transcript IDs as function of exon coords indexed by chr/contig ID.
             
         Return value: (set) a set of matching unique transcript IDs.
     """
     transcript_ids = set()
     if stop <= start:
-	return transcript_ids
+        return transcript_ids
     # Interval coordinates are inclusive of start, exclusive of stop
-    cds = cds_tree[chrom].search(start, stop)
+    cds = cds_tree[chrom].search(start)
     for cd in cds:
-	if cd.data in transcript_ids:
-	    continue
-	transcript_ids.add(cd.data)
+        if cd.data not in transcript_ids:
+            transcript_ids.add(cd.data)
     return transcript_ids
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
@@ -866,10 +864,11 @@ if __name__ == '__main__':
             for line in f:
                 if line[0] != "#":
                     tokens = line.strip("\n").split("\t")
-                    overlapping_intervals = interval_dict[tokens[0].replace(
-                                                    "chr", "")][int(tokens[1])]
-                    for interval in overlapping_intervals:
-                        transcript = interval[2]
+
+                    overlapping_transcripts = get_transcripts_from_tree(
+                                                tokens[0].replace("chr", ""), 
+                                                int(tokens[1]), interval_dict)
+                    for transcript in overlapping_transcripts:
                         if transcript not in transcript_dict:
                             transcript_dict[transcript] = Transcript(
                                                             reference_index, 
