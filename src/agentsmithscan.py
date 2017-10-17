@@ -550,6 +550,9 @@ if __name__ == '__main__':
                                             'VCFS for combined mutation '
                                             'phasing with HAPCUT2'), 
                                         dest='subparser_name')
+    test_parser = subparsers.add_parser('test',
+                                        help=('performs unit tests'), 
+                                        dest='subparser_name')
     call_parser = subparsers.add_parser('call', help='calls neoepitopes', 
                                         dest='subparser_name')
     prep_parser.add_argument('-v', '--vcf', type=str, required=True,
@@ -609,7 +612,14 @@ if __name__ == '__main__':
         )
     args = parser.parse_args()
     
-    if args.subparser_name == 'index':
+    if args.subparser_name == 'test':
+        hapcut = "".join([os.path.dirname(__file__), "/test/Ychrom.hap.out"])
+        varscan = "".join([os.path.dirname(__file__), 
+                            "/test/Ychrom.varscan.vcf"])
+        mutect = "".join([os.path.dirname(__file__), 
+                            "/test/Ychrom.mutect.vcf"])
+        gtf = "".join([os.path.dirname(__file__), "/test/Ychrom.gtf"])
+    elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
