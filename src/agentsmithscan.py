@@ -269,35 +269,6 @@ def get_VAF_pos(VCF):
                     break
     return VAF_pos
 
-def create_haplotype_dictionary(haplooutfile, freqpos):
-    """
-        Returns dictionary of haplotype information
-        
-        haplooutfile: name of haplotype output file
-        freqpos: location in genotype field where allele frequency is (0 based)
-
-        outputs: dictionary with key of (chrome, pos) and value of 
-            (allele on chrome A, allele on chrome B, reference, 
-            variant, allele frequency, phasing score)
-    """
-    hapfile = open(haplooutfile, "r")
-    haplotype_dict = collections.OrderedDict()
-    for line in hapfile:
-        hapline = line.strip().split()
-        if hapline[0] != "********" and hapline[0] != "BLOCK:":
-            infoline = hapline[7].strip().split(':')
-            if freqpos is None:
-                haplotype_dict[(int(hapline[3]), 
-                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
-                    hapfileapline[5], hapline[6], 
-                    None, float(hapline[10]))
-            else:
-                haplotype_dict[(int(hapline[3]), 
-                    int(hapline[4]))] = (int(hapline[1]), int(hapline[2]), 
-                    hapfileapline[5], hapline[6], 
-                    float(infoline[freqpos].rstrip('%')), float(hapline[10]))
-    return SortedDict(haplotype_dict)
-
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
@@ -494,68 +465,6 @@ class Transcript(object):
             'Retrieving sequence with transcript coordinates not '
             'yet supported.'
         )
-
-def phase_mutations(transcript1, transcript2, hapdict, chromosome, start, end):
-    '''
-        Applies phased mutations to 2 transcripts
-        
-        transcript1: transcript object for first chromosome
-        transcript2: transcript object for second chromosome
-        hapdict: haplotype dictionary
-        chromosome: chromosome of transcript
-        start: start of applying mutations
-        end: end of applying mutations
-
-        Return values: transcript1, transcript2 (edited)
-    '''
-    startindex = hapdict.bisect((chromosome, start)) - 1
-    endindex = hapdict.bisect((chromosome, end)) + 1
-    for x in range(startindex, endindex):
-        mute_type = 'V'
-        if start <= hapdict.items()[x][0][1] <= end:
-            # Determine mutation type - default = SNV ("V")
-            if len(hapdict.items()[x][1][3]) > len(hapdict.items()[x][1][2]):
-                mute_type = 'I'
-            elif len(hapdict.items()[x][1][3]) < len(hapdict.items()[x][1][2]):
-                mute_type = 'D'
-            # Edit transcripts based on mutation type
-            if mute_type = 'V':
-                if hapdict.items()[x][1][0] == 1:
-                    transcript1.edit(hapdict.items()[x][1][3], 
-                                        hapdict.items()[x][0][1], mute_type)
-                    transcript1.edit_freq(hapdict.items()[x][0][1], 
-                                            hapdict.items()[x][1][5])
-                else:
-                    transcript2.edit(hapdict.items()[x][1][3], 
-                                        hapdict.items()[x][0][1], mute_type)
-                    transcript2.edit_freq(hapdict.items()[x][0][1], 
-                                            hapdict.items()[x][1][5])
-            if mute_type = 'I':
-                if hapdict.items()[x][1][0] == 1:
-                    transcript1.edit(hapdict.items()[x][1][3][1:], 
-                                        hapdict.items()[x][0][1]+1, mute_type)
-                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, 
-                                            hapdict.items()[x][1][5])
-                else:
-                    transcript2.edit(hapdict.items()[x][1][3][1:], 
-                                        hapdict.items()[x][0][1]+1, mute_type)
-                    transcript2.edit_freq(hapdict.items()[x][0][1]+1, 
-                                            hapdict.items()[x][1][5])
-            elif mute_type = 'D':
-                if hapdict.items()[x][1][0] == 1:
-                    transcript1.edit(hapdict.items()[x][1][2][1:], 
-                                        hapdict.items()[x][0][1]+1, mute_type)
-                    transcript1.edit_freq(hapdict.items()[x][0][1]+1, 
-                                            hapdict.items()[x][1][5])
-                else:
-                    transcript2.edit(hapdict.items()[x][1][2][1:], 
-                                        hapdict.items()[x][0][1]+1, mute_type)
-                    transcript2.edit_freq(hapdict.items()[x][0][1]+1, 
-                                            hapdict.items()[x][1][5])
-            else:
-                raise ValueError(" ".join(["Invalid mutation type encountered:",
-                                            mute_type]))
-    return transcript1, transcript2
 
 def seq_to_peptide(seq, reverse_strand=False):
     """ Translates nucleotide sequence into peptide sequence.
@@ -1026,10 +935,11 @@ if __name__ == '__main__':
         normal_affinities = get_affinity(normal_peptides, args.allele)
         tumor_affinities = get_affinity(normal_peptides, args.allele)
         ## Find multi-mapping rate of neoepitopes to proteome??
-        # Combine neoepitope data into entries
+        # Combine neoepitope data into entries and take unique set
         neoepitope_data = zip(tumor_peptides, 
                                 tumor_affinities, 
                                 normal_peptides, 
                                 normal_affinities)
+        unique_neoepitopes = set(neoepitope_data)
         ## Prioritize output based on: affinity, VAF, peptide similarity?
 
