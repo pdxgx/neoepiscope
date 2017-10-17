@@ -18,6 +18,7 @@ import os
 import random
 import re
 import collections
+import statistics
 from operator import itemgetter
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
@@ -596,7 +597,7 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
             for item in sublist if 'X' not in item]
 
 def neoepitopes(normal_seq, mutated_seq,
-                        reverse_strand=False, min_size=8, max_size=11,):
+                        reverse_strand=False, min_size=8, max_size=11):
     """ Finds neoepitopes from normal and mutated seqs.
 
         normal_seq: normal nucleotide sequence
@@ -669,6 +670,9 @@ if __name__ == '__main__':
     call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
         )
+    call_parser.add_argument('-v', '--vcf', type=str, required=False,
+            help='input path to VCF'
+        )
     call_parser.add_argument('-d', '--dicts', type=str, required=False,
             help='input path to pickled CDS dictionary'
         )
@@ -689,6 +693,10 @@ if __name__ == '__main__':
         )
     call_parser.add_argument('-a', '--allele', type=str, required=True,
             help='allele; see documentation online for more information'
+        )
+    call_parser.add_argument('-f', '--VAF-freq-calc', type=str, required=False,
+            default='median'
+            help='method for calculating VAF: choice of mean, median, min, max'
         )
     args = parser.parse_args()
     
@@ -895,46 +903,108 @@ if __name__ == '__main__':
                             os.remove(file_to_remove)
         else:
             raise ValueError(" ".join([program, "is not a valid software"]))
-        
-        # Obtain VAF frequency VCF position and parse hapcut2 output
+        # Obtain VAF frequency VCF position
         VAF_pos = get_VAF_pos(args.vcf)
-        hap_dict = create_haplotype_dictionary(args.hapcut2_output, VAF_pos)
-
         # Obtain peptide sizes for kmerizing peptides
         if ',' in args.kmer_size:
             size_list = args.kmer_size.split(',')
             size_list.sort()
-        else:
-            size_list = [args.kmer_size]
-
+            for i in range(0, len(size_list)):
+                size_list[i] = int(size_list[i])
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
-        
-        # Find transcripts that mutations overlap 
-        # Create relevant transcript objects and store in dictionary
-        # Store coordinates of unphased mutations
-        transcript_dict = {}
-        unphased_mutations = {}
+        # Find transcripts that haplotypes overlap 
+        # Create relevant transcript objects and edit with mutations
+        normal_peptides = []
+        tumor_peptides = []
+        VAFs = []
         with open(args.merged_hapcut2_output, "r") as f:
             block_mutations = []
             block_transcripts = {}
             for line in f:
                 if line.startswith('BLOCK'):
+                    # Skip block header lines
                     continue
                 elif line[0] == "*":
+                    # Process all transcripts for the block
                     for transcript_ID in block_transcripts:
+                        VAF_list = []
                         block_transcripts[transcript_ID].sort(key=itemgetter(1))
+                        # Create transcript object and make relevant edits
                         transcript = Transcript(reference_index, 
                                                 cds_dict[transcript_ID])
-                        base_sequence = transcript.seq()
-                    
+                        for mutation in block_transcripts[transcript_ID]:
+                            if VAF_pos is not None:
+                                VAF_list.append(
+                                            float(
+                                                    mutation[7].split(
+                                                                        ":"
+                                                        )[VAF_pos].strip("%")
+                                                    )
+                                                )
+                            if len(mutation[5]) == len(mutation[6]):
+                                mutation_type = 'V'
+                            elif len(mutation[5]) < len(mutation[6]):
+                                mutation_type = 'I'
+                            elif len(mutation[5]) > len(mutation[6]):
+                                mutation_type = 'D'
+                            else:
+                                mutation_type = '?'
+                            transcript.edit(mutation[3], mutation[1], 
+                                            mutation_type=mutation_type)
+                        # Calculate VAF for the transcript
+                        if len(VAF_list) == 0:
+                            transcript_VAF = "NA"
+                        elif len(VAF_list) == 1:
+                            transcript_VAF = VAF_list[0]
+                        else:
+                            VAF_list.sort()
+                            if args.VAF_freq_calc == "min":
+                                transcript_VAF = VAF_list[0]
+                            elif args.VAF_freq_calc == "max":
+                                transcript_VAF = VAF_list[-1]
+                            elif args.VAF_freq_calc == "mean":
+                                transcript_VAF = statistics.mean(VAF_list)
+                            elif args.VAF_freq_calc == "median":
+                                transcript_VAF = statistics.median(VAF_list)
+                            else:
+                                sys.exit(" ".join([args.VAF_freq_calc,
+                                 " is not a valid VAF calculation option"])
+                                )
+                        # Get neoepitope sequences for each mutation
+                        for mutation in block_transcripts[transcript_ID]:
+                            nucleotide_sequence = transcript.seq(
+                                        start= mutation[1] - 3*size_list[-1] -1, 
+                                        end=mutation[1] + 3*size_list[-1] -1, 
+                                        genome=True)
+                            ## HOw TO TELL IF REVERSE STRAND??
+                            aminoacid_sequence = seq_to_peptide(
+                                                        nucleotide_sequence, 
+                                                        reverse_strand=False)
+                            ## HOW TO GET NORMAL SEQUENCE
+                            normal_aa = "SEQUENCE"
+                            peptides = neoepitopes(normal_aa, 
+                                                    aminoacid_sequence,
+                                                    reverse_strand=False, 
+                                                    min_size=size_list[0], 
+                                                    max_size=size_list[-1])
+                            peptide_lists = map(list, zip(*peptides))
+                            for pep in peptide_lists[0]:
+                                normal_peptides.append(pep)
+                            for pep in peptide_lists[1]:
+                                tumor_peptides.append(pep)
+                            for i in range(0, len(peptide_lists[0])):
+                                VAFs.append(transcript_VAF)
+                    # Reset transcript dictionary
                     block_transcripts = {}
                 else:
+                    # Add mutation to transcript dictionary for the block
                     tokens = line.strip("\n").split("\t")
                     overlapping_transcripts = get_transcripts_from_tree(
                                                                 tokens[3], 
                                                                 locus[4], 
                                                                 interval_dict)
+                    # For each overlapping transcript, add mutation entry
                     for transcript in overlapping_transcripts:
                         if transcript not in block_transcripts:
                             block_transcripts[transcript] = [[tokens[3], 
@@ -952,49 +1022,14 @@ if __name__ == '__main__':
                                                                 tokens[1], 
                                                                 tokens[2], 
                                                                 tokens[7]])
-
-
-
-
-
-
-
-            for line in f:
-                if line[0] != "#":
-                    tokens = line.strip("\n").split("\t")
-                    locus = (tokens[0].replace("chr", ""), int(tokens[1]))
-                    overlapping_transcripts = get_transcripts_from_tree(
-                                                                locus[0], 
-                                                                locus[1], 
-                                                                interval_dict)
-                    for transcript in overlapping_transcripts:
-                        if transcript not in transcript_dict:
-                            transcript_dict[transcript] = Transcript(
-                                                            reference_index, 
-                                                            cds_dict[transcript]
-                                                            )
-                        if locus not in hap_dict:
-                            if locus not in unphased_mutations:
-                                unphased_mutations[locus] = [transcript]
-                            else:
-                                unphased_mutations[locus].append(transcript)
-
-
-        ## PHASE MUTATIONS FROM HAPCUT2 ##
-        ## MAKE COMBINATORIAL EDITS FOR UNPHASED MUTATIONS ##
-        
-        ## TRANSLATE PEPTIDES SEQUENCES ##
-
-        ## KMERIZE PEPTIDES ##
-        # Call neoepitopes function to produce paired_peptides list
-        paired_peptides =[] # unique set of tuples [(norm, tum), (norm, tum)]
-        peptide_lists = map(list, zip(*paired_peptides)) # normal then tumor
-
         ## Get binding affinities for neoepitopes and paired normal epitopes
-        normal_affinities = get_affinity(peptides_lists[0], args.allele)
-        tumor_affinities = get_affinity(peptides_lists[1], args.allele)
-
-
-        ## Find multi-mapping rate of neoepitopes to proteome?
+        normal_affinities = get_affinity(normal_peptides, args.allele)
+        tumor_affinities = get_affinity(normal_peptides, args.allele)
+        ## Find multi-mapping rate of neoepitopes to proteome??
+        # Combine neoepitope data into entries
+        neoepitope_data = zip(tumor_peptides, 
+                                tumor_affinities, 
+                                normal_peptides, 
+                                normal_affinities)
         ## Prioritize output based on: affinity, VAF, peptide similarity?
 
