@@ -18,7 +18,7 @@ import os
 import random
 import re
 import collections
-
+from operator import itemgetter
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 import tempfile
@@ -699,6 +699,7 @@ if __name__ == '__main__':
     elif args.subparser_name == 'prep':
         phased = collections.defaultdict(set)
         with open(args.output, 'w') as output_stream:
+            print >>output_stream, '********'
             with open(args.hapcut2_output) as hapcut2_stream:
                 for line in hapcut2_stream:
                     if line[0] != '*' and not line.startswith('BLOCK'):
@@ -707,36 +708,35 @@ if __name__ == '__main__':
                                                         (tokens[5], tokens[6])
                                                     )
                     print >>output_stream, line,
-        with open(args.vcf) as vcf_stream:
-            first_char = '#'
-            while first_char == '#':
-                line = vcf_stream.readline().strip()
-                try:
-                    first_char = line[0]
-                except IndexError:
-                    first_char = '#'
-            counter = 1
-            while line:
-                tokens = line.split('\t')
-                pos = int(tokens[1])
-                if (tokens[3], tokens[4]) not in phased[
-                                            (tokens[0], pos)
-                                        ]:
-                    print >>output_stream, '********'
-                    print >>output_stream, 'BLOCK: unphased'
-                    print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
-                                           '{pos}\t{ref}\t{alt}\t'
-                                           '{genotype}\tNA\tNA\tNA').format(
-                                                vcf_line=counter,
-                                                chrom=tokens[0],
-                                                pos=pos,
-                                                ref=tokens[3],
-                                                alt=tokens[4],
-                                                genotype=tokens[9]
-                                            )
-                    print >>output_stream, '********' 
-                line = vcf_stream.readline().strip()
-                counter += 1
+            with open(args.vcf) as vcf_stream:
+                first_char = '#'
+                while first_char == '#':
+                    line = vcf_stream.readline().strip()
+                    try:
+                        first_char = line[0]
+                    except IndexError:
+                        first_char = '#'
+                counter = 1
+                while line:
+                    tokens = line.split('\t')
+                    pos = int(tokens[1])
+                    if (tokens[3], tokens[4]) not in phased[
+                                                (tokens[0], pos)
+                                            ]:
+                        print >>output_stream, 'BLOCK: unphased'
+                        print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
+                                               '{pos}\t{ref}\t{alt}\t'
+                                               '{genotype}\tNA\tNA\tNA').format(
+                                                    vcf_line=counter,
+                                                    chrom=tokens[0],
+                                                    pos=pos,
+                                                    ref=tokens[3],
+                                                    alt=tokens[4],
+                                                    genotype=tokens[9]
+                                                )
+                        print >>output_stream, '********' 
+                    line = vcf_stream.readline().strip()
+                    counter += 1
     elif args.subparser_name == 'merge':
         pass
     elif args.subparser_name == 'call':
@@ -900,6 +900,13 @@ if __name__ == '__main__':
         VAF_pos = get_VAF_pos(args.vcf)
         hap_dict = create_haplotype_dictionary(args.hapcut2_output, VAF_pos)
 
+        # Obtain peptide sizes for kmerizing peptides
+        if ',' in args.kmer_size:
+            size_list = args.kmer_size.split(',')
+            size_list.sort()
+        else:
+            size_list = [args.kmer_size]
+
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         
@@ -908,7 +915,50 @@ if __name__ == '__main__':
         # Store coordinates of unphased mutations
         transcript_dict = {}
         unphased_mutations = {}
-        with open(args.vcf, "r") as f:
+        with open(args.merged_hapcut2_output, "r") as f:
+            block_mutations = []
+            block_transcripts = {}
+            for line in f:
+                if line.startswith('BLOCK'):
+                    continue
+                elif line[0] == "*":
+                    for transcript_ID in block_transcripts:
+                        block_transcripts[transcript_ID].sort(key=itemgetter(1))
+                        transcript = Transcript(reference_index, 
+                                                cds_dict[transcript_ID])
+                        base_sequence = transcript.seq()
+                    
+                    block_transcripts = {}
+                else:
+                    tokens = line.strip("\n").split("\t")
+                    overlapping_transcripts = get_transcripts_from_tree(
+                                                                tokens[3], 
+                                                                locus[4], 
+                                                                interval_dict)
+                    for transcript in overlapping_transcripts:
+                        if transcript not in block_transcripts:
+                            block_transcripts[transcript] = [[tokens[3], 
+                                                                tokens[4], 
+                                                                tokens[5], 
+                                                                tokens[6], 
+                                                                tokens[1], 
+                                                                tokens[2], 
+                                                                tokens[7]]]
+                        else:
+                            block_transcripts[transcript].append([tokens[3], 
+                                                                tokens[4], 
+                                                                tokens[5], 
+                                                                tokens[6], 
+                                                                tokens[1], 
+                                                                tokens[2], 
+                                                                tokens[7]])
+
+
+
+
+
+
+
             for line in f:
                 if line[0] != "#":
                     tokens = line.strip("\n").split("\t")
