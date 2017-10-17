@@ -828,7 +828,6 @@ if __name__ == '__main__':
         tumor_peptides = []
         VAFs = []
         with open(args.merged_hapcut2_output, "r") as f:
-            block_mutations = []
             block_transcripts = {}
             for line in f:
                 if line.startswith('BLOCK'):
