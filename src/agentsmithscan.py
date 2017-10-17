@@ -51,7 +51,7 @@ def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
 
-def gtf_to_cds(gtf_file, dictdir):
+def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
 
         Keys in the dictionary are transcript IDs, while entries are lists of
@@ -112,12 +112,13 @@ def gtf_to_cds(gtf_file, dictdir):
     for transcript_id in cds_dict:
             cds_dict[transcript_id].sort(key=lambda x: x[0])
     # Write to pickled dictionary
-    pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
-    with open(pickle_dict, "wb") as f:
-        pickle.dump(cds_dict, f)
+    if pickle_it:
+        pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(cds_dict, f)
     return cds_dict
 
-def cds_to_tree(cds_dict, dictdir):
+def cds_to_tree(cds_dict, dictdir, pickle_it=True):
     """ Creates searchable tree of chromosome intervals from CDS dictionary
 
         Each chromosome is stored in the dictionary as an interval tree object
@@ -148,9 +149,10 @@ def cds_to_tree(cds_dict, dictdir):
             # else:
                 # report an error?
     # Write to pickled dictionary
-    pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
-    with open(pickle_dict, "wb") as f:
-        pickle.dump(searchable_tree, f)
+    if pickle_it:
+        pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(searchable_tree, f)
     return searchable_tree
 
 def get_transcripts_from_tree(chrom, start, cds_tree):
@@ -613,15 +615,26 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.subparser_name == 'test':
-        hapcut = "".join([os.path.dirname(__file__), "/test/Ychrom.hap.out"])
-        varscan = "".join([os.path.dirname(__file__), 
+        import unittest
+        class TestFunctions(unittest.TestCase):            
+            def test_VAF_pos(self):
+                varscan = "".join([os.path.dirname(__file__), 
                             "/test/Ychrom.varscan.vcf"])
-        mutect = "".join([os.path.dirname(__file__), 
+                mutect = "".join([os.path.dirname(__file__), 
                             "/test/Ychrom.mutect.vcf"])
+                self.assertEqual(get_VAF_pos(varscan), 5)
+                self.assertEqual(get_VAF_pos(mutect), None)
+
+        hapcut = "".join([os.path.dirname(__file__), "/test/Ychrom.hap.out"])
         gtf = "".join([os.path.dirname(__file__), "/test/Ychrom.gtf"])
+        Ycds = gtf_to_cds(gtf, "NA", pickle_it=False)
+        Ytree = cds_to_tree(Ycds, "NA", pickle_it=False)
+
+        testcase = TestFunctions()
+
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
-        cds_to_tree(cds_dict, args.dicts)
+        tree = cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
     elif args.subparser_name == 'prep':
         phased = collections.defaultdict(set)
