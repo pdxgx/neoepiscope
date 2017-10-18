@@ -18,7 +18,6 @@ import os
 import random
 import re
 import collections
-import statistics
 from operator import itemgetter
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
@@ -489,6 +488,16 @@ def seq_to_peptide(seq, reverse_strand=False):
         peptide.append('X')
     return ''.join(peptide)
 
+def median(numbers):
+    numbers = sorted(numbers)
+    center = len(numbers) / 2
+    if len(numbers) == 1:
+        return numbers[0]
+    elif len(numbers) % 2 == 0:
+        return sum(numbers[center - 1:center + 1]) / 2.0
+    else:
+        return numbers[center]
+
 def kmerize_peptide(peptide, min_size=8, max_size=11):
     """ Obtains subsequences of a peptide.
 
@@ -578,9 +587,10 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                         elif args.VAF_freq_calc == "max":
                             transcript_VAF = VAF_list[-1]
                         elif args.VAF_freq_calc == "mean":
-                            transcript_VAF = statistics.mean(VAF_list)
+                            transcript_VAF = float(sum(VAF_list))/float(
+                                                                len(VAF_list))
                         elif args.VAF_freq_calc == "median":
-                            transcript_VAF = statistics.median(VAF_list)
+                            transcript_VAF = median(VAF_list)
                         else:
                             sys.exit(" ".join([args.VAF_freq_calc,
                              " is not a valid VAF calculation option"])
@@ -755,7 +765,8 @@ if __name__ == '__main__':
                 self.assertEqual(len(get_transcripts_from_tree(
                                                                 "Y", 150860, 
                                                                 self.Ytree)), 
-                                                                10)
+                                                                10
+                                                                )
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
@@ -772,7 +783,7 @@ if __name__ == '__main__':
                                                     self.Ytree, None, [8,11])
                 self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
                 #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
-        testcase = TestFunctions()
+        unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
