@@ -167,8 +167,6 @@ def get_transcripts_from_tree(chrom, start, cds_tree):
         Return value: (set) a set of matching unique transcript IDs.
     """
     transcript_ids = set()
-    if stop <= start:
-        return transcript_ids
     # Interval coordinates are inclusive of start, exclusive of stop
     cds = cds_tree[chrom].search(start)
     for cd in cds:
@@ -618,9 +616,9 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                 tokens = line.strip("\n").split("\t")
                 overlapping_transcripts = get_transcripts_from_tree(
                                                             tokens[3], 
-                                                            locus[4], 
+                                                            tokens[4], 
                                                             interval_dict)
-                # For each overlapping transcript, add mutation entry
+                # For each overlapping transcript, add mutation entryf
                 for transcript in overlapping_transcripts:
                     if transcript not in block_transcripts:
                         block_transcripts[transcript] = [[tokens[3], 
@@ -740,7 +738,7 @@ if __name__ == '__main__':
         class TestGTFprocessing(unittest.TestCase):
             """Tests proper creation of dictionaries store GTF data"""
             def setUp(self):
-                """Sets up gtf file and creates dictionaries"""
+                """Sets up gtf file and creates dictionaries to use for tests"""
                 self.gtf = "".join([os.path.dirname(__file__), 
                                     "/test/Ychrom.gtf"])
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
@@ -752,21 +750,28 @@ if __name__ == '__main__':
                 """Fails if dictionary was built incorrectly"""
                 self.assertEqual(len(self.Ytree.keys()), 1)
                 self.assertEqual(len(self.Ytree["Y"]), 2138)
+            def test_transcript_extraction(self):
+                """Fails if incorrect transcripts are pulled"""
+                self.assertEqual(len(get_transcripts_from_tree(
+                                                                "Y", 150860, 
+                                                                self.Ytree)), 
+                                                                10)
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
-                """Sets up input files and dictionaries"""
+                """Sets up input files and dictionaries to use for tests"""
                 self.gtf = "".join([os.path.dirname(__file__), 
                                     "/test/Ychrom.gtf"])
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
                 self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
-                self.hapcut = "".join([os.path.dirname(__file__), 
+                self.Yhapcut = "".join([os.path.dirname(__file__), 
                                 "/test/Ychrom.hap.out"])           
             def test_hap_processing(self):
                 """Fails if file is processed incorrectly"""
-                norm, tum, VAF = process_haplotypes(self.hapcut, self.Ycds, 
+                Ynorm, Ytum, YVAF = process_haplotypes(self.Yhapcut, self.Ycds, 
                                                     self.Ytree, None, [8,11])
-                ## WRITE TEST FOR THIS
+                self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
+                #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
         testcase = TestFunctions()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -891,7 +896,6 @@ if __name__ == '__main__':
                             tokens = line.split('\t'):
                             # token 1 is peptide; token 4 is score
                             score_dict[tokens[1]] = tokens[4]
-
                     # Produce list of scores for valid peptides
                     # Invalid peptides receive "NA" score
                     for sequence in peptides:
