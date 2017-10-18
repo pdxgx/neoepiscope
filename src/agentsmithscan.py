@@ -725,27 +725,48 @@ if __name__ == '__main__':
     
     if args.subparser_name == 'test':
         import unittest
-        class TestFunctions(unittest.TestCase):
-            varscan = "".join([os.path.dirname(__file__), 
-                                "/test/Ychrom.varscan.vcf"])
-            mutect = "".join([os.path.dirname(__file__), 
+        class TestVAFpos(unittest.TestCase):
+            """Tests fetching of VAF position from VCF file"""
+            def setUp(self):
+                """ Sets up vcf files to use for tests """
+                self.varscan = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.varscan.vcf"])
+                self.mutect = "".join([os.path.dirname(__file__), 
                                 "/test/Ychrom.mutect.vcf"])
-            gtf = "".join([os.path.dirname(__file__), "/test/Ychrom.gtf"])
-            Ycds = gtf_to_cds(gtf, "NA", pickle_it=False)
-            Ytree = cds_to_tree(Ycds, "NA", pickle_it=False)
-            hapcut = "".join([os.path.dirname(__file__), 
+            def test_position(self):
+                """Fails if incorrect positions are returned"""
+                self.assertEqual(get_VAF_pos(self.varscan), 5)
+                self.assertEqual(get_VAF_pos(self.mutect), None)
+        class TestGTFprocessing(unittest.TestCase):
+            """Tests proper creation of dictionaries store GTF data"""
+            def setUp(self):
+                """Sets up gtf file and creates dictionaries"""
+                self.gtf = "".join([os.path.dirname(__file__), 
+                                    "/test/Ychrom.gtf"])
+                self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+                self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
+            def test_transcript_to_CDS(self):
+                """Fails if dictionary was built incorrectly"""
+                self.assertEqual(len(self.Ycds.keys()), 220)
+            def test_CDS_tree(self):
+                """Fails if dictionary was built incorrectly"""
+                self.assertEqual(len(self.Ytree.keys()), 1)
+                self.assertEqual(len(self.Ytree["Y"]), 2138)
+        class TestHAPCUT2Processing(unittest.TestCase):
+            """Tests proper processing of HAPCUT2 files"""
+            def setUp(self):
+                """Sets up input files and dictionaries"""
+                self.gtf = "".join([os.path.dirname(__file__), 
+                                    "/test/Ychrom.gtf"])
+                self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+                self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
+                self.hapcut = "".join([os.path.dirname(__file__), 
                                 "/test/Ychrom.hap.out"])           
-            def test_VAF_pos(self, varscan, mutect):
-                self.assertEqual(get_VAF_pos(varscan), 5)
-                self.assertEqual(get_VAF_pos(mutect), None)
-            def test_GTF_dicts(self, Ycds, Ytree):
-                self.assertEqual(len(Ycds.keys()), 220)
-                self.assertEqual(len(Ytree.keys()), 1)
-                self.assertEqual(len(Ytree["Y"]), 2138)
             def test_hap_processing(self):
-                norm, tum, VAF = process_haplotypes(hapcut, Ycds, Ytree,
-                                                    None, [8,11])
-                ## WRITE TEST
+                """Fails if file is processed incorrectly"""
+                norm, tum, VAF = process_haplotypes(self.hapcut, self.Ycds, 
+                                                    self.Ytree, None, [8,11])
+                ## WRITE TEST FOR THIS
         testcase = TestFunctions()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
