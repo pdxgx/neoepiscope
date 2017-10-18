@@ -733,18 +733,6 @@ if __name__ == '__main__':
     
     if args.subparser_name == 'test':
         import unittest
-        class TestVAFpos(unittest.TestCase):
-            """Tests fetching of VAF position from VCF file"""
-            def setUp(self):
-                """ Sets up vcf files to use for tests """
-                self.varscan = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.varscan.vcf"])
-                self.mutect = "".join([os.path.dirname(__file__), 
-                                "/test/Ychrom.mutect.vcf"])
-            def test_position(self):
-                """Fails if incorrect positions are returned"""
-                self.assertEqual(get_VAF_pos(self.varscan), 5)
-                self.assertEqual(get_VAF_pos(self.mutect), None)
         class TestGTFprocessing(unittest.TestCase):
             """Tests proper creation of dictionaries store GTF data"""
             def setUp(self):
@@ -767,6 +755,28 @@ if __name__ == '__main__':
                                                                 self.Ytree)), 
                                                                 10
                                                                 )
+        class TestVCFmerging(unittest.TestCase):
+            """Tests proper merging of somatic and germline VCFS"""
+            def setUp(self):
+                """Sets up files to use for tests"""
+                pass
+            def test_merge(self):
+                """Fails if VCFs were merged improperly"""
+                pass
+            #### CREATE FILES AND WRITE TESTS FOR THIS ####
+        class TestVAFpos(unittest.TestCase):
+            """Tests fetching of VAF position from VCF file"""
+            def setUp(self):
+                """ Sets up vcf files to use for tests """
+                self.varscan = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.varscan.vcf"])
+                self.mutect = "".join([os.path.dirname(__file__), 
+                                "/test/Ychrom.mutect.vcf"])
+            def test_position(self):
+                """Fails if incorrect positions are returned"""
+                self.assertEqual(get_VAF_pos(self.varscan), 5)
+                self.assertEqual(get_VAF_pos(self.mutect), None)
+        ### WRITE UNIT TESTS FOR TRANSCRIPT CLASS ###
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
@@ -783,11 +793,14 @@ if __name__ == '__main__':
                                                     self.Ytree, None, [8,11])
                 self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
                 #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
+        ### WRITE UNIT TESTS FOR BINDING AFFINITY ###
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
+    elif args.subparser_name == 'merge':
+        combinevcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == 'prep':
         phased = collections.defaultdict(set)
         with open(args.output, 'w') as output_stream:
@@ -829,8 +842,6 @@ if __name__ == '__main__':
                         print >>output_stream, '********' 
                     line = vcf_stream.readline().strip()
                     counter += 1
-    elif args.subparser_name == 'merge':
-        pass
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
         interval_dict = pickle.load(open(args.dicts + "".join([dictdir, 
@@ -1014,4 +1025,7 @@ if __name__ == '__main__':
                                 normal_affinities)
         unique_neoepitopes = set(neoepitope_data)
         ## Prioritize output based on: affinity, VAF, peptide similarity?
+    else:
+        sys.exit("".join([args.subparser_name, 
+                            " is not a valid software mode"]))
 
