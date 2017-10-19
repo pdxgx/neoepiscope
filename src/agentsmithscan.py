@@ -173,6 +173,16 @@ def get_transcripts_from_tree(chrom, start, cds_tree):
             transcript_ids.add(cd.data)
     return transcript_ids
 
+def adjust_tumor_column(in_vcf, out_vcf):
+    """ Swaps the columns in somatic vcf to maintain only the tumor data
+
+        in_vcf: input vcf that needs the tumor sample data flipped
+        out_vcf: output vcf to have the correct columns
+
+        No return value.
+    """
+    pass
+
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
         
@@ -558,13 +568,16 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                             cds_dict[transcript_ID])
                     for mutation in block_transcripts[transcript_ID]:
                         if VAF_pos is not None:
-                            VAF_list.append(
-                                        float(
-                                                mutation[7].split(
-                                                                    ":"
-                                                    )[VAF_pos].strip("%")
+                            if "%" in mutation[7].split(":")[VAF_pos]:
+                                VAF_list.append(
+                                                float(
+                                                    mutation[7].split(
+                                                                        ":"
+                                                        )[VAF_pos].strip(
+                                                                        "%"
+                                                                        )
+                                                    )
                                                 )
-                                            )
                         if len(mutation[5]) == len(mutation[6]):
                             mutation_type = 'V'
                         elif len(mutation[5]) < len(mutation[6]):
@@ -674,6 +687,24 @@ if __name__ == '__main__':
                                         dest='subparser_name')
     call_parser = subparsers.add_parser('call', help='calls neoepitopes', 
                                         dest='subparser_name')
+    test_parser.add_argument('-m', '--method', type=str, required=True,
+            help='method for calculating epitope binding affinities'
+        )
+    index_parser.add_argument('-g', '--gtf', type=str, required=True,
+            help='input path to GTF file'
+        )  
+    index_parser.add_argument('-d', '--dicts', type=str, required=True,
+            help='output path to pickled CDS dictionary'
+        )
+    merge_parser.add_argument('-g', '--germline', type=str, required=True,
+            help='input path to germline VCF'
+        )
+    merge_parser.add_argument('-s', '--somatic', type=str, required=True,
+            help='input path to somatic VCF'
+        )
+    merge_parser.add_argument('-o', '--output', type=str, required=False,
+            help='output path to combined VCF'
+        )
     prep_parser.add_argument('-v', '--vcf', type=str, required=True,
             help='input VCF'
         )
@@ -683,28 +714,13 @@ if __name__ == '__main__':
     prep_parser.add_argument('-o', '--output', type=str, required=True,
             help='path to output file to be input to call mode'
         )
-    index_parser.add_argument('-g', '--gtf', type=str, required=False,
-            help='input path to GTF file'
-        )  
-    index_parser.add_argument('-d', '--dicts', type=str, required=False,
-            help='output path to pickled CDS dictionary'
-        )
-    merge_parser.add_argument('-g', '--germline', type=str, required=False,
-            help='input path to germline VCF'
-        )
-    merge_parser.add_argument('-s', '--somatic', type=str, required=False,
-            help='input path to somatic VCF'
-        )
-    merge_parser.add_argument('-o', '--output', type=str, required=False,
-            help='output path to combined VCF'
-        )
     call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
         )
-    call_parser.add_argument('-v', '--vcf', type=str, required=False,
+    call_parser.add_argument('-v', '--vcf', type=str, required=True,
             help='input path to VCF'
         )
-    call_parser.add_argument('-d', '--dicts', type=str, required=False,
+    call_parser.add_argument('-d', '--dicts', type=str, required=True,
             help='input path to pickled CDS dictionary'
         )
     call_parser.add_argument('-c', '--merged-hapcut2-output', type=str,
@@ -759,10 +775,17 @@ if __name__ == '__main__':
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
                 """Sets up files to use for tests"""
-                pass
+                self.varscan = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.varscan.vcf"])
+                self.germline = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.germline.vcf"])
+                self.outvcf = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.testcombine.vcf"])
+                self.combined = combinevcf(self.varscan, self.germline,
+                                            self.outvcf)
             def test_merge(self):
                 """Fails if VCFs were merged improperly"""
-                pass
+                pass ## 42 som 171 germ 213 combined
             #### CREATE FILES AND WRITE TESTS FOR THIS ####
         class TestVAFpos(unittest.TestCase):
             """Tests fetching of VAF position from VCF file"""
@@ -793,7 +816,16 @@ if __name__ == '__main__':
                                                     self.Ytree, None, [8,11])
                 self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
                 #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
-        ### WRITE UNIT TESTS FOR BINDING AFFINITY ###
+        class TestAffinitymethod(unittest.TestCase):
+            """Tests for valid path to binding affinity software"""
+            def setUp(self):
+                """Sets up path to affinity software"""
+                self.method = args.method
+                self.path = which(self.method)
+            def test_valid_method(self):
+                """Fails if not a valid path"""
+                self.assertIsNotNone(self.path)
+                self.assertIn("netMHC", self.path)
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -1022,7 +1054,8 @@ if __name__ == '__main__':
         neoepitope_data = zip(tumor_peptides, 
                                 tumor_affinities, 
                                 normal_peptides, 
-                                normal_affinities)
+                                normal_affinities, 
+                                VAF_list)
         unique_neoepitopes = set(neoepitope_data)
         ## Prioritize output based on: affinity, VAF, peptide similarity?
     else:
