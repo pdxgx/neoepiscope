@@ -808,11 +808,21 @@ if __name__ == '__main__':
                                                                 )
         class TestSwapping(unittest.TestCase):
             """Tests proper swapping of VCF sample columns"""
-            ### WRITE UNIT TEST FOR THIS ###
             def setUp(self):
-                pass
+                """Sets up files to use for tests"""
+                self.orig = "".join([os.path.dirname(__file__), 
+                                        "/test/Chrom10.varscan.vcf"])
+                self.correct = "".join([os.path.dirname(__file__), 
+                                        "/test/Chrom10.adjusted.vcf"])
+                self.outvcf = "".join([os.path.dirname(__file__), 
+                                        "/test/Chrom10.testswap.vcf"])
+                adjust_tumor_column(self.orig, self.outvcf)
             def test_swap(self):
-                pass
+                """Fails if VCF sample columns were swapped improperly"""
+                self.assertTrue(filecmp.cmp(self.outvcf, self.correct))
+            def tearDown(self):
+                """Removes test file"""
+                os.remove(self.outvcf)
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
@@ -830,7 +840,7 @@ if __name__ == '__main__':
                 """Fails if VCFs were merged improperly"""
                 self.assertTrue(filecmp.cmp(self.outvcf, self.precombined))
             def tearDown(self):
-                """Removes output file from set up"""
+                """Removes test file"""
                 os.remove(self.outvcf)
         class TestVAFpos(unittest.TestCase):
             """Tests fetching of VAF position from VCF file"""
