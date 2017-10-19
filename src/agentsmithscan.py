@@ -783,6 +783,7 @@ if __name__ == '__main__':
     
     if args.subparser_name == 'test':
         import unittest
+        import filecmp
         class TestGTFprocessing(unittest.TestCase):
             """Tests proper creation of dictionaries store GTF data"""
             def setUp(self):
@@ -805,6 +806,13 @@ if __name__ == '__main__':
                                                                 self.Ytree)), 
                                                                 10
                                                                 )
+        class TestSwapping(unittest.TestCase):
+            """Tests proper swapping of VCF sample columns"""
+            ### WRITE UNIT TEST FOR THIS ###
+            def setUp(self):
+                pass
+            def test_swap(self):
+                pass
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
@@ -813,14 +821,17 @@ if __name__ == '__main__':
                                         "/test/Ychrom.varscan.vcf"])
                 self.germline = "".join([os.path.dirname(__file__), 
                                         "/test/Ychrom.germline.vcf"])
+                self.precombined = "".join([os.path.dirname(__file__), 
+                                        "/test/Ychrom.combined.vcf"])
                 self.outvcf = "".join([os.path.dirname(__file__), 
                                         "/test/Ychrom.testcombine.vcf"])
-                self.combined = combinevcf(self.varscan, self.germline,
-                                            self.outvcf)
+                combinevcf(self.varscan, self.germline, self.outvcf)
             def test_merge(self):
                 """Fails if VCFs were merged improperly"""
-                pass ## 42 som 171 germ 213 combined
-            #### CREATE FILES AND WRITE TESTS FOR THIS ####
+                self.assertTrue(filecmp.cmp(self.outvcf, self.precombined))
+            def tearDown(self):
+                """Removes output file from set up"""
+                os.remove(self.outvcf)
         class TestVAFpos(unittest.TestCase):
             """Tests fetching of VAF position from VCF file"""
             def setUp(self):
