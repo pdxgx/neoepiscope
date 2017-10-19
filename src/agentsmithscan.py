@@ -174,14 +174,39 @@ def get_transcripts_from_tree(chrom, start, cds_tree):
     return transcript_ids
 
 def adjust_tumor_column(in_vcf, out_vcf):
-    """ Swaps the columns in somatic vcf to maintain only the tumor data
+    """ Swaps the sample columns in a somatic vcf
+
+        HAPCUT2 only takes data from the first VCF sample column, so if the 
+            tumor sample data is in the second VCF sample column, it must be
+            swapped prior to optional germline merging or running HAPCUT2
 
         in_vcf: input vcf that needs the tumor sample data flipped
         out_vcf: output vcf to have the correct columns
 
         No return value.
     """
-    pass
+    header_lines = []
+    other_lines = []
+    # Process input vcf
+    with open(in_vcf, "r") as f:
+        for line in f:
+            # Preserve header lines with out change
+            if line[0:2] == "##":
+                header_lines.append(line.strip("\n"))
+            # Adjust column header and variant lines
+            else:
+                tokens = line.strip("\n").split("\t")
+                new_line = "\t".join([tokens[0], tokens[1], tokens[2], 
+                                        tokens[3], tokens[4], tokens[5], 
+                                        tokens[6], tokens[7], tokens[8], 
+                                        tokens[10], tokens[9]])
+                other_lines.append(new_line)
+    # Write new vcf
+    with open(out_vcf, "w") as f:
+        for line in header_lines:
+            f.write(line + "\n")
+        for line in other_lines:
+            f.write(line + "\n")
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
@@ -668,22 +693,25 @@ if __name__ == '__main__':
                                     'subcommands; add "-h" or "--help" '
                                     'after a subcommand for its parameters'
                                 ), dest='subparser_name')
+    test_parser = subparsers.add_parser('test',
+                                        help=('performs unit tests'), 
+                                        dest='subparser_name')
     index_parser = subparsers.add_parser('index',
                                         help=('produces pickled dictionaries '
                                         'linking transcripts to intervals and '
                                         ' CDS lines in a GTF'), 
                                         dest='subparser_name')
-    prep_parser = subparsers.add_parser('prep',
-                                        help=('combines HAPCUT2 output with '
-                                              'unphased variants for call mode'),
+    swap_parser = subparsers.add_parser('swap',
+                                        help=('swaps somatic vcf columns'), 
                                         dest='subparser_name')
     merge_parser = subparsers.add_parser('merge',
                                         help=('merges germline and somatic '
                                             'VCFS for combined mutation '
                                             'phasing with HAPCUT2'), 
                                         dest='subparser_name')
-    test_parser = subparsers.add_parser('test',
-                                        help=('performs unit tests'), 
+    prep_parser = subparsers.add_parser('prep',
+                                        help=('combines HAPCUT2 output with '
+                                              'unphased variants for call mode'),
                                         dest='subparser_name')
     call_parser = subparsers.add_parser('call', help='calls neoepitopes', 
                                         dest='subparser_name')
@@ -695,6 +723,12 @@ if __name__ == '__main__':
         )  
     index_parser.add_argument('-d', '--dicts', type=str, required=True,
             help='output path to pickled CDS dictionary'
+        )
+    swap_parser.add_argument('-i', '--input', type=str, required=True,
+            help='input VCF'
+        )
+    swap_parser.add_argument('-o', '--output', type=str, required=True,
+            help='output VCF'
         )
     merge_parser.add_argument('-g', '--germline', type=str, required=True,
             help='input path to germline VCF'
@@ -831,6 +865,8 @@ if __name__ == '__main__':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
         # FM indexing of proteome??
+    elif args.subparser_name == 'swap':
+        adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == 'merge':
         combinevcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == 'prep':
