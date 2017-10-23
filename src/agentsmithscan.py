@@ -578,7 +578,7 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                         size_list):
     normal_peptides = []
     tumor_peptides = []
-    VAFs = []
+    VAF_list = []
     with open(hapcut_output, "r") as f:
         block_transcripts = {}
         for line in f:
