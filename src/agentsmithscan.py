@@ -872,8 +872,13 @@ if __name__ == '__main__':
                                 )
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
                 self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
-                self.Yhapcut = "".join([os.path.dirname(__file__), 
-                                "/test/Ychrom.hap.out"])           
+                self.hapcut = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.hap.out'
+                                )         
             def test_hap_processing(self):
                 """Fails if file is processed incorrectly"""
                 Ynorm, Ytum, YVAF = process_haplotypes(self.Yhapcut, self.Ycds, 
