@@ -800,35 +800,38 @@ if __name__ == '__main__':
                                                                 self.Ytree)), 
                                                                 10
                                                                 )
-        class TestSwapping(unittest.TestCase):
-            """Tests proper swapping of VCF sample columns"""
-            def setUp(self):
-                """Sets up files to use for tests"""
-                self.orig = "".join([os.path.dirname(__file__), 
-                                        "/test/Chrom10.varscan.vcf"])
-                self.correct = "".join([os.path.dirname(__file__), 
-                                        "/test/Chrom10.adjusted.vcf"])
-                self.outvcf = "".join([os.path.dirname(__file__), 
-                                        "/test/Chrom10.testswap.vcf"])
-                adjust_tumor_column(self.orig, self.outvcf)
-            def test_swap(self):
-                """Fails if VCF sample columns were swapped improperly"""
-                self.assertTrue(filecmp.cmp(self.outvcf, self.correct))
-            def tearDown(self):
-                """Removes test file"""
-                os.remove(self.outvcf)
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
                 """Sets up files to use for tests"""
-                self.varscan = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.varscan.vcf"])
-                self.germline = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.germline.vcf"])
-                self.precombined = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.combined.vcf"])
-                self.outvcf = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.testcombine.vcf"])
+                self.varscan = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.varscan.vcf'
+                                )                
+                self.germline = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.germline.vcf'
+                                )   
+                self.precombined = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.combined.vcf'
+                                )  
+                self.outvcf = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.testcombine.vcf'
+                                )  
                 combinevcf(self.varscan, self.germline, self.outvcf)
             def test_merge(self):
                 """Fails if VCFs were merged improperly"""
@@ -840,10 +843,20 @@ if __name__ == '__main__':
             """Tests fetching of VAF position from VCF file"""
             def setUp(self):
                 """ Sets up vcf files to use for tests """
-                self.varscan = "".join([os.path.dirname(__file__), 
-                                        "/test/Ychrom.varscan.vcf"])
-                self.mutect = "".join([os.path.dirname(__file__), 
-                                "/test/Ychrom.mutect.vcf"])
+                self.varscan = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.varscan.vcf'
+                                )
+                self.mutect = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.mutect.vcf'
+                                )
             def test_position(self):
                 """Fails if incorrect positions are returned"""
                 self.assertEqual(get_VAF_pos(self.varscan), 5)
