@@ -709,9 +709,6 @@ if __name__ == '__main__':
                                               'unphased variants for call '
                                               'mode'))
     call_parser = subparsers.add_parser('call', help='calls neoepitopes')
-    test_parser.add_argument('-m', '--method', type=str, required=True,
-            help='method for calculating epitope binding affinities'
-        )
     index_parser.add_argument('-g', '--gtf', type=str, required=True,
             help='input path to GTF file'
         )  
@@ -883,16 +880,6 @@ if __name__ == '__main__':
                                                     self.Ytree, None, [8,11])
                 self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
                 #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
-        class TestAffinitymethod(unittest.TestCase):
-            """Tests for valid path to binding affinity software"""
-            def setUp(self):
-                """Sets up path to affinity software"""
-                self.method = args.method
-                self.path = which(self.method)
-            def test_valid_method(self):
-                """Fails if not a valid path"""
-                self.assertIsNotNone(self.path)
-                self.assertIn("netMHC", self.path)
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
