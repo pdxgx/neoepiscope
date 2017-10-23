@@ -12,7 +12,6 @@ import math
 import string
 import copy
 import pickle
-import defaultdict
 import copy
 import os
 import random
@@ -22,6 +21,7 @@ from operator import itemgetter
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 import tempfile
+import subprocess
 #import Hapcut2interpreter as hap
 
 # X below denotes a stop codon
@@ -320,7 +320,7 @@ class Transcript(object):
             self.intervals.extend(
                     [(int(tokens[3]), True), (int(tokens[4]) + 1, True)]
                 )
-        self.edits = defaultdict(list)
+        self.edits = collections.defaultdict(list)
         self.reference_intervals = copy.copy(self.intervals)
         intervals_size = len(self.reference_intervals)
         assert intervals_size >= 2 and intervals_size % 2 == 0
@@ -349,7 +349,7 @@ class Transcript(object):
             No return value.
         """
         if reference or self.last_edits is None:
-            self.edits = []
+            self.edits = collections.defaultdict(list)
             self.last_intervals = self.reference_intervals
         else:
             self.edits = self.last_edits
@@ -373,7 +373,7 @@ class Transcript(object):
         self.edits[pos].append((seq, mutation_type))
 
     def edit_freq(self, pos, val):
-        """modifies allele freq value at location """
+        """ Modifies allele freq value at location """
         pass
 
     def get_freq(start=0, end=None, genome=True):
@@ -441,21 +441,23 @@ class Transcript(object):
                         break_outer = True
                         break
                     else:
-                        pos = self.intervals[j][0]
+                        pos = self.intervals[j][0] - start
                         for mutation in self.edits[pos]:
                             if mutation[1] == 'V':
-                                edited_cds_stretch.append(
-
+                                edited_cds_stretch.extend(
+                                        [cds_stretch[cds_start:pos], ]
                                     )
                                 edited_cds_stretches[
-                                    mutation[0] - bounds[0]] = mutation[0]
+                                        mutation[0] - bounds[0]
+                                    ] = mutation[0]
                             elif mutation[1] == 'I':
-                                edited_cds_stretches.append(
+                                pass
+                                '''edited_cds_stretches.append(
 
                                     )
                                 edited_cds_stretches[
 
-                                ]
+                                ]'''
                 if break_outer:
                     break
             started, on, on_at_start = False, False, True
@@ -485,10 +487,10 @@ class Transcript(object):
             on, i, start = on_at_start, 0, None
             while True:
                 if not self.intervals[i][1]:
-                    seq.append(self.bowtie_reference_index.get_stretch(
+                    '''seq.append(self.bowtie_reference_index.get_stretch(
                                                     start, self.intervals[i][]
                                                 )
-                        )
+                        )'''
                 if on:
                     reference_index.get_stretch()
                 on = not on
@@ -693,28 +695,20 @@ if __name__ == '__main__':
                                     'subcommands; add "-h" or "--help" '
                                     'after a subcommand for its parameters'
                                 ), dest='subparser_name')
-    test_parser = subparsers.add_parser('test',
-                                        help=('performs unit tests'), 
-                                        dest='subparser_name')
+    test_parser = subparsers.add_parser('test', help='performs unit tests')
     index_parser = subparsers.add_parser('index',
                                         help=('produces pickled dictionaries '
                                         'linking transcripts to intervals and '
-                                        ' CDS lines in a GTF'), 
-                                        dest='subparser_name')
-    swap_parser = subparsers.add_parser('swap',
-                                        help=('swaps somatic vcf columns'), 
-                                        dest='subparser_name')
+                                        ' CDS lines in a GTF'))
     merge_parser = subparsers.add_parser('merge',
-                                        help=('merges germline and somatic '
-                                            'VCFS for combined mutation '
-                                            'phasing with HAPCUT2'), 
-                                        dest='subparser_name')
+                                         help=('merges germline and somatic '
+                                               'VCFS for combined mutation '
+                                               'phasing with HAPCUT2'))
     prep_parser = subparsers.add_parser('prep',
                                         help=('combines HAPCUT2 output with '
-                                              'unphased variants for call mode'),
-                                        dest='subparser_name')
-    call_parser = subparsers.add_parser('call', help='calls neoepitopes', 
-                                        dest='subparser_name')
+                                              'unphased variants for call '
+                                              'mode'))
+    call_parser = subparsers.add_parser('call', help='calls neoepitopes')
     test_parser.add_argument('-m', '--method', type=str, required=True,
             help='method for calculating epitope binding affinities'
         )
@@ -723,12 +717,6 @@ if __name__ == '__main__':
         )  
     index_parser.add_argument('-d', '--dicts', type=str, required=True,
             help='output path to pickled CDS dictionary'
-        )
-    swap_parser.add_argument('-i', '--input', type=str, required=True,
-            help='input VCF'
-        )
-    swap_parser.add_argument('-o', '--output', type=str, required=True,
-            help='output VCF'
         )
     merge_parser.add_argument('-g', '--germline', type=str, required=True,
             help='input path to germline VCF'
@@ -776,20 +764,26 @@ if __name__ == '__main__':
             help='allele; see documentation online for more information'
         )
     call_parser.add_argument('-f', '--VAF-freq-calc', type=str, required=False,
-            default='median'
+            default='median',
             help='method for calculating VAF: choice of mean, median, min, max'
         )
     args = parser.parse_args()
     
     if args.subparser_name == 'test':
+        del sys.argv[1:] # Don't choke on extra command-line parameters
         import unittest
         import filecmp
         class TestGTFprocessing(unittest.TestCase):
             """Tests proper creation of dictionaries store GTF data"""
             def setUp(self):
-                """Sets up gtf file and creates dictionaries to use for tests"""
-                self.gtf = "".join([os.path.dirname(__file__), 
-                                    "/test/Ychrom.gtf"])
+                """Sets up gtf file and creates dictionaries for tests"""
+                self.gtf = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.gtf'
+                                )
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
                 self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
             def test_transcript_to_CDS(self):
@@ -859,8 +853,13 @@ if __name__ == '__main__':
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
                 """Sets up input files and dictionaries to use for tests"""
-                self.gtf = "".join([os.path.dirname(__file__), 
-                                    "/test/Ychrom.gtf"])
+                self.gtf = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Ychrom.gtf'
+                                )
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
                 self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
                 self.Yhapcut = "".join([os.path.dirname(__file__), 
@@ -1004,7 +1003,7 @@ if __name__ == '__main__':
                         f.readline()
                         f.readline()
                         for line in f:
-                            tokens = line.split('\t'):
+                            tokens = line.split('\t')
                             # token 1 is peptide; token 4 is score
                             score_dict[tokens[1]] = tokens[4]
                     # Produce list of scores for valid peptides
