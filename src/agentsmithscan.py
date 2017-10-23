@@ -872,7 +872,7 @@ if __name__ == '__main__':
                                 )
                 self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
                 self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
-                self.hapcut = os.path.join(
+                self.Yhapcut = os.path.join(
                                     os.path.dirname(
                                             os.path.dirname(
                                                     os.path.realpath(__file__)
