@@ -315,15 +315,16 @@ class Transcript(object):
         """
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
+        self.deletion_intervals = []
         for line in CDS:
             tokens = line.strip().split('\t')
+            # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
-                    [(int(tokens[3]), True), (int(tokens[4]) + 1, True)]
+                    [int(tokens[3]) - 2, int(tokens[4]) - 1]
                 )
         self.edits = collections.defaultdict(list)
-        self.reference_intervals = copy.copy(self.intervals)
-        intervals_size = len(self.reference_intervals)
         assert intervals_size >= 2 and intervals_size % 2 == 0
+        assert len(CDS) > 1
         self.chrom = CDS[0][1]
         '''Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower).'''
@@ -337,7 +338,9 @@ class Transcript(object):
         #            )
         # For retrieving save point
         self.last_edits = None
-        self.last_intervals = None
+        self.last_deletion_intervals = None
+        # Need to sort to bisect_left properly when editing!
+        self.intervals.sort()
 
     def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
@@ -348,12 +351,18 @@ class Transcript(object):
 
             No return value.
         """
-        if reference or self.last_edits is None:
+        if reference:
             self.edits = collections.defaultdict(list)
-            self.last_intervals = self.reference_intervals
+            self.deletion_intervals = []
         else:
-            self.edits = self.last_edits
-            self.intervals = self.last_intervals
+            if self.last_edits is None:
+                self.edits = collections.defaultdict(list)
+            else:
+                self.edits = self.last_edits
+            if self.last_deletion_intervals is None:
+                self.deletion_intervals = []
+            else:
+                self.deletion_intervals = self.last_deletion_intevals
 
     def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
@@ -362,24 +371,26 @@ class Transcript(object):
                 that matters is this sequence has the same length as the 
                 sequence to delete
             pos: 0-based coordinate. For insertions, this is the coordinate 
-                directly following the inserted sequence. For deletions, this 
+                directly before the inserted sequence. For deletions, this 
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
 
             No return value.
         """
-        self.intervals.append((pos, False))
-        self.edits[pos].append((seq, mutation_type))
-
-    def edit_freq(self, pos, val):
-        """ Modifies allele freq value at location """
-        pass
-
-    def get_freq(start=0, end=None, genome=True):
-        """ Retrieves allele frequency list between start and end coordinates
-        """
-        pass
+        # Add edit if and only if it's in one of the CDSes
+        deletion_index = bisect.bisect_left(pos, self.intervals) % 2
+        if not (deletion_index % 2):
+            # Add edit if and only if it lies within CDS boundaries
+            if mutation_type == 'D':
+                '''Add deletion to deletion intervals, to be mixed with
+                intervals when retrieving sequence.'''
+                end = self.intervals[deletion_index + 1]
+                self.deletion_intervals.extend(
+                        [pos - 1, min(len(seq) + pos - 1, end)]
+                    )
+            else:
+                self.edits[pos].append((seq, mutation_type))
 
     def save():
         """ Creates save point for edits.
@@ -387,119 +398,63 @@ class Transcript(object):
             No return value.
         """
         self.last_edits = copy.copy(self.edits)
-        self.last_intervals = copy.copy(self.intervals)
+        self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
     def seq(start=None, end=None, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
 
             start: start position (0-indexed, inclusive); None means start of
                 transcript
-            end: end position (0-indexed, exclusive); None means end of
+            end: end position (0-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
 
             Return value: transcript (sub)sequence
         """
         assert end is None or end >= start
-        self.intervals.sort()
-        # Segregate edits by stretch
-        on, edits, edit_group = False, [], []
-        for i in xrange(len(self.intervals)):
-            if self.intervals[i][1]:
-                if on:
-                    edits.append(edit_group)
-                    edit_group = []
-                on = not on
-            else:
-                edit_group.append(i)
-        # Get all CDS stretches
-        cds_stretches = [bowtie_reference_index.get_stretch(
-                                self.chrom,
-                                self.reference_intervals[i][0],
-                                self.reference_intervals[i+1][0]
-                                    - self.reference_intervals[i][0]
-                            ) for i in xrange(
-                                        len(self.reference_intervals) - 1)]
+        if start is None:
+            start = self.intervals[0] + 1
+        if end is None:
+            end = self.intervals[-1]
+        if end == start: return ''
         if genome:
-            if start is None:
-                start = self.reference_intervals[0][0]
-            if end is None:
-                end = self.reference_intervals[-1][0]
-            # Mutate all CDSes between start and end
-            edited_cds_stretches, break_outer = [], False
-            for i, edit_group in enumerate(edits):
-                bounds = (self.reference_intervals[i*2][0],
-                            self.reference_intervals[i*2+1][0])
-                cds_stretch = cds_stretches[i]
-                edited_cds_stretch = []
-                cds_start = 0
-                for j in edit_group:
-                    if self.intervals[j][0] < start:
-                        continue
-                    if self.intervals[j][0] >= end:
-                        # no need to continue
-                        break_outer = True
-                        break
-                    else:
-                        pos = self.intervals[j][0] - start
-                        for mutation in self.edits[pos]:
-                            if mutation[1] == 'V':
-                                edited_cds_stretch.extend(
-                                        [cds_stretch[cds_start:pos], ]
-                                    )
-                                edited_cds_stretches[
-                                        mutation[0] - bounds[0]
-                                    ] = mutation[0]
-                            elif mutation[1] == 'I':
-                                pass
-                                '''edited_cds_stretches.append(
-
-                                    )
-                                edited_cds_stretches[
-
-                                ]'''
-                if break_outer:
-                    break
-            started, on, on_at_start = False, False, True
-            start_index, end_index = 0, len(intervals) - 1
-            for i, point in enumerate(self.intervals):
-                if point[1]:
-                    on = not on
-                if point[0] < start:
-                    continue
-                elif started:
-                    if point[0] >= end:
-                        end_index = i
-                else:
-                    started = True
-                    on_at_start = on
-                    start_index = i
-            # Accumulate transcript sequence
-            if start < self.intervals[0][0] and self.intervals[0][1]:
-                self.intervals = [(start, True)] + self.intervals[1:]
-            elif self.intervals[start_index] != (start, True):
-                self.intervals = [(start, True)] + self.intervals[start_index:]
-            if end > self.intervals[-1][0] and self.intervals[-1][1]:
-                self.intervals = self.intervals[:-1] + [(end, True)]
-            elif self.intervals[end_index] != (end, True):
-                self.intervals = self.intervals[:end_index] + [(end, True)]
-            seq = []
-            on, i, start = on_at_start, 0, None
-            while True:
-                if not self.intervals[i][1]:
-                    '''seq.append(self.bowtie_reference_index.get_stretch(
-                                                    start, self.intervals[i][]
-                                                )
-                        )'''
-                if on:
-                    reference_index.get_stretch()
-                on = not on
-            reference_index.get_stretch()
-            reference_index.get_stretch(start, self.intervals[i])
-
+            # Capture only sequence between start and end
+            intervals = sorted(self.intervals + self.deletion_intervals)
+            start_index = bisect.bisect_left(start, intervals)
+            if start_index % 2:
+                # start should be beginning of a CDS
+                start_index += 2
+                try:
+                    start = intervals[start_index + 1] + 1
+                except IndexError:
+                    # Start is outside bounds of transcript
+                    return ''
+            else:
+                start_index += 1
+            end_index = bisect.bisect_left(end, intervals)
+            if end_index % 2:
+                # end should be end of CDS
+                end = intervals[end_index]
+            intervals = [start - 1] + intervals[start_index:end_index] + [end]
+            assert len(intervals) % 2 == 0
+            seqs = []
+            for i in xrange(0, len(intervals), 2):
+                seqs.append(
+                        bowtie_reference_index.get_stretch(
+                                self.chrom, intervals[i] + 1,
+                                intervals[i + 1] -
+                                intervals[i]
+                            )
+                    )
+            # Now build sequence in order of increasing edit position
+            seq_to_return = []
+            last_pos = start
+            for pos in sorted(self.edits.keys()):
+                
+                last_pos
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
-            'yet supported.'
+            'yet fully supported.'
         )
 
 def seq_to_peptide(seq, reverse_strand=False):
