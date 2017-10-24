@@ -10,3 +10,6 @@ Austin is finally here.
 For calling the function:
 python PATH/TO/FUNCTION -v PATH/TO/VCF/FILE -x PATH/TO/BOWTIE/INDEX -g PATH/TO/GTF/FILE -t PATH/TO/WRITABLE/TEXT/FILE
 
+
+Command to swap columns in the VCF if necessary:
+awk 'substr($1, 1, 2) == "##" {print $0; next} {for(i=1; i<=NF; i+=1) {if (i == NF-1) {printf $NF "\t" } else if (i == NF) {printf $(NF-1) "\n"} else {printf $i "\t"}}}'
