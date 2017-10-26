@@ -56,7 +56,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
             Data: [chromosome, start, stop, 1(CDS)/0(Stop codon), 
-                    reading frame, +/1 strand]
+                    +/- strand, reading frame]
         Writes cds_dict as a pickled dictionary
 
         gtf_file: input gtf file to process
@@ -316,11 +316,20 @@ class Transcript(object):
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
         self.deletion_intervals = []
+        self.strand_calls = []
         for entry in CDS:
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
                     [entry[1] - 2, entry[2] - 1]
                 )
+            if len(self.strand_calls) == 0:
+                self.strand_calls.append(entry[4])
+            elif entry[4] not in strand_calls:
+                sys.exit("Conflicting strands (+/-) within a transcript")
+        if self.strand_calls[0] == "+":
+            self.rev_strand = False
+        elif self.strand_calls[0] == "-":
+            self.rev_strand = True
         self.edits = collections.defaultdict(list)
         assert intervals_size >= 2 and intervals_size % 2 == 0
         assert len(CDS) > 1
@@ -614,9 +623,9 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                     genome=True)
                         ## HOw TO TELL IF REVERSE STRAND??
                         peptides = neoepitopes(nucleotide_sequence,
-                                                reverse_strand=False, 
-                                                min_size=size_list[0], 
-                                                max_size=size_list[-1])
+                                        reverse_strand=transcript.rev_strand, 
+                                        min_size=size_list[0], 
+                                        max_size=size_list[-1])
                         for pep in peptides:
                             tumor_peptides.append(pep)
                         for i in range(0, len(peptide_lists[0])):
@@ -648,7 +657,7 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                                             tokens[1], 
                                                             tokens[2], 
                                                             tokens[7]])
-    return normal_peptides, tumor_peptides, VAFs
+    return tumor_peptides, VAFs
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
