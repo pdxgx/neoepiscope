@@ -475,6 +475,7 @@ class Transcript(object):
                     pos_group = [pos]
                 else:
                     pos_group.append(pos)
+            return ''.join(final_seq)
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
             'yet fully supported.'
