@@ -447,11 +447,34 @@ class Transcript(object):
                             )
                     )
             # Now build sequence in order of increasing edit position
-            seq_to_return = []
-            last_pos = start
+            i = 1
+            pos_group, final_seq = [], []
             for pos in sorted(self.edits.keys()):
-                
-                last_pos
+                if pos > intervals[i]:
+                    last_index, last_pos = 0, intervals[i-1]
+                    for pos_to_add in pos_group:
+                        fill = pos_to_add - last_pos
+                        final_seq.append(seqs[(i+1)/2][
+                                            last_index:last_index + fill - 1
+                                        ])
+                        snv = seqs[i-1][last_index + fill]
+                        insertion = ''
+                        for edit in self.edits[pos]:
+                            if edit[1] == 'V':
+                                snv = edit[0]
+                            else:
+                                assert edit[1] == 'I':
+                                insertion = edit[0]
+                        final_seq.extend([snv, insertion])
+                        last_index += fill
+                        last_pos += fill
+                    final_seq.append(seqs[(i+1)/2][last_index:])
+                    i += 2
+                    while pos > intervals[i]:
+                        final_seq.append(seqs[(i+1)/2])
+                    pos_group = [pos]
+                else:
+                    pos_group.append(pos)
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
             'yet fully supported.'
