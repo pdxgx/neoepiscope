@@ -442,21 +442,22 @@ class Transcript(object):
         if genome:
             # Capture only sequence between start and end
             intervals = sorted(self.intervals + self.deletion_intervals)
+            assert len(intervals) % 2 == 0
             start_index = bisect.bisect_left(intervals, start)
             if start_index % 2:
+                start_index += 1
+            else:
                 # start should be beginning of a CDS
                 start_index += 2
                 try:
-                    start = intervals[start_index + 1] + 1
+                    start = intervals[start_index - 1] + 1
                 except IndexError:
                     # Start is outside bounds of transcript
                     return ''
-            else:
-                start_index += 1
             end_index = bisect.bisect_left(intervals, end)
-            if end_index % 2:
+            if not (end_index % 2):
                 # end should be end of CDS
-                end = intervals[end_index]
+                end = intervals[end_index - 1]
             intervals = [start - 1] + intervals[start_index:end_index] + [end]
             assert len(intervals) % 2 == 0
             seqs = []
@@ -475,11 +476,12 @@ class Transcript(object):
                 if pos > intervals[i]:
                     last_index, last_pos = 0, intervals[i-1]
                     for pos_to_add in pos_group:
-                        fill = pos_to_add - last_pos
-                        final_seq.append(seqs[(i+1)/2][
+                        fill = pos_to_add - last_pos + 1
+                        final_seq.append(seqs[(i-1)/2][
                                             last_index:last_index + fill - 1
                                         ])
-                        snv = seqs[i-1][last_index + fill]
+                        # If no edits, snv is reference and no insertion
+                        snv = seqs[(i-1)/2][last_index + fill]
                         insertion = ''
                         for edit in self.edits[pos]:
                             if edit[1] == 'V':
@@ -490,10 +492,11 @@ class Transcript(object):
                         final_seq.extend([snv, insertion])
                         last_index += fill
                         last_pos += fill
-                    final_seq.append(seqs[(i+1)/2][last_index:])
+                    final_seq.append(seqs[(i-1)/2][last_index:])
                     i += 2
                     while pos > intervals[i]:
-                        final_seq.append(seqs[(i+1)/2])
+                        final_seq.append(seqs[(i-1)/2])
+                        i += 2
                     pos_group = [pos]
                 else:
                     pos_group.append(pos)
