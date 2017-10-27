@@ -311,28 +311,31 @@ class Transcript(object):
 
             bowtie_reference_index: BowtieIndexReference object for retrieving
                 reference genome sequence
-            CDS: list of all CDS lines for exactly one transcript from GTF
+            CDS: list of all CDS lines for exactly one transcript from GTF;
+                a line can be a list pre-split by '\t' or not yet split
         """
+        assert len(CDS) > 0
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
-        self.deletion_intervals = []
         last_chrom, last_strand = None, None
-        for entry in CDS:
+        for line in CDS:
+            if type(line) is str: line = line.strip.split('\t')
             try:
-                assert last_chrom == entry[0]
+                assert last_chrom == line[0]
             except AssertionError:
                 if last_chrom is None: pass
             try:
-                assert last_strand == entry[4]
+                assert last_strand == line[6]
             except AssertionError:
                 if last_strand is None: pass
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
-                    [entry[1] - 2, entry[2] - 1]
+                    [line[3] - 2, line[4] - 1]
                 )
-            last_chrom, last_strand = entry[0], entry[4]
+            last_chrom, last_strand = line[0], line[4]
+        # Store edits to coding sequence only
         self.edits = collections.defaultdict(list)
-        assert len(CDS) > 1
+        self.deletion_intervals = []
         self.chrom = last_chrom
         self.rev_strand = (True if last_strand == '-' else False)
         '''Assume intervals are nonoverlapping! Uncomment following lines to
@@ -346,8 +349,8 @@ class Transcript(object):
         #                        )
         #            )
         # For retrieving save point
-        self.last_edits = None
-        self.last_deletion_intervals = None
+        self.last_edits = collections.defaultdict(list)
+        self.last_deletion_intervals = []
         # Need to sort to bisect_left properly when editing!
         self.intervals.sort()
 
@@ -364,14 +367,8 @@ class Transcript(object):
             self.edits = collections.defaultdict(list)
             self.deletion_intervals = []
         else:
-            if self.last_edits is None:
-                self.edits = collections.defaultdict(list)
-            else:
-                self.edits = self.last_edits
-            if self.last_deletion_intervals is None:
-                self.deletion_intervals = []
-            else:
-                self.deletion_intervals = self.last_deletion_intevals
+            self.edits = self.last_edits
+            self.deletion_intervals = self.last_deletion_intevals
 
     def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
@@ -385,21 +382,35 @@ class Transcript(object):
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
 
-            No return value.
+            Return value: True iff edit is within CDS boundaries; else False
         """
         # Add edit if and only if it's in one of the CDSes
-        deletion_index = bisect.bisect_left(pos, self.intervals) % 2
-        if not (deletion_index % 2):
-            # Add edit if and only if it lies within CDS boundaries
-            if mutation_type == 'D':
-                '''Add deletion to deletion intervals, to be mixed with
-                intervals when retrieving sequence.'''
-                end = self.intervals[deletion_index + 1]
-                self.deletion_intervals.extend(
-                        [pos - 1, min(len(seq) + pos - 1, end)]
-                    )
-            else:
+        start_index = bisect.bisect_left(pos, self.intervals)
+        if mutation_type != 'D':
+            if start_index % 2:
+                # Add edit if and only if it lies within CDS boundaries
                 self.edits[pos].append((seq, mutation_type))
+                return True
+        else:
+            seq_size = len(seq)
+            end_index = bisect.bisect_left(pos + seq_size - 1,
+                                            self.intervals)
+            assert end_index >= start_index
+            if start_index % 2 or end_index % 2:
+                '''Add deletion if and only if it lies within CDS boundaries
+                Deletion is added deletion intervals, to be mixed with
+                intervals when retrieving sequence.'''
+                while start_index < end_index:
+                    end = self.intervals[start_index + 1]
+                    self.deletion_intervals.extend(
+                            [pos - 1, min(seq_size + pos - 1, end)]
+                        )
+                    start_index += 2
+                    pos = self.intervals[start_index] + 1
+                    seq_size -= (self.deletion_intervals[-1]
+                                    - self.deletion_intervals[-2])
+                return True
+        return False
 
     def save(self):
         """ Creates save point for edits.
@@ -409,7 +420,7 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
-    def seq(self, start=None, end=None, genome=False):
+    def seq(self, start=None, end=None, genome=True):
         """ Retrieves transcript sequence between start and end coordinates.
 
             start: start position (0-indexed, inclusive); None means start of
@@ -420,12 +431,11 @@ class Transcript(object):
 
             Return value: transcript (sub)sequence
         """
-        assert end is None or end >= start
         if start is None:
             start = self.intervals[0] + 1
         if end is None:
             end = self.intervals[-1]
-        if end == start: return ''
+        if end < start: return ''
         if genome:
             # Capture only sequence between start and end
             intervals = sorted(self.intervals + self.deletion_intervals)
