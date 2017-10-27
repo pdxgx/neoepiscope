@@ -316,16 +316,21 @@ class Transcript(object):
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
         self.deletion_intervals = []
+        last_chrom = None
         for line in CDS:
             tokens = line.strip().split('\t')
+            try:
+                assert last_chrom == tokens[1]
+            except AssertionError:
+                if last_chrom is None: pass
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
                     [int(tokens[3]) - 2, int(tokens[4]) - 1]
                 )
+            last_chrom = tokens[1]
         self.edits = collections.defaultdict(list)
-        assert intervals_size >= 2 and intervals_size % 2 == 0
         assert len(CDS) > 1
-        self.chrom = CDS[0][1]
+        self.chrom = last_chrom
         '''Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower).'''
         # for i in xrange(1, len(self.intervals)):
@@ -392,7 +397,7 @@ class Transcript(object):
             else:
                 self.edits[pos].append((seq, mutation_type))
 
-    def save():
+    def save(self):
         """ Creates save point for edits.
 
             No return value.
@@ -400,7 +405,7 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
-    def seq(start=None, end=None, genome=False):
+    def seq(self, start=None, end=None, genome=False):
         """ Retrieves transcript sequence between start and end coordinates.
 
             start: start position (0-indexed, inclusive); None means start of
@@ -420,7 +425,7 @@ class Transcript(object):
         if genome:
             # Capture only sequence between start and end
             intervals = sorted(self.intervals + self.deletion_intervals)
-            start_index = bisect.bisect_left(start, intervals)
+            start_index = bisect.bisect_left(intervals, start)
             if start_index % 2:
                 # start should be beginning of a CDS
                 start_index += 2
@@ -431,7 +436,7 @@ class Transcript(object):
                     return ''
             else:
                 start_index += 1
-            end_index = bisect.bisect_left(end, intervals)
+            end_index = bisect.bisect_left(intervals, end)
             if end_index % 2:
                 # end should be end of CDS
                 end = intervals[end_index]
@@ -440,7 +445,7 @@ class Transcript(object):
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
-                        bowtie_reference_index.get_stretch(
+                        self.bowtie_reference_index.get_stretch(
                                 self.chrom, intervals[i] + 1,
                                 intervals[i + 1] -
                                 intervals[i]
@@ -463,7 +468,7 @@ class Transcript(object):
                             if edit[1] == 'V':
                                 snv = edit[0]
                             else:
-                                assert edit[1] == 'I':
+                                assert edit[1] == 'I'
                                 insertion = edit[0]
                         final_seq.extend([snv, insertion])
                         last_index += fill
