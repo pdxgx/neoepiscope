@@ -56,7 +56,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
             Data: [chromosome, start, stop, 1(CDS)/0(Stop codon), 
-                    reading frame, +/1 strand]
+                    +/- strand, reading frame]
         Writes cds_dict as a pickled dictionary
 
         gtf_file: input gtf file to process
@@ -316,21 +316,26 @@ class Transcript(object):
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
         self.deletion_intervals = []
-        last_chrom = None
-        for line in CDS:
-            tokens = line.strip().split('\t')
+        last_chrom, last_strand = None, None
+        for entry in CDS:
+            tokens = entry.strip().split('\t')
             try:
                 assert last_chrom == tokens[1]
             except AssertionError:
                 if last_chrom is None: pass
+            try:
+                assert last_strand == tokens[4]
+            except AssertionError:
+                if last_strand is None: pass
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
-                    [int(tokens[3]) - 2, int(tokens[4]) - 1]
+                    [int(tokens[1]) - 2, int(tokens[2]) - 1]
                 )
-            last_chrom = tokens[1]
+            last_chrom, last_strand = tokens[1], tokens[4]
         self.edits = collections.defaultdict(list)
         assert len(CDS) > 1
         self.chrom = last_chrom
+        self.rev_strand = (True if last_strand == '-' else False)
         '''Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower).'''
         # for i in xrange(1, len(self.intervals)):
@@ -535,34 +540,27 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
                     for size in xrange(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
-def neoepitopes(normal_seq, mutated_seq,
-                        reverse_strand=False, min_size=8, max_size=11):
+def neoepitopes(mutated_seq, reverse_strand=False, min_size=8, max_size=11):
     """ Finds neoepitopes from normal and mutated seqs.
 
-        normal_seq: normal nucleotide sequence
         mutated_seq: mutated nucelotide sequence
         reverse_strand: True iff strand is -
         min_size: minimum peptide kmer size to write
         max_size: maximum petide kmer size to write
 
-        Return value: List of tuples (normal_kmer, mutated_kmer)
+        Return value: List of mutated_kmers
     """
-    return zip(kmerize_peptide(
-        seq_to_peptide(
-            normal_seq, reverse_strand=reverse_strand),
-        min_size=min_size,
-        max_size=max_size
-    ), kmerize_peptide(
-        seq_to_peptide(
-            mutated_seq, reverse_strand=reverse_strand),
-        min_size=min_size,
-        max_size=max_size))
+    return kmerize_peptide(seq_to_peptide(mutated_seq, 
+                                            reverse_strand=reverse_strand
+                                            ),
+                            min_size=min_size,
+                            max_size=max_size
+                            )
 
 def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos, 
                         size_list):
-    normal_peptides = []
     tumor_peptides = []
-    VAF_list = []
+    VAFs = []
     with open(hapcut_output, "r") as f:
         block_transcripts = {}
         for line in f:
@@ -626,20 +624,11 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                     end=mutation[1] + 3*size_list[-1] -1, 
                                     genome=True)
                         ## HOw TO TELL IF REVERSE STRAND??
-                        aminoacid_sequence = seq_to_peptide(
-                                                    nucleotide_sequence, 
-                                                    reverse_strand=False)
-                        ## HOW TO GET NORMAL SEQUENCE
-                        normal_aa = "SEQUENCE"
-                        peptides = neoepitopes(normal_aa, 
-                                                aminoacid_sequence,
-                                                reverse_strand=False, 
-                                                min_size=size_list[0], 
-                                                max_size=size_list[-1])
-                        peptide_lists = map(list, zip(*peptides))
-                        for pep in peptide_lists[0]:
-                            normal_peptides.append(pep)
-                        for pep in peptide_lists[1]:
+                        peptides = neoepitopes(nucleotide_sequence,
+                                        reverse_strand=transcript.rev_strand, 
+                                        min_size=size_list[0], 
+                                        max_size=size_list[-1])
+                        for pep in peptides:
                             tumor_peptides.append(pep)
                         for i in range(0, len(peptide_lists[0])):
                             VAFs.append(transcript_VAF)
@@ -670,7 +659,7 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                                             tokens[1], 
                                                             tokens[2], 
                                                             tokens[7]])
-    return normal_peptides, tumor_peptides, VAF_list
+    return tumor_peptides, VAFs
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
