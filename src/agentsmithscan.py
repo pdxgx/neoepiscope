@@ -318,20 +318,19 @@ class Transcript(object):
         self.deletion_intervals = []
         last_chrom, last_strand = None, None
         for entry in CDS:
-            tokens = entry.strip().split('\t')
             try:
-                assert last_chrom == tokens[1]
+                assert last_chrom == entry[0]
             except AssertionError:
                 if last_chrom is None: pass
             try:
-                assert last_strand == tokens[4]
+                assert last_strand == entry[4]
             except AssertionError:
                 if last_strand is None: pass
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
-                    [int(tokens[1]) - 2, int(tokens[2]) - 1]
+                    [entry[1] - 2, entry[2] - 1]
                 )
-            last_chrom, last_strand = tokens[1], tokens[4]
+            last_chrom, last_strand = entry[0], entry[4]
         self.edits = collections.defaultdict(list)
         assert len(CDS) > 1
         self.chrom = last_chrom
