@@ -22,7 +22,10 @@ from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 import tempfile
 import subprocess
+import string
 #import Hapcut2interpreter as hap
+
+_revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
 
 # X below denotes a stop codon
 _codon_table = {
@@ -400,7 +403,7 @@ class Transcript(object):
                 '''Add deletion if and only if it lies within CDS boundaries
                 Deletion is added deletion intervals, to be mixed with
                 intervals when retrieving sequence.'''
-                while start_index < end_index:
+                while start_index <= end_index:
                     end = self.intervals[start_index + 1]
                     self.deletion_intervals.extend(
                             [pos - 1, min(seq_size + pos - 1, end)]
@@ -494,6 +497,10 @@ class Transcript(object):
                     pos_group = [pos]
                 else:
                     pos_group.append(pos)
+            if self.rev_strand:
+                return ''.join(final_seq[::-1].translate(
+                                    _revcomp_translation_table
+                                ))
             return ''.join(final_seq)
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
