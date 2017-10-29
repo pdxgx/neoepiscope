@@ -371,7 +371,7 @@ class Transcript(object):
             self.deletion_intervals = []
         else:
             self.edits = self.last_edits
-            self.deletion_intervals = self.last_deletion_intevals
+            self.deletion_intervals = self.last_deletion_intervals
 
     def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
@@ -469,7 +469,7 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            for pos in (sorted(self.edits.keys()) + [self.intervals[-1]]):
+            for pos in (sorted(self.edits.keys()) + [self.intervals[-1] + 1]):
                 if pos > intervals[i]:
                     last_index, last_pos = 0, intervals[i-1] + 1
                     for pos_to_add in pos_group:
@@ -491,31 +491,17 @@ class Transcript(object):
                         last_pos += fill + 1
                     final_seq.append(seqs[(i-1)/2][last_index:])
                     i += 2
-                    while pos > intervals[i]:
-                        final_seq.append(seqs[(i-1)/2])
-                        i += 2
+                    try:
+                        while pos > intervals[i]:
+                            final_seq.append(seqs[(i-1)/2])
+                            i += 2
+                    except IndexError:
+                        if i > len(intervals) - 1:
+                            # Done enumerating sequence
+                            break
                     pos_group = [pos]
                 else:
                     pos_group.append(pos)
-            last_index, last_pos = 0, intervals[i-1] + 1
-            for pos_to_add in pos_group:
-                fill = pos_to_add - last_pos
-                final_seq.append(seqs[(i-1)/2][
-                                    last_index:last_index + fill
-                                ])
-                # If no edits, snv is reference and no insertion
-                snv = seqs[(i-1)/2][last_index + fill]
-                insertion = ''
-                for edit in self.edits[pos_to_add]:
-                    if edit[1] == 'V':
-                        snv = edit[0]
-                    else:
-                        assert edit[1] == 'I'
-                        insertion = edit[0]
-                final_seq.extend([snv, insertion])
-                last_index += fill + 1
-                last_pos += fill + 1
-            final_seq.append(seqs[(i-1)/2][last_index:])
             if self.rev_strand:
                 return ''.join(final_seq[::-1].translate(
                                     _revcomp_translation_table
