@@ -370,8 +370,8 @@ class Transcript(object):
             self.edits = collections.defaultdict(list)
             self.deletion_intervals = []
         else:
-            self.edits = self.last_edits
-            self.deletion_intervals = self.last_deletion_intervals
+            self.edits = copy.copy(self.last_edits)
+            self.deletion_intervals = copy.copy(self.last_deletion_intervals)
 
     def edit(self, seq, pos, mutation_type='V'):
         """ Adds an edit to the transcript. 
