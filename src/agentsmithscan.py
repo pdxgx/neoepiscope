@@ -322,7 +322,7 @@ class Transcript(object):
         self.intervals = []
         last_chrom, last_strand = None, None
         for line in CDS:
-            if type(line) is str: line = line.strip.split('\t')
+            if type(line) is str: line = line.strip().split('\t')
             try:
                 assert last_chrom == line[0]
             except AssertionError:
@@ -333,9 +333,9 @@ class Transcript(object):
                 if last_strand is None: pass
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
-                    [line[3] - 2, line[4] - 1]
+                    [int(line[3]) - 2, int(line[4]) - 1]
                 )
-            last_chrom, last_strand = line[0], line[4]
+            last_chrom, last_strand = line[0], line[6]
         # Store edits to coding sequence only
         self.edits = collections.defaultdict(list)
         self.deletion_intervals = []
@@ -388,7 +388,7 @@ class Transcript(object):
             Return value: True iff edit is within CDS boundaries; else False
         """
         # Add edit if and only if it's in one of the CDSes
-        start_index = bisect.bisect_left(pos, self.intervals)
+        start_index = bisect.bisect_left(self.intervals, pos)
         if mutation_type != 'D':
             if start_index % 2:
                 # Add edit if and only if it lies within CDS boundaries
@@ -396,20 +396,19 @@ class Transcript(object):
                 return True
         else:
             seq_size = len(seq)
-            end_index = bisect.bisect_left(pos + seq_size - 1,
-                                            self.intervals)
+            end_index = bisect.bisect_left(self.intervals, pos + seq_size)
             assert end_index >= start_index
             if start_index % 2 or end_index % 2:
                 '''Add deletion if and only if it lies within CDS boundaries
-                Deletion is added deletion intervals, to be mixed with
+                Deletion is added to deletion intervals, to be mixed with
                 intervals when retrieving sequence.'''
                 while start_index <= end_index:
                     end = self.intervals[start_index + 1]
                     self.deletion_intervals.extend(
-                            [pos - 1, min(seq_size + pos - 1, end)]
+                            [pos - 1, min(pos + seq_size, end) - 1]
                         )
                     start_index += 2
-                    pos = self.intervals[start_index] + 1
+                    pos = self.intervals[start_index - 1] + 1
                     seq_size -= (self.deletion_intervals[-1]
                                     - self.deletion_intervals[-2])
                 return True
@@ -444,11 +443,9 @@ class Transcript(object):
             intervals = sorted(self.intervals + self.deletion_intervals)
             assert len(intervals) % 2 == 0
             start_index = bisect.bisect_left(intervals, start)
-            if start_index % 2:
-                start_index += 1
-            else:
+            if not (start_index % 2):
                 # start should be beginning of a CDS
-                start_index += 2
+                start_index += 1
                 try:
                     start = intervals[start_index - 1] + 1
                 except IndexError:
@@ -472,26 +469,26 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            for pos in sorted(self.edits.keys()):
+            for pos in (sorted(self.edits.keys()) + [self.intervals[-1]]):
                 if pos > intervals[i]:
-                    last_index, last_pos = 0, intervals[i-1]
+                    last_index, last_pos = 0, intervals[i-1] + 1
                     for pos_to_add in pos_group:
-                        fill = pos_to_add - last_pos + 1
+                        fill = pos_to_add - last_pos
                         final_seq.append(seqs[(i-1)/2][
-                                            last_index:last_index + fill - 1
+                                            last_index:last_index + fill
                                         ])
                         # If no edits, snv is reference and no insertion
                         snv = seqs[(i-1)/2][last_index + fill]
                         insertion = ''
-                        for edit in self.edits[pos]:
+                        for edit in self.edits[pos_to_add]:
                             if edit[1] == 'V':
                                 snv = edit[0]
                             else:
                                 assert edit[1] == 'I'
                                 insertion = edit[0]
                         final_seq.extend([snv, insertion])
-                        last_index += fill
-                        last_pos += fill
+                        last_index += fill + 1
+                        last_pos += fill + 1
                     final_seq.append(seqs[(i-1)/2][last_index:])
                     i += 2
                     while pos > intervals[i]:
@@ -500,6 +497,25 @@ class Transcript(object):
                     pos_group = [pos]
                 else:
                     pos_group.append(pos)
+            last_index, last_pos = 0, intervals[i-1] + 1
+            for pos_to_add in pos_group:
+                fill = pos_to_add - last_pos
+                final_seq.append(seqs[(i-1)/2][
+                                    last_index:last_index + fill
+                                ])
+                # If no edits, snv is reference and no insertion
+                snv = seqs[(i-1)/2][last_index + fill]
+                insertion = ''
+                for edit in self.edits[pos_to_add]:
+                    if edit[1] == 'V':
+                        snv = edit[0]
+                    else:
+                        assert edit[1] == 'I'
+                        insertion = edit[0]
+                final_seq.extend([snv, insertion])
+                last_index += fill + 1
+                last_pos += fill + 1
+            final_seq.append(seqs[(i-1)/2][last_index:])
             if self.rev_strand:
                 return ''.join(final_seq[::-1].translate(
                                     _revcomp_translation_table
