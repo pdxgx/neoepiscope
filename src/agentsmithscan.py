@@ -424,9 +424,13 @@ class Transcript(object):
                 'yet fully supported.'
             )
         if start is None:
-            start = self.intervals[0]
+            start = self.intervals[0] + 1
+        else:
+            start -= 1
         if end is None:
-            end = self.intervals[-1] -1
+            end = self.intervals[-1]
+        else:
+            end -= 1
         assert end >= start
         # Change start and end intervals of CDS intervals
         start_index = bisect.bisect_left(self.intervals, start)
@@ -519,17 +523,13 @@ class Transcript(object):
         """
         if end < start: return ''
         # Use 0-based coordinates internally
-        try:
-            start -= 1
-        except TypeError:
-            pass
-        try:
-            end -= 1
-        except TypeError:
-            pass
+        if start is None:
+            start = self.intervals[0] + 2
+        if end is None:
+            end = self.intervals[-1] + 1
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start - 1, end - 1,
+            edits, intervals = self.expressed_edits(start, end,
                                                     genome=True)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
@@ -555,7 +555,6 @@ class Transcript(object):
                                 intervals[i]
                             )
                     )
-            print seqs
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
