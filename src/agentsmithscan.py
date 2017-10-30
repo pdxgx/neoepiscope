@@ -435,9 +435,9 @@ class Transcript(object):
     def seq(self, start=None, end=None, genome=True):
         """ Retrieves transcript sequence between start and end coordinates.
 
-            start: start position (0-indexed, inclusive); None means start of
+            start: start position (1-indexed, inclusive); None means start of
                 transcript
-            end: end position (0-indexed, inclusive); None means end of
+            end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
 
@@ -894,7 +894,6 @@ if __name__ == '__main__':
                 """Fails if incorrect positions are returned"""
                 self.assertEqual(get_VAF_pos(self.varscan), 5)
                 self.assertEqual(get_VAF_pos(self.mutect), None)
-        ### WRITE UNIT TESTS FOR TRANSCRIPT CLASS ###
         class TestTranscript(unittest.TestCase):
             """Tests transcript object construction"""
             def setUp(self):
@@ -937,9 +936,11 @@ if __name__ == '__main__':
                 self.assertEqual(self.transcript.edits[34], [("C", "V")])
             def test_reset_to_reference(self):
                 """Fails if transcript is not reset to reference"""
+                make_edit = self.transcript.edit("C", 34)
                 self.transcript.reset(reference=True)
                 self.assertEqual(self.transcript.edits, {})
             def test_edit_and_save(self):
+                """Fails if edits aren't saved"""
                 make_edit = self.transcript.edit("G", 34)
                 make_deletion = self.transcript.edit("CCC", 60, 
                                                         mutation_type="D")
@@ -949,16 +950,39 @@ if __name__ == '__main__':
                 self.assertEqual(self.transcript.last_edits[34], [("G", "V")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
                                     [59, 62])
-            def test_seq(self):
+            def test_reset_to_save_point(self):
+                """Fails if new edit not erased or old edits not retained"""
                 make_edit = self.transcript.edit("G", 34)
                 make_deletion = self.transcript.edit("CCC", 60, 
                                                         mutation_type="D")
+                self.transcript.save()
+                make_edit2 = self.transcript.edit("C", 36)
+                self.assertEqual(self.transcript.edits[36], [("C", "V")])
+                self.transcript.reset(reference=False)
+                self.assertNotIn(36, self.transcript.edits)
+                self.assertEqual(self.transcript.last_edits[34], [("G", "V")])
+                self.assertEqual(self.transcript.last_deletion_intervals,
+                                    [59, 62])
+                self.assertNotEqual(self.transcript.edits, {})
+            def test_SNV_seq(self):
+                make_edit = self.transcript.edit("G", 31-1)
                 seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31, 42)
-                self.assertEqual(len(seq1), 45)
-                self.assertEqual(len(seq2), 12)
+                seq2 = self.transcript.seq(31-1, 36-1)
+                self.assertEqual(len(seq1), 48)
+                self.assertEqual(len(seq2), 6)
                 self.assertEqual(seq1, 
-                                "ATGGCCGTGCCGAATTCGTGTCCCCGCTATGCCCGTGCCGATTTG")
+                                "GTGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
+                self.assertEqual(seq2, "GTGCCC")
+            def tearDown(self):
+                """Removes temporary files"""
+                ref_remove = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'ref*'
+                                )
+                subprocess.call(["rm", ref_remove])
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
