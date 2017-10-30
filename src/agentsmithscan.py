@@ -990,53 +990,89 @@ if __name__ == '__main__':
                                                 [self.CDS, self.stop])
             def test_irrelevant_edit(self):
                 """Fails if edit is made for non-CDS/stop position"""
-                make_edit = self.transcript.edit("G", 1)
-                self.assertFalse(make_edit)
-                self.assertEqual(self.transcript.edits, {})
+                self.transcript.edit("G", 1)
+                relevant_edits = self.transcript.expressed_edits()
+                self.assertEqual(self.transcript.edits[0], [("G", "V")])
+                self.assertEqual(relevant_edits[0], {})
+                self.assertEqual(relevant_edits[1], [29, 74, 74, 77])
             def test_relevant_edit(self):
                 """Fails if edit is not made for CDS position"""
-                make_edit = self.transcript.edit("C", 34)
-                self.assertTrue(make_edit)
-                self.assertEqual(self.transcript.edits[34], [("C", "V")])
+                self.transcript.edit("G", 34)
+                relevant_edits = self.transcript.expressed_edits()
+                self.assertEqual(self.transcript.edits[33], [("G", "V")])
+                self.assertEqual(relevant_edits[0][33], [("G", "V")])
+                self.assertEqual(relevant_edits[1], [29, 74, 74, 77])
             def test_reset_to_reference(self):
                 """Fails if transcript is not reset to reference"""
-                make_edit = self.transcript.edit("C", 34)
+                self.transcript.edit("G", 34)
                 self.transcript.reset(reference=True)
                 self.assertEqual(self.transcript.edits, {})
             def test_edit_and_save(self):
                 """Fails if edits aren't saved"""
-                make_edit = self.transcript.edit("G", 34)
-                make_deletion = self.transcript.edit("CCC", 60, 
-                                                        mutation_type="D")
-                self.assertTrue(make_edit)
-                self.assertTrue(make_deletion)
+                self.transcript.edit("G", 34)
+                self.transcript.edit("CCC", 60, mutation_type="D")
                 self.transcript.save()
-                self.assertEqual(self.transcript.last_edits[34], [("G", "V")])
+                self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [59, 62])
+                                    [(59, 62)])
             def test_reset_to_save_point(self):
                 """Fails if new edit not erased or old edits not retained"""
-                make_edit = self.transcript.edit("G", 34)
-                make_deletion = self.transcript.edit("CCC", 60, 
-                                                        mutation_type="D")
+                self.transcript.edit("G", 34)
+                self.transcript.edit("CCC", 60, mutation_type="D")
                 self.transcript.save()
-                make_edit2 = self.transcript.edit("C", 36)
-                self.assertEqual(self.transcript.edits[36], [("C", "V")])
+                self.transcript.edit("C", 36)
+                self.assertEqual(self.transcript.edits[35], [("C", "V")])
                 self.transcript.reset(reference=False)
-                self.assertNotIn(36, self.transcript.edits)
-                self.assertEqual(self.transcript.last_edits[34], [("G", "V")])
+                self.assertNotIn(35, self.transcript.edits)
+                self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [59, 62])
+                                    [(59, 62)])
                 self.assertNotEqual(self.transcript.edits, {})
             def test_SNV_seq(self):
-                make_edit = self.transcript.edit("G", 31-1)
+                """Fails if SNV is edited incorrectly"""
+                self.transcript.edit("G", 31)
                 seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31-1, 36-1)
+                seq2 = self.transcript.seq(31, 36)
                 self.assertEqual(len(seq1), 48)
                 self.assertEqual(len(seq2), 6)
                 self.assertEqual(seq1, 
-                                "GTGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
+                            "GTGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
                 self.assertEqual(seq2, "GTGCCC")
+            def test_inside_indel(self):
+                """Fails if indel within CDS is inserted incorrectly"""
+                self.transcript.edit("Q", 35, mutation_type="I")
+                self.assertEqual(self.transcript.edits[34], [("Q", "I")])
+                seq1 = self.transcript.seq()
+                seq2 = self.transcript.seq(31, 36)
+                self.assertEqual(len(seq1), 49)
+                self.assertEqual(len(seq2), 7)
+                self.assertEqual(seq1, 
+                            "ATGCCQCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
+                self.assertEqual(seq2, "ATGCCQC")
+            def test_adjacent_indel(self):
+                """Fails if indel right before CDS is inserted incorrectly"""
+                self.transcript.edit("Q", 30, mutation_type="I")
+                self.assertEqual(self.transcript.edits[29], [("Q", "I")])
+                seq1 = self.transcript.seq()
+                seq2 = self.transcript.seq(31, 36)
+                self.assertEqual(len(seq1), 49)
+                #self.assertEqual(len(seq2), 6)
+                self.assertEqual(seq1, 
+                            "QATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
+                #self.assertEqual(seq2, "QATGCC")
+                ### SEQ2 RETURNS ATGCCCQATGCCC
+            def test_deletion(self):
+                """Fails if deletion is made incorrectly"""
+                self.transcript.edit(5, 34, mutation_type="D")
+                self.assertEqual(self.transcript.deletion_intervals, [(33, 38)])
+                seq1 = self.transcript.seq()
+                seq2 = self.transcript.seq(31, 36)
+                self.assertEqual(len(seq1), 43)
+                self.assertEqual(len(seq2), 6)
+                self.assertEqual(seq1, 
+                                "ATGGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
+                self.assertEqual(seq2, "ATGGCC")
+                ### SEQ2 can't be obtained
             def tearDown(self):
                 """Removes temporary files"""
                 ref_remove = os.path.join(
@@ -1044,9 +1080,10 @@ if __name__ == '__main__':
                                             os.path.dirname(
                                                     os.path.realpath(__file__)
                                                 )
-                                        ), 'test', 'ref*'
+                                        ), 'test', 'ref*ebwt'
                                 )
                 subprocess.call(["rm", ref_remove])
+                subprocess.call(["rm", self.fasta])
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
