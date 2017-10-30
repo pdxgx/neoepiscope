@@ -399,7 +399,7 @@ class Transcript(object):
                 deletion_size = len(seq)
             self.deletion_intervals.append((pos - 1, pos + deletion_size - 1))
         else:
-            self.edits[pos].append((seq, mutation_type))
+            self.edits[pos - 1].append((seq, mutation_type))
 
     def expressed_edits(self, start=None, end=None, genome=True):
         """ Gets expressed set of edits and transcript intervals.
@@ -424,58 +424,62 @@ class Transcript(object):
                 'yet fully supported.'
             )
         if start is None:
-            start = self.intervals[0]
+            start = self.intervals[0] + 1
         if end is None:
-            end = self.intervals[-1] - 1
+            end = self.intervals[-1]
         assert end >= start
-        # Create all deletion intervals
-        sorted_deletion_intervals = sorted(self.deletion_intervals)
-        deletion_intervals = [sorted_deletion_intervals[0][0],
-                                sorted_deletion_intervals[0][1]]
-        for i in xrange(1, len(sorted_deletion_intervals)):
-            if (sorted_deletion_intervals[i][0] <= deletion_intervals[-1]):
-                deletion_intervals[-2] = min(deletion_intervals[-2],
-                                             sorted_deletion_intervals[i][0])
-                deletion_intervals[-1] = max(deletion_intervals[-1],
-                                             sorted_deletion_intervals[i][1])
-            else:
-                deletion_intervals.extend(list(sorted_deletion_intervals[i]))
         # Include only relevant deletion intervals
         relevant_deletion_intervals = []
-        for i in xrange(0, len(deletion_intervals), 2):
-            seq_size = deletion_intervals[i+1] - deletion_intervals[i]
-            pos = deletion_intervals[i]
-            start_index = bisect.bisect_left(self.intervals,
-                                                deletion_intervals[i])
-            end_index = bisect.bisect_left(self.intervals,
-                                            deletion_intervals[i+1])
-            assert end_index >= start_index
-            if start_index % 2 or end_index % 2:
-                '''Add deletion if and only if it lies within CDS boundaries
-                Deletion is added to relevant deletion intervals, to be mixed
-                with self.intervals when retrieving sequence.'''
-                while start_index <= end_index:
-                    end = self.intervals[start_index + 1]
-                    relevant_deletion_intervals.extend(
-                            [pos - 1, min(pos + seq_size, end) - 1]
+        if self.deletion_intervals:
+            sorted_deletion_intervals = sorted(self.deletion_intervals)
+            deletion_intervals = [sorted_deletion_intervals[0][0],
+                                    sorted_deletion_intervals[0][1]]
+            for i in xrange(1, len(sorted_deletion_intervals)):
+                if (sorted_deletion_intervals[i][0] <= deletion_intervals[-1]):
+                    deletion_intervals[-2] = min(deletion_intervals[-2],
+                                            sorted_deletion_intervals[i][0])
+                    deletion_intervals[-1] = max(deletion_intervals[-1],
+                                            sorted_deletion_intervals[i][1])
+                else:
+                    deletion_intervals.extend(
+                            list(sorted_deletion_intervals[i])
                         )
-                    start_index += 2
-                    pos = self.intervals[start_index - 1] + 1
-                    seq_size -= (relevant_deletion_intervals[-1]
-                                    - relevant_deletion_intervals[-2])
+            for i in xrange(0, len(deletion_intervals), 2):
+                seq_size = deletion_intervals[i+1] - deletion_intervals[i]
+                pos = deletion_intervals[i]
+                start_index = bisect.bisect_left(self.intervals,
+                                                    deletion_intervals[i])
+                end_index = bisect.bisect_left(self.intervals,
+                                                deletion_intervals[i+1])
+                assert end_index >= start_index
+                if start_index % 2 or end_index % 2:
+                    '''Add deletion if and only if it lies within CDS
+                    boundaries. Deletion is added to relevant deletion
+                    intervals, to be mixed with self.intervals when
+                    retrieving sequence.'''
+                    while start_index <= end_index:
+                        end = self.intervals[start_index + 1]
+                        relevant_deletion_intervals.extend(
+                                [pos - 1, min(pos + seq_size, end) - 1]
+                            )
+                        start_index += 2
+                        pos = self.intervals[start_index - 1] + 1
+                        seq_size -= (relevant_deletion_intervals[-1]
+                                        - relevant_deletion_intervals[-2])
         intervals = sorted(self.intervals + relevant_deletion_intervals)
-        edits = collections.defaultdict()
+        edits = collections.defaultdict(list)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
             start_index = bisect.bisect_left(intervals, pos)
-            if mutation_type == 'V':
-                if start_index % 2:
-                    # Add edit if and only if it lies within CDS boundaries
-                    edits[pos].append((seq, mutation_type))
-            elif mutation_type == 'I':
-                if start_index % 2 or pos == intervals[start_index]:
-                    '''An insertion is valid before or after a block'''
-                    edits[pos].append((seq, mutation_type))
+            for edit in self.edits[pos]:
+                if edit[1] == 'V':
+                    if start_index % 2:
+                        # Add edit if and only if it lies within CDS boundaries
+                        edits[pos].append(edit)
+                elif edit[1] == 'I':
+                    if start_index % 2 or pos == intervals[start_index]:
+                        '''An insertion is valid before or after a block'''
+                        edits[pos].append(edit)
         return (edits, intervals)
 
     def save(self):
@@ -498,6 +502,15 @@ class Transcript(object):
             Return value: transcript (sub)sequence
         """
         if end < start: return ''
+        # Use 0-based coordinates internally
+        try:
+            start -= 1
+        except TypeError:
+            pass
+        try:
+            end -= 1
+        except TypeError:
+            pass
         if genome:
             # Capture only sequence between start and end
             edits, intervals = self.expressed_edits(start, end, genome=True)
@@ -505,10 +518,10 @@ class Transcript(object):
             present, shift them to ends of previous intervals so they're
             actually added.'''
             new_edits = copy.copy(edits)
-            for i in xrange(len(intervals)):
-                if intervals[i] in self.edits:
-                    assert (len(self.edits[intervals[i]]) == 1
-                                and self.edits[intervals[i]][0][1] == 'I')
+            for i in xrange(0, len(intervals), 2):
+                if intervals[i] in edits:
+                    assert (len(edits[intervals[i]]) == 1
+                                and edits[intervals[i]][0][1] == 'I')
                     if i:
                         new_edits[intervals[i-1]] = new_edits[intervals[i]]
                         del new_edits[intervals[i]]
@@ -516,22 +529,6 @@ class Transcript(object):
                         intervals = [-1, -1] + intervals
                         new_edits[-1] = new_edits[intervals[i]]
                         del new_edits[intervals[i]]
-            assert len(intervals) % 2 == 0
-            start_index = bisect.bisect_left(intervals, start)
-            if not (start_index % 2):
-                # start should be beginning of a CDS
-                start_index += 1
-                try:
-                    start = intervals[start_index - 1] + 1
-                except IndexError:
-                    # Start is outside bounds of transcript
-                    return ''
-            end_index = bisect.bisect_left(intervals, end)
-            if not (end_index % 2):
-                # end should be end of CDS
-                end = intervals[end_index - 1]
-            intervals = [start - 1] + intervals[start_index:end_index] + [end]
-            assert len(intervals) % 2 == 0
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
