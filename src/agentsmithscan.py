@@ -310,7 +310,11 @@ class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
     def __init__(self, bowtie_reference_index, CDS):
-        """ Initializes Transcript object
+        """ Initializes Transcript object.
+
+            This class assumes edits added to a transcript are properly
+            phased, consistent, and nonredundant. Most conspicuously, there
+            shouldn't be SNVs or insertions among deleted bases.
 
             bowtie_reference_index: BowtieIndexReference object for retrieving
                 reference genome sequence
@@ -389,12 +393,18 @@ class Transcript(object):
         """
         # Add edit if and only if it's in one of the CDSes
         start_index = bisect.bisect_left(self.intervals, pos)
-        if mutation_type != 'D':
+        if mutation_type == 'V':
             if start_index % 2:
                 # Add edit if and only if it lies within CDS boundaries
                 self.edits[pos].append((seq, mutation_type))
                 return True
+        elif mutation_type == 'I':
+            if start_index % 2 or pos == self.intervals[start_index]:
+                '''An insertion is valid before or after a block'''
+                self.edits[pos].append((seq, mutation_type))
+                return True
         else:
+            assert mutation_type == 'D'
             seq_size = len(seq)
             end_index = bisect.bisect_left(self.intervals, pos + seq_size)
             assert end_index >= start_index
@@ -441,6 +451,21 @@ class Transcript(object):
         if genome:
             # Capture only sequence between start and end
             intervals = sorted(self.intervals + self.deletion_intervals)
+            '''Check for insertions at beginnings of intervals, and if they're
+            present, shift them to ends of previous intervals so they're
+            actually added.'''
+            new_edits = copy.copy(self.edits)
+            for i in xrange(len(intervals)):
+                if intervals[i] in self.edits:
+                    assert (len(self.edits[intervals[i]]) == 1
+                                and self.edits[intervals[i]][0][1] == 'I')
+                    if i:
+                        new_edits[intervals[i-1]] = new_edits[intervals[i]]
+                        del new_edits[intervals[i]]
+                    else:
+                        intervals = [-1, -1] + intervals
+                        new_edits[-1] = new_edits[intervals[i]]
+                        del new_edits[intervals[i]]
             assert len(intervals) % 2 == 0
             start_index = bisect.bisect_left(intervals, start)
             if not (start_index % 2):
@@ -469,7 +494,7 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            for pos in (sorted(self.edits.keys()) + [self.intervals[-1] + 1]):
+            for pos in (sorted(new_edits.keys()) + [self.intervals[-1] + 1]):
                 if pos > intervals[i]:
                     last_index, last_pos = 0, intervals[i-1] + 1
                     for pos_to_add in pos_group:
@@ -478,9 +503,15 @@ class Transcript(object):
                                             last_index:last_index + fill
                                         ])
                         # If no edits, snv is reference and no insertion
-                        snv = seqs[(i-1)/2][last_index + fill]
+                        try:
+                            snv = seqs[(i-1)/2][last_index + fill]
+                        except IndexError:
+                            '''Should happen only for insertions at beginning
+                            of sequence.'''
+                            assert (i - 1) / 2 == 0 and not seqs[0]
+                            snv = ''
                         insertion = ''
-                        for edit in self.edits[pos_to_add]:
+                        for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
                                 snv = edit[0]
                             else:
