@@ -578,8 +578,8 @@ def neoepitopes(mutated_seq, reverse_strand=False, min_size=8, max_size=11):
                             max_size=max_size
                             )
 
-def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos, 
-                        size_list):
+def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
+                        VAF_pos, size_list):
     tumor_peptides = []
     VAFs = []
     with open(hapcut_output, "r") as f:
@@ -595,7 +595,15 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
                     # Create transcript object and make relevant edits
                     transcript = Transcript(reference_index, 
-                                            cds_dict[transcript_ID])
+                                            [[str(chrom), 'blah', 'blah', 
+                                                str(start), str(end), 
+                                                '.', strand] for (chrom, start, 
+                                                                    end, 
+                                                                    entry_type, 
+                                                                    strand, 
+                                                                    frame) in 
+                                                cds_dict[transcript_ID]]
+                                            )
                     for mutation in block_transcripts[transcript_ID]:
                         if VAF_pos is not None:
                             if "%" in mutation[7].split(":")[VAF_pos]:
@@ -616,8 +624,10 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                             mutation_type = 'D'
                         else:
                             mutation_type = '?'
-                        transcript.edit(mutation[3], mutation[1], 
+                        make_edit = transcript.edit(mutation[3], mutation[1], 
                                         mutation_type=mutation_type)
+                        if not make_edit:
+                            block_transcripts[transcript_ID].remove(mutation)
                     # Calculate VAF for the transcript
                     if len(VAF_list) == 0:
                         transcript_VAF = "NA"
@@ -641,10 +651,9 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                     # Get neoepitope sequences for each mutation
                     for mutation in block_transcripts[transcript_ID]:
                         nucleotide_sequence = transcript.seq(
-                                    start= mutation[1] - 3*size_list[-1] -1, 
-                                    end=mutation[1] + 3*size_list[-1] -1, 
+                                    start= mutation[1] - 3*size_list[-1] - 1, 
+                                    end=mutation[1] + 3*size_list[-1] - 1, 
                                     genome=True)
-                        ## HOw TO TELL IF REVERSE STRAND??
                         peptides = neoepitopes(nucleotide_sequence,
                                         reverse_strand=transcript.rev_strand, 
                                         min_size=size_list[0], 
@@ -662,7 +671,9 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, VAF_pos,
                                                             tokens[3], 
                                                             tokens[4], 
                                                             interval_dict)
-                # For each overlapping transcript, add mutation entryf
+                # For each overlapping transcript, add mutation entry
+                # Contains chromosome, position, reference, alternate, allele A,
+                #   allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
                     if transcript not in block_transcripts:
                         block_transcripts[transcript] = [[tokens[3], 
@@ -853,6 +864,70 @@ if __name__ == '__main__':
                 self.assertEqual(get_VAF_pos(self.varscan), 5)
                 self.assertEqual(get_VAF_pos(self.mutect), None)
         ### WRITE UNIT TESTS FOR TRANSCRIPT CLASS ###
+        class TestTranscript(unittest.TestCase):
+            """Tests transcript object construction"""
+            def setUp(self):
+                """Sets up files for testing"""
+                self.fasta = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'ref.fasta'
+                                )
+                self.ref_prefix = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'ref'
+                                )
+                with open(self.fasta, "w") as f:
+                    f.write(">1 dna:chromosome\n")
+                    f.write("ACGCCCGTGACTTATTCGTGTGCAGACTAC\n")
+                    f.write("ATGCCCGTGCCGAATTCGTGTCCCCGCTAC\n")
+                    f.write("AATGCCCGTGCCGATTTGAAACCCCGCTAC\n")
+                subprocess.call(["bowtie-build", self.fasta, self.ref_prefix])
+                self.reference_index = bowtie_index.BowtieIndexReference(
+                                                                self.ref_prefix)
+                self.CDS = ["1", 'blah', 'blah', "31", "75", '.', "+"]
+                self.stop = ["1", 'blah', 'blah', "76", "78", '.', "+"]
+                self.transcript = Transcript(self.reference_index, 
+                                                [self.CDS, self.stop])
+            def test_irrelevant_edit(self):
+                """Fails if edit is made for non-CDS/stop position"""
+                make_edit = self.transcript.edit("G", 1)
+                self.assertFalse(make_edit)
+                self.assertEqual(self.transcript.edits, {})
+            def test_relevant_edit(self):
+                """Fails if edit is not made for CDS position"""
+                make_edit = self.transcript.edit("C", 34)
+                self.assertTrue(make_edit)
+                self.assertEqual(self.transcript.edits[34], [("C", "V")])
+            def test_reset_to_reference(self):
+                """Fails if transcript is not reset to reference"""
+                self.transcript.reset(reference=True)
+                self.assertEqual(self.transcript.edits, {})
+            def test_edit_and_save(self):
+                make_edit = self.transcript.edit("G", 34)
+                make_deletion = self.transcript.edit("CCC", 60, 
+                                                        mutation_type="D")
+                self.assertTrue(make_edit)
+                self.assertTrue(make_deletion)
+                self.transcript.save()
+                self.assertEqual(self.transcript.last_edits[34], [("G", "V")])
+                self.assertEqual(self.transcript.last_deletion_intervals,
+                                    [59, 62])
+            def test_seq(self):
+                make_edit = self.transcript.edit("G", 34)
+                make_deletion = self.transcript.edit("CCC", 60, 
+                                                        mutation_type="D")
+                seq1 = self.transcript.seq()
+                seq2 = self.transcript.seq(31, 42)
+                self.assertEqual(len(seq1), 45)
+                self.assertEqual(len(seq2), 12)
+                self.assertEqual(seq1, 
+                                "ATGGCCGTGCCGAATTCGTGTCCCCGCTATGCCCGTGCCGATTTG")
         class TestHAPCUT2Processing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
@@ -874,11 +949,13 @@ if __name__ == '__main__':
                                         ), 'test', 'Ychrom.hap.out'
                                 )         
             def test_hap_processing(self):
+                '''
                 """Fails if file is processed incorrectly"""
                 Ynorm, Ytum, YVAF = process_haplotypes(self.Yhapcut, self.Ycds, 
                                                     self.Ytree, None, [8,11])
                 self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
                 #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
+                '''
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -1096,23 +1173,21 @@ if __name__ == '__main__':
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
         # Create relevant transcript objects and edit with mutations
-        normal_peptides, tumor_peptides, VAF_list = process_haplotypes(
+        tumor_peptides, VAF_list = process_haplotypes(
                                                     args.merged_hapcut2_output,
                                                     cds_dict, interval_dict,
                                                     VAF_pos, size_list
                                                     )
-        ## Get binding affinities for neoepitopes and paired normal epitopes
-        normal_affinities = get_affinity(normal_peptides, args.allele)
+        ## Get binding affinities for neoepitopes
         tumor_affinities = get_affinity(normal_peptides, args.allele)
         ## Find multi-mapping rate of neoepitopes to proteome??
         # Combine neoepitope data into entries and take unique set
         neoepitope_data = zip(tumor_peptides, 
                                 tumor_affinities, 
-                                normal_peptides, 
-                                normal_affinities, 
                                 VAF_list)
         unique_neoepitopes = set(neoepitope_data)
         ## Prioritize output based on: affinity, VAF, peptide similarity?
+        ## Write to output file
     else:
         sys.exit("".join([args.subparser_name, 
                             " is not a valid software mode"]))
