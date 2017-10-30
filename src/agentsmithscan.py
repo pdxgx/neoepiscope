@@ -382,47 +382,101 @@ class Transcript(object):
 
             seq: sequence to add or delete from reference; for deletions, all
                 that matters is this sequence has the same length as the 
-                sequence to delete
-            pos: 0-based coordinate. For insertions, this is the coordinate 
+                sequence to delete. Also for deletions, seq can be an integer
+                specifying how many bases to delete.
+            pos: 1-based coordinate. For insertions, this is the coordinate 
                 directly before the inserted sequence. For deletions, this 
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
 
-            Return value: True iff edit is within CDS boundaries; else False
+            No return value.
         """
-        # Add edit if and only if it's in one of the CDSes
-        start_index = bisect.bisect_left(self.intervals, pos)
-        if mutation_type == 'V':
-            if start_index % 2:
-                # Add edit if and only if it lies within CDS boundaries
-                self.edits[pos].append((seq, mutation_type))
-                return True
-        elif mutation_type == 'I':
-            if start_index % 2 or pos == self.intervals[start_index]:
-                '''An insertion is valid before or after a block'''
-                self.edits[pos].append((seq, mutation_type))
-                return True
+        if mutation_type == 'D':
+            try:
+                deletion_size = int(seq)
+            except ValueError:
+                deletion_size = len(seq)
+            self.deletion_intervals.append((pos - 1, pos + deletion_size - 1))
         else:
-            assert mutation_type == 'D'
-            seq_size = len(seq)
-            end_index = bisect.bisect_left(self.intervals, pos + seq_size)
+            self.edits[pos].append((seq, mutation_type))
+
+    def expressed_edits(self, start=None, end=None, genome=True):
+        """ Gets expressed set of edits and transcript intervals.
+
+            start: start position (1-indexed, inclusive); None means start of
+                transcript
+            end: end position (1-indexed, inclusive); None means end of
+                transcript
+            genome: True iff genome coordinates are specified
+
+            Return value: tuple (defaultdict
+                                 mapping edits to lists of (seq, mutation_type)
+                                 tuples, interval list; this takes
+                                 the form of a flattened 
+                                 self.deletion_intervals and includes only
+                                 those intervals of the transcript that
+                                 are expressed)
+        """
+        if not genome:
+            raise NotImplementedError(
+                'Retrieving sequence with transcript coordinates not '
+                'yet fully supported.'
+            )
+        if start is None:
+            start = self.intervals[0]
+        if end is None:
+            end = self.intervals[-1] - 1
+        assert end >= start
+        # Create all deletion intervals
+        sorted_deletion_intervals = sorted(self.deletion_intervals)
+        deletion_intervals = [sorted_deletion_intervals[0][0],
+                                sorted_deletion_intervals[0][1]]
+        for i in xrange(1, len(sorted_deletion_intervals)):
+            if (sorted_deletion_intervals[i][0] <= deletion_intervals[-1]):
+                deletion_intervals[-2] = min(deletion_intervals[-2],
+                                             sorted_deletion_intervals[i][0])
+                deletion_intervals[-1] = max(deletion_intervals[-1],
+                                             sorted_deletion_intervals[i][1])
+            else:
+                deletion_intervals.extend(list(sorted_deletion_intervals[i]))
+        # Include only relevant deletion intervals
+        relevant_deletion_intervals = []
+        for i in xrange(0, len(deletion_intervals), 2):
+            seq_size = deletion_intervals[i+1] - deletion_intervals[i]
+            pos = deletion_intervals[i]
+            start_index = bisect.bisect_left(self.intervals,
+                                                deletion_intervals[i])
+            end_index = bisect.bisect_left(self.intervals,
+                                            deletion_intervals[i+1])
             assert end_index >= start_index
             if start_index % 2 or end_index % 2:
                 '''Add deletion if and only if it lies within CDS boundaries
-                Deletion is added to deletion intervals, to be mixed with
-                intervals when retrieving sequence.'''
+                Deletion is added to relevant deletion intervals, to be mixed
+                with self.intervals when retrieving sequence.'''
                 while start_index <= end_index:
                     end = self.intervals[start_index + 1]
-                    self.deletion_intervals.extend(
+                    relevant_deletion_intervals.extend(
                             [pos - 1, min(pos + seq_size, end) - 1]
                         )
                     start_index += 2
                     pos = self.intervals[start_index - 1] + 1
-                    seq_size -= (self.deletion_intervals[-1]
-                                    - self.deletion_intervals[-2])
-                return True
-        return False
+                    seq_size -= (relevant_deletion_intervals[-1]
+                                    - relevant_deletion_intervals[-2])
+        intervals = sorted(self.intervals + relevant_deletion_intervals)
+        edits = collections.defaultdict()
+        for pos in self.edits:
+            # Add edit if and only if it's in one of the CDSes
+            start_index = bisect.bisect_left(intervals, pos)
+            if mutation_type == 'V':
+                if start_index % 2:
+                    # Add edit if and only if it lies within CDS boundaries
+                    edits[pos].append((seq, mutation_type))
+            elif mutation_type == 'I':
+                if start_index % 2 or pos == intervals[start_index]:
+                    '''An insertion is valid before or after a block'''
+                    edits[pos].append((seq, mutation_type))
+        return (edits, intervals)
 
     def save(self):
         """ Creates save point for edits.
@@ -443,18 +497,14 @@ class Transcript(object):
 
             Return value: transcript (sub)sequence
         """
-        if start is None:
-            start = self.intervals[0] + 1
-        if end is None:
-            end = self.intervals[-1]
         if end < start: return ''
         if genome:
             # Capture only sequence between start and end
-            intervals = sorted(self.intervals + self.deletion_intervals)
+            edits, intervals = self.expressed_edits(start, end, genome=True)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
-            new_edits = copy.copy(self.edits)
+            new_edits = copy.copy(edits)
             for i in xrange(len(intervals)):
                 if intervals[i] in self.edits:
                     assert (len(self.edits[intervals[i]]) == 1
