@@ -424,10 +424,26 @@ class Transcript(object):
                 'yet fully supported.'
             )
         if start is None:
-            start = self.intervals[0] + 1
+            start = self.intervals[0]
         if end is None:
-            end = self.intervals[-1]
+            end = self.intervals[-1] -1
         assert end >= start
+        # Change start and end intervals of CDS intervals
+        start_index = bisect.bisect_left(self.intervals, start)
+        if not (start_index % 2):
+            # start should be beginning of a CDS
+            start_index += 1
+            try:
+                start = self.intervals[start_index - 1] + 1
+            except IndexError:
+                # Start is outside bounds of transcript
+                return ''
+        end_index = bisect.bisect_left(self.intervals, end)
+        if not (end_index % 2):
+            # end should be end of CDS
+            end = self.intervals[end_index - 1]
+        intervals = [start - 1] + self.intervals[start_index:end_index] + [end]
+        assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
         relevant_deletion_intervals = []
         if self.deletion_intervals:
@@ -447,9 +463,9 @@ class Transcript(object):
             for i in xrange(0, len(deletion_intervals), 2):
                 seq_size = deletion_intervals[i+1] - deletion_intervals[i]
                 pos = deletion_intervals[i]
-                start_index = bisect.bisect_left(self.intervals,
+                start_index = bisect.bisect_left(intervals,
                                                     deletion_intervals[i])
-                end_index = bisect.bisect_left(self.intervals,
+                end_index = bisect.bisect_left(intervals,
                                                 deletion_intervals[i+1])
                 assert end_index >= start_index
                 if start_index % 2 or end_index % 2:
@@ -458,15 +474,15 @@ class Transcript(object):
                     intervals, to be mixed with self.intervals when
                     retrieving sequence.'''
                     while start_index <= end_index:
-                        end = self.intervals[start_index + 1]
+                        end = intervals[start_index + 1]
                         relevant_deletion_intervals.extend(
                                 [pos - 1, min(pos + seq_size, end) - 1]
                             )
                         start_index += 2
-                        pos = self.intervals[start_index - 1] + 1
+                        pos = intervals[start_index - 1] + 1
                         seq_size -= (relevant_deletion_intervals[-1]
                                         - relevant_deletion_intervals[-2])
-        intervals = sorted(self.intervals + relevant_deletion_intervals)
+        intervals = sorted(intervals + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
@@ -513,7 +529,8 @@ class Transcript(object):
             pass
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start, end, genome=True)
+            edits, intervals = self.expressed_edits(start - 1, end - 1,
+                                                    genome=True)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
@@ -538,6 +555,7 @@ class Transcript(object):
                                 intervals[i]
                             )
                     )
+            print seqs
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
