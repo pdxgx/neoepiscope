@@ -397,7 +397,7 @@ class Transcript(object):
                 deletion_size = int(seq)
             except ValueError:
                 deletion_size = len(seq)
-            self.deletion_intervals.append((pos - 1, pos + deletion_size - 1))
+            self.deletion_intervals.append((pos - 2, pos + deletion_size - 2))
         else:
             self.edits[pos - 1].append((seq, mutation_type))
 
@@ -446,6 +446,7 @@ class Transcript(object):
         if not (end_index % 2):
             # end should be end of CDS
             end = self.intervals[end_index - 1]
+            end_index -= 1
         intervals = [start - 1] + self.intervals[start_index:end_index] + [end]
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
@@ -465,27 +466,38 @@ class Transcript(object):
                             list(sorted_deletion_intervals[i])
                         )
             for i in xrange(0, len(deletion_intervals), 2):
-                seq_size = deletion_intervals[i+1] - deletion_intervals[i]
-                pos = deletion_intervals[i]
                 start_index = bisect.bisect_left(intervals,
                                                     deletion_intervals[i])
                 end_index = bisect.bisect_left(intervals,
                                                 deletion_intervals[i+1])
-                assert end_index >= start_index
-                if start_index % 2 or end_index % 2:
-                    '''Add deletion if and only if it lies within CDS
-                    boundaries. Deletion is added to relevant deletion
-                    intervals, to be mixed with self.intervals when
-                    retrieving sequence.'''
-                    while start_index <= end_index:
-                        end = intervals[start_index + 1]
+                if start_index == end_index:
+                    if start_index % 2:
+                        # Entirely in a single interval
                         relevant_deletion_intervals.extend(
-                                [pos - 1, min(pos + seq_size, end) - 1]
+                                deletion_intervals[i:i+2]
                             )
-                        start_index += 2
-                        pos = intervals[start_index - 1] + 1
-                        seq_size -= (relevant_deletion_intervals[-1]
-                                        - relevant_deletion_intervals[-2])
+                    # else deletion is entirely outside CDS within start/end
+                else:
+                    assert end_index > start_index
+                    if start_index % 2:
+                        pos = deletion_intervals[i]
+                    else:
+                        pos = intervals[start_index]
+                        start_index += 1
+                    # deletion_intervals[i] becomes a new end
+                    relevant_deletion_intervals.extend(
+                            [pos, intervals[start_index]]
+                        )
+                    if end_index % 2:
+                        end_pos = deletion_intervals[i+1]
+                    else:
+                        end_index -= 1
+                        end_pos = intervals[end_index]
+                    relevant_deletion_intervals.extend(
+                            [intervals[i] for i in
+                             xrange(start_index + 1, end_index)]
+                        )
+                    relevant_deletion_intervals.append(end_pos)
         intervals = sorted(intervals + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
