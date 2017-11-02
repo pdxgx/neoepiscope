@@ -498,7 +498,7 @@ class Transcript(object):
                         end_pos = intervals[end_index]
                     relevant_deletion_intervals.extend(
                             [intervals[i] for i in
-                             xrange(start_index + 1, end_index)]
+                             xrange(start_index, end_index + 1)]
                         )
                     relevant_deletion_intervals.append(end_pos)
                     print relevant_deletion_intervals
@@ -574,6 +574,7 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
+            print sorted(new_edits.keys()) + [self.intervals[-1] + 1]
             for pos in (sorted(new_edits.keys()) + [self.intervals[-1] + 1]):
                 if pos > intervals[i]:
                     last_index, last_pos = 0, intervals[i-1] + 1
@@ -1030,7 +1031,7 @@ if __name__ == '__main__':
                 self.transcript.save()
                 self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [(59, 62)])
+                                    [(58, 61)])
             def test_reset_to_save_point(self):
                 """Fails if new edit not erased or old edits not retained"""
                 self.transcript.edit("G", 34)
@@ -1042,7 +1043,7 @@ if __name__ == '__main__':
                 self.assertNotIn(35, self.transcript.edits)
                 self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [(59, 62)])
+                                    [(58, 61)])
                 self.assertNotEqual(self.transcript.edits, {})
             def test_SNV_seq(self):
                 """Fails if SNV is edited incorrectly"""
@@ -1072,23 +1073,21 @@ if __name__ == '__main__':
                 seq1 = self.transcript.seq()
                 seq2 = self.transcript.seq(31, 36)
                 self.assertEqual(len(seq1), 49)
-                #self.assertEqual(len(seq2), 6)
+                self.assertEqual(len(seq2), 7)
                 self.assertEqual(seq1, 
                             "QATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                #self.assertEqual(seq2, "QATGCC")
-                ### SEQ2 RETURNS ATGCCCQATGCCC
+                self.assertEqual(seq2, "QATGCC")
             def test_deletion(self):
                 """Fails if deletion is made incorrectly"""
                 self.transcript.edit(5, 34, mutation_type="D")
-                self.assertEqual(self.transcript.deletion_intervals, [(33, 38)])
+                self.assertEqual(self.transcript.deletion_intervals, [(32, 37)])
                 seq1 = self.transcript.seq()
                 seq2 = self.transcript.seq(31, 36)
                 self.assertEqual(len(seq1), 43)
-                self.assertEqual(len(seq2), 6)
+                self.assertEqual(len(seq2), 3)
                 self.assertEqual(seq1, 
                                 "ATGGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                self.assertEqual(seq2, "ATGGCC")
-                ### SEQ2 can't be obtained
+                self.assertEqual(seq2, "ATG")
             def tearDown(self):
                 """Removes temporary files"""
                 ref_remove = os.path.join(
