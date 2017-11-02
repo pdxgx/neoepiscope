@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-neoscan
+nexepi
 
 Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
 """
@@ -465,6 +465,8 @@ class Transcript(object):
                     deletion_intervals.extend(
                             list(sorted_deletion_intervals[i])
                         )
+            print intervals
+            print deletion_intervals
             for i in xrange(0, len(deletion_intervals), 2):
                 start_index = bisect.bisect_left(intervals,
                                                     deletion_intervals[i])
@@ -488,6 +490,7 @@ class Transcript(object):
                     relevant_deletion_intervals.extend(
                             [pos, intervals[start_index]]
                         )
+                    print relevant_deletion_intervals
                     if end_index % 2:
                         end_pos = deletion_intervals[i+1]
                     else:
@@ -498,6 +501,7 @@ class Transcript(object):
                              xrange(start_index + 1, end_index)]
                         )
                     relevant_deletion_intervals.append(end_pos)
+                    print relevant_deletion_intervals
         intervals = sorted(intervals + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
