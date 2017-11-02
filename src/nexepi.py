@@ -542,7 +542,7 @@ class Transcript(object):
             condition = seq_list[-1][-1] == mutation_class
         except IndexError:
             # Add first item in seq_list
-            assert len(seq_list) == 1
+            assert not seq_list
             seq_list.append((seq, mutation_class))
         if condition:
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class)
