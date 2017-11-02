@@ -465,8 +465,6 @@ class Transcript(object):
                     deletion_intervals.extend(
                             list(sorted_deletion_intervals[i])
                         )
-            print intervals
-            print deletion_intervals
             for i in xrange(0, len(deletion_intervals), 2):
                 start_index = bisect.bisect_left(intervals,
                                                     deletion_intervals[i])
@@ -490,18 +488,19 @@ class Transcript(object):
                     relevant_deletion_intervals.extend(
                             [pos, intervals[start_index]]
                         )
-                    print relevant_deletion_intervals
                     if end_index % 2:
                         end_pos = deletion_intervals[i+1]
-                    else:
-                        end_index -= 1
-                        end_pos = intervals[end_index]
-                    relevant_deletion_intervals.extend(
+                        relevant_deletion_intervals.extend(
                             [intervals[i] for i in
-                             xrange(start_index, end_index + 1)]
+                             xrange(start_index + 1, end_index)]
                         )
+                    else:
+                        end_pos = intervals[end_index - 1]
+                        relevant_deletion_intervals.extend(
+                                [intervals[i] for i in
+                                 xrange(start_index, end_index)]
+                            )
                     relevant_deletion_intervals.append(end_pos)
-                    print relevant_deletion_intervals
         intervals = sorted(intervals + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
@@ -560,8 +559,9 @@ class Transcript(object):
                         del new_edits[intervals[i]]
                     else:
                         intervals = [-1, -1] + intervals
-                        new_edits[-1] = new_edits[intervals[i]]
-                        del new_edits[intervals[i]]
+                        # Have to add 2 because we modified intervals above
+                        new_edits[-1] = new_edits[intervals[i+2]]
+                        del new_edits[intervals[i+2]]
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
@@ -574,7 +574,6 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            print sorted(new_edits.keys()) + [self.intervals[-1] + 1]
             for pos in (sorted(new_edits.keys()) + [self.intervals[-1] + 1]):
                 if pos > intervals[i]:
                     last_index, last_pos = 0, intervals[i-1] + 1
