@@ -377,7 +377,7 @@ class Transcript(object):
             self.edits = copy.copy(self.last_edits)
             self.deletion_intervals = copy.copy(self.last_deletion_intervals)
 
-    def edit(self, seq, pos, mutation_type='V'):
+    def edit(self, seq, pos, mutation_type='V', mutation_class='S'):
         """ Adds an edit to the transcript. 
 
             seq: sequence to add or delete from reference; for deletions, all
@@ -389,6 +389,7 @@ class Transcript(object):
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
+            mutation_class: S for somatic, G for germline
 
             No return value.
         """
@@ -399,7 +400,7 @@ class Transcript(object):
                 deletion_size = len(seq)
             self.deletion_intervals.append((pos - 2, pos + deletion_size - 2))
         else:
-            self.edits[pos - 1].append((seq, mutation_type))
+            self.edits[pos - 1].append((seq, mutation_type, mutation_class))
 
     def expressed_edits(self, start=None, end=None, genome=True):
         """ Gets expressed set of edits and transcript intervals.
@@ -411,7 +412,8 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
 
             Return value: tuple (defaultdict
-                                 mapping edits to lists of (seq, mutation_type)
+                                 mapping edits to lists of
+                                 (seq, mutation_type, mutation_class)
                                  tuples, interval list; this takes
                                  the form of a flattened 
                                  self.deletion_intervals and includes only
@@ -525,8 +527,27 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
-    def seq(self, start=None, end=None, genome=True):
+    def _seq_append(self, seq_list, seq, mutation_class):
+        """ Appends mutation to seq_list, merging successive mutations.
+
+            seq_list: list of tuples (sequence, type) where type is one
+                of R, G, or S (for respectively reference, germline edit, or
+                somatic edit). Empty sequence means there was a deletion.
+            seq: seq to add
+            mutation_class: S for somatic, G for germline, R for reference
+
+            No return value; seq_list is merely updated.
+        """
+        if seq_list[-1][-1] == mutation_class:
+            seq_list[-1] = (seq_list[-1][0] + seq, mutation_class)
+        else:
+            seq_list.append(seq, mutation_class)
+
+    def annotated_seq(self, start=None, end=None, genome=True):
         """ Retrieves transcript sequence between start and end coordinates.
+
+            Includes info on whether edits are somatic or germline and whether
+            sequence is reference sequence.
 
             start: start position (1-indexed, inclusive); None means start of
                 transcript
@@ -534,7 +555,9 @@ class Transcript(object):
                 transcript
             genome: True iff genome coordinates are specified
 
-            Return value: transcript (sub)sequence
+            Return value: list of tuples (sequence, type) where type is one
+                of R, G, or S (for respectively reference, germline edit, or
+                somatic edit). Empty sequence means there was a deletion.
         """
         if end < start: return ''
         # Use 0-based coordinates internally
@@ -579,32 +602,35 @@ class Transcript(object):
                     last_index, last_pos = 0, intervals[i-1] + 1
                     for pos_to_add in pos_group:
                         fill = pos_to_add - last_pos
-                        final_seq.append(seqs[(i-1)/2][
+                        self._seq_append(final_seq, seqs[(i-1)/2][
                                             last_index:last_index + fill
-                                        ])
+                                        ], 'R')
                         # If no edits, snv is reference and no insertion
                         try:
-                            snv = seqs[(i-1)/2][last_index + fill]
+                            snv = (seqs[(i-1)/2][last_index + fill], 'R')
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
                             assert (i - 1) / 2 == 0 and not seqs[0]
-                            snv = ''
-                        insertion = ''
+                            snv = ('', 'R')
+                        insertion = ('', 'R')
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = edit[0]
+                                snv = (edit[0], edit[2])
                             else:
                                 assert edit[1] == 'I'
-                                insertion = edit[0]
-                        final_seq.extend([snv, insertion])
+                                insertion = (edit[0], edit[2])
+                        self._seq_append(final_seq, *snv)
+                        self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
-                    final_seq.append(seqs[(i-1)/2][last_index:])
+                    self._seq_append(
+                            final_seq, seqs[(i-1)/2][last_index:], 'R'
+                        )
                     i += 2
                     try:
                         while pos > intervals[i]:
-                            final_seq.append(seqs[(i-1)/2])
+                            self._seq_append(final_seq, seqs[(i-1)/2], 'R')
                             i += 2
                     except IndexError:
                         if i > len(intervals) - 1:
@@ -614,10 +640,10 @@ class Transcript(object):
                 else:
                     pos_group.append(pos)
             if self.rev_strand:
-                return ''.join(final_seq[::-1].translate(
-                                    _revcomp_translation_table
-                                ))
-            return ''.join(final_seq)
+                return [(seq[::-1].translate(_revcomp_translation_table),
+                            mutation_class)
+                            for seq, mutation_class in final_seq][::-1]
+            return final_seq
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
             'yet fully supported.'
