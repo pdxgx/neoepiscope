@@ -544,6 +544,7 @@ class Transcript(object):
             # Add first item in seq_list
             assert not seq_list
             seq_list.append((seq, mutation_class))
+            return
         if condition:
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class)
         else:
