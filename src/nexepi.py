@@ -17,12 +17,12 @@ import os
 import random
 import re
 import collections
-from operator import itemgetter
-from sortedcontainers import SortedDict
-from intervaltree import Interval, IntervalTree
 import tempfile
 import subprocess
 import string
+from operator import itemgetter
+from sortedcontainers import SortedDict
+from intervaltree import Interval, IntervalTree
 #import Hapcut2interpreter as hap
 
 _revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
@@ -306,6 +306,22 @@ def get_VAF_pos(VCF):
                     break
     return VAF_pos
 
+def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
+    """ Same as bisect.bisect_left, but compares only index "getter"
+
+        See bisect_left source for more info.
+    """
+
+    if lo < 0:
+        raise ValueError('lo must be non-negative')
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if a[mid][getter] < x: lo = mid+1
+        else: hi = mid
+    return lo
+
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
@@ -330,11 +346,16 @@ class Transcript(object):
             try:
                 assert last_chrom == line[0]
             except AssertionError:
-                if last_chrom is None: pass
+                if last_chrom is None:
+                    pass
+                else:
+                    raise
             try:
                 assert last_strand == line[6]
             except AssertionError:
-                if last_strand is None: pass
+                if last_strand is None:
+                    pass
+                else: raise
             # Use exclusive start, inclusive end 0-based coordinates internally
             self.intervals.extend(
                     [int(line[3]) - 2, int(line[4]) - 1]
@@ -398,7 +419,9 @@ class Transcript(object):
                 deletion_size = int(seq)
             except ValueError:
                 deletion_size = len(seq)
-            self.deletion_intervals.append((pos - 2, pos + deletion_size - 2))
+            self.deletion_intervals.append(
+                    (pos - 2, pos + deletion_size - 2, mutation_class)
+                )
         else:
             self.edits[pos - 1].append((seq, mutation_type, mutation_class))
 
@@ -414,11 +437,11 @@ class Transcript(object):
             Return value: tuple (defaultdict
                                  mapping edits to lists of
                                  (seq, mutation_type, mutation_class)
-                                 tuples, interval list; this takes
-                                 the form of a flattened 
-                                 self.deletion_intervals and includes only
-                                 those intervals of the transcript that
-                                 are expressed)
+                                 tuples, interval list; this is a list of 
+                                 tuples (bound, {'R', 'G', or 'S'}), which
+                                 says whether the bound is due to CDS bound
+                                 ("R"), a germline deletion ("G"), or a 
+                                 somatic deletion ("S"))
         """
         if not genome:
             raise NotImplementedError(
@@ -452,26 +475,37 @@ class Transcript(object):
         intervals = [start - 1] + self.intervals[start_index:end_index] + [end]
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
-        relevant_deletion_intervals = []
+        relevant_deletion_intervals, edits = [], collections.defaultdict(list)
         if self.deletion_intervals:
-            sorted_deletion_intervals = sorted(self.deletion_intervals)
-            deletion_intervals = [sorted_deletion_intervals[0][0],
-                                    sorted_deletion_intervals[0][1]]
+            sorted_deletion_intervals = sorted(self.deletion_intervals,
+                                                key=itemgetter(0, 1))
+            deletion_intervals = [(sorted_deletion_intervals[0][0],
+                                   sorted_deletion_intervals[0][2]),
+                                  (sorted_deletion_intervals[0][1],
+                                   sorted_deletion_intervals[0][2])]
             for i in xrange(1, len(sorted_deletion_intervals)):
-                if (sorted_deletion_intervals[i][0] <= deletion_intervals[-1]):
+                if (sorted_deletion_intervals[i][0]
+                    <= deletion_intervals[-1][0]):
                     deletion_intervals[-2] = min(deletion_intervals[-2],
-                                            sorted_deletion_intervals[i][0])
+                                            (sorted_deletion_intervals[i][0],
+                                             sorted_deletion_intervals[i][2]),
+                                            key=itemgetter(0))
                     deletion_intervals[-1] = max(deletion_intervals[-1],
-                                            sorted_deletion_intervals[i][1])
+                                            (sorted_deletion_intervals[i][1],
+                                             sorted_deletion_intervals[i][2]),
+                                            key=itemgetter(0))
                 else:
                     deletion_intervals.extend(
-                            list(sorted_deletion_intervals[i])
+                            [(sorted_deletion_intervals[i][0],
+                                sorted_deletion_intervals[i][2]),
+                             (sorted_deletion_intervals[i][1],
+                                sorted_deletion_intervals[i][2])]
                         )
             for i in xrange(0, len(deletion_intervals), 2):
                 start_index = bisect.bisect_left(intervals,
-                                                    deletion_intervals[i])
+                                                    deletion_intervals[i][0])
                 end_index = bisect.bisect_left(intervals,
-                                                deletion_intervals[i+1])
+                                                deletion_intervals[i+1][0])
                 if start_index == end_index:
                     if start_index % 2:
                         # Entirely in a single interval
@@ -484,37 +518,38 @@ class Transcript(object):
                     if start_index % 2:
                         pos = deletion_intervals[i]
                     else:
-                        pos = intervals[start_index]
+                        pos = (intervals[start_index], 'R')
                         start_index += 1
                     # deletion_intervals[i] becomes a new end
                     relevant_deletion_intervals.extend(
-                            [pos, intervals[start_index]]
+                            [pos, (intervals[start_index], 'R')]
                         )
                     if end_index % 2:
                         end_pos = deletion_intervals[i+1]
                         relevant_deletion_intervals.extend(
-                            [intervals[i] for i in
+                            [(intervals[i], 'R') for i in
                              xrange(start_index + 1, end_index)]
                         )
                     else:
-                        end_pos = intervals[end_index - 1]
+                        end_pos = (intervals[end_index - 1], 'R')
                         relevant_deletion_intervals.extend(
-                                [intervals[i] for i in
+                                [(intervals[i], 'R') for i in
                                  xrange(start_index, end_index)]
                             )
                     relevant_deletion_intervals.append(end_pos)
-        intervals = sorted(intervals + relevant_deletion_intervals)
+        intervals = sorted([(interval, 'R') for interval in intervals]
+                            + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
-            start_index = bisect.bisect_left(intervals, pos)
+            start_index = custom_bisect_left(intervals, pos)
             for edit in self.edits[pos]:
                 if edit[1] == 'V':
                     if start_index % 2:
                         # Add edit if and only if it lies within CDS boundaries
                         edits[pos].append(edit)
                 elif edit[1] == 'I':
-                    if start_index % 2 or pos == intervals[start_index]:
+                    if start_index % 2 or pos == intervals[start_index][0]:
                         '''An insertion is valid before or after a block'''
                         edits[pos].append(edit)
         return (edits, intervals)
@@ -543,11 +578,12 @@ class Transcript(object):
         except IndexError:
             # Add first item in seq_list
             assert not seq_list
-            seq_list.append((seq, mutation_class))
+            if seq or mutation_class != 'R':
+                seq_list.append((seq, mutation_class))
             return
         if condition:
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class)
-        else:
+        elif seq or mutation_class != 'R':
             seq_list.append((seq, mutation_class))
 
     def annotated_seq(self, start=None, end=None, genome=True):
@@ -574,44 +610,49 @@ class Transcript(object):
             end = self.intervals[-1] + 1
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start, end,
-                                                    genome=True)
+            edits, intervals = self.expressed_edits(start, end, genome=True)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
             new_edits = copy.copy(edits)
             for i in xrange(0, len(intervals), 2):
-                if intervals[i] in edits:
-                    assert (len(edits[intervals[i]]) == 1
-                                and edits[intervals[i]][0][1] == 'I')
+                if intervals[i][0] in edits:
+                    assert (len(edits[intervals[i][0]]) == 1
+                                and edits[intervals[i][0]][0][1] == 'I')
                     if i:
-                        new_edits[intervals[i-1]] = new_edits[intervals[i]]
-                        del new_edits[intervals[i]]
+                        new_edits[
+                            intervals[i-1][0]] = new_edits[intervals[i][0]]
+                        del new_edits[intervals[i][0]]
                     else:
-                        intervals = [-1, -1] + intervals
+                        intervals = [(-1, 'R'), (-1, 'R')] + intervals
                         # Have to add 2 because we modified intervals above
-                        new_edits[-1] = new_edits[intervals[i+2]]
-                        del new_edits[intervals[i+2]]
+                        new_edits[-1] = new_edits[intervals[i+2][0]]
+                        del new_edits[intervals[i+2][0]]
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
                         self.bowtie_reference_index.get_stretch(
-                                self.chrom, intervals[i] + 1,
-                                intervals[i + 1] -
-                                intervals[i]
+                                self.chrom, intervals[i][0] + 1,
+                                intervals[i + 1][0] -
+                                intervals[i][0]
                             )
                     )
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            for pos in (sorted(new_edits.keys()) + [self.intervals[-1] + 1]):
-                if pos > intervals[i]:
-                    last_index, last_pos = 0, intervals[i-1] + 1
+            for pos in (sorted(new_edits.keys()) + [(self.intervals[-1] + 1,
+                                                        'R')]):
+                if pos > intervals[i][0]:
+                    last_index, last_pos = 0, intervals[i-1][0] + 1
                     for pos_to_add in pos_group:
                         fill = pos_to_add - last_pos
+                        if intervals[i-1][1] != 'R':
+                            self._seq_append(final_seq, '', intervals[i-1][1])
                         self._seq_append(final_seq, seqs[(i-1)/2][
                                             last_index:last_index + fill
                                         ], 'R')
+                        if intervals[i][1] != 'R':
+                            self._seq_append(final_seq, '', intervals[i][1])
                         # If no edits, snv is reference and no insertion
                         try:
                             snv = (seqs[(i-1)/2][last_index + fill], 'R')
@@ -631,13 +672,25 @@ class Transcript(object):
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
+                    if intervals[i-1][1] != 'R':
+                        self._seq_append(final_seq, '', intervals[i-1][1])
                     self._seq_append(
                             final_seq, seqs[(i-1)/2][last_index:], 'R'
                         )
+                    if intervals[i][1] != 'R':
+                        self._seq_append(final_seq, '', intervals[i][1])
                     i += 2
                     try:
                         while pos > intervals[i]:
+                            if intervals[i-1][1] != 'R':
+                                self._seq_append(
+                                        final_seq, '', intervals[i-1][1]
+                                    )
                             self._seq_append(final_seq, seqs[(i-1)/2], 'R')
+                            if intervals[i][1] != 'R':
+                                self._seq_append(
+                                        final_seq, '', intervals[i][1]
+                                    )
                             i += 2
                     except IndexError:
                         if i > len(intervals) - 1:
