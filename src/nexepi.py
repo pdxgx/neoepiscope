@@ -157,7 +157,7 @@ def cds_to_tree(cds_dict, dictdir, pickle_it=True):
             pickle.dump(searchable_tree, f)
     return searchable_tree
 
-def get_transcripts_from_tree(chrom, start, cds_tree):
+def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     """ Uses cds tree to btain transcript IDs from genomic coordinates
             
         chrom: (String) Specify chrom to use for transcript search.
@@ -170,7 +170,7 @@ def get_transcripts_from_tree(chrom, start, cds_tree):
     """
     transcript_ids = set()
     # Interval coordinates are inclusive of start, exclusive of stop
-    cds = cds_tree[chrom].search(start)
+    cds = cds_tree[chrom].search(start, stop)
     for cd in cds:
         if cd.data not in transcript_ids:
             transcript_ids.add(cd.data)
@@ -422,8 +422,10 @@ class Transcript(object):
             self.deletion_intervals.append(
                     (pos - 2, pos + deletion_size - 2, mutation_class)
                 )
-        else:
+        elif mutation_type == 'V' or mutation_type == 'I':
             self.edits[pos - 1].append((seq, mutation_type, mutation_class))
+        else:
+            raise NotImplementedError('Mutation type not yet implemented')
 
     def expressed_edits(self, start=None, end=None, genome=True):
         """ Gets expressed set of edits and transcript intervals.
@@ -847,14 +849,7 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
                             )
                     # Get neoepitope sequences for each mutation
                     for mutation in block_transcripts[transcript_ID]:
-                        nucleotide_sequence = transcript.seq(
-                                    start= mutation[1] - 3*size_list[-1] - 1, 
-                                    end=mutation[1] + 3*size_list[-1] - 1, 
-                                    genome=True)
-                        peptides = neoepitopes(nucleotide_sequence,
-                                        reverse_strand=transcript.rev_strand, 
-                                        min_size=size_list[0], 
-                                        max_size=size_list[-1])
+                        ### GET NEOEPITOPES AND APPEND TO peptides
                         for pep in peptides:
                             tumor_peptides.append(pep)
                         for i in range(0, len(peptide_lists[0])):
@@ -864,9 +859,12 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
             else:
                 # Add mutation to transcript dictionary for the block
                 tokens = line.strip("\n").split("\t")
+                mut_size = min(len(tokens[5]), len(tokens[6]))
+                end = tokens[4] + mut_size
                 overlapping_transcripts = get_transcripts_from_tree(
                                                             tokens[3], 
                                                             tokens[4], 
+                                                            end,
                                                             interval_dict)
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele A,
@@ -996,9 +994,28 @@ if __name__ == '__main__':
                 """Fails if incorrect transcripts are pulled"""
                 self.assertEqual(len(get_transcripts_from_tree(
                                                                 "Y", 150860, 
+                                                                150861,
                                                                 self.Ytree)), 
                                                                 10
                                                                 )
+                self.coordinate_search = list(self.Ytree["Y"].search(150860,
+                                                                     150861))
+                self.transcripts = []
+                for interval in self.coordinate_search:
+                    self.transcripts.append(interval[2])
+                self.transcripts.sort()
+                self.assertEqual(self.transcripts, [
+                                                    'ENST00000381657.7_3_PAR_Y', 
+                                                    'ENST00000381663.8_3_PAR_Y', 
+                                                    'ENST00000399012.6_3_PAR_Y', 
+                                                    'ENST00000415337.6_3_PAR_Y', 
+                                                    'ENST00000429181.6_2_PAR_Y', 
+                                                    'ENST00000430923.7_3_PAR_Y', 
+                                                    'ENST00000443019.6_2_PAR_Y', 
+                                                    'ENST00000445062.6_2_PAR_Y', 
+                                                    'ENST00000447472.6_3_PAR_Y', 
+                                                    'ENST00000448477.6_2_PAR_Y'
+                                                    ])
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
@@ -1094,16 +1111,18 @@ if __name__ == '__main__':
                 """Fails if edit is made for non-CDS/stop position"""
                 self.transcript.edit("G", 1)
                 relevant_edits = self.transcript.expressed_edits()
-                self.assertEqual(self.transcript.edits[0], [("G", "V")])
+                self.assertEqual(self.transcript.edits[0], [("G", "V", "S")])
                 self.assertEqual(relevant_edits[0], {})
-                self.assertEqual(relevant_edits[1], [29, 74, 74, 77])
+                self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
+                                                        (74, "R"), (77, "R")])
             def test_relevant_edit(self):
                 """Fails if edit is not made for CDS position"""
                 self.transcript.edit("G", 34)
                 relevant_edits = self.transcript.expressed_edits()
-                self.assertEqual(self.transcript.edits[33], [("G", "V")])
-                self.assertEqual(relevant_edits[0][33], [("G", "V")])
-                self.assertEqual(relevant_edits[1], [29, 74, 74, 77])
+                self.assertEqual(self.transcript.edits[33], [("G", "V", "S")])
+                self.assertEqual(relevant_edits[0][33], [("G", "V", "S")])
+                self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
+                                                        (74, "R"), (77, "R")])
             def test_reset_to_reference(self):
                 """Fails if transcript is not reset to reference"""
                 self.transcript.edit("G", 34)
@@ -1114,65 +1133,62 @@ if __name__ == '__main__':
                 self.transcript.edit("G", 34)
                 self.transcript.edit("CCC", 60, mutation_type="D")
                 self.transcript.save()
-                self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
+                self.assertEqual(self.transcript.last_edits[33], [("G", "V", 
+                                                                    "S")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [(58, 61)])
+                                    [(58, 61, "S")])
             def test_reset_to_save_point(self):
                 """Fails if new edit not erased or old edits not retained"""
                 self.transcript.edit("G", 34)
                 self.transcript.edit("CCC", 60, mutation_type="D")
                 self.transcript.save()
                 self.transcript.edit("C", 36)
-                self.assertEqual(self.transcript.edits[35], [("C", "V")])
+                self.assertEqual(self.transcript.edits[35], [("C", "V", "S")])
                 self.transcript.reset(reference=False)
                 self.assertNotIn(35, self.transcript.edits)
-                self.assertEqual(self.transcript.last_edits[33], [("G", "V")])
+                self.assertEqual(self.transcript.last_edits[33], [("G", "V", 
+                                                                    "S")])
                 self.assertEqual(self.transcript.last_deletion_intervals,
-                                    [(58, 61)])
+                                    [(58, 61, "S")])
                 self.assertNotEqual(self.transcript.edits, {})
             def test_SNV_seq(self):
                 """Fails if SNV is edited incorrectly"""
                 self.transcript.edit("G", 31)
-                seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31, 36)
-                self.assertEqual(len(seq1), 48)
-                self.assertEqual(len(seq2), 6)
-                self.assertEqual(seq1, 
-                            "GTGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                self.assertEqual(seq2, "GTGCCC")
+                seq1 = self.transcript.annotated_seq()
+                seq2 = self.transcript.annotated_seq(31, 36)
+                self.assertEqual(seq1, [('G', 'S'), 
+                    ('TGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+                self.assertEqual(seq2, [('G', 'S'), ('TGCCC', 'R')])
             def test_inside_indel(self):
                 """Fails if indel within CDS is inserted incorrectly"""
                 self.transcript.edit("Q", 35, mutation_type="I")
-                self.assertEqual(self.transcript.edits[34], [("Q", "I")])
-                seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31, 36)
-                self.assertEqual(len(seq1), 49)
-                self.assertEqual(len(seq2), 7)
-                self.assertEqual(seq1, 
-                            "ATGCCQCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                self.assertEqual(seq2, "ATGCCQC")
+                self.assertEqual(self.transcript.edits[34], [("Q", "I", "S")])
+                seq1 = self.transcript.annotated_seq()
+                seq2 = self.transcript.annotated_seq(31, 36)
+                self.assertEqual(seq1, [('ATGCC', 'R'), ('Q', 'S'), 
+                        ('CGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+                self.assertEqual(seq2, [('ATGCC', 'R'), ('Q', 'S'), ('C', 'R')])
             def test_adjacent_indel(self):
                 """Fails if indel right before CDS is inserted incorrectly"""
                 self.transcript.edit("Q", 30, mutation_type="I")
-                self.assertEqual(self.transcript.edits[29], [("Q", "I")])
-                seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31, 36)
-                self.assertEqual(len(seq1), 49)
-                self.assertEqual(len(seq2), 7)
-                self.assertEqual(seq1, 
-                            "QATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                self.assertEqual(seq2, "QATGCC")
+                self.assertEqual(self.transcript.edits[29], [("Q", "I", "S")])
+                seq1 = self.transcript.annotated_seq()
+                seq2 = self.transcript.annotated_seq(31, 36)
+                ## DEBUG THESE
+                self.assertEqual(seq1, [('Q', 'S'), 
+                    ('ATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+                self.assertEqual(seq2, [('Q', 'S'), ('ATGCC', 'R')])
             def test_deletion(self):
                 """Fails if deletion is made incorrectly"""
                 self.transcript.edit(5, 34, mutation_type="D")
-                self.assertEqual(self.transcript.deletion_intervals, [(32, 37)])
-                seq1 = self.transcript.seq()
-                seq2 = self.transcript.seq(31, 36)
-                self.assertEqual(len(seq1), 43)
-                self.assertEqual(len(seq2), 3)
-                self.assertEqual(seq1, 
-                                "ATGGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG")
-                self.assertEqual(seq2, "ATG")
+                self.assertEqual(self.transcript.deletion_intervals, [(32, 37, 
+                                                                        "S")])
+                seq1 = self.transcript.annotated_seq()
+                seq2 = self.transcript.annotated_seq(31, 36)
+                self.assertEqual(seq1, [('ATG', 'R'), ('', 'S'), 
+                            ('GCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+                ### DEBUG THIS ONE
+                self.assertEqual(seq2, [('ATG', 'R'), ('', 'S'), ('GCC', 'R')])
             def tearDown(self):
                 """Removes temporary files"""
                 ref_remove = os.path.join(
