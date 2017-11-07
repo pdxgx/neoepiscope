@@ -238,28 +238,28 @@ def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
             temp.write(lines)
     vcffile.close()
     temp.close()    
-    markgermline = "".join(['''awk '{print $0, "0"}' ''', vcf2, 
+    markgermline = "".join(['''awk '{print $0"*"}' ''', vcf2, 
                             ".germlinetemp > ", vcf2, ".germline"])
-    marktumor    = "".join(['''awk '{print $0, "1"}' ''', vcf2, 
+    marktumor    = "".join(['''awk '{print $0}' ''', vcf2, 
                             ".tumortemp > ", vcf2, ".tumor"])
-    os.system(markgermline)
-    os.system(marktumor)
+    subprocess.call(markgermline, shell=True)
+    subprocess.call(marktumor, shell=True)
     command = "".join(["cat ", vcf2, ".germline ", vcf2, ".tumor > ", 
                         vcf2, ".combine1"])
-    os.system(command)
+    subprocess.call(command, shell=True)
     command2 = "".join(["sort -k1,1 -k2,2n ", vcf2, ".combine1 > ", 
                         vcf2, ".sorted"])
-    os.system(command2)
+    subprocess.call(command2, shell=True)
     command3 = "".join(["cat ", vcf2, ".header ", vcf2, ".sorted > ", 
                         vcf2, ".combine2"])
-    os.system(command3)
+    subprocess.call(command3, shell=True)
     cut = "".join(["cut -f1,2,3,4,5,6,7,8,9,10 ", vcf2, 
                     ".combine2 > ", outfile])
-    os.system(cut)
+    subprocess.call(cut, shell=True)
     for file in [".tumortemp", ".germlinetemp", ".combine1", ".combine2", 
                     ".sorted", ".tumor", ".germline", ".header"]:
         cleanup = "".join(["rm ", vcf2, file])
-        os.system(cleanup)
+        subprocess.call(cleanup,shell=True)
 
 def which(path):
     """ Searches for whether executable is present and returns version
@@ -1048,7 +1048,7 @@ if __name__ == '__main__':
                                                 )
                                         ), 'test', 'Ychrom.testcombine.vcf'
                                 )  
-                combinevcf(self.varscan, self.germline, self.outvcf)
+                combinevcf(self.germline, self.varscan, self.outvcf)
             def test_merge(self):
                 """Fails if VCFs were merged improperly"""
                 self.assertTrue(filecmp.cmp(self.outvcf, self.precombined))
