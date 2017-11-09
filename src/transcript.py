@@ -401,5 +401,14 @@ class Transcript(object):
 
             Return value: list of peptides of desired length.
         """
+        if size < 2: return []
+        seq = self.annotated_seq(somatic=somatic, germline=germline)
+        #extract list of transcript coordinates for each variant tuple
+        #convert to string of nucleotides
+        start = seq.find("ATG")
+        if start < 0: return []
+        coding_seq = seq[start:]
+        
+
 
 
