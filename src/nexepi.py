@@ -597,7 +597,8 @@ class Transcript(object):
             present, shift them to ends of previous intervals so they're
             actually added.'''
             new_edits = copy.copy(edits)
-            for i in xrange(0, len(intervals), 2):
+            i = 0
+            while i < len(intervals):
                 if intervals[i][0] in edits:
                     assert (len(edits[intervals[i][0]]) == 1
                                 and edits[intervals[i][0]][0][1] == 'I')
@@ -608,8 +609,10 @@ class Transcript(object):
                     else:
                         intervals = [(-1, 'R'), (-1, 'R')] + intervals
                         # Have to add 2 because we modified intervals above
-                        new_edits[-1] = new_edits[intervals[i+2][0]]
-                        del new_edits[intervals[i+2][0]]
+                        i += 2
+                        new_edits[-1] = new_edits[intervals[i][0]]
+                        del new_edits[intervals[i][0]]
+                i += 2
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
@@ -1393,7 +1396,7 @@ if __name__ == '__main__':
                                                     interval_dict)
         # Iterate over relevant transcripts to create transcript objects and
         #   enumerate neoepitopes
-        for affected_transcript in relevant transcripts:
+        for affected_transcript in relevant_transcripts:
             # Create transcript object
             transcript = Transcript(reference_index, 
                             [[str(chrom), 'blah', 'blah', str(start), str(end), 
