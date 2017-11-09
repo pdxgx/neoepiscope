@@ -407,8 +407,8 @@ class Transcript(object):
         #convert to string of nucleotides
         start = seq.find("ATG")
         if start < 0: return []
-        coding_seq = seq[start:]
-        
+        protein = seq_to_peptide(seq[start:])
+        # for each variant of type V, do the windows around there
 
 
 
