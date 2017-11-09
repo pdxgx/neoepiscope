@@ -777,10 +777,17 @@ def neoepitopes(mutated_seq, reverse_strand=False, min_size=8, max_size=11):
                             max_size=max_size
                             )
 
-def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
-                        VAF_pos, size_list):
-    tumor_peptides = []
-    VAFs = []
+def process_haplotypes(hapcut_output, interval_dict):
+    """ Stores all haplotypes relevant to different transcripts as a dictionary
+
+        hapcut_output: output from HAPCUT2, adjusted to include unphased 
+                        mutations as their own haplotypes (performed in 
+                        software's prep mode)
+        interval_dict: dictionary linking genomic intervals to transcripts
+
+        Return value: dictinoary linking haplotypes to transcripts
+    """
+    affected_transcripts = {}
     with open(hapcut_output, "r") as f:
         block_transcripts = {}
         for line in f:
@@ -790,70 +797,15 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
             elif line[0] == "*":
                 # Process all transcripts for the block
                 for transcript_ID in block_transcripts:
-                    VAF_list = []
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
-                    # Create transcript object and make relevant edits
-                    transcript = Transcript(reference_index, 
-                                            [[str(chrom), 'blah', 'blah', 
-                                                str(start), str(end), 
-                                                '.', strand] for (chrom, start, 
-                                                                    end, 
-                                                                    entry_type, 
-                                                                    strand, 
-                                                                    frame) in 
-                                                cds_dict[transcript_ID]]
-                                            )
-                    for mutation in block_transcripts[transcript_ID]:
-                        if VAF_pos is not None:
-                            if "%" in mutation[7].split(":")[VAF_pos]:
-                                VAF_list.append(
-                                                float(
-                                                    mutation[7].split(
-                                                                        ":"
-                                                        )[VAF_pos].strip(
-                                                                        "%"
-                                                                        )
-                                                    )
-                                                )
-                        if len(mutation[5]) == len(mutation[6]):
-                            mutation_type = 'V'
-                        elif len(mutation[5]) < len(mutation[6]):
-                            mutation_type = 'I'
-                        elif len(mutation[5]) > len(mutation[6]):
-                            mutation_type = 'D'
-                        else:
-                            mutation_type = '?'
-                        make_edit = transcript.edit(mutation[3], mutation[1], 
-                                        mutation_type=mutation_type)
-                        if not make_edit:
-                            block_transcripts[transcript_ID].remove(mutation)
-                    # Calculate VAF for the transcript
-                    if len(VAF_list) == 0:
-                        transcript_VAF = "NA"
-                    elif len(VAF_list) == 1:
-                        transcript_VAF = VAF_list[0]
+                    if transcript_ID not in affected_transcripts:
+                        affected_transcripts[transcript_ID] = [
+                                            block_transcripts[transcript_ID]
+                                            ]
                     else:
-                        VAF_list.sort()
-                        if args.VAF_freq_calc == "min":
-                            transcript_VAF = VAF_list[0]
-                        elif args.VAF_freq_calc == "max":
-                            transcript_VAF = VAF_list[-1]
-                        elif args.VAF_freq_calc == "mean":
-                            transcript_VAF = float(sum(VAF_list))/float(
-                                                                len(VAF_list))
-                        elif args.VAF_freq_calc == "median":
-                            transcript_VAF = median(VAF_list)
-                        else:
-                            sys.exit(" ".join([args.VAF_freq_calc,
-                             " is not a valid VAF calculation option"])
-                            )
-                    # Get neoepitope sequences for each mutation
-                    for mutation in block_transcripts[transcript_ID]:
-                        ### GET NEOEPITOPES AND APPEND TO peptides
-                        for pep in peptides:
-                            tumor_peptides.append(pep)
-                        for i in range(0, len(peptide_lists[0])):
-                            VAFs.append(transcript_VAF)
+                        affected_transcripts[transcript_ID].append(
+                                                block_transcripts[transcript_ID]
+                                                )
                 # Reset transcript dictionary
                 block_transcripts = {}
             else:
@@ -867,8 +819,8 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
                                                             end,
                                                             interval_dict)
                 # For each overlapping transcript, add mutation entry
-                # Contains chromosome, position, reference, alternate, allele A,
-                #   allele B, genotype line from VCF
+                # Contains chromosome, position, reference, alternate, allele
+                #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
                     if transcript not in block_transcripts:
                         block_transcripts[transcript] = [[tokens[3], 
@@ -886,7 +838,8 @@ def process_haplotypes(hapcut_output, cds_dict, interval_dict, reference_index,
                                                             tokens[1], 
                                                             tokens[2], 
                                                             tokens[7]])
-    return tumor_peptides, VAFs
+    return affected_transcripts
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
@@ -1459,21 +1412,41 @@ if __name__ == '__main__':
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
         # Create relevant transcript objects and edit with mutations
-        tumor_peptides, VAF_list = process_haplotypes(
-                                                    args.merged_hapcut2_output,
-                                                    cds_dict, interval_dict,
-                                                    VAF_pos, size_list
-                                                    )
-        ## Get binding affinities for neoepitopes
-        tumor_affinities = get_affinity(normal_peptides, args.allele)
-        ## Find multi-mapping rate of neoepitopes to proteome??
-        # Combine neoepitope data into entries and take unique set
-        neoepitope_data = zip(tumor_peptides, 
-                                tumor_affinities, 
-                                VAF_list)
-        unique_neoepitopes = set(neoepitope_data)
-        ## Prioritize output based on: affinity, VAF, peptide similarity?
-        ## Write to output file
+        relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
+                                                    interval_dict)
+        for affected_transcript in relevant transcripts:
+            transcript = Transcript(reference_index, 
+                            [[str(chrom), 'blah', 'blah', 
+                                str(start), str(end), 
+                                '.', strand] for (chrom, start, 
+                                                    end, 
+                                                    entry_type, 
+                                                    strand, 
+                                                    frame) in 
+                                cds_dict[transcript_ID]]
+                            )
+            haplotypes = relevant_transcripts[affected_transcript]
+            for ht in haplotypes:
+                for mutation in ht:
+                    # Check type of mutation
+                    if len(mutation[5] == len(mutation[6])):
+                        mutation_type = 'V'
+                    elif len(mutation[5]) < len(mutation[6]):
+                        mutation_type = 'I'
+                    elif len(mutation[5]) > len(mutation[6]):
+                        mutation_type = 'D'
+                    else:
+                        mutation_type = '?'
+                    # Check if mutation is somatic or germline
+                    if mutation[7][-1] == "*":
+                        mutation_class = 'G'
+                    else:
+                        mutation_class = 'S'
+                    transcipt.edit(mutation[3], mutation[1], 
+                                    mutation_type=mutation_type, 
+                                    mutation_class=mutation_class)
+                ## ENUMERATE NEOEPITOPES
+                transcript.reset(reference=True)
     else:
         sys.exit("".join([args.subparser_name, 
                             " is not a valid software mode"]))
