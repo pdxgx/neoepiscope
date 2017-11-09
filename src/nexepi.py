@@ -58,8 +58,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
 
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
-            Data: [chromosome, start, stop, 1(CDS)/0(Stop codon), 
-                    +/- strand, reading frame]
+            Data: [chromosome, start, stop, +/- strand]
         Writes cds_dict as a pickled dictionary
 
         gtf_file: input gtf file to process
@@ -73,43 +72,24 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if tokens[2] == "CDS" or tokens[2] == "stop_codon":
+                if tokens[2] == "exon":
                     transcript_id = re.sub(
                                 r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
                                 r'\1', tokens[8]
                                 )
                     # Create new dictionary entry for new transcripts
                     if transcript_id not in cds_dict:
-                        if tokens[2] == "CDS":
-                            cds_dict[transcript_id] = [[tokens[0].replace(
+                        cds_dict[transcript_id] = [[tokens[0].replace(
                                                                     "chr", ""), 
                                                         int(tokens[3]), 
-                                                        int(tokens[4]), 1, 
-                                                        tokens[6], 
-                                                        int(tokens[7])]]
-                        else:
-                            cds_dict[transcript_id] = [[tokens[0].replace(
-                                                                    "chr", ""), 
-                                                        int(tokens[3]), 
-                                                        int(tokens[4]), 0, 
-                                                        tokens[6], 
-                                                        int(tokens[7])]]
-                    # Append previous entry for old transcripts
+                                                        int(tokens[4]), 
+                                                        tokens[6]]]
                     else:
-                        if tokens[2] == "CDS":
-                            cds_dict[transcript_id].append([tokens[0].replace(
+                        cds_dict[transcript_id].append([tokens[0].replace(
                                                                     "chr", ""), 
                                                             int(tokens[3]), 
-                                                            int(tokens[4]), 1, 
-                                                            tokens[6], 
-                                                            int(tokens[7])])
-                        else:
-                            cds_dict[transcript_id].append([tokens[0].replace(
-                                                                    "chr", ""), 
-                                                            int(tokens[3]), 
-                                                            int(tokens[4]), 0, 
-                                                            tokens[6], 
-                                                            int(tokens[7])])
+                                                            int(tokens[4]), 
+                                                            tokens[6]])
     # Sort cds_dict coordinates (left -> right) for each transcript                                
     for transcript_id in cds_dict:
             cds_dict[transcript_id].sort(key=lambda x: x[0])
@@ -814,30 +794,28 @@ def process_haplotypes(hapcut_output, interval_dict):
                 mut_size = min(len(tokens[5]), len(tokens[6]))
                 end = tokens[4] + mut_size
                 overlapping_transcripts = get_transcripts_from_tree(
-                                                            tokens[3], 
-                                                            tokens[4], 
-                                                            end,
-                                                            interval_dict)
+                                                                  tokens[3], 
+                                                                  tokens[4], 
+                                                                  end,
+                                                                  interval_dict
+                                                                   )
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele
                 #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
                     if transcript not in block_transcripts:
-                        block_transcripts[transcript] = [[tokens[3], 
-                                                            tokens[4], 
-                                                            tokens[5], 
-                                                            tokens[6], 
-                                                            tokens[1], 
-                                                            tokens[2], 
-                                                            tokens[7]]]
+                        block_transcripts[transcript] = [[tokens[3], tokens[4], 
+                                                          tokens[5], tokens[6], 
+                                                          tokens[1], tokens[2], 
+                                                          tokens[7]]]
                     else:
                         block_transcripts[transcript].append([tokens[3], 
-                                                            tokens[4], 
-                                                            tokens[5], 
-                                                            tokens[6], 
-                                                            tokens[1], 
-                                                            tokens[2], 
-                                                            tokens[7]])
+                                                              tokens[4], 
+                                                              tokens[5], 
+                                                              tokens[6], 
+                                                              tokens[1], 
+                                                              tokens[2], 
+                                                              tokens[7]])
     return affected_transcripts
 
 
@@ -1411,24 +1389,23 @@ if __name__ == '__main__':
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
-        # Create relevant transcript objects and edit with mutations
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
+        # Iterate over relevant transcripts to create transcript objects and
+        #   enumerate neoepitopes
         for affected_transcript in relevant transcripts:
+            # Create transcript object
             transcript = Transcript(reference_index, 
-                            [[str(chrom), 'blah', 'blah', 
-                                str(start), str(end), 
-                                '.', strand] for (chrom, start, 
-                                                    end, 
-                                                    entry_type, 
-                                                    strand, 
-                                                    frame) in 
-                                cds_dict[transcript_ID]]
+                            [[str(chrom), 'blah', 'blah', str(start), str(end), 
+                              '.', strand] for (chrom, start, end,  strand) in 
+                              cds_dict[transcript_ID]]
                             )
+            # Iterate over haplotypes associated with this transcript
             haplotypes = relevant_transcripts[affected_transcript]
             for ht in haplotypes:
+                # Make edits for each mutation
                 for mutation in ht:
-                    # Check type of mutation
+                    # Determine type of mutation
                     if len(mutation[5] == len(mutation[6])):
                         mutation_type = 'V'
                     elif len(mutation[5]) < len(mutation[6]):
@@ -1437,15 +1414,16 @@ if __name__ == '__main__':
                         mutation_type = 'D'
                     else:
                         mutation_type = '?'
-                    # Check if mutation is somatic or germline
+                    # Determine if mutation is somatic or germline
                     if mutation[7][-1] == "*":
                         mutation_class = 'G'
                     else:
                         mutation_class = 'S'
+                    # Make edit to transcript
                     transcipt.edit(mutation[3], mutation[1], 
                                     mutation_type=mutation_type, 
                                     mutation_class=mutation_class)
-                ## ENUMERATE NEOEPITOPES
+                ## ENUMERATE NEOEPITOPES HERE
                 transcript.reset(reference=True)
     else:
         sys.exit("".join([args.subparser_name, 
