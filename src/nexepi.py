@@ -1173,11 +1173,25 @@ if __name__ == '__main__':
                 self.transcript.edit("Q", 30, mutation_type="I")
                 self.assertEqual(self.transcript.edits[29], [("Q", "I", "S")])
                 seq1 = self.transcript.annotated_seq()
-                seq2 = self.transcript.annotated_seq(31, 36)
+                seq2 = self.transcript.annotated_seq(30, 36)
                 ## DEBUG THESE
                 self.assertEqual(seq1, [('Q', 'S'), 
                     ('ATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
-                self.assertEqual(seq2, [('Q', 'S'), ('ATGCC', 'R')])
+                self.assertEqual(seq2, [('Q', 'S'), ('ATGCCC', 'R')])
+            def compound_variants(self):
+                self.transcript.edit("Q", 30, mutation_type ="I")
+                self.transcript.edit("T", 33, mutation_type ="V")
+                self.transcript.edit("JJJ", 40, mutation_type ="I")
+                self.transcript.edit(1, 45, mutation_type ="D")
+                seq1 = self.transcript.annotated_seq()
+                seq2 = self.transcript.annotated_seq(30, 36)
+                self.assertEqual(seq1, [('Q', 'S'), ('AT', 'R'), ('T', 'S'), 
+                                        ('CCCGTGC', 'R'),  ('JJJ', 'S'), 
+                                        ('CGAA', 'R'), ('', 'S'), 
+                                        ('TCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 
+                                            'R')])
+                self.assertEqual(seq2, [('Q', 'S'), ('AT', 'R'), ('T', 'S'), 
+                                                                ('CC', 'R')])
             def test_deletion(self):
                 """Fails if deletion is made incorrectly"""
                 self.transcript.edit(5, 34, mutation_type="D")
