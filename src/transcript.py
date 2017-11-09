@@ -265,7 +265,8 @@ class Transcript(object):
         elif seq or mutation_class != 'R':
             seq_list.append((seq, mutation_class))
 
-    def annotated_seq(self, start=None, end=None, genome=True):
+    def annotated_seq(self, start=None, end=None, genome=True, 
+        somatic=True, germline=True):
         """ Retrieves transcript sequence between start and end coordinates.
 
             Includes info on whether edits are somatic or germline and whether
@@ -276,6 +277,8 @@ class Transcript(object):
             end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
+            somatic: True iff requesting return of tuples of type S
+            germline: True iff requesting return of tuples of type G
 
             Return value: list of tuples (sequence, type) where type is one
                 of R, G, or S (for respectively reference, germline edit, or
@@ -387,3 +390,16 @@ class Transcript(object):
             'Retrieving sequence with transcript coordinates not '
             'yet fully supported.'
         )
+
+    def peptides(self, size=9, somatic=True, germline=True):
+        """ Retrieves list of predicted peptide fragments from transcript that 
+            include one or more variants.
+
+            size: peptide length (specified as # of amino acids)
+            somatic: True iff requesting peptides containing variants of type S
+            germline: True iff requesting peptides containing variants of type G
+
+            Return value: list of peptides of desired length.
+        """
+
+
