@@ -431,18 +431,24 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def peptides(self, size=9, somatic=True, germline=True):
+    def peptides(self, size=9, somatic=2, germline=1):
         """ Retrieves list of predicted peptide fragments from transcript that 
             include one or more variants.
 
             size: peptide length (specified as # of amino acids)
-            somatic: True iff requesting peptides containing variants of type S
-            germline: True iff requesting peptides containing variants of type G
+            somatic: 0 to omit consideration of somatic variants, 1 to identify 
+            somatic variants but not explicitly report peptides containing every
+            somatic variant, 2 to identify and report all peptides containing 
+            consequences of somatic variants
+            germline: 0 to omit consideration of germline variants, 1 to 
+            identify germline variants but not explicitly report peptides 
+            containing every germline variant, 2 to identify and report all 
+            peptides containing consequences of germline variants
 
             Return value: list of peptides of desired length.
         """
         if size < 2: return []
-        annotated_seq = self.annotated_seq(somatic=somatic, germline=germline)
+        annotated_seq = self.annotated_seq(somatic=somatic != 0, germline=germline != 0)
         coordinates = []
         counter = 0
         reading_frame = 0
