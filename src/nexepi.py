@@ -407,7 +407,8 @@ class Transcript(object):
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
-    def expressed_edits(self, start=None, end=None, genome=True):
+    def expressed_edits(self, start=None, end=None, genome=True, 
+                                include_somatic=True, include_germline=True):
         """ Gets expressed set of edits and transcript intervals.
 
             start: start position (1-indexed, inclusive); None means start of
@@ -415,6 +416,8 @@ class Transcript(object):
             end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
+            include_somatic: whether to include somatic mutations (boolean)
+            include_germline: whether to include germline mutations (boolean)
 
             Return value: tuple (defaultdict
                                  mapping edits to lists of
@@ -461,6 +464,9 @@ class Transcript(object):
         if self.deletion_intervals:
             sorted_deletion_intervals = sorted(self.deletion_intervals,
                                                 key=itemgetter(0, 1))
+            i = 0
+            while i < len(sorted_deletion_intervals):
+                mutation_class = sorted_deletion_intervals
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2]),
                                   (sorted_deletion_intervals[0][1],
@@ -568,7 +574,8 @@ class Transcript(object):
         elif seq or mutation_class != 'R':
             seq_list.append((seq, mutation_class))
 
-    def annotated_seq(self, start=None, end=None, genome=True):
+    def annotated_seq(self, start=None, end=None, genome=True, 
+                                include_somatic=True, include_germline=True):
         """ Retrieves transcript sequence between start and end coordinates.
 
             Includes info on whether edits are somatic or germline and whether
@@ -579,6 +586,8 @@ class Transcript(object):
             end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
+            include_somatic: whether to include somatic mutations (boolean)
+            include_germline: whether to include germline mutations (boolean)
 
             Return value: list of tuples (sequence, type) where type is one
                 of R, G, or S (for respectively reference, germline edit, or
@@ -592,7 +601,8 @@ class Transcript(object):
             end = self.intervals[-1] + 1
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start, end, genome=True)
+            edits, intervals = self.expressed_edits(start, end, genome=True, 
+                                            include_somatic, include_germline)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
