@@ -280,9 +280,11 @@ class Transcript(object):
             somatic: True iff requesting return of tuples of type S
             germline: True iff requesting return of tuples of type G
 
-            Return value: list of tuples (sequence, type) where type is one
-                of R, G, or S (for respectively reference, germline edit, or
-                somatic edit). Empty sequence means there was a deletion.
+            Return value: list of triples (sequence, variant, type) where 
+                variant is one of V, I, or D (for SNV, insertion, or deletion, 
+                respectively) and type is one of R, G, or S (for reference, 
+                germline edit, or somatic edit, respectively). Sequence will be 
+                deletion size (in bp) for deletion variants.
         """
         if end < start: return ''
         # Use 0-based coordinates internally
@@ -402,8 +404,16 @@ class Transcript(object):
             Return value: list of peptides of desired length.
         """
         if size < 2: return []
-        seq = self.annotated_seq(somatic=somatic, germline=germline)
+        annotated_seq = self.annotated_seq(somatic=somatic, germline=germline)
         #extract list of transcript coordinates for each variant tuple
+        coordinates = []
+        counter = 0
+        reading_frame = [0, 0]
+        for seq in annotated_seq:
+            if seq[1] == 'R':
+                counter += len(seq[0])
+            elif type(seq[0]) is int:
+                # this is a deletion, do not increment counter, assess change in reading frame
         #convert to string of nucleotides
         start = seq.find("ATG")
         if start < 0: return []
