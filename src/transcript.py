@@ -455,7 +455,9 @@ class Transcript(object):
         frame_shifts = []
         sequence = ''
         for seq in annotated_seq:
-            if seq[1] == 'D':
+            record = (seq[2] == 'S' and somatic >= 2) or 
+                    (seq[2] == 'G' and germline >= 2)
+            if seq[1] == 'D' and record:
                 coordinates.append((counter, 0))
                 if reading_frame == 0:
                     reading_frame = (reading_frame + seq[0]) % 3
@@ -467,7 +469,7 @@ class Transcript(object):
                         frame_shifts[-1][1] = counter                    
             else:
                 sequence += seq[0]
-                if seq[2] != 'R':
+                if seq[2] != 'R' and record:
                     coordinates.append((counter, len(seq[0])))
                     if seq[1] == 'I':
                         if reading_frame == 0:
