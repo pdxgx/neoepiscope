@@ -448,17 +448,32 @@ class Transcript(object):
             Return value: list of peptides of desired length.
         """
         if size < 2: return []
-        annotated_seq = self.annotated_seq(somatic=somatic != 0, germline=germline != 0)
+        annotated_seq = self.annotated_seq(include_somatic=somatic != 0, 
+            include_germline=germline != 0)
         coordinates = []
         counter = 0
-        reading_frame = 0
         frame_shifts = []
         sequence = ''
         for seq in annotated_seq:
+            if seq[1] != 'D': sequence += seq[0]
+        start = sequence.find("ATG")
+        if start < 0: return []
+        if start != self.start_codon:
+            reading_frame = (start - self.start_codon) % 3
+            frame_shifts.append((start, self.start_codon))
+        else:
+            reading_frame = 0
+        for seq in annotated_seq:
+            if seq[1] != 'D' and counter + len(seq[0]) < start:
+                counter += len(seq[0])
+                continue
+            elif seq[1] == 'D' and counter < start:
+                continue
             record = (seq[2] == 'S' and somatic >= 2) or 
                     (seq[2] == 'G' and germline >= 2)
             if seq[1] == 'D' and record:
                 coordinates.append((counter, 0))
+                #if counter >= self.start_codon:
                 if reading_frame == 0:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame != 0:
@@ -468,7 +483,6 @@ class Transcript(object):
                     if reading_frame == 0:
                         frame_shifts[-1][1] = counter                    
             else:
-                sequence += seq[0]
                 if seq[2] != 'R' and record:
                     coordinates.append((counter, len(seq[0])))
                     if seq[1] == 'I':
@@ -483,8 +497,7 @@ class Transcript(object):
                 counter += len(seq[0])
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
-        start = sequence.find("ATG")
-        if start < 0: return []
+
         protein = seq_to_peptide(sequence[start:])
         # for each variant and any areas of different reading frame, do the windows around there
 
