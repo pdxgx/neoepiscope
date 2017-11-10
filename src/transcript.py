@@ -485,7 +485,7 @@ class Transcript(object):
             frame_shifts[-1][1] = counter
         start = sequence.find("ATG")
         if start < 0: return []
-        protein = seq_to_peptide(seq[start:])
+        protein = seq_to_peptide(sequence[start:])
         # for each variant and any areas of different reading frame, do the windows around there
 
 if __name__ == '__main__':
