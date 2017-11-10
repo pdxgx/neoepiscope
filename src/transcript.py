@@ -414,17 +414,39 @@ class Transcript(object):
         """
         if size < 2: return []
         annotated_seq = self.annotated_seq(somatic=somatic, germline=germline)
-        #extract list of transcript coordinates for each variant tuple
         coordinates = []
         counter = 0
-        reading_frame = [0, 0]
+        reading_frame = 0
+        frame_shifts = []
+        sequence = ''
         for seq in annotated_seq:
-            if seq[1] == 'R':
+            if seq[1] == 'D':
+                coordinates.append((counter, 0))
+                if reading_frame == 0:
+                    reading_frame = (reading_frame + seq[0]) % 3
+                    if reading_frame != 0:
+                        frame_shifts.append((counter, counter))
+                else:
+                    reading_frame = (reading_frame + seq[0]) % 3
+                    if reading_frame == 0:
+                        frame_shifts[-1][1] = counter                    
+            else:
+                sequence += seq[0]
+                if seq[2] != 'R':
+                    coordinates.append((counter, len(seq[0])))
+                    if seq[1] == 'I':
+                        if reading_frame == 0:
+                            reading_frame = (reading_frame + len(seq[0])) % 3
+                            if reading_frame != 0:
+                                frame_shifts.append((counter, counter))
+                        else:
+                            reading_frame = (reading_frame + len(seq[0])) % 3
+                            if reading_frame == 0:
+                                frame_shifts[-1][1] = counter + len(seq[0])                                                     
                 counter += len(seq[0])
-            elif type(seq[0]) is int:
-                # this is a deletion, do not increment counter, assess change in reading frame
-        #convert to string of nucleotides
-        start = seq.find("ATG")
+        if reading_frame != 0:
+            frame_shifts[-1][1] = counter
+        start = sequence.find("ATG")
         if start < 0: return []
         protein = seq_to_peptide(seq[start:])
         # for each variant of type V, do the windows around there
