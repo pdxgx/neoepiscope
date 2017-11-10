@@ -1,3 +1,24 @@
+import bowtie_index
+import collections
+import copy
+import bisect
+
+def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
+    """ Same as bisect.bisect_left, but compares only index "getter"
+
+        See bisect_left source for more info.
+    """
+
+    if lo < 0:
+        raise ValueError('lo must be non-negative')
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if a[mid][getter] < x: lo = mid+1
+        else: hi = mid
+    return lo
+
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
@@ -160,9 +181,11 @@ class Transcript(object):
         if self.deletion_intervals:
             sorted_deletion_intervals = sorted(self.deletion_intervals,
                                                 key=itemgetter(0, 1))
-            i = 0
-            while i < len(sorted_deletion_intervals):
-                mutation_class = sorted_deletion_intervals
+            for interval_set in sorted_deletion_intervals:
+                if interval_set[2] == "S" and not include_somatic:
+                    sorted_deletion_intervals.remove(interval_set)
+                elif interval_set[2] == "G" and not include_germline:
+                    sorted_deletion_intervals.remove(interval_set)
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2]),
                                   (sorted_deletion_intervals[0][1],
@@ -228,11 +251,17 @@ class Transcript(object):
             # Add edit if and only if it's in one of the CDSes
             start_index = custom_bisect_left(intervals, pos)
             for edit in self.edits[pos]:
-                if edit[1] == 'V':
+                if edit[2] == "S" and include_somatic:
+                    include_edit = True
+                elif edit[2] == "G" and include_germline:
+                    include_edit = True
+                else:
+                    include_edit = False
+                if edit[1] == 'V' and include_edit:
                     if start_index % 2:
                         # Add edit if and only if it lies within CDS boundaries
                         edits[pos].append(edit)
-                elif edit[1] == 'I':
+                elif edit[1] == 'I' and include_edit:
                     if start_index % 2 or pos == intervals[start_index][0]:
                         '''An insertion is valid before or after a block'''
                         edits[pos].append(edit)
@@ -450,3 +479,144 @@ class Transcript(object):
         if start < 0: return []
         protein = seq_to_peptide(seq[start:])
         # for each variant of type V, do the windows around there
+
+if __name__ == '__main__':
+    import unittest
+    class TestTranscript(unittest.TestCase):
+        """Tests transcript object construction"""
+        def setUp(self):
+            """Sets up files for testing"""
+            self.fasta = os.path.join(
+                                os.path.dirname(
+                                        os.path.dirname(
+                                                os.path.realpath(__file__)
+                                            )
+                                    ), 'test', 'ref.fasta'
+                            )
+            self.ref_prefix = os.path.join(
+                                os.path.dirname(
+                                        os.path.dirname(
+                                                os.path.realpath(__file__)
+                                            )
+                                    ), 'test', 'ref'
+                            )
+            with open(self.fasta, "w") as f:
+                f.write(">1 dna:chromosome\n")
+                f.write("ACGCCCGTGACTTATTCGTGTGCAGACTAC\n")
+                f.write("ATGCCCGTGCCGAATTCGTGTCCCCGCTAC\n")
+                f.write("AATGCCCGTGCCGATTTGAAACCCCGCTAC\n")
+            subprocess.call(["bowtie-build", self.fasta, self.ref_prefix])
+            self.reference_index = bowtie_index.BowtieIndexReference(
+                                                            self.ref_prefix)
+            self.CDS = ["1", 'blah', 'blah', "31", "75", '.', "+"]
+            self.stop = ["1", 'blah', 'blah', "76", "78", '.', "+"]
+            self.transcript = Transcript(self.reference_index, 
+                                            [self.CDS, self.stop])
+        def test_irrelevant_edit(self):
+            """Fails if edit is made for non-CDS/stop position"""
+            self.transcript.edit("G", 1)
+            relevant_edits = self.transcript.expressed_edits()
+            self.assertEqual(self.transcript.edits[0], [("G", "V", "S")])
+            self.assertEqual(relevant_edits[0], {})
+            self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
+                                                    (74, "R"), (77, "R")])
+        def test_relevant_edit(self):
+            """Fails if edit is not made for CDS position"""
+            self.transcript.edit("G", 34)
+            relevant_edits = self.transcript.expressed_edits()
+            self.assertEqual(self.transcript.edits[33], [("G", "V", "S")])
+            self.assertEqual(relevant_edits[0][33], [("G", "V", "S")])
+            self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
+                                                    (74, "R"), (77, "R")])
+        def test_reset_to_reference(self):
+            """Fails if transcript is not reset to reference"""
+            self.transcript.edit("G", 34)
+            self.transcript.reset(reference=True)
+            self.assertEqual(self.transcript.edits, {})
+        def test_edit_and_save(self):
+            """Fails if edits aren't saved"""
+            self.transcript.edit("G", 34)
+            self.transcript.edit("CCC", 60, mutation_type="D")
+            self.transcript.save()
+            self.assertEqual(self.transcript.last_edits[33], [("G", "V", 
+                                                                "S")])
+            self.assertEqual(self.transcript.last_deletion_intervals,
+                                [(58, 61, "S")])
+        def test_reset_to_save_point(self):
+            """Fails if new edit not erased or old edits not retained"""
+            self.transcript.edit("G", 34)
+            self.transcript.edit("CCC", 60, mutation_type="D")
+            self.transcript.save()
+            self.transcript.edit("C", 36)
+            self.assertEqual(self.transcript.edits[35], [("C", "V", "S")])
+            self.transcript.reset(reference=False)
+            self.assertNotIn(35, self.transcript.edits)
+            self.assertEqual(self.transcript.last_edits[33], [("G", "V", 
+                                                                "S")])
+            self.assertEqual(self.transcript.last_deletion_intervals,
+                                [(58, 61, "S")])
+            self.assertNotEqual(self.transcript.edits, {})
+        def test_SNV_seq(self):
+            """Fails if SNV is edited incorrectly"""
+            self.transcript.edit("G", 31)
+            seq1 = self.transcript.annotated_seq()
+            seq2 = self.transcript.annotated_seq(31, 36)
+            self.assertEqual(seq1, [('G', 'S'), 
+                ('TGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+            self.assertEqual(seq2, [('G', 'S'), ('TGCCC', 'R')])
+        def test_inside_indel(self):
+            """Fails if indel within CDS is inserted incorrectly"""
+            self.transcript.edit("Q", 35, mutation_type="I")
+            self.assertEqual(self.transcript.edits[34], [("Q", "I", "S")])
+            seq1 = self.transcript.annotated_seq()
+            seq2 = self.transcript.annotated_seq(31, 36)
+            self.assertEqual(seq1, [('ATGCC', 'R'), ('Q', 'S'), 
+                    ('CGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+            self.assertEqual(seq2, [('ATGCC', 'R'), ('Q', 'S'), ('C', 'R')])
+        def test_adjacent_indel(self):
+            """Fails if indel right before CDS is inserted incorrectly"""
+            self.transcript.edit("Q", 30, mutation_type="I")
+            self.assertEqual(self.transcript.edits[29], [("Q", "I", "S")])
+            seq1 = self.transcript.annotated_seq()
+            seq2 = self.transcript.annotated_seq(30, 36)
+            ## DEBUG THESE
+            self.assertEqual(seq1, [('Q', 'S'), 
+                ('ATGCCCGTGCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+            self.assertEqual(seq2, [('Q', 'S'), ('ATGCCC', 'R')])
+        def compound_variants(self):
+            self.transcript.edit("Q", 30, mutation_type ="I")
+            self.transcript.edit("T", 33, mutation_type ="V")
+            self.transcript.edit("JJJ", 40, mutation_type ="I")
+            self.transcript.edit(1, 45, mutation_type ="D")
+            seq1 = self.transcript.annotated_seq()
+            seq2 = self.transcript.annotated_seq(30, 36)
+            self.assertEqual(seq1, [('Q', 'S'), ('AT', 'R'), ('T', 'S'), 
+                                    ('CCCGTGC', 'R'),  ('JJJ', 'S'), 
+                                    ('CGAA', 'R'), ('', 'S'), 
+                                    ('TCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 
+                                        'R')])
+            self.assertEqual(seq2, [('Q', 'S'), ('AT', 'R'), ('T', 'S'), 
+                                                            ('CC', 'R')])
+        def test_deletion(self):
+            """Fails if deletion is made incorrectly"""
+            self.transcript.edit(5, 34, mutation_type="D")
+            self.assertEqual(self.transcript.deletion_intervals, [(32, 37, 
+                                                                    "S")])
+            seq1 = self.transcript.annotated_seq()
+            seq2 = self.transcript.annotated_seq(31, 36)
+            self.assertEqual(seq1, [('ATG', 'R'), ('', 'S'), 
+                        ('GCCGAATTCGTGTCCCCGCTACAATGCCCGTGCCGATTTG', 'R')])
+            ### DEBUG THIS ONE
+            self.assertEqual(seq2, [('ATG', 'R'), ('', 'S'), ('GCC', 'R')])
+        def tearDown(self):
+            """Removes temporary files"""
+            ref_remove = os.path.join(
+                                os.path.dirname(
+                                        os.path.dirname(
+                                                os.path.realpath(__file__)
+                                            )
+                                    ), 'test', 'ref*ebwt'
+                            )
+            subprocess.call(["rm", ref_remove])
+            subprocess.call(["rm", self.fasta])
+    unittest.main()
