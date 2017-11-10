@@ -478,7 +478,7 @@ class Transcript(object):
         start = sequence.find("ATG")
         if start < 0: return []
         protein = seq_to_peptide(seq[start:])
-        # for each variant of type V, do the windows around there
+        # for each variant and any areas of different reading frame, do the windows around there
 
 if __name__ == '__main__':
     import unittest
