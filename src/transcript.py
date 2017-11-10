@@ -1,4 +1,3 @@
-
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
@@ -104,7 +103,8 @@ class Transcript(object):
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
-    def expressed_edits(self, start=None, end=None, genome=True):
+    def expressed_edits(self, start=None, end=None, genome=True, 
+                                include_somatic=True, include_germline=True):
         """ Gets expressed set of edits and transcript intervals.
 
             start: start position (1-indexed, inclusive); None means start of
@@ -112,6 +112,8 @@ class Transcript(object):
             end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
+            include_somatic: whether to include somatic mutations (boolean)
+            include_germline: whether to include germline mutations (boolean)
 
             Return value: tuple (defaultdict
                                  mapping edits to lists of
@@ -158,6 +160,9 @@ class Transcript(object):
         if self.deletion_intervals:
             sorted_deletion_intervals = sorted(self.deletion_intervals,
                                                 key=itemgetter(0, 1))
+            i = 0
+            while i < len(sorted_deletion_intervals):
+                mutation_class = sorted_deletion_intervals
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2]),
                                   (sorted_deletion_intervals[0][1],
@@ -266,7 +271,7 @@ class Transcript(object):
             seq_list.append((seq, mutation_class))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
-        somatic=True, germline=True):
+                                include_somatic=True, include_germline=True):
         """ Retrieves transcript sequence between start and end coordinates.
 
             Includes info on whether edits are somatic or germline and whether
@@ -277,8 +282,8 @@ class Transcript(object):
             end: end position (1-indexed, inclusive); None means end of
                 transcript
             genome: True iff genome coordinates are specified
-            somatic: True iff requesting return of tuples of type S
-            germline: True iff requesting return of tuples of type G
+            include_somatic: whether to include somatic mutations (boolean)
+            include_germline: whether to include germline mutations (boolean)
 
             Return value: list of triples (sequence, variant, type) where 
                 variant is one of V, I, or D (for SNV, insertion, or deletion, 
@@ -294,12 +299,14 @@ class Transcript(object):
             end = self.intervals[-1] + 1
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start, end, genome=True)
+            edits, intervals = self.expressed_edits(start, end, genome=True, 
+                                            include_somatic, include_germline)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
             new_edits = copy.copy(edits)
-            for i in xrange(0, len(intervals), 2):
+            i = 0
+            while i < len(intervals):
                 if intervals[i][0] in edits:
                     assert (len(edits[intervals[i][0]]) == 1
                                 and edits[intervals[i][0]][0][1] == 'I')
@@ -310,8 +317,10 @@ class Transcript(object):
                     else:
                         intervals = [(-1, 'R'), (-1, 'R')] + intervals
                         # Have to add 2 because we modified intervals above
-                        new_edits[-1] = new_edits[intervals[i+2][0]]
-                        del new_edits[intervals[i+2][0]]
+                        i += 2
+                        new_edits[-1] = new_edits[intervals[i][0]]
+                        del new_edits[intervals[i][0]]
+                i += 2
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
@@ -419,6 +428,3 @@ class Transcript(object):
         if start < 0: return []
         protein = seq_to_peptide(seq[start:])
         # for each variant of type V, do the windows around there
-
-
-
