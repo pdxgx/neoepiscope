@@ -45,6 +45,8 @@ class Transcript(object):
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
         last_chrom, last_strand = None, None
+        # need to replace this with transcript-relative coordinates of start
+        self.start_codon = 0
         for line in CDS:
             if type(line) is str: line = line.strip().split('\t')
             try:
