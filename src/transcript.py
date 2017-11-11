@@ -460,18 +460,53 @@ class Transcript(object):
             Return value: list of peptides of desired length.
         """
         if size < 2: return []
-        annotated_seq = self.annotated_seq(somatic=somatic != 0,
-                                            germline=germline != 0)
+        annotated_seq = self.annotated_seq(include_somatic=somatic != 0, 
+            include_germline=germline != 0)
         coordinates = []
-        counter = 0
-        reading_frame = 0
+        counter = 0 # hold transcript level coordinates
         frame_shifts = []
-        sequence = ''
+        sequence = '' # hold flattened nucleotide sequence
+        # extract nucleotide sequence from annotated_seq
         for seq in annotated_seq:
             record = (seq[2] == 'S' and somatic >= 2) or (seq[2] == 'G' 
                 and germline >= 2)
             if seq[1] == 'D' and record:
                 coordinates.append((counter, 0))
+        # locate position of start codon (first ATG in sequence)
+        start = sequence.find("ATG")
+        if start < 0: return []
+        reading_frame = (start - self.start_codon) % 3
+        if reading_frame != 0
+            frame_shifts.append((start, start))
+        for seq in annotated_seq:
+            # skip sequence fragments that occur prior to start codon 
+            if seq[1] != 'D' and counter + len(seq[0]) <= start:
+                counter += len(seq[0])
+                continue
+            elif seq[1] == 'D' and counter < start:
+                continue
+            # skip sequence fragments that are not to be reported 
+            if seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
+                (seq[2] == 'G' and germline >= 2):
+                if seq[1] != 'D':
+                    counter += len(seq[0])
+                continue
+            # handle unique case where variant precedes but includes start codon
+            if counter < start:
+                coordinates.append(start, counter + len(seq[0]))
+                if seq[1] == 'I' and reading_frame == 0:
+                    reading_frame = (reading_frame + len(seq[0])) % 3
+                    if reading_frame != 0:
+                        frame_shifts.append((counter, counter))
+                elif seq[1] == 'I':
+                    reading_frame = (reading_frame + len(seq[0])) % 3
+                    if reading_frame == 0:
+                        frame_shifts[-1][1] = counter + len(seq[0]) 
+                counter += len(seq[0])                  #
+                continue
+            # handle potential frame shifts from indels
+            if seq[1] == 'D' or seq[1] == 'I':
+>>>>>>> b1a80fa7810ead24f2634e4cea8383d134ae723e
                 if reading_frame == 0:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame != 0:
@@ -479,25 +514,17 @@ class Transcript(object):
                 else:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame == 0:
-                        frame_shifts[-1][1] = counter                    
+                        frame_shifts[-1][1] = counter
+            # log variants                    
+            if seq[1] == 'D':
+                coordinates.append((counter, 0))
             else:
-                sequence += seq[0]
-                if seq[2] != 'R' and record:
-                    coordinates.append((counter, len(seq[0])))
-                    if seq[1] == 'I':
-                        if reading_frame == 0:
-                            reading_frame = (reading_frame + len(seq[0])) % 3
-                            if reading_frame != 0:
-                                frame_shifts.append((counter, counter))
-                        else:
-                            reading_frame = (reading_frame + len(seq[0])) % 3
-                            if reading_frame == 0:
-                                frame_shifts[-1][1] = counter + len(seq[0])                                                     
+                coordinates.append((counter, len(seq[0])))
                 counter += len(seq[0])
+            continue
+        # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
-        start = sequence.find("ATG")
-        if start < 0: return []
         protein = seq_to_peptide(sequence[start:])
         # for each variant and any areas of different reading frame, do the windows around there
 
