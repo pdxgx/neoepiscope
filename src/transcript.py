@@ -525,6 +525,14 @@ class Transcript(object):
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
         protein = seq_to_peptide(sequence[start:])
+        # get amino acid ranges for kmerization
+        epitope_coords = []
+        for coords in coordinates:
+            epitope_coords.append((max(0, ((coords[0] - start) // 3)-size+1), 
+                min(len(protein), ((coords[1] - start) // 3)+size-1)))
+        for coords in frame_shifts:
+            epitope_coords.append((max(0, ((coords[0] - start) // 3)-size+1), 
+                min(len(protein), ((coords[1] - start) // 3)+size-1)))
         # for each variant and any areas of different reading frame, do the windows around there
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
