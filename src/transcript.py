@@ -496,7 +496,9 @@ class Transcript(object):
                 continue
             # handle unique case where variant precedes but includes start codon
             if counter < start:
-                coordinates.append(start, counter + len(seq[0]))
+               # future devel: 
+                #    can propogate variant ID here to maintain link to epitope
+                coordinates.append((start, counter + len(seq[0])))
                 if seq[1] == 'I' and reading_frame == 0:
                     reading_frame = (reading_frame + len(seq[0])) % 3
                     if reading_frame != 0:
@@ -533,6 +535,8 @@ class Transcript(object):
         for size in range(min_size, max_size + 1):
             epitope_coords = []
             for coords in coordinates:
+                # future devel: 
+                #    can propogate variant ID here to maintain link to epitope
                 epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
                     min(len(protein), ((coords[1] - start) // 3)+size)))
             for coords in frame_shifts:
