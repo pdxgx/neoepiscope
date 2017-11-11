@@ -476,7 +476,7 @@ class Transcript(object):
         start = sequence.find("ATG")
         if start < 0: return []
         reading_frame = (start - self.start_codon) % 3
-        if reading_frame != 0
+        if reading_frame != 0:
             frame_shifts.append((start, start))
         for seq in annotated_seq:
             # skip sequence fragments that occur prior to start codon 
@@ -486,8 +486,8 @@ class Transcript(object):
             elif seq[1] == 'D' and counter < start:
                 continue
             # skip sequence fragments that are not to be reported 
-            if seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
-                (seq[2] == 'G' and germline >= 2):
+            if (seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
+                (seq[2] == 'G' and germline >= 2)):
                 if seq[1] != 'D':
                     counter += len(seq[0])
                 continue
@@ -506,7 +506,6 @@ class Transcript(object):
                 continue
             # handle potential frame shifts from indels
             if seq[1] == 'D' or seq[1] == 'I':
->>>>>>> b1a80fa7810ead24f2634e4cea8383d134ae723e
                 if reading_frame == 0:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame != 0:
