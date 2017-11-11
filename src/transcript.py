@@ -194,13 +194,13 @@ class Transcript(object):
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
         relevant_deletion_intervals, edits = [], collections.defaultdict(list)
-        if self.deletion_intervals:
-            sorted_deletion_intervals = sorted(
-                    [interval for interval in self.deletion_intervals
-                     if (interval[2] == 'S' and include_somatic or
-                         interval[2] == 'G' and include_germline)],
-                    key=itemgetter(0, 1)
-                )
+        sorted_deletion_intervals = [
+                interval for interval in self.deletion_intervals
+                if (interval[2] == 'S' and include_somatic or
+                    interval[2] == 'G' and include_germline)
+            ]
+        if sorted_deletion_intervals:
+            sorted_deletion_intervals.sort(key=itemgetter(0, 1))
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2]),
                                   (sorted_deletion_intervals[0][1],
