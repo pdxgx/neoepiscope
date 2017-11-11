@@ -529,7 +529,6 @@ class Transcript(object):
             else:
                 coordinates.append((counter, len(seq[0])))
                 counter += len(seq[0])
-            continue
         # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
