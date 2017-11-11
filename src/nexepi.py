@@ -20,13 +20,13 @@ import collections
 import tempfile
 import subprocess
 import string
-from transcript import Transcript
+from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
 from operator import itemgetter
 from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 #import Hapcut2interpreter as hap
 
-_revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
+ _revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
 
 # X below denotes a stop codon
 _codon_table = {
@@ -53,109 +53,6 @@ _help_intro = """neoscan searches for neoepitopes in seq data."""
 def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
-
-def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
-    """ References cds_dict to get cds bounds for later Bowtie query
-
-        Keys in the dictionary are transcript IDs, while entries are lists of
-            relevant CDS/stop codon data
-            Data: [chromosome, start, stop, +/- strand]
-        Writes cds_dict as a pickled dictionary
-
-        gtf_file: input gtf file to process
-        dictdir: path to directory to store pickled dicts
-
-        Return value: dictionary
-    """
-    cds_dict = {}
-    # Parse GTF to obtain CDS/stop codon info
-    with open(gtf_file, "r") as f:
-        for line in f:
-            if line[0] != '#':
-                tokens = line.strip().split('\t')
-                if tokens[2] == "exon":
-                    transcript_id = re.sub(
-                                r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
-                                r'\1', tokens[8]
-                                )
-                    # Create new dictionary entry for new transcripts
-                    if transcript_id not in cds_dict:
-                        cds_dict[transcript_id] = [[tokens[0].replace(
-                                                                    "chr", ""), 
-                                                        int(tokens[3]), 
-                                                        int(tokens[4]), 
-                                                        tokens[6]]]
-                    else:
-                        cds_dict[transcript_id].append([tokens[0].replace(
-                                                                    "chr", ""), 
-                                                            int(tokens[3]), 
-                                                            int(tokens[4]), 
-                                                            tokens[6]])
-    # Sort cds_dict coordinates (left -> right) for each transcript                                
-    for transcript_id in cds_dict:
-            cds_dict[transcript_id].sort(key=lambda x: x[0])
-    # Write to pickled dictionary
-    if pickle_it:
-        pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
-        with open(pickle_dict, "wb") as f:
-            pickle.dump(cds_dict, f)
-    return cds_dict
-
-def cds_to_tree(cds_dict, dictdir, pickle_it=True):
-    """ Creates searchable tree of chromosome intervals from CDS dictionary
-
-        Each chromosome is stored in the dictionary as an interval tree object
-            Intervals are added for each CDS, with the associated transcript ID
-            Assumes transcript is all on one chromosome - does not work for
-                gene fusions
-        Writes the searchable tree as a pickled dictionary
-
-        cds_dict: CDS dictionary produced by gtf_to_cds()
-
-        Return value: searchable tree
-    """
-    searchable_tree = {}
-    # Add genomic intervals to the tree for each transcript
-    for transcript_id in cds_dict:
-        transcript = cds_dict[transcript_id]
-        chrom = transcript[0][0]
-        # Add new entry for chromosome if not already encountered
-        if chrom not in searchable_tree:
-            searchable_tree[chrom] = IntervalTree()
-        # Add CDS interval to tree with transcript ID
-        for cds in transcript:
-            start = cds[1]
-            stop = cds[2]
-            # Interval coordinates are inclusive of start, exclusive of stop
-            if stop > start:
-                searchable_tree[chrom][start:stop] = transcript_id
-            # else:
-                # report an error?
-    # Write to pickled dictionary
-    if pickle_it:
-        pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
-        with open(pickle_dict, "wb") as f:
-            pickle.dump(searchable_tree, f)
-    return searchable_tree
-
-def get_transcripts_from_tree(chrom, start, stop, cds_tree):
-    """ Uses cds tree to btain transcript IDs from genomic coordinates
-            
-        chrom: (String) Specify chrom to use for transcript search.
-        start: (Int) Specify start position to use for transcript search.
-        stop: (Int) Specify ending position to use for transcript search
-        cds_tree: (Dict) dictionary of IntervalTree() objects containing
-            transcript IDs as function of exon coords indexed by chr/contig ID.
-            
-        Return value: (set) a set of matching unique transcript IDs.
-    """
-    transcript_ids = set()
-    # Interval coordinates are inclusive of start, exclusive of stop
-    cds = cds_tree[chrom].search(start, stop)
-    for cd in cds:
-        if cd.data not in transcript_ids:
-            transcript_ids.add(cd.data)
-    return transcript_ids
 
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
@@ -856,7 +753,7 @@ if __name__ == '__main__':
             # Create transcript object
             transcript = Transcript(reference_index, 
                             [[str(chrom), 'blah', 'blah', str(start), str(end), 
-                              '.', strand] for (chrom, start, end,  strand) in 
+                              '.', strand] for (chrom, start, end, strand) in 
                               cds_dict[transcript_ID]]
                             )
             # Iterate over haplotypes associated with this transcript

@@ -2,6 +2,13 @@ import bowtie_index
 import collections
 import copy
 import bisect
+import string
+import re
+import pickle
+from intervaltree import Interval, IntervalTree
+from operator import itemgetter
+
+revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
 
 def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     """ Same as bisect.bisect_left, but compares only index "getter"
@@ -116,9 +123,18 @@ class Transcript(object):
                 deletion_size = int(seq)
             except ValueError:
                 deletion_size = len(seq)
-            self.deletion_intervals.append(
-                    (pos - 2, pos + deletion_size - 2, mutation_class)
-                )
+                self.deletion_intervals.append(
+                        (pos - 2, pos + deletion_size - 2, mutation_class, 
+                            seq)
+                    )
+            else:
+                self.deletion_intervals.append(
+                        (pos - 2, pos + deletion_size - 2, mutation_class, 
+                            self.bowtie_reference_index.get_stretch(
+                                    self.chrom, pos - 1, 
+                                    pos + deletion_size + 2 - pos - 1
+                                ))
+                    )
         elif mutation_type == 'V' or mutation_type == 'I':
             self.edits[pos - 1].append((seq, mutation_type, mutation_class))
         else:
@@ -179,13 +195,12 @@ class Transcript(object):
         # Include only relevant deletion intervals
         relevant_deletion_intervals, edits = [], collections.defaultdict(list)
         if self.deletion_intervals:
-            sorted_deletion_intervals = sorted(self.deletion_intervals,
-                                                key=itemgetter(0, 1))
-            for interval_set in sorted_deletion_intervals:
-                if interval_set[2] == "S" and not include_somatic:
-                    sorted_deletion_intervals.remove(interval_set)
-                elif interval_set[2] == "G" and not include_germline:
-                    sorted_deletion_intervals.remove(interval_set)
+            sorted_deletion_intervals = sorted(
+                    [interval for interval in self.deletion_intervals
+                     if (interval[2] == 'S' and include_somatic or
+                         interval[2] == 'G' and include_germline)],
+                    key=itemgetter(0, 1)
+                )
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2]),
                                   (sorted_deletion_intervals[0][1],
@@ -251,20 +266,16 @@ class Transcript(object):
             # Add edit if and only if it's in one of the CDSes
             start_index = custom_bisect_left(intervals, pos)
             for edit in self.edits[pos]:
-                if edit[2] == "S" and include_somatic:
-                    include_edit = True
-                elif edit[2] == "G" and include_germline:
-                    include_edit = True
-                else:
-                    include_edit = False
-                if edit[1] == 'V' and include_edit:
-                    if start_index % 2:
-                        # Add edit if and only if it lies within CDS boundaries
-                        edits[pos].append(edit)
-                elif edit[1] == 'I' and include_edit:
-                    if start_index % 2 or pos == intervals[start_index][0]:
-                        '''An insertion is valid before or after a block'''
-                        edits[pos].append(edit)
+                if (include_somatic and edit[2] == 'S'
+                        or include_germline and edit[2] == 'G'):
+                    if edit[1] == 'V':
+                        if start_index % 2:
+                            # Add edit if and only if it lies within bounds
+                            edits[pos].append(edit)
+                    elif edit[1] == 'I':
+                        if start_index % 2 or pos == intervals[start_index][0]:
+                            # An insertion is valid before or after a block
+                            edits[pos].append(edit)
         return (edits, intervals)
 
     def save(self):
@@ -329,7 +340,8 @@ class Transcript(object):
         if genome:
             # Capture only sequence between start and end
             edits, intervals = self.expressed_edits(start, end, genome=True, 
-                                            include_somatic, include_germline)
+                                            include_somatic=include_somatic, 
+                                            include_germline=include_germline)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
@@ -422,7 +434,7 @@ class Transcript(object):
                 else:
                     pos_group.append(pos)
             if self.rev_strand:
-                return [(seq[::-1].translate(_revcomp_translation_table),
+                return [(seq[::-1].translate(revcomp_translation_table),
                             mutation_class)
                             for seq, mutation_class in final_seq][::-1]
             return final_seq
@@ -448,15 +460,16 @@ class Transcript(object):
             Return value: list of peptides of desired length.
         """
         if size < 2: return []
-        annotated_seq = self.annotated_seq(somatic=somatic != 0, germline=germline != 0)
+        annotated_seq = self.annotated_seq(somatic=somatic != 0,
+                                            germline=germline != 0)
         coordinates = []
         counter = 0
         reading_frame = 0
         frame_shifts = []
         sequence = ''
         for seq in annotated_seq:
-            record = (seq[2] == 'S' and somatic >= 2) or 
-                    (seq[2] == 'G' and germline >= 2)
+            record = (seq[2] == 'S' and somatic >= 2) or (seq[2] == 'G' 
+                and germline >= 2)
             if seq[1] == 'D' and record:
                 coordinates.append((counter, 0))
                 if reading_frame == 0:
@@ -488,46 +501,163 @@ class Transcript(object):
         protein = seq_to_peptide(sequence[start:])
         # for each variant and any areas of different reading frame, do the windows around there
 
+def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
+    """ References cds_dict to get cds bounds for later Bowtie query
+
+        Keys in the dictionary are transcript IDs, while entries are lists of
+            relevant CDS/stop codon data
+            Data: [chromosome, start, stop, +/- strand]
+        Writes cds_dict as a pickled dictionary
+
+        gtf_file: input gtf file to process
+        dictdir: path to directory to store pickled dicts
+
+        Return value: dictionary
+    """
+    cds_dict = {}
+    # Parse GTF to obtain CDS/stop codon info
+    with open(gtf_file, "r") as f:
+        for line in f:
+            if line[0] != '#':
+                tokens = line.strip().split('\t')
+                if tokens[2] == "exon":
+                    transcript_id = re.sub(
+                                r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
+                                r'\1', tokens[8]
+                                )
+                    # Create new dictionary entry for new transcripts
+                    if transcript_id not in cds_dict:
+                        cds_dict[transcript_id] = [[tokens[0].replace(
+                                                                    "chr", ""), 
+                                                        int(tokens[3]), 
+                                                        int(tokens[4]), 
+                                                        tokens[6]]]
+                    else:
+                        cds_dict[transcript_id].append([tokens[0].replace(
+                                                                    "chr", ""), 
+                                                            int(tokens[3]), 
+                                                            int(tokens[4]), 
+                                                            tokens[6]])
+    # Sort cds_dict coordinates (left -> right) for each transcript                                
+    for transcript_id in cds_dict:
+            cds_dict[transcript_id].sort(key=lambda x: x[0])
+    # Write to pickled dictionary
+    if pickle_it:
+        pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(cds_dict, f)
+    return cds_dict
+
+def cds_to_tree(cds_dict, dictdir, pickle_it=True):
+    """ Creates searchable tree of chromosome intervals from CDS dictionary
+
+        Each chromosome is stored in the dictionary as an interval tree object
+            Intervals are added for each CDS, with the associated transcript ID
+            Assumes transcript is all on one chromosome - does not work for
+                gene fusions
+        Writes the searchable tree as a pickled dictionary
+
+        cds_dict: CDS dictionary produced by gtf_to_cds()
+
+        Return value: searchable tree
+    """
+    searchable_tree = {}
+    # Add genomic intervals to the tree for each transcript
+    for transcript_id in cds_dict:
+        transcript = cds_dict[transcript_id]
+        chrom = transcript[0][0]
+        # Add new entry for chromosome if not already encountered
+        if chrom not in searchable_tree:
+            searchable_tree[chrom] = IntervalTree()
+        # Add CDS interval to tree with transcript ID
+        for cds in transcript:
+            start = cds[1]
+            stop = cds[2]
+            # Interval coordinates are inclusive of start, exclusive of stop
+            if stop > start:
+                searchable_tree[chrom][start:stop] = transcript_id
+            # else:
+                # report an error?
+    # Write to pickled dictionary
+    if pickle_it:
+        pickle_dict = "".join([dictdir, "/", "intervals_to_transcript.pickle"])
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(searchable_tree, f)
+    return searchable_tree
+
+def get_transcripts_from_tree(chrom, start, stop, cds_tree):
+    """ Uses cds tree to btain transcript IDs from genomic coordinates
+            
+        chrom: (String) Specify chrom to use for transcript search.
+        start: (Int) Specify start position to use for transcript search.
+        stop: (Int) Specify ending position to use for transcript search
+        cds_tree: (Dict) dictionary of IntervalTree() objects containing
+            transcript IDs as function of exon coords indexed by chr/contig ID.
+            
+        Return value: (set) a set of matching unique transcript IDs.
+    """
+    transcript_ids = set()
+    # Interval coordinates are inclusive of start, exclusive of stop
+    cds = cds_tree[chrom].search(start, stop)
+    for cd in cds:
+        if cd.data not in transcript_ids:
+            transcript_ids.add(cd.data)
+    return transcript_ids
+
 if __name__ == '__main__':
     import unittest
+    import os
     class TestTranscript(unittest.TestCase):
         """Tests transcript object construction"""
         def setUp(self):
-            """Sets up files for testing"""
-            self.fasta = os.path.join(
+            """Sets up gtf file and creates dictionaries for tests"""
+            self.gtf = os.path.join(
                                 os.path.dirname(
                                         os.path.dirname(
                                                 os.path.realpath(__file__)
                                             )
-                                    ), 'test', 'ref.fasta'
+                                    ), 'test', 'Ychrom.gtf'
                             )
+            self.cds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
             self.ref_prefix = os.path.join(
-                                os.path.dirname(
-                                        os.path.dirname(
-                                                os.path.realpath(__file__)
-                                            )
-                                    ), 'test', 'ref'
-                            )
-            with open(self.fasta, "w") as f:
-                f.write(">1 dna:chromosome\n")
-                f.write("ACGCCCGTGACTTATTCGTGTGCAGACTAC\n")
-                f.write("ATGCCCGTGCCGAATTCGTGTCCCCGCTAC\n")
-                f.write("AATGCCCGTGCCGATTTGAAACCCCGCTAC\n")
-            subprocess.call(["bowtie-build", self.fasta, self.ref_prefix])
+                            os.path.dirname(
+                                    os.path.dirname(
+                                            os.path.realpath(__file__)
+                                        )
+                                ), 'test', 'Ychrom.ref'
+                        )
             self.reference_index = bowtie_index.BowtieIndexReference(
-                                                            self.ref_prefix)
-            self.CDS = ["1", 'blah', 'blah', "31", "75", '.', "+"]
-            self.stop = ["1", 'blah', 'blah', "76", "78", '.', "+"]
+                                                        self.ref_prefix)
+            self.CDS_lines = self.cds['ENST00000421783.1_2']
             self.transcript = Transcript(self.reference_index, 
-                                            [self.CDS, self.stop])
+                                        [[str(chrom), 'blah', 'blah',
+                                          str(start), str(end), '.', 
+                                          strand] for (chrom, start, 
+                                                        end, strand) in 
+                                          self.CDS_lines])
+        def test_transcript_structure(self):
+            """Fails if structure of unedited transcript is incorrect"""
+            self.assertEqual(len(self.transcript.annotated_seq()), 1)
+            self.assertEqual(len(self.transcript.annotated_seq()[0][0]), 464)
+            self.assertEqual(self.transcript.annotated_seq()[0][1], 'R')
+            self.assertEqual(self.transcript.intervals, [2181011, 2181101, 
+                                                         2182013, 2182387])
+            self.assertFalse(self.transcript.rev_strand)
+            self.assertEqual(self.transcript.edits, {})
+            self.assertEqual(self.transcript.deletion_intervals, [])
         def test_irrelevant_edit(self):
-            """Fails if edit is made for non-CDS/stop position"""
-            self.transcript.edit("G", 1)
+            """Fails if edit is made for non-exon position"""
+            self.transcript.edit('G', 2181009)
             relevant_edits = self.transcript.expressed_edits()
-            self.assertEqual(self.transcript.edits[0], [("G", "V", "S")])
+            self.assertEqual(self.transcript.edits[2181008], [('G', 'V', 'S')])
             self.assertEqual(relevant_edits[0], {})
-            self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
-                                                    (74, "R"), (77, "R")])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R'), 
+                                                 (2181101, 'R'),
+                                                 (2182013, 'R'),
+                                                 (2182387, 'R')])
+
+
+    '''
         def test_relevant_edit(self):
             """Fails if edit is not made for CDS position"""
             self.transcript.edit("G", 34)
@@ -627,4 +757,5 @@ if __name__ == '__main__':
                             )
             subprocess.call(["rm", ref_remove])
             subprocess.call(["rm", self.fasta])
+    '''
     unittest.main()
