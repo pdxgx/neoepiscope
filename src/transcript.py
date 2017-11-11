@@ -445,7 +445,7 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def peptides(self, min_size=9, max_size=9, somatic=2, germline=1):
+    def peptides(self, min_size=8, max_size=11, somatic=2, germline=1):
         """ Retrieves list of predicted peptide fragments from transcript that 
             include one or more variants.
 
