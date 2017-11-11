@@ -468,10 +468,8 @@ class Transcript(object):
         sequence = '' # hold flattened nucleotide sequence
         # extract nucleotide sequence from annotated_seq
         for seq in annotated_seq:
-            record = (seq[2] == 'S' and somatic >= 2) or (seq[2] == 'G' 
-                and germline >= 2)
-            if seq[1] == 'D' and record:
-                coordinates.append((counter, 0))
+            if seq[1] != 'D':
+                sequence += seq[0]
         # locate position of start codon (first ATG in sequence)
         start = sequence.find("ATG")
         if start < 0: return []
@@ -486,8 +484,8 @@ class Transcript(object):
             elif seq[1] == 'D' and counter < start:
                 continue
             # skip sequence fragments that are not to be reported 
-            if (seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
-                (seq[2] == 'G' and germline >= 2)):
+            if seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
+                (seq[2] == 'G' and germline < 2):
                 if seq[1] != 'D':
                     counter += len(seq[0])
                 continue
