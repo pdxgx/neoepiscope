@@ -477,7 +477,11 @@ class Transcript(object):
                 sequence += seq[0]
         # locate position of start codon (first ATG in sequence)
         start = sequence.find("ATG")
-        if start < 0: return []
+        if start < 0:
+            return []
+        # this makes some BIG assumptions about self.start_codon!
+        #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
+        #  to calculate/update transcript relative coordinates
         reading_frame = (start - self.start_codon) % 3
         if reading_frame != 0:
             frame_shifts.append((start, start))
@@ -545,8 +549,8 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
-        # return set of unique neoepitope sequences
-        return set(peptide_seqs)
+        # return list of unique peptide sequences
+        return list(set(peptide_seqs))
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
