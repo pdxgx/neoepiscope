@@ -445,11 +445,12 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def peptides(self, size=9, somatic=2, germline=1):
+    def peptides(self, min_size=9, max_size=9, somatic=2, germline=1):
         """ Retrieves list of predicted peptide fragments from transcript that 
             include one or more variants.
 
-            size: peptide length (specified as # of amino acids)
+            min_size: minimum subpeptide length (specified as # of amino acids)
+            max_size: maximum subpeptide length (specified as # of amino acids)
             somatic: 0 to omit consideration of somatic variants, 1 to identify 
             somatic variants but not explicitly report peptides containing every
             somatic variant, 2 to identify and report all peptides containing 
@@ -461,7 +462,9 @@ class Transcript(object):
 
             Return value: list of peptides of desired length.
         """
-        if size < 2: return []
+        if max_size < min_size:
+            max_size = min_size
+        if min_size < 2: return []
         annotated_seq = self.annotated_seq(include_somatic=somatic != 0, 
             include_germline=germline != 0)
         coordinates = []
@@ -524,16 +527,22 @@ class Transcript(object):
         # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
-        protein = seq_to_peptide(sequence[start:])
+        protein = seq_to_peptide(sequence[start:], reverse_strand=False)
+        peptide_seqs = []
         # get amino acid ranges for kmerization
-        epitope_coords = []
-        for coords in coordinates:
-            epitope_coords.append((max(0, ((coords[0] - start) // 3)-size+1), 
-                min(len(protein), ((coords[1] - start) // 3)+size-1)))
-        for coords in frame_shifts:
-            epitope_coords.append((max(0, ((coords[0] - start) // 3)-size+1), 
-                min(len(protein), ((coords[1] - start) // 3)+size-1)))
-        # for each variant and any areas of different reading frame, do the windows around there
+        for size in range(min_size, max_size + 1):
+            epitope_coords = []
+            for coords in coordinates:
+                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)))
+            for coords in frame_shifts:
+                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)))
+            for coords in epitope_coords:
+                peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
+                    min_size=size, max_size=size)
+        # return set of unique neoepitope sequences
+        return set(peptide_seqs)
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
