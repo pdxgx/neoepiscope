@@ -187,7 +187,7 @@ def get_VAF_pos(VCF):
 def seq_to_peptide(seq, reverse_strand=False):
     """ Translates nucleotide sequence into peptide sequence.
 
-        All codons including and after stop codon are recorded as X's.
+        All codons after stop codon (X) are omitted.
 
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
@@ -203,8 +203,9 @@ def seq_to_peptide(seq, reverse_strand=False):
         peptide.append(codon)
         if codon == 'X':
             break
-    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
-        peptide.append('X')
+    # defunct behavior: return X's for all codons after stop codon
+    #for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+    #    peptide.append('X')
     return ''.join(peptide)
 
 def median(numbers):
