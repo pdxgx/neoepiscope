@@ -752,9 +752,10 @@ if __name__ == '__main__':
         for affected_transcript in relevant_transcripts:
             # Create transcript object
             transcript = Transcript(reference_index, 
-                            [[str(chrom), 'blah', 'blah', str(start), str(end), 
-                              '.', strand] for (chrom, start, end, strand) in 
-                              cds_dict[transcript_ID]]
+                            [[str(chrom), 'blah', seq_type, str(start), 
+                              str(end), '.', strand] for (chrom, seq_type, 
+                                                          start, end, strand) 
+                              in cds_dict[transcript_ID]]
                             )
             # Iterate over haplotypes associated with this transcript
             haplotypes = relevant_transcripts[affected_transcript]
