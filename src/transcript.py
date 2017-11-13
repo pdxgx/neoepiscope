@@ -44,6 +44,7 @@ class Transcript(object):
         assert len(CDS) > 0
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
+        self.start_codon = None
         last_chrom, last_strand = None, None
         for line in CDS:
             if type(line) is str: line = line.strip().split('\t')
@@ -61,9 +62,16 @@ class Transcript(object):
                     pass
                 else: raise
             # Use exclusive start, inclusive end 0-based coordinates internally
-            self.intervals.extend(
-                    [int(line[3]) - 2, int(line[4]) - 1]
-                )
+            if line[2] == "exon":
+                self.intervals.extend(
+                        [int(line[3]) - 2, int(line[4]) - 1]
+                    )
+            elif line[2] == "start_codon":
+                self.start_codon = line[3]
+            else:
+                raise NotImplementedError(
+                                    'GTF sequence type not currently supported'
+                                    )
             last_chrom, last_strand = line[0], line[6]
         # Store edits to coding sequence only
         self.edits = collections.defaultdict(list)
@@ -546,7 +554,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if tokens[2] == "exon":
+                if tokens[2] == "exon" or tokens[2] == "start_codon":
                     transcript_id = re.sub(
                                 r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
                                 r'\1', tokens[8]
@@ -554,13 +562,15 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                     # Create new dictionary entry for new transcripts
                     if transcript_id not in cds_dict:
                         cds_dict[transcript_id] = [[tokens[0].replace(
-                                                                    "chr", ""), 
+                                                                    "chr", ""),
+                                                        tokens[2], 
                                                         int(tokens[3]), 
                                                         int(tokens[4]), 
                                                         tokens[6]]]
                     else:
                         cds_dict[transcript_id].append([tokens[0].replace(
-                                                                    "chr", ""), 
+                                                                    "chr", ""),
+                                                            tokens[2], 
                                                             int(tokens[3]), 
                                                             int(tokens[4]), 
                                                             tokens[6]])
@@ -642,7 +652,7 @@ if __name__ == '__main__':
                                         os.path.dirname(
                                                 os.path.realpath(__file__)
                                             )
-                                    ), 'test', 'Ychrom.gtf'
+                                    ), 'test', 'Chr11.gtf'
                             )
             self.cds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
             self.ref_prefix = os.path.join(
@@ -650,7 +660,7 @@ if __name__ == '__main__':
                                     os.path.dirname(
                                             os.path.realpath(__file__)
                                         )
-                                ), 'test', 'Ychrom.ref'
+                                ), 'test', 'Chr11.ref'
                         )
             self.reference_index = bowtie_index.BowtieIndexReference(
                                                         self.ref_prefix)
@@ -668,7 +678,7 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.annotated_seq()[0][1], 'R')
             self.assertEqual(self.transcript.intervals, [2181011, 2181101, 
                                                          2182013, 2182387])
-            self.assertFalse(self.transcript.rev_strand)
+            self.assertTrue(self.transcript.rev_strand)
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [])
         def test_irrelevant_edit(self):
@@ -681,17 +691,20 @@ if __name__ == '__main__':
                                                  (2181101, 'R'),
                                                  (2182013, 'R'),
                                                  (2182387, 'R')])
-
-
-    '''
+            self.assertEqual(len(self.transcript.annotated_seq()), 1)
         def test_relevant_edit(self):
             """Fails if edit is not made for CDS position"""
-            self.transcript.edit("G", 34)
+            self.transcript.edit("A", 2182386)
             relevant_edits = self.transcript.expressed_edits()
-            self.assertEqual(self.transcript.edits[33], [("G", "V", "S")])
-            self.assertEqual(relevant_edits[0][33], [("G", "V", "S")])
-            self.assertEqual(relevant_edits[1], [(29, "R"), (74, "R"), 
-                                                    (74, "R"), (77, "R")])
+            self.assertEqual(self.transcript.edits[2182385], [("A", "V", "S")])
+            self.assertEqual(relevant_edits[0][2182385], [("A", "V", "S")])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R'), 
+                                                 (2181101, 'R'),
+                                                 (2182013, 'R'),
+                                                 (2182387, 'R')])
+            self.assertEqual(len(self.transcript.annotated_seq()), 3)
+
+    '''
         def test_reset_to_reference(self):
             """Fails if transcript is not reset to reference"""
             self.transcript.edit("G", 34)
