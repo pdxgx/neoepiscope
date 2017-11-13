@@ -46,6 +46,8 @@ class Transcript(object):
         self.intervals = []
         self.start_codon = None
         last_chrom, last_strand = None, None
+        # need to replace this with transcript-relative coordinates of start
+        self.start_codon = 0
         for line in CDS:
             if type(line) is str: line = line.strip().split('\t')
             try:
@@ -451,11 +453,12 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def peptides(self, size=9, somatic=2, germline=1):
+    def peptides(self, min_size=8, max_size=11, somatic=2, germline=1):
         """ Retrieves list of predicted peptide fragments from transcript that 
             include one or more variants.
 
-            size: peptide length (specified as # of amino acids)
+            min_size: minimum subpeptide length (specified as # of amino acids)
+            max_size: maximum subpeptide length (specified as # of amino acids)
             somatic: 0 to omit consideration of somatic variants, 1 to identify 
             somatic variants but not explicitly report peptides containing every
             somatic variant, 2 to identify and report all peptides containing 
@@ -467,7 +470,9 @@ class Transcript(object):
 
             Return value: list of peptides of desired length.
         """
-        if size < 2: return []
+        if max_size < min_size:
+            max_size = min_size
+        if min_size < 2: return []
         annotated_seq = self.annotated_seq(include_somatic=somatic != 0, 
             include_germline=germline != 0)
         coordinates = []
@@ -476,13 +481,15 @@ class Transcript(object):
         sequence = '' # hold flattened nucleotide sequence
         # extract nucleotide sequence from annotated_seq
         for seq in annotated_seq:
-            record = (seq[2] == 'S' and somatic >= 2) or (seq[2] == 'G' 
-                and germline >= 2)
-            if seq[1] == 'D' and record:
-                coordinates.append((counter, 0))
+            if seq[1] != 'D':
+                sequence += seq[0]
         # locate position of start codon (first ATG in sequence)
         start = sequence.find("ATG")
-        if start < 0: return []
+        if start < 0:
+            return []
+        # this makes some BIG assumptions about self.start_codon!
+        #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
+        #  to calculate/update transcript relative coordinates
         reading_frame = (start - self.start_codon) % 3
         if reading_frame != 0:
             frame_shifts.append((start, start))
@@ -494,14 +501,16 @@ class Transcript(object):
             elif seq[1] == 'D' and counter < start:
                 continue
             # skip sequence fragments that are not to be reported 
-            if (seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
-                (seq[2] == 'G' and germline >= 2)):
+            if seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
+                (seq[2] == 'G' and germline < 2):
                 if seq[1] != 'D':
                     counter += len(seq[0])
                 continue
             # handle unique case where variant precedes but includes start codon
             if counter < start:
-                coordinates.append(start, counter + len(seq[0]))
+               # future devel: 
+                #    can propogate variant ID here to maintain link to epitope
+                coordinates.append((start, counter + len(seq[0])))
                 if seq[1] == 'I' and reading_frame == 0:
                     reading_frame = (reading_frame + len(seq[0])) % 3
                     if reading_frame != 0:
@@ -528,12 +537,27 @@ class Transcript(object):
             else:
                 coordinates.append((counter, len(seq[0])))
                 counter += len(seq[0])
-            continue
         # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
-        protein = seq_to_peptide(sequence[start:])
-        # for each variant and any areas of different reading frame, do the windows around there
+        protein = seq_to_peptide(sequence[start:], reverse_strand=False)
+        peptide_seqs = []
+        # get amino acid ranges for kmerization
+        for size in range(min_size, max_size + 1):
+            epitope_coords = []
+            for coords in coordinates:
+                # future devel: 
+                #    can propogate variant ID here to maintain link to epitope
+                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)))
+            for coords in frame_shifts:
+                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)))
+            for coords in epitope_coords:
+                peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
+                    min_size=size, max_size=size)
+        # return list of unique peptide sequences
+        return list(set(peptide_seqs))
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
