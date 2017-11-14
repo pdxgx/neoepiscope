@@ -26,7 +26,7 @@ from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 #import Hapcut2interpreter as hap
 
- _revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
+_revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
 
 # X below denotes a stop codon
 _codon_table = {
@@ -284,14 +284,13 @@ def process_haplotypes(hapcut_output, interval_dict):
                 block_transcripts = {}
             else:
                 # Add mutation to transcript dictionary for the block
-                tokens = line.strip("\n").split("\t")
+                tokens = line.strip("\n").split()
                 mut_size = min(len(tokens[5]), len(tokens[6]))
-                end = tokens[4] + mut_size
-                overlapping_transcripts = get_transcripts_from_tree(
-                                                                  tokens[3], 
-                                                                  tokens[4], 
-                                                                  end,
-                                                                  interval_dict
+                end = int(tokens[4]) + mut_size
+                overlapping_transcripts = get_transcripts_from_tree(tokens[3], 
+                                                                int(tokens[4]), 
+                                                                end,
+                                                                interval_dict
                                                                    )
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele
@@ -406,41 +405,42 @@ if __name__ == '__main__':
                                                 )
                                         ), 'test', 'Ychrom.gtf'
                                 )
-                self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
-                self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
+                self.Ycds = gtf_to_cds(self.gtf, 'NA', pickle_it=False)
+                self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
             def test_transcript_to_CDS(self):
                 """Fails if dictionary was built incorrectly"""
-                self.assertEqual(len(self.Ycds.keys()), 220)
+                self.assertEqual(len(self.Ycds.keys()), 901)
             def test_CDS_tree(self):
                 """Fails if dictionary was built incorrectly"""
                 self.assertEqual(len(self.Ytree.keys()), 1)
-                self.assertEqual(len(self.Ytree["Y"]), 2138)
+                self.assertEqual(len(self.Ytree['Y']), 4808)
             def test_transcript_extraction(self):
                 """Fails if incorrect transcripts are pulled"""
                 self.assertEqual(len(get_transcripts_from_tree(
-                                                                "Y", 150860, 
+                                                                'Y', 150860, 
                                                                 150861,
                                                                 self.Ytree)), 
-                                                                10
+                                                                11
                                                                 )
-                self.coordinate_search = list(self.Ytree["Y"].search(150860,
+                self.coordinate_search = list(self.Ytree['Y'].search(150860,
                                                                      150861))
                 self.transcripts = []
                 for interval in self.coordinate_search:
                     self.transcripts.append(interval[2])
                 self.transcripts.sort()
-                self.assertEqual(self.transcripts, [
-                                                    'ENST00000381657.7_3_PAR_Y', 
-                                                    'ENST00000381663.8_3_PAR_Y', 
-                                                    'ENST00000399012.6_3_PAR_Y', 
-                                                    'ENST00000415337.6_3_PAR_Y', 
-                                                    'ENST00000429181.6_2_PAR_Y', 
-                                                    'ENST00000430923.7_3_PAR_Y', 
-                                                    'ENST00000443019.6_2_PAR_Y', 
-                                                    'ENST00000445062.6_2_PAR_Y', 
-                                                    'ENST00000447472.6_3_PAR_Y', 
-                                                    'ENST00000448477.6_2_PAR_Y'
-                                                    ])
+                self.assertEqual(
+                                 self.transcripts, ['ENST00000381657.7_3_PAR_Y',
+                                                    'ENST00000381663.8_3_PAR_Y',
+                                                    'ENST00000399012.6_3_PAR_Y',
+                                                    'ENST00000415337.6_3_PAR_Y',
+                                                    'ENST00000429181.6_2_PAR_Y',
+                                                    'ENST00000430923.7_3_PAR_Y',
+                                                    'ENST00000443019.6_2_PAR_Y',
+                                                    'ENST00000445062.6_2_PAR_Y',
+                                                    'ENST00000447472.6_3_PAR_Y',
+                                                    'ENST00000448477.6_2_PAR_Y',
+                                                    'ENST00000484611.7_1_PAR_Y']
+                                )
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
             def setUp(self):
@@ -502,34 +502,70 @@ if __name__ == '__main__':
                 """Fails if incorrect positions are returned"""
                 self.assertEqual(get_VAF_pos(self.varscan), 5)
                 self.assertEqual(get_VAF_pos(self.mutect), None)
-        class TestHAPCUT2Processing(unittest.TestCase):
+        class TestHaplotypeProcessing(unittest.TestCase):
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
                 """Sets up input files and dictionaries to use for tests"""
-                self.gtf = os.path.join(
+                self.Ygtf = os.path.join(
                                     os.path.dirname(
                                             os.path.dirname(
                                                     os.path.realpath(__file__)
                                                 )
                                         ), 'test', 'Ychrom.gtf'
                                 )
-                self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
-                self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
+                self.Ycds = gtf_to_cds(self.Ygtf, 'NA', pickle_it=False)
+                self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
                 self.Yhapcut = os.path.join(
                                     os.path.dirname(
                                             os.path.dirname(
                                                     os.path.realpath(__file__)
                                                 )
-                                        ), 'test', 'Ychrom.hap.out'
-                                )         
+                                        ), 'test', 'Ychrom.hapcut.out'
+                                )
+                self.Chr11gtf = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Chr11.gtf'
+                                )
+                self.Chr11cds = gtf_to_cds(self.Chr11gtf, 'NA', pickle_it=False)
+                self.Chr11tree = cds_to_tree(self.Chr11cds, 'NA',
+                                                pickle_it=False)
+                self.Chr11hapcut = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'Chr11.hapcut.out'
+                                ) 
             def test_hap_processing(self):
-                '''
                 """Fails if file is processed incorrectly"""
-                Ynorm, Ytum, YVAF = process_haplotypes(self.Yhapcut, self.Ycds, 
-                                                    self.Ytree, None, [8,11])
-                self.assertEqual([len(Ynorm), len(Ytum), len(YVAF)], [0,0,0])
-                #### WRITE TEST FOR CASE WHERE THERE WILL BE EPITOPES ####
-                '''
+                Ychrom_txs = process_haplotypes(self.Yhapcut, self.Ytree)
+                Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree)
+                self.assertEqual(sorted(Ychrom_txs.keys()), 
+                                        ['ENST00000431853.1_1'])
+                self.assertEqual(Ychrom_txs['ENST00000431853.1_1'], 
+                                 [[['Y', '59001513', 'G', 'A', '0', '0', 
+                                    '0/0:.:256:242:13:5.1%:184,58,9,4:.:2'], 
+                                 ['Y', '59001559', 'G', 'A', '0', '0',
+                                  '0/0:.:276:261:14:5.09%:117,144,6,8:.:2']]]
+                                )
+                self.assertEqual(sorted(Chr11_txs.keys()), 
+                                        ['ENST00000398531.2_2', 
+                                        'ENST00000528813.1_1'])
+                self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
+                                [[['11', '71276861', 'T', 'C', '0', '0', 
+                                   '0/0:.:53:52:0:0%:22,30,0,0:.:2'], 
+                                 ['11', '71276900', 'C', 'G', '0', '0',
+                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2']]]
+                    )
+                self.assertEqual(Chr11_txs['ENST00000528813.1_1'],
+                                [[['11', '56099004', 'C', 'T', '0', '0', 
+                                   '0/0:.:30:30:0:0%:14,16,0,0:.:2'], 
+                                 ['11', '56099010', 'A', 'G', '0', '0',
+                                  '0/0:.:29:29:0:0%:15,14,0,0:.:2']]]
+                    )
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -777,10 +813,16 @@ if __name__ == '__main__':
                         mutation_class = 'G'
                     else:
                         mutation_class = 'S'
+                    # Determine VAF if available
+                    if VAF_pos is not None:
+                        VAF = float(mutation[7][VAF_pos].strip('%'))
+                    else:
+                        VAF = None
                     # Make edit to transcript
-                    transcipt.edit(mutation[3], mutation[1], 
+                    transcipt.edit(mutation[3], int(mutation[1]), 
                                     mutation_type=mutation_type, 
-                                    mutation_class=mutation_class)
+                                    mutation_class=mutation_class,
+                                    VAF=VAF)
                 ## ENUMERATE NEOEPITOPES HERE
                 transcript.reset(reference=True)
     else:
