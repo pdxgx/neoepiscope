@@ -315,7 +315,7 @@ class Transcript(object):
             No return value; seq_list is merely updated.
         """
         try:
-            condition = seq_list[-1][-1] == mutation_class
+            condition = seq_list[-1][-2] == mutation_class
         except IndexError:
             # Add first item in seq_list
             assert not seq_list
@@ -418,7 +418,7 @@ class Transcript(object):
                         insertion = ('', 'R', None)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = (edit[0], edit[2], edit[4])
+                                snv = (edit[0], edit[2], edit[3])
                             else:
                                 assert edit[1] == 'I'
                                 insertion = (edit[0], edit[2], edit[4])
@@ -460,8 +460,8 @@ class Transcript(object):
                     pos_group.append(pos)
             if self.rev_strand:
                 return [(seq[::-1].translate(revcomp_translation_table),
-                            mutation_class)
-                            for seq, mutation_class in final_seq][::-1]
+                            mutation_class, VAF)
+                            for seq, mutation_class, VAF in final_seq][::-1]
             return final_seq
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
@@ -724,23 +724,26 @@ if __name__ == '__main__':
             """Fails if edit is made for non-exon position"""
             self.transcript.edit('G', 2181009)
             relevant_edits = self.transcript.expressed_edits()
-            self.assertEqual(self.transcript.edits[2181008], [('G', 'V', 'S')])
+            self.assertEqual(self.transcript.edits[2181008], [('G', 'V', 'S', 
+                                                                None)])
             self.assertEqual(relevant_edits[0], {})
-            self.assertEqual(relevant_edits[1], [(2181011, 'R'), 
-                                                 (2181101, 'R'),
-                                                 (2182013, 'R'),
-                                                 (2182387, 'R')])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R', None), 
+                                                 (2181101, 'R', None),
+                                                 (2182013, 'R', None),
+                                                 (2182387, 'R', None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 1)
         def test_relevant_edit(self):
             """Fails if edit is not made for CDS position"""
             self.transcript.edit("A", 2182386)
             relevant_edits = self.transcript.expressed_edits()
-            self.assertEqual(self.transcript.edits[2182385], [('A', 'V', 'S')])
-            self.assertEqual(relevant_edits[0][2182385], [('A', 'V', 'S')])
-            self.assertEqual(relevant_edits[1], [(2181011, 'R'), 
-                                                 (2181101, 'R'),
-                                                 (2182013, 'R'),
-                                                 (2182387, 'R')])
+            self.assertEqual(self.transcript.edits[2182385], [('A', 'V', 'S',
+                                                                None)])
+            self.assertEqual(relevant_edits[0][2182385], [('A', 'V', 'S',
+                                                            None)])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R', None), 
+                                                 (2181101, 'R', None),
+                                                 (2182013, 'R', None),
+                                                 (2182387, 'R', None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 3)
         def test_reset_to_reference(self):
             """Fails if transcript is not reset to reference"""
@@ -753,22 +756,23 @@ if __name__ == '__main__':
             self.transcript.edit(3, 2182025, mutation_type='D')
             self.transcript.save()
             self.assertEqual(self.transcript.last_edits[2182385], [('A', 'V', 
-                                                                        'S')])
+                                                                    'S', None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                            [(2182023, 2182026, 'S', 'CTC')])
+                                        [(2182023, 2182026, 'S', 'CTC', None)])
         def test_reset_to_save_point(self):
             """Fails if new edit not erased or old edits not retained"""
             self.transcript.edit('A', 2182386)
             self.transcript.edit(3, 2182025, mutation_type='D')
             self.transcript.save()
             self.transcript.edit('G', 2182388)
-            self.assertEqual(self.transcript.edits[2182387], [('C', 'V', 'S')])
+            self.assertEqual(self.transcript.edits[2182387], [('G', 'V', 'S',
+                                                                None)])
             self.transcript.reset(reference=False)
             self.assertNotIn(2182387, self.transcript.edits)
             self.assertEqual(self.transcript.last_edits[2182385], [('A', 'V',
-                                                                        'S')])
+                                                                    'S', None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                            [(2182023, 2182026, 'S', 'CTC')])
+                                        [(2182023, 2182026, 'S', 'CTC', None)])
             self.assertNotEqual(self.transcript.edits, {})
     '''
         def test_SNV_seq(self):
