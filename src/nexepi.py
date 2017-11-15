@@ -599,21 +599,23 @@ if __name__ == '__main__':
                 while line:
                     tokens = line.split('\t')
                     pos = int(tokens[1])
-                    if (tokens[3], tokens[4]) not in phased[
-                                                (tokens[0], pos)
-                                            ]:
-                        print >>output_stream, 'BLOCK: unphased'
-                        print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
-                                               '{pos}\t{ref}\t{alt}\t'
-                                               '{genotype}\tNA\tNA\tNA').format(
-                                                    vcf_line=counter,
-                                                    chrom=tokens[0],
-                                                    pos=pos,
-                                                    ref=tokens[3],
-                                                    alt=tokens[4],
-                                                    genotype=tokens[9]
-                                                )
-                        print >>output_stream, '********' 
+                    alt_alleles = tokens[4].split(',')
+                    for allele in alt_alleles
+                        if (tokens[3], allele) not in phased[
+                                                    (tokens[0], pos)
+                                                ]:
+                            print >>output_stream, 'BLOCK: unphased'
+                            print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
+                                                   '{pos}\t{ref}\t{alt}\t'
+                                                   '{genotype}\tNA\tNA\tNA').format(
+                                                        vcf_line=counter,
+                                                        chrom=tokens[0],
+                                                        pos=pos,
+                                                        ref=tokens[3],
+                                                        alt=tokens[4],
+                                                        genotype=tokens[9]
+                                                    )
+                            print >>output_stream, '********' 
                     line = vcf_stream.readline().strip()
                     counter += 1
     elif args.subparser_name == 'call':
