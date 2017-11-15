@@ -69,7 +69,7 @@ class Transcript(object):
                         [int(line[3]) - 2, int(line[4]) - 1]
                     )
             elif line[2] == "start_codon":
-                self.start_codon = int(line[3])
+                self.start_codon = int(line[3]) - 1
             else:
                 raise NotImplementedError(
                                     'GTF sequence type not currently supported'
@@ -135,19 +135,19 @@ class Transcript(object):
                 deletion_size = len(seq)
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            seq, VAF)
+                            [seq], [VAF])
                     )
             else:
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            self.bowtie_reference_index.get_stretch(
+                            [self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
-                                ), VAF)
+                                )], [VAF])
                     )
         elif mutation_type == 'V' or mutation_type == 'I':
             self.edits[pos - 1].append((seq, mutation_type, 
-                                                mutation_class, VAF))
+                                                mutation_class, [seq], [VAF]))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
@@ -214,31 +214,37 @@ class Transcript(object):
             sorted_deletion_intervals.sort(key=itemgetter(0, 1))
             deletion_intervals = [(sorted_deletion_intervals[0][0],
                                    sorted_deletion_intervals[0][2], 
-                                   sorted_deletion_intervals[0][3]),
+                                   sorted_deletion_intervals[0][3],
+                                   sorted_deletion_intervals[0][4]),
                                   (sorted_deletion_intervals[0][1],
                                    sorted_deletion_intervals[0][2],
-                                   sorted_deletion_intervals[0][3])]
+                                   sorted_deletion_intervals[0][3],
+                                   sorted_deletion_intervals[0][4])]
             for i in xrange(1, len(sorted_deletion_intervals)):
                 if (sorted_deletion_intervals[i][0]
                     <= deletion_intervals[-1][0]):
                     deletion_intervals[-2] = min(deletion_intervals[-2],
                                             (sorted_deletion_intervals[i][0],
                                              sorted_deletion_intervals[i][2],
-                                             sorted_deletion_intervals[i][3]),
+                                             sorted_deletion_intervals[i][3],
+                                             sorted_deletion_intervals[i][4]),
                                             key=itemgetter(0))
                     deletion_intervals[-1] = max(deletion_intervals[-1],
                                             (sorted_deletion_intervals[i][1],
                                              sorted_deletion_intervals[i][2],
-                                             sorted_deletion_intervals[i][3]),
+                                             sorted_deletion_intervals[i][3],
+                                             sorted_deletion_intervals[i][4]),
                                             key=itemgetter(0))
                 else:
                     deletion_intervals.extend(
                             [(sorted_deletion_intervals[i][0],
                                 sorted_deletion_intervals[i][2], 
-                                sorted_deletion_intervals[i][3]),
+                                sorted_deletion_intervals[i][3],
+                                sorted_deletion_intervals[i][4]),
                              (sorted_deletion_intervals[i][1],
                                 sorted_deletion_intervals[i][2],
-                                sorted_deletion_intervals[i][3])]
+                                sorted_deletion_intervals[i][3],
+                                sorted_deletion_intervals[i][4])]
                         )
             for i in xrange(0, len(deletion_intervals), 2):
                 start_index = bisect.bisect_left(intervals,
@@ -257,27 +263,27 @@ class Transcript(object):
                     if start_index % 2:
                         pos = deletion_intervals[i]
                     else:
-                        pos = (intervals[start_index], 'R', None)
+                        pos = (intervals[start_index], 'R', [], [])
                         start_index += 1
                     # deletion_intervals[i] becomes a new end
                     relevant_deletion_intervals.extend(
-                            [pos, (intervals[start_index], 'R', None)]
+                            [pos, (intervals[start_index], 'R', [], [])]
                         )
                     if end_index % 2:
                         end_pos = deletion_intervals[i+1]
                         relevant_deletion_intervals.extend(
-                            [(intervals[i], 'R', None) for i in
+                            [(intervals[i], 'R', [], []) for i in
                              xrange(start_index + 1, end_index)]
                         )
                     else:
-                        end_pos = (intervals[end_index - 1], 'R')
+                        end_pos = (intervals[end_index - 1], 'R', [], [])
                         relevant_deletion_intervals.extend(
-                                [(intervals[i], 'R', None) for i in
+                                [(intervals[i], 'R', [], []) for i in
                                  xrange(start_index, end_index)]
                             )
                     relevant_deletion_intervals.append(end_pos)
-        intervals = sorted([(interval, 'R', None) for interval in intervals]
-                            + relevant_deletion_intervals)
+        intervals = sorted([(interval, 'R', [], []) for interval in 
+                            intervals] + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
@@ -292,7 +298,8 @@ class Transcript(object):
                     elif edit[1] == 'I':
                         if start_index % 2 or pos == intervals[start_index][0]:
                             # An insertion is valid before or after a block
-                            edits[pos].append(edit)                     
+                            edits[pos].append(edit)
+        # Clear empty intervals               
         return (edits, [intervals[i] for i in xrange(len(intervals))
                          if (i % 2
                              and intervals[i][0] != intervals[i-1][0]
@@ -307,7 +314,7 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
-    def _seq_append(self, seq_list, seq, mutation_class, VAF):
+    def _seq_append(self, seq_list, seq, mutation_class, orig_seq, VAF):
         """ Appends mutation to seq_list, merging successive mutations.
 
             seq_list: list of tuples (sequence, type) where type is one
@@ -319,17 +326,23 @@ class Transcript(object):
             No return value; seq_list is merely updated.
         """
         try:
-            condition = seq_list[-1][-2] == mutation_class
+            condition = seq_list[-1][1] == mutation_class
         except IndexError:
             # Add first item in seq_list
             assert not seq_list
             if seq or mutation_class != 'R':
-                seq_list.append((seq, mutation_class, VAF))
+                seq_list.append((seq, mutation_class, orig_seq, VAF))
             return
         if condition:
-            seq_list[-1] = (seq_list[-1][0] + seq, mutation_class, VAF)
+            seq_list[-1] = (seq_list[-1][0] + seq, mutation_class,
+                            (seq_list[-1][2] + orig_seq)
+                            if orig_seq not in seq_list[-1][2]
+                            else seq_list[-1][2], 
+                            (seq_list[-1][3] + VAF)
+                            if VAF not in seq_list[-1][3]
+                            else seq_list[-1][3])
         elif seq or mutation_class != 'R':
-            seq_list.append((seq, mutation_class, VAF))
+            seq_list.append((seq, mutation_class, orig_seq, VAF))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
                                 include_somatic=True, include_germline=True):
@@ -369,25 +382,24 @@ class Transcript(object):
             new_edits = copy.copy(edits)
             i = 0
             while i < len(intervals):
-                if intervals[i][0] in edits:
+                if intervals[i][0] in edits and i:
                     assert (len(edits[intervals[i][0]]) == 1
                                 and edits[intervals[i][0]][0][1] == 'I')
-                    if i:
-                        new_edits[
-                            intervals[i-1][0]] = new_edits[intervals[i][0]]
-                        del new_edits[intervals[i][0]]
+                    new_edits[
+                        intervals[i-1][0]] = new_edits[intervals[i][0]]
+                    del new_edits[intervals[i][0]]
+                    '''Code below would add insertion to first block,
+                    but no more
+                    if i do above,
                     else:
-                        intervals = [(-1, 'R', None), 
-                                     (-1, 'R', None)] + intervals
+                        intervals = [(-1, 'R', [], []), 
+                                     (-1, 'R', [], [])] + intervals
                         # Have to add 2 because we modified intervals above
                         i += 2
                         new_edits[-1] = new_edits[intervals[i][0]]
-                        del new_edits[intervals[i][0]]
+                        del new_edits[intervals[i][0]]'''
                 i += 2
             seqs = []
-            print 'whyyyee'
-            print intervals
-            print '/whyyyee'
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
                         self.bowtie_reference_index.get_stretch(
@@ -399,79 +411,64 @@ class Transcript(object):
             # Now build sequence in order of increasing edit position
             i = 1
             pos_group, final_seq = [], []
-            print intervals
-            print edits
-            print new_edits
             for pos in (sorted(new_edits.keys()) + [self.intervals[-1] + 1]):
-                print pos
-                print i
-                print intervals[i][0]
                 if pos > intervals[i][0]:
                     last_index, last_pos = 0, intervals[i-1][0] + 1
                     for pos_to_add in pos_group:
                         fill = pos_to_add - last_pos
-                        print fill
-                        print pos_to_add
-                        print last_pos
                         if intervals[i-1][1] != 'R':
                             self._seq_append(final_seq, '', intervals[i-1][1],
-                                             intervals[i-1][2])
+                                             intervals[i-1][2],
+                                             intervals[i-1][3])
                         self._seq_append(final_seq, seqs[(i-1)/2][
                                             last_index:last_index + fill
-                                        ], 'R', None)
+                                        ], 'R', [], [])
                         if intervals[i][1] != 'R':
                             self._seq_append(final_seq, '', intervals[i][1], 
-                                             intervals[i][2])
+                                             intervals[i][2], intervals[i][3])
                         # If no edits, snv is reference and no insertion
-                        print "final seq:"
-                        print final_seq
                         try:
-                            snv = (seqs[(i-1)/2][last_index + fill], 'R', None)
+                            snv = (seqs[(i-1)/2][last_index + fill], 'R', 
+                                    [], [])
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
-                            print 'wrong'
-                            print last_index
-                            print fill
-                            print seqs
-                            print i
-                            print '/wrong'
                             assert (i - 1) / 2 == 0 and not seqs[0]
-                            snv = ('', 'R', None)
-                        insertion = ('', 'R', None)
+                            snv = ('', 'R', [], [])
+                        insertion = ('', 'R', [], [])
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = (edit[0], edit[2], edit[3])
+                                snv = (edit[0], edit[2], edit[3], edit[4])
                             else:
                                 assert edit[1] == 'I'
-                                insertion = (edit[0], edit[2], edit[3])
+                                insertion = (edit[0], edit[2], edit[3], edit[4])
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i-1][1], 
-                                            intervals[i-1][2])
+                                         intervals[i-1][2], intervals[i-1][3])
                     self._seq_append(
-                            final_seq, seqs[(i-1)/2][last_index:], 'R', None
+                            final_seq, seqs[(i-1)/2][last_index:], 'R', [], []
                         )
                     if intervals[i][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i][1], 
-                                            intervals[i][2])
+                                            intervals[i][2], intervals[i][3])
                     i += 2
                     try:
-                        while pos > intervals[i]:
+                        while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
-                                        intervals[i-1][2]
+                                        intervals[i-1][2], intervals[i-1][3]
                                     )
                             self._seq_append(final_seq, seqs[(i-1)/2], 'R', 
-                                                None)
+                                                [], [])
                             if intervals[i][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i][1], 
-                                        intervals[i][2]
+                                        intervals[i][2], intervals[i][3]
                                     )
                             i += 2
                     except IndexError:
@@ -482,9 +479,10 @@ class Transcript(object):
                 else:
                     pos_group.append(pos)
             if self.rev_strand:
-                return [(seq[::-1].translate(revcomp_translation_table),
-                            mutation_class, VAF)
-                            for seq, mutation_class, VAF in final_seq][::-1]
+                return ([(seq[::-1].translate(revcomp_translation_table),
+                            mutation_class, orig_seq, VAF)
+                            for seq, mutation_class, orig_seq, VAF in 
+                            final_seq][::-1])
             return final_seq
         raise NotImplementedError(
             'Retrieving sequence with transcript coordinates not '
@@ -749,25 +747,25 @@ if __name__ == '__main__':
             self.transcript.edit('G', 2181009)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[2181008], [('G', 'V', 'S', 
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(relevant_edits[0], {})
-            self.assertEqual(relevant_edits[1], [(2181011, 'R', None), 
-                                                 (2181101, 'R', None),
-                                                 (2182013, 'R', None),
-                                                 (2182387, 'R', None)])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R', None, None), 
+                                                 (2181101, 'R', None, None),
+                                                 (2182013, 'R', None, None),
+                                                 (2182387, 'R', None, None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 1)
         def test_relevant_edit(self):
             """Fails if edit is not made for position within exon"""
             self.transcript.edit("A", 2182386)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[2182385], [('A', 'V', 'S',
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(relevant_edits[0][2182385], [('A', 'V', 'S',
-                                                            None)])
-            self.assertEqual(relevant_edits[1], [(2181011, 'R', None), 
-                                                 (2181101, 'R', None),
-                                                 (2182013, 'R', None),
-                                                 (2182387, 'R', None)])
+                                                            None, None)])
+            self.assertEqual(relevant_edits[1], [(2181011, 'R', None, None), 
+                                                 (2181101, 'R', None, None),
+                                                 (2182013, 'R', None, None),
+                                                 (2182387, 'R', None, None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 3)
         def test_reset_to_reference(self):
             """Fails if transcript is not reset to reference"""
@@ -780,9 +778,10 @@ if __name__ == '__main__':
             self.transcript.edit(3, 2182025, mutation_type='D')
             self.transcript.save()
             self.assertEqual(self.transcript.last_edits[2182385], [('A', 'V', 
-                                                                    'S', None)])
+                                                                    'S', None,
+                                                                    None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                        [(2182023, 2182026, 'S', 'CTC', None)])
+                                [(2182023, 2182026, 'S', 'CTC', None)])
         def test_reset_to_save_point(self):
             """Fails if new edit not erased or old edits not retained"""
             self.transcript.edit('A', 2182386)
@@ -790,45 +789,46 @@ if __name__ == '__main__':
             self.transcript.save()
             self.transcript.edit('G', 2182388)
             self.assertEqual(self.transcript.edits[2182387], [('G', 'V', 'S',
-                                                                None)])
+                                                                None, None)])
             self.transcript.reset(reference=False)
             self.assertNotIn(2182387, self.transcript.edits)
             self.assertEqual(self.transcript.last_edits[2182385], [('A', 'V',
-                                                                    'S', None)])
+                                                                    'S', None,
+                                                                    None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                        [(2182023, 2182026, 'S', 'CTC', None)])
+                                [(2182023, 2182026, 'S', 'CTC', None)])
             self.assertNotEqual(self.transcript.edits, {})
         def test_SNV_seq(self):
             """Fails if SNV is edited incorrectly"""
             self.transcript.edit('A', 2182386)
             self.assertEqual(self.transcript.edits[2182385], [("A", "V", "S",
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[0], ('AA', 'R', None))
-            self.assertEqual(seq[1], ('T', 'S', None))
+            self.assertEqual(seq[0], ('AA', 'R', None, None))
+            self.assertEqual(seq[1], ('T', 'S', None, None))
             self.assertEqual(len(seq[2][0]), 461)
         def test_inside_insertion(self):
             """Fails if indel within exon is inserted incorrectly"""
             self.transcript.edit('Q', 2181099, mutation_type="I")
             self.assertEqual(self.transcript.edits[2181098], [("Q", "I", "S",
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', None))
+            self.assertEqual(seq[1], ('Q', 'S', None, None))
             self.assertEqual(len(seq[0][0]), 377)
             self.assertEqual(len(seq[2][0]), 87)
         def test_adjacent_indel(self):
             """Fails if indel right before exon is inserted incorrectly"""
             self.transcript.edit("Q", 2181102, mutation_type="I")
             self.assertEqual(self.transcript.edits[2181101], [("Q", "I", "S",
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', None))
+            self.assertEqual(seq[1], ('Q', 'S', None, None))
             self.assertEqual(len(seq[0][0]), 374)
             self.assertEqual(len(seq[2][0]), 90)
         def test_inside_deletion(self):
@@ -841,8 +841,8 @@ if __name__ == '__main__':
                                                                    None)])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', 'GGCC'))
-            self.assertEqual(seq[0], ('AAG', 'R', None))
+            self.assertEqual(seq[1], ('', 'S', 'GGCC', None))
+            self.assertEqual(seq[0], ('AAG', 'R', None, None))
             self.assertEqual(len(seq[2][0]), 457)
         def test_overlapping_deletion(self):
             """Fails if deletion overlapping a junction is incorrect"""
@@ -854,7 +854,7 @@ if __name__ == '__main__':
                                                                    None)])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', 'CTCCAGCTGG'))
+            self.assertEqual(seq[1], ('', 'S', 'CTCCAGCTGG', None))
             self.assertEqual(len(seq[0][0]), 374)
             self.assertEqual(len(seq[2][0]), 84)
         def test_spanning_deletion(self):
@@ -874,13 +874,13 @@ if __name__ == '__main__':
             self.transcript.edit(918, 2181102, mutation_type="D")
             self.transcript.edit('Q', 2181099, mutation_type="I")
             self.transcript.edit('A', 2182386)
-            self.assertEqual(len(self.transcript.edit.keys()), 2)
+            self.assertEqual(len(self.transcript.edits.keys()), 2)
             self.assertEqual(self.transcript.edits[2182385], [("A", "V", "S",
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(self.transcript.edits[2181098], [("Q", "I", "S",
-                                                                None)])
+                                                                None, None)])
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (2181100, 2182018, 'S'))
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), )
+            #self.assertEqual(len(seq), )
     unittest.main()
