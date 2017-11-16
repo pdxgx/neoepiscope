@@ -983,10 +983,14 @@ def go():
             _size_min = int(args.kmer_size)
             _size_max = _size_min
         if (_size_min < 1 or _size_max < 1):
+            try:
+                raise ValueError("Kmer size(s) must be >= 1")
             except ValueError:
                 print "Kmer size(s) must be >= 1"
                 pass
         if (_size_max < _size_min):
+            try:
+                raise ValueError("Max kmer size cannot be less than min kmer size")
             except ValueError:
                 print "Max kmer size cannot be less than min kmer size"
                 pass
