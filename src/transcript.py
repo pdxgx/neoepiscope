@@ -608,21 +608,6 @@ class Transcript(object):
             frame_shifts[-1][1] = counter
         protein = seq_to_peptide(sequence[start:], reverse_strand=False)
         """
-        def kmerize_peptide(peptide, min_size=8, max_size=11):
-        """ Obtains subsequences of a peptide.
-
-            normal_peptide: normal peptide seq
-            min_size: minimum subsequence size
-            max_size: maximum subsequence size
-
-            Return value: list of all possible subsequences of size between
-                min_size and max_size
-        """
-            peptide_size = len(peptide)
-            return [item for sublist in
-                    [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
-                        for size in xrange(min_size, max_size + 1)]
-                for item in sublist if 'X' not in item]
         peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
             reverse_strand=False), min_size=min_size, max_size=max_size)
         reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
