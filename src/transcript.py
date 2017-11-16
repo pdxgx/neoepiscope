@@ -489,31 +489,35 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def peptides(self, min_size=8, max_size=11, somatic=2, germline=1):
+    def neoepitopes(self, min_size=8, max_size=11, include_somatic=1, 
+        include_germline=2):
         """ Retrieves list of predicted peptide fragments from transcript that 
             include one or more variants.
 
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
-            somatic: 0 to omit consideration of somatic variants, 1 to identify 
-            somatic variants but not explicitly report peptides containing every
-            somatic variant, 2 to identify and report all peptides containing 
-            consequences of somatic variants
-            germline: 0 to omit consideration of germline variants, 1 to 
-            identify germline variants but not explicitly report peptides 
-            containing every germline variant, 2 to identify and report all 
-            peptides containing consequences of germline variants
+            include_somatic: 0 = do not include somatic mutations, 1 = exlude
+            somatic mutations from reference comparison, 2 = include somatic
+            mutations in both annotated sequence and reference comparison
+            include_germline: 0 = do not include germline mutations, 1 = exlude
+            germline mutations from reference comparison, 2 = include germline
+            mutations in both annotated sequence and reference comparison
 
             Return value: list of peptides of desired length.
         """
+        if include_somatic == include_germline and include_somatic != 1:
+            return []
         if max_size < min_size:
             max_size = min_size
-        if min_size < 2: return []
-        annotated_seq = self.annotated_seq(include_somatic=somatic != 0, 
-            include_germline=germline != 0)
+        if min_size < 2:
+            return []
+        annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
+            include_germline=include_germline != 0)
+        """
         coordinates = []
         counter = 0 # hold transcript level coordinates
         frame_shifts = []
+        """
         sequence = '' # hold flattened nucleotide sequence
         # extract nucleotide sequence from annotated_seq
         for seq in annotated_seq:
@@ -523,6 +527,16 @@ class Transcript(object):
         start = sequence.find("ATG")
         if start < 0:
             return []
+        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
+            include_germline=include_germline > 1)
+        ref_sequence = '' # hold flattened nucleotide sequence
+        # extract nucleotide sequence from annotated_seq
+        for seq in reference_seq:
+            if seq[1] != 'D':
+                ref_sequence += seq[0]
+        # locate position of start codon (first ATG in reference)
+        ref_start = ref_sequence.find("ATG")
+        """
         # this makes some BIG assumptions about self.start_codon!
         #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
         #  to calculate/update transcript relative coordinates
@@ -577,7 +591,13 @@ class Transcript(object):
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
         protein = seq_to_peptide(sequence[start:], reverse_strand=False)
-        peptide_seqs = []
+        """
+        peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
+            reverse_strand=False), min_size=min_size, max_size=max_size)
+        reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
+            reverse_strand=False), min_size=min_size, max_size=max_size)
+
+        """
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -592,8 +612,9 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
-        # return list of unique peptide sequences
-        return list(set(peptide_seqs))
+        """
+        # return list of unique neoepitope sequences
+        return list(set(peptide_seqs).difference(reference_seqs))
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
