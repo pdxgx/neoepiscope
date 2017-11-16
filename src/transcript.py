@@ -42,6 +42,49 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
                     for size in xrange(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
+# X below denotes a stop codon
+_codon_table = {
+        "TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
+        "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
+        "TAT":"Y", "TAC":"Y", "TAA":"X", "TAG":"X",
+        "TGT":"C", "TGC":"C", "TGA":"X", "TGG":"W",
+        "CTT":"L", "CTC":"L", "CTA":"L", "CTG":"L",
+        "CCT":"P", "CCC":"P", "CCA":"P", "CCG":"P",
+        "CAT":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
+        "CGT":"R", "CGC":"R", "CGA":"R", "CGG":"R",
+        "ATT":"I", "ATC":"I", "ATA":"I", "ATG":"M",
+        "ACT":"T", "ACC":"T", "ACA":"T", "ACG":"T",
+        "AAT":"N", "AAC":"N", "AAA":"K", "AAG":"K",
+        "AGT":"S", "AGC":"S", "AGA":"R", "AGG":"R",
+        "GTT":"V", "GTC":"V", "GTA":"V", "GTG":"V",
+        "GCT":"A", "GCC":"A", "GCA":"A", "GCG":"A",
+        "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
+        "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"
+    }
+
+def seq_to_peptide(seq, reverse_strand=False):
+    """ Translates nucleotide sequence into peptide sequence.
+
+        All codons including and after stop codon are recorded as X's.
+
+        seq: nucleotide sequence
+        reverse_strand: True iff strand is -
+
+        Return value: peptide string
+    """
+    seq_size = len(seq)
+    if reverse_strand:
+        seq = seq[::-1].translate(_complement_table)
+    peptide = []
+    for i in xrange(0, seq_size - seq_size % 3, 3):
+        codon = _codon_table[seq[i:i+3]]
+        peptide.append(codon)
+        if codon == 'X':
+            break
+    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+        peptide.append('X')
+    return ''.join(peptide)
+
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype """
 
