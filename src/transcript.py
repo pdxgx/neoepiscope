@@ -4,6 +4,7 @@ import copy
 import bisect
 import string
 import re
+import neoscan
 import pickle
 from intervaltree import Interval, IntervalTree
 from operator import itemgetter
