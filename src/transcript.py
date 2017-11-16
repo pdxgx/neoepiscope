@@ -81,8 +81,8 @@ def seq_to_peptide(seq, reverse_strand=False):
         peptide.append(codon)
         if codon == 'X':
             break
-    for j in xrange(i + 3, seq_size - seq_size % 3, 3):
-        peptide.append('X')
+    # for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+        # peptide.append('X')
     return ''.join(peptide)
 
 class Transcript(object):
@@ -655,7 +655,6 @@ class Transcript(object):
             reverse_strand=False), min_size=min_size, max_size=max_size)
         reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
             reverse_strand=False), min_size=min_size, max_size=max_size)
-
         """
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
