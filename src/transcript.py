@@ -528,7 +528,7 @@ class Transcript(object):
         #  to calculate/update transcript relative coordinates
         reading_frame = (start - self.start_codon) % 3
         if reading_frame != 0:
-            frame_shifts.append((start, start))
+            frame_shifts.append([start, start])
         for seq in annotated_seq:
             # skip sequence fragments that occur prior to start codon 
             if seq[1] != 'D' and counter + len(seq[0]) <= start:
@@ -546,11 +546,11 @@ class Transcript(object):
             if counter < start:
                # future devel: 
                 #    can propogate variant ID here to maintain link to epitope
-                coordinates.append((start, counter + len(seq[0])))
+                coordinates.append([start, counter + len(seq[0])])
                 if seq[1] == 'I' and reading_frame == 0:
                     reading_frame = (reading_frame + len(seq[0])) % 3
                     if reading_frame != 0:
-                        frame_shifts.append((counter, counter))
+                        frame_shifts.append([counter, counter])
                 elif seq[1] == 'I':
                     reading_frame = (reading_frame + len(seq[0])) % 3
                     if reading_frame == 0:
@@ -562,16 +562,16 @@ class Transcript(object):
                 if reading_frame == 0:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame != 0:
-                        frame_shifts.append((counter, counter))
+                        frame_shifts.append([counter, counter])
                 else:
                     reading_frame = (reading_frame + seq[0]) % 3
                     if reading_frame == 0:
                         frame_shifts[-1][1] = counter
             # log variants                    
             if seq[1] == 'D':
-                coordinates.append((counter, 0))
+                coordinates.append([counter, 0])
             else:
-                coordinates.append((counter, len(seq[0])))
+                coordinates.append([counter, len(seq[0])])
                 counter += len(seq[0])
         # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
@@ -584,11 +584,11 @@ class Transcript(object):
             for coords in coordinates:
                 # future devel: 
                 #    can propogate variant ID here to maintain link to epitope
-                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)))
+                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)])
             for coords in frame_shifts:
-                epitope_coords.append((max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)))
+                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
+                    min(len(protein), ((coords[1] - start) // 3)+size)])
             for coords in epitope_coords:
                 peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
