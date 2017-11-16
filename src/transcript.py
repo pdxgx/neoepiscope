@@ -438,6 +438,11 @@ class Transcript(object):
             edits, intervals = self.expressed_edits(start, end, genome=True, 
                                             include_somatic=include_somatic, 
                                             include_germline=include_germline)
+            intervals = [intervals[0]] + [(intervals[i]
+                         if not (intervals[i-1][1] == intervals[i][1] == 'S')
+                         else (intervals[i][0],
+                               'R', intervals[i][2], intervals[i][3]))
+                         for i in xrange(1, len(intervals))]
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
@@ -452,7 +457,7 @@ class Transcript(object):
                     del new_edits[intervals[i][0]]
                     '''Code below would add insertion to first block,
                     but no more
-                    if i do above,
+                    if i do the above,
                     else:
                         intervals = [(-1, 'R', [], []), 
                                      (-1, 'R', [], [])] + intervals
@@ -485,9 +490,6 @@ class Transcript(object):
                         self._seq_append(final_seq, seqs[(i-1)/2][
                                             last_index:last_index + fill
                                         ], 'R', '', None)
-                        if intervals[i][1] != 'R':
-                            self._seq_append(final_seq, '', intervals[i][1], 
-                                             intervals[i][2], intervals[i][3])
                         # If no edits, snv is reference and no insertion
                         try:
                             snv = (seqs[(i-1)/2][last_index + fill], 'R', 
@@ -504,17 +506,29 @@ class Transcript(object):
                             else:
                                 assert edit[1] == 'I'
                                 insertion = (edit[0],) + edit[2:]
+                        print 'before snv'
+                        print final_seq
                         self._seq_append(final_seq, *snv)
+                        print 'after snv'
+                        print final_seq
                         self._seq_append(final_seq, *insertion)
+                        if intervals[i][1] != 'R':
+                            self._seq_append(final_seq, '', intervals[i][1], 
+                                             intervals[i][2], intervals[i][3])
                         last_index += fill + 1
                         last_pos += fill + 1
+                    print 'imhere'
+                    print final_seq
                     if intervals[i-1][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i-1][1], 
                                          intervals[i-1][2], intervals[i-1][3])
-                    self._seq_append(
-                            final_seq, seqs[(i-1)/2][last_index:], 'R',
-                            '', None
-                        )
+                    ref_to_add = seqs[(i-1)/2][last_index:]
+                    if ref_to_add:
+                        self._seq_append(
+                                final_seq, ref_to_add, 'R', '', None
+                            )
+                    else:
+                        print 'yaya'
                     if intervals[i][1] != 'R':
                         ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                         self._seq_append(final_seq, '', intervals[i][1], 
