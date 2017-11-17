@@ -216,7 +216,8 @@ class Transcript(object):
             raise NotImplementedError('Mutation type not yet implemented')
 
     def expressed_edits(self, start=None, end=None, genome=True, 
-                                include_somatic=True, include_germline=True):
+                                include_somatic=True, include_germline=True,
+                                edit_mask=None, deletion_mask=None):
         """ Gets expressed set of edits and transcript intervals.
 
             start: start position (1-indexed, inclusive); None means start of
@@ -226,6 +227,8 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            edit_mask: list of boolean values to individually toggle edits
+            deletion_mask: list of boolean vals to individually toggle deletions
 
             Return value: tuple (defaultdict
                                  mapping edits to lists of
@@ -268,9 +271,15 @@ class Transcript(object):
         intervals = [start - 1] + self.intervals[start_index:end_index] + [end]
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
+        if deletion_mask is not None 
+            and len(deletion_mask) == len(self.deletion_intervals):
+            self_deletion_intervals = [delint for (delint, mask) in 
+                zip(self.deletion_intervals, deletion_mask) if mask]
+        else:
+            self_deletion_intervals = self.deletion_intervals
         relevant_deletion_intervals, edits = [], collections.defaultdict(list)
         sorted_deletion_intervals = [
-                interval for interval in self.deletion_intervals
+                interval for interval in self_deletion_intervals
                 if (interval[2] == 'S' and include_somatic or
                     interval[2] == 'G' and include_germline)
             ]
@@ -349,10 +358,15 @@ class Transcript(object):
         intervals = sorted([(interval, 'R', '', None) for interval in 
                             intervals] + relevant_deletion_intervals)
         edits = collections.defaultdict(list)
-        for pos in self.edits:
+        if edit_mask is not None and len(edit_mask) == len(self.edits):
+            self_edits = [sedits for (sedits, mask) in 
+                zip(self.edits, edit_mask) if mask]
+        else:
+            self_edits = self.edits
+        for pos in self_edits:
             # Add edit if and only if it's in one of the CDSes
             start_index = custom_bisect_left(intervals, pos)
-            for edit in self.edits[pos]:
+            for edit in self_edits[pos]:
                 if (include_somatic and edit[2] == 'S'
                         or include_germline and edit[2] == 'G'):
                     if edit[1] == 'V':
@@ -460,7 +474,8 @@ class Transcript(object):
                                  [] if vaf is None else [vaf]))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
-                                include_somatic=True, include_germline=True):
+                                include_somatic=True, include_germline=True, 
+                                edit_mask=None, deletion_mask=None):
         """ Retrieves transcript sequence between start and end coordinates.
 
             Includes info on whether edits are somatic or germline and whether
@@ -473,6 +488,8 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            edit_mask: list of boolean values to individually toggle edits
+            deletion_mask: list of boolean vals to individually toggle deletions
 
             Return value: list of triples (sequence, variant, type) where 
                 variant is one of V, I, or D (for SNV, insertion, or deletion, 
@@ -490,10 +507,14 @@ class Transcript(object):
             # Capture only sequence between start and end
             edits, intervals = self.expressed_edits(start, end, genome=True, 
                                             include_somatic=include_somatic, 
-                                            include_germline=include_germline)
+                                            include_germline=include_germline, 
+                                            edit_mask=None, deletion_mask=None)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
+            if edit_mask is not None and len(edit_mask) == len(edits):
+                edits = [sedits for (sedits, mask) in 
+                    zip(edits, edit_mask) if mask]
             new_edits = copy.copy(edits)
             i = 0
             while i < len(intervals):
