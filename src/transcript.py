@@ -508,11 +508,13 @@ class Transcript(object):
             edits, intervals = self.expressed_edits(start, end, genome=True, 
                                             include_somatic=include_somatic, 
                                             include_germline=include_germline, 
-                                            edit_mask=edit_mask, 
-                                            deletion_mask=deletion_mask)
+                                            edit_mask=None, deletion_mask=None)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
+            if edit_mask is not None and len(edit_mask) == len(edits):
+                edits = [sedits for (sedits, mask) in 
+                    zip(edits, edit_mask) if mask]
             new_edits = copy.copy(edits)
             i = 0
             while i < len(intervals):
