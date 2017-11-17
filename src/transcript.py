@@ -227,6 +227,8 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            edit_mask: list of boolean values to individually toggle edits
+            deletion_mask: list of boolean vals to individually toggle deletions
 
             Return value: tuple (defaultdict
                                  mapping edits to lists of
@@ -486,6 +488,8 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            edit_mask: list of boolean values to individually toggle edits
+            deletion_mask: list of boolean vals to individually toggle deletions
 
             Return value: list of triples (sequence, variant, type) where 
                 variant is one of V, I, or D (for SNV, insertion, or deletion, 
