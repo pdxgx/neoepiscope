@@ -62,19 +62,26 @@ _codon_table = {
         "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"
     }
 
-def seq_to_peptide(seq, reverse_strand=False):
+def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     """ Translates nucleotide sequence into peptide sequence.
 
         All codons including and after stop codon are recorded as X's.
 
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
+        require_ATG: True iff search for start codon (ATG)
 
         Return value: peptide string
     """
-    seq_size = len(seq)
     if reverse_strand:
         seq = seq[::-1].translate(_complement_table)
+    if require_ATG:
+        start = seq.find("ATG")
+        if start >= 0:
+            seq = seq[start:]
+        else:
+            return ''
+    seq_size = len(seq)
     peptide = []
     for i in xrange(0, seq_size - seq_size % 3, 3):
         codon = _codon_table[seq[i:i+3]]
@@ -623,109 +630,41 @@ class Transcript(object):
             max_size = min_size
         if min_size < 2:
             return []
+        def flatten_annotated_seq(annotated_seq):
+            sequence = '' # hold flattened nucleotide sequence
+            # extract nucleotide sequence from annotated_seq
+            for seq in annotated_seq:
+                if seq[1] != 'D':
+                    sequence += seq[0]
+            return sequence
         annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
             include_germline=include_germline != 0)
-        """
-        coordinates = []
-        counter = 0 # hold transcript level coordinates
-        frame_shifts = []
-        """
-        sequence = '' # hold flattened nucleotide sequence
-        # extract nucleotide sequence from annotated_seq
-        for seq in annotated_seq:
-            if seq[1] != 'D':
-                sequence += seq[0]
+        sequence = flatten_annotated_seq(annotated_seq)
         # locate position of start codon (first ATG in sequence)
-        start = sequence.find("ATG")
-        if start < 0:
+        variant_peps = kmerize_peptide(seq_to_peptide(sequence, 
+            reverse_strand=False, require_ATG=True), 
+            min_size=min_size, max_size=max_size)
+        if variant_peps == []:
             return []
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
-        ref_sequence = '' # hold flattened nucleotide sequence
-        # extract nucleotide sequence from annotated_seq
-        for seq in reference_seq:
-            if seq[1] != 'D':
-                ref_sequence += seq[0]
-        # locate position of start codon (first ATG in reference)
-        ref_start = ref_sequence.find("ATG")
-        """
-        # this makes some BIG assumptions about self.start_codon!
-        #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
-        #  to calculate/update transcript relative coordinates
-        reading_frame = (start - self.start_codon) % 3
-        if reading_frame != 0:
-            frame_shifts.append([start, start])
-        for seq in annotated_seq:
-            # skip sequence fragments that occur prior to start codon 
-            if seq[1] != 'D' and counter + len(seq[0]) <= start:
-                counter += len(seq[0])
-                continue
-            elif seq[1] == 'D' and counter < start:
-                continue
-            # skip sequence fragments that are not to be reported 
-            if (seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
-                (seq[2] == 'G' and germline < 2)):
-                if seq[1] != 'D':
-                    counter += len(seq[0])
-                continue
-            # handle unique case where variant precedes but includes start codon
-            if counter < start:
-               # future devel: 
-                #    can propogate variant ID here to maintain link to epitope
-                coordinates.append([start, counter + len(seq[0])])
-                if seq[1] == 'I' and reading_frame == 0:
-                    reading_frame = (reading_frame + len(seq[0])) % 3
-                    if reading_frame != 0:
-                        frame_shifts.append([counter, counter])
-                elif seq[1] == 'I':
-                    reading_frame = (reading_frame + len(seq[0])) % 3
-                    if reading_frame == 0:
-                        frame_shifts[-1][1] = counter + len(seq[0]) 
-                counter += len(seq[0])                  #
-                continue
-            # handle potential frame shifts from indels
-            if seq[1] == 'D' or seq[1] == 'I':
-                if reading_frame == 0:
-                    reading_frame = (reading_frame + seq[0]) % 3
-                    if reading_frame != 0:
-                        frame_shifts.append([counter, counter])
-                else:
-                    reading_frame = (reading_frame + seq[0]) % 3
-                    if reading_frame == 0:
-                        frame_shifts[-1][1] = counter
-            # log variants                    
-            if seq[1] == 'D':
-                coordinates.append([counter, 0])
-            else:
-                coordinates.append([counter, len(seq[0])])
-                counter += len(seq[0])
-        # frame shift (if it exists) continues to end of transcript
-        if reading_frame != 0:
-            frame_shifts[-1][1] = counter
-        protein = seq_to_peptide(sequence[start:], reverse_strand=False)
-        """
-        peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
-            reverse_strand=False), min_size=min_size, max_size=max_size)
-        reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
-            reverse_strand=False), min_size=min_size, max_size=max_size)
-        """
-        # get amino acid ranges for kmerization
-        for size in range(min_size, max_size + 1):
-            epitope_coords = []
-            for coords in coordinates:
-                # future devel: 
-                #    can propogate variant ID here to maintain link to epitope
-                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)])
-            for coords in frame_shifts:
-                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)])
-            for coords in epitope_coords:
-                peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
-                    min_size=size, max_size=size)
-        """
+        ref_sequence = flatten_annotated_seq(reference_sequence)
+        reference_peps = kmerize_peptide(seq_to_peptide(ref_sequence,
+            reverse_strand=False, require_ATG=True), 
+            min_size=min_size, max_size=max_size)
+        neoepitopes = list(set(variant_peps).difference(reference_peps))
+
+        # in order to link each variants to a neoepitope, pick off one at a time
+        # and test if any neoepitopes are lost in a list diff -- if any lost,
+        # then those variants are REQUIRED for the presence of that peptide!!!
+        # easy peasy, independent of complexity BUT will be computationally
+        # slower (more robust = good though!!)
+        # going to require re-engineering annotated_seq() to select individual
+        # edits
+
+
         # return list of unique neoepitope sequences
-        return list(set(peptide_seqs).difference(reference_seqs))
+        return neoepitopes
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
