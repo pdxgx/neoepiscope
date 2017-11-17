@@ -192,19 +192,19 @@ class Transcript(object):
                 deletion_size = len(seq)
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            seq, vaf)
+                            (pos, seq, mutation_type), vaf)
                     )
             else:
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            self.bowtie_reference_index.get_stretch(
+                            (pos, self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
-                                ), vaf)
+                                ), mutation_type), vaf)
                     )
         elif mutation_type == 'V' or mutation_type == 'I':
-            self.edits[pos - 1].append((seq, mutation_type, 
-                                                mutation_class, seq, vaf))
+            self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
+                                        (pos, seq, mutation_type), vaf))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
@@ -356,12 +356,46 @@ class Transcript(object):
                         if start_index % 2 or pos == intervals[start_index][0]:
                             # An insertion is valid before or after a block
                             edits[pos].append(edit)
-        # Clear empty intervals               
-        return (edits, [intervals[i] for i in xrange(len(intervals))
+        # Remove empty intervals
+        intervals = [intervals[i] for i in xrange(len(intervals))
                          if (i % 2
                              and intervals[i][0] != intervals[i-1][0]
                              or i % 2 == 0
-                             and intervals[i+1][0] != intervals[i][0])])
+                             and intervals[i+1][0] != intervals[i][0])]
+        # Only associate one end of a deletion interval with deletion
+        #   to prevent including it multiple times
+        adjusted_intervals = [intervals[0]]
+        print intervals
+        for i in xrange(1, len(intervals)):
+            if (intervals[i][1] == 'R' or (intervals[i][1] != 'R' and 
+                    intervals[i-1][1] == 'R')):
+                adjusted_intervals.append(intervals[i])
+            elif intervals[i][1] != 'R' and intervals[i-1][1] != 'R':
+                if intervals[i][1] != intervals[i-1][1]:
+                    mutation_class = ''.join([intervals[i-1][1], 
+                                                intervals[i][1]])
+                else:
+                    mutation_class = intervals[i-1][1]
+                if intervals[i][2] != adjusted_intervals[i-1][2]:
+                    mutation_data = []
+                    if isinstance(adjusted_intervals[i-1][2], tuple):
+                        ## NEED TO FIX THIS SO ITS NOT PRINTING NESTED LIST...
+                        mutation_data.append(adjusted_intervals[i-1][2])
+                        mutation_data.append(intervals[i][2])
+                        adjusted_intervals[i-1] = [adjusted_intervals[i-1][0],
+                                                    mutation_class,
+                                                    mutation_data,
+                                                    adjusted_intervals[i-1][3]]
+                    else:
+                        for j in xrange(0, len(intervals[i-1][2])):
+                            mutation_data.append(intervals[i-1][2][j])
+                        mutation_data.append(intervals[i][2])
+                        adjusted_intervals[i-1] = [adjusted_intervals[i-1][0],
+                                                    mutation_class,
+                                                    mutation_data,
+                                                    adjusted_intervals[i-1][3]]
+                adjusted_intervals.append((intervals[i][0], 'R', '', ''))  
+        return (edits, adjusted_intervals)
 
     def save(self):
         """ Creates save point for edits.
@@ -371,7 +405,7 @@ class Transcript(object):
         self.last_edits = copy.copy(self.edits)
         self.last_deletion_intervals = copy.copy(self.deletion_intervals)
 
-    def _seq_append(self, seq_list, seq, mutation_class, mutation_seq, vaf):
+    def _seq_append(self, seq_list, seq, mutation_class, mutation_info, vaf):
         """ Appends mutation to seq_list, merging successive mutations.
 
             seq_list: list of tuples (sequence, type) where type is one
@@ -379,7 +413,8 @@ class Transcript(object):
                 somatic edit). Empty sequence means there was a deletion.
             seq: seq to add
             mutation_class: S for somatic, G for germline, R for reference
-            mutation_seq: mutation sequence
+            mutation_info: tuple containing (1 based mutation position from vcf, 
+                mutation sequence, and mutation type)
             vaf: variant allele frequency
 
             No return value; seq_list is merely updated.
@@ -391,19 +426,19 @@ class Transcript(object):
             assert not seq_list
             if seq or mutation_class != 'R':
                 seq_list.append((seq, mutation_class,
-                                 [mutation_seq], [] if vaf is None
+                                 [mutation_info], [] if vaf is None
                                                  else [vaf]))
             return
         if condition:
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class,
-                            (seq_list[-1][2] + [mutation_seq])
-                            if mutation_seq not in seq_list[-1][2]
+                            (seq_list[-1][2] + [mutation_info])
+                            if mutation_info not in seq_list[-1][2]
                             else seq_list[-1][2], 
                             seq_list[-1][3]
                             if vaf is None or vaf in seq_list[-1][3]
                             else (seq_list[-1][3] + [vaf]))
         elif seq or mutation_class != 'R':
-            seq_list.append((seq, mutation_class, [mutation_seq],
+            seq_list.append((seq, mutation_class, [mutation_info],
                              [] if vaf is None else [vaf]))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
@@ -438,11 +473,6 @@ class Transcript(object):
             edits, intervals = self.expressed_edits(start, end, genome=True, 
                                             include_somatic=include_somatic, 
                                             include_germline=include_germline)
-            intervals = [intervals[0]] + [(intervals[i]
-                         if not (intervals[i-1][1] == intervals[i][1] == 'S')
-                         else (intervals[i][0],
-                               'R', intervals[i][2], intervals[i][3]))
-                         for i in xrange(1, len(intervals))]
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
@@ -506,19 +536,13 @@ class Transcript(object):
                             else:
                                 assert edit[1] == 'I'
                                 insertion = (edit[0],) + edit[2:]
-                        print 'before snv'
-                        print final_seq
                         self._seq_append(final_seq, *snv)
-                        print 'after snv'
-                        print final_seq
                         self._seq_append(final_seq, *insertion)
                         if intervals[i][1] != 'R':
                             self._seq_append(final_seq, '', intervals[i][1], 
                                              intervals[i][2], intervals[i][3])
                         last_index += fill + 1
                         last_pos += fill + 1
-                    print 'imhere'
-                    print final_seq
                     if intervals[i-1][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i-1][1], 
                                          intervals[i-1][2], intervals[i-1][3])
@@ -527,8 +551,6 @@ class Transcript(object):
                         self._seq_append(
                                 final_seq, ref_to_add, 'R', '', None
                             )
-                    else:
-                        print 'yaya'
                     if intervals[i][1] != 'R':
                         ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                         self._seq_append(final_seq, '', intervals[i][1], 
