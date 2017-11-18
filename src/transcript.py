@@ -578,9 +578,12 @@ class Transcript(object):
                                 insertion = (edit[0],) + edit[2:]
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
+                        '''
                         if intervals[i][1] != 'R':
+                            print "pos 2"
+                            print intervals[i]
                             self._seq_append(final_seq, '', intervals[i][1], 
-                                             intervals[i][2], intervals[i][3])
+                                             intervals[i][2], intervals[i][3])'''
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
@@ -592,14 +595,12 @@ class Transcript(object):
                                 final_seq, ref_to_add, 'R', '', None
                             )
                     if intervals[i][1] != 'R':
-                        ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                         self._seq_append(final_seq, '', intervals[i][1], 
                                             intervals[i][2], intervals[i][3])
                     i += 2
                     try:
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
-                                ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
                                         intervals[i-1][2], intervals[i-1][3]
@@ -982,10 +983,14 @@ if __name__ == '__main__':
             self.assertEqual(len(seq[0][0]), 369)
             self.assertEqual(len(seq[2][0]), 89)
         def test_compound_variants(self):
+            # FIX THIS ONE
+
             """Fails if transcript with multiple variant types is incorrect"""
             self.transcript.edit(918, 2181102, mutation_type="D")
             self.transcript.edit('Q', 2181099, mutation_type="I")
             self.transcript.edit('A', 2182386)
+            self.transcript.edit("C", 2181090)
+            self.transcript.edit("J", 2181092, mutation_type="I")
             self.assertEqual(len(self.transcript.edits.keys()), 2)
             self.assertEqual(self.transcript.edits[2182385], [('A', 'V', 'S',
                                                                 (2182386, 
