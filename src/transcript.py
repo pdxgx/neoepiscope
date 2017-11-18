@@ -711,11 +711,9 @@ class Transcript(object):
             return []
         annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
             include_germline=include_germline != 0)
-        """
         coordinates = []
         counter = 0 # hold transcript level coordinates
         frame_shifts = []
-        """
         sequence = '' # hold flattened nucleotide sequence
         # extract nucleotide sequence from annotated_seq
         for seq in annotated_seq:
@@ -734,7 +732,6 @@ class Transcript(object):
                 ref_sequence += seq[0]
         # locate position of start codon (first ATG in reference)
         ref_start = ref_sequence.find("ATG")
-        """
         # this makes some BIG assumptions about self.start_codon!
         #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
         #  to calculate/update transcript relative coordinates
@@ -789,12 +786,10 @@ class Transcript(object):
         if reading_frame != 0:
             frame_shifts[-1][1] = counter
         protein = seq_to_peptide(sequence[start:], reverse_strand=False)
-        """
         peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
             reverse_strand=False), min_size=min_size, max_size=max_size)
         reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
             reverse_strand=False), min_size=min_size, max_size=max_size)
-        """
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -809,7 +804,6 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
-        """
         # return list of unique neoepitope sequences
         return list(set(peptide_seqs).difference(reference_seqs))
 
