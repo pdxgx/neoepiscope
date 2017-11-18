@@ -271,8 +271,7 @@ class Transcript(object):
         intervals = [start - 1] + self.intervals[start_index:end_index] + [end]
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
-        if deletion_mask is not None 
-            and len(deletion_mask) == len(self.deletion_intervals):
+        if deletion_mask is not None and len(deletion_mask) == len(self.deletion_intervals):
             self_deletion_intervals = [delint for (delint, mask) in 
                 zip(self.deletion_intervals, deletion_mask) if mask]
         else:
@@ -513,8 +512,10 @@ class Transcript(object):
             present, shift them to ends of previous intervals so they're
             actually added.'''
             if edit_mask is not None and len(edit_mask) == len(edits):
-                edits = [sedits for (sedits, mask) in 
-                    zip(edits, edit_mask) if mask]
+                edit_mask = [edit_keys for (edit_keys, mask) in 
+                    zip(edits.keys(), edit_mask) if mask]
+                edits = {k: v for k, v in edits.items() if k in edit_mask}
+            ### NO MECHANISM YET TO PERFORM DELETION_MASK!!!!!
             new_edits = copy.copy(edits)
             i = 0
             while i < len(intervals):
@@ -669,7 +670,7 @@ class Transcript(object):
             return []
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
-        ref_sequence = flatten_annotated_seq(reference_sequence)
+        ref_sequence = flatten_annotated_seq(reference_seq)
         reference_peps = kmerize_peptide(seq_to_peptide(ref_sequence,
             reverse_strand=False, require_ATG=True), 
             min_size=min_size, max_size=max_size)
