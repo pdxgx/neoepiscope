@@ -93,7 +93,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     return ''.join(peptide)
 
 class Transcript(object):
-    """ Transforms transcript with edits (SNPs, indels) from haplotype """
+    """ Transforms transcript with edits (SNPs, indels) from haplotype. """
 
     def __init__(self, bowtie_reference_index, CDS):
         """ Initializes Transcript object.
@@ -408,8 +408,8 @@ class Transcript(object):
                 somatic edit). Empty sequence means there was a deletion.
             seq: seq to add
             mutation_class: S for somatic, G for germline, R for reference
-            mutation_info: tuple containing (1 based mutation position from vcf, 
-                mutation sequence, and mutation type)
+            mutation_info: tuple containing (1 based mutation position from 
+                vcf, mutation sequence, and mutation type)
             vaf: variant allele frequency
             No return value; seq_list is merely updated.
         """
