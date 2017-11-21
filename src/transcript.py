@@ -108,7 +108,7 @@ class Transcript(object):
         assert len(CDS) > 0
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
-        self.start_codon = None
+        self.start_codon, self.stop_codon = None
         last_chrom, last_strand = None, None
         for line in CDS:
             if type(line) is str: line = line.strip().split('\t')
@@ -131,6 +131,8 @@ class Transcript(object):
                         [int(line[3]) - 2, int(line[4]) - 1]
                     )
             elif line[2] == "start_codon":
+                self.start_codon = int(line[3]) - 1
+            elif line[2] == "stop_codon":
                 self.start_codon = int(line[3]) - 1
             else:
                 raise NotImplementedError(
@@ -784,7 +786,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if tokens[2] == "exon" or tokens[2] == "start_codon":
+                if tokens[2] in ['exon', 'start_codon', 'stop_codon']: 
                     transcript_id = re.sub(
                                 r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
                                 r'\1', tokens[8]
