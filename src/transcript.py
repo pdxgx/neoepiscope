@@ -676,7 +676,6 @@ class Transcript(object):
             reverse_strand=False, require_ATG=True), 
             min_size=min_size, max_size=max_size)
         neoepitopes = list(set(variant_peps).difference(reference_peps))
-
         # in order to link each variants to a neoepitope, pick off one at a time
         # and test if any neoepitopes are lost in a list diff -- if any lost,
         # then those variants are REQUIRED for the presence of that peptide!!!
