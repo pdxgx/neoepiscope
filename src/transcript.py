@@ -553,14 +553,12 @@ class Transcript(object):
                                 final_seq, ref_to_add, 'R', '', None
                             )
                     if intervals[i][1] != 'R':
-                        ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                         self._seq_append(final_seq, '', intervals[i][1], 
                                             intervals[i][2], intervals[i][3])
                     i += 2
                     try:
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
-                                ### THIS CAUSES PROBLEMS FOR DELETION SPANNING TWO EXONS ###
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
                                         intervals[i-1][2], intervals[i-1][3]
