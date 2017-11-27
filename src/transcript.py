@@ -179,16 +179,17 @@ class Transcript(object):
                 self.reading_frames[self.intervals[i - 1]] = reading_frame
 
         else:
-            self.reading_frames[self.intervals[start_codon_index + 1]] = (
+            self.reading_frames[self.intervals[start_codon_index]] = (
                     self.start_codon - self.intervals[start_codon_index] - 1
-                    + self.intervals[start_codon_index + 1] - self.start_codon
+                    + self.intervals[start_codon_index + 1] - self.start_codon 
+                    + 1
                 ) % 3
-            for i in xrange(start_codon_index + 2, len(self.intervals), 2):
+            for i in xrange(start_codon_index + 1, len(self.intervals), 2):
                 reading_frame = (self.reading_frames[self.intervals[i - 1]]
                                     + 1) % 3
                 self.reading_frames[self.intervals[i]] = reading_frame
                 reading_frame = (reading_frame + self.intervals[i + 1] 
-                                  - self.intervals[i]) % 3
+                                  - self.intervals[i] - 1) % 3
                 self.reading_frames[self.intervals[i + 1]] = reading_frame
 
     def reset(self, reference=False):
