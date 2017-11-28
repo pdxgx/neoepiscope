@@ -160,6 +160,17 @@ class Transcript(object):
         self.last_deletion_intervals = []
         # Need to sort to bisect_left properly when editing!
         self.intervals.sort()
+        if self.start_codon:
+            self.start_codon_index = bisect.bisect_left(self.intervals, 
+                                                        self.start_codon)
+        else:
+            self.start_codon_index = None
+        if self.stop_codon
+            self.stop_codon_index = bisect.bisect_left(self.intervals, 
+                                                        self.stop_codon)
+        else:
+            self.stop_codon_index = None
+
 
     def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
@@ -417,7 +428,8 @@ class Transcript(object):
         """
         pos -= 1
         pos_index = bisect.bisect_left(self.intervals, pos)
-        if not (pos_index % 2):
+        if (not (pos_index % 2) or not self.start_codon_index or 
+            not self.stop_codon_index):
             # We're outside exon sequence
             return None
         if self.rev_strand:
