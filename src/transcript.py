@@ -168,18 +168,13 @@ class Transcript(object):
         self.reading_frames = {}
         if self.rev_strand:
             self.reading_frames[self.intervals[start_codon_index]] = (
-                    self.start_codon - self.intervals[start_codon_index] - 1
-                ) % 3
-            for i in xrange(start_codon_index - 1, 0, -2):
+                    self.start_codon - self.intervals[start_codon_index]) % 3
+            for i in xrange(start_codon_index - 1, -1, -2):
                 reading_frame = (self.reading_frames[self.intervals[i-1]]) % 3
                 self.reading_frames[self.intervals[i]] = reading_frame
                 reading_frame = (reading_frame + self.intervals[i] 
                                   - self.intervals[i - 1]) % 3
                 self.reading_frames[self.intervals[i - 1]] = reading_frame
-            ## This is still broken
-            ## It also needs another part to add the first interval's reading frame
-            ## E.g.:
-            reading_frames[intervals[0]] = 'READING FRAME NEEDED HERE'
         else:
             self.reading_frames[self.intervals[start_codon_index]] = (
                     self.start_codon - self.intervals[start_codon_index] - 1
