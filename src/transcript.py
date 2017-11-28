@@ -162,7 +162,7 @@ class Transcript(object):
         '''Create list of (interval coordinate, reading frame) tuples; 0
         means first base of codon, 1 means second base, and 2 means third
         base. Code below assumes intervals are nonoverlapping!'''
-        start_codon_index = bisect.bisect_left(
+        self.start_codon_index = bisect.bisect_left(
                 self.intervals, self.start_codon
             )
         self.reading_frames = {}
@@ -202,6 +202,29 @@ class Transcript(object):
         else:
             self.edits = copy.copy(self.last_edits)
             self.deletion_intervals = copy.copy(self.last_deletion_intervals)
+
+    def reading_frame(self, pos):
+        """ Retrieves reading frame (0, 1, or 2) at given coordinate.
+            
+            NOTE: must be updated to include chromosome to accommodate fusions
+
+            pos: 1-based position at which reading frame is desired
+
+            Return value: reading frame; 0 means first base of codon, 1 means
+            second base, and 2 means third base. None means the coordinate is
+            outside the coding sequence of a given transcript.
+        """
+        pos -= 1
+        pos_index = bisect.bisect_left(self.intervals, pos)
+        if not (pos_index % 2):
+            # We're outside coding sequence
+            return None
+        if self.rev_strand:
+
+        else:
+            (pos - self.intervals[pos_index - 1]) + (self.intervals[start_codon_index] - self._start_codonself.start_codon_index) sum([self.intervals[i+1] - self.intervals[i]
+                    for i in xrange(self.start_codon_index + 1,
+                                        pos_index - 1)])
 
     def edit(self, seq, pos, mutation_type='V', mutation_class='S', vaf=None):
         """ Adds an edit to the transcript. 
