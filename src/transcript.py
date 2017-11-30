@@ -436,55 +436,32 @@ class Transcript(object):
         pos_index = bisect.bisect_left(self.intervals, pos)
         if (not (pos_index % 2) or not self.start_codon_index or 
             not self.stop_codon_index):
-            print 'Non-exon/non-coding'
             # We're outside exon sequence
             return None
         if self.rev_strand:
-            print 'Reverse strand'
             if pos_index == self.start_codon_index:
-                print 'Same exon as start codon'
                 # Within the same interval as the start codon
                 if pos > self.start_codon + 2:
                     # Outside coding sequence
-                    print 'Before start codon'
                     return None
-                return (self.start_codon + 2 - pos) % 3
-            elif pos_index == self.stop_codon_index:
-                print 'Same exon as stop codon'
-                # Within the same interval as the stop codon
-                if pos <= self.stop_codon + 2:
-                    print 'After stop codon'
-                    # Outside coding sequence
-                    return None
-                return (pos - self.stop_codon) % 3
+                return ((self.start_codon + 2 - pos) % 3)
             else:
-                print 'Does not share exon with start/stop'
                 if pos > self.start_codon or pos < self.stop_codon:
                     return None
                 seq_length = ((self.intervals[pos_index] - pos + 1) + 
                               (self.start_codon + 2 - 
-                                self.intervals[start_codon_index - 1]) + 
+                                self.intervals[self.start_codon_index - 1]) + 
                               sum([self.intervals[i+1] - self.intervals[i]
                                 for i in xrange(pos_index + 1, 
                                                 self.start_codon_index - 1, 
                                                 2)]))
-                return seq_length % 3
+                return (seq_length - 1) % 3
         else:
-            print 'Forward strand'
             if pos_index == self.start_codon_index:
-                print 'Same exon as start codon'
                 if pos < self.start_codon:
-                    print 'Before start codon'
                     return None
                 return (pos - self.start_codon) % 3
-            elif pos_index == self.stop_codon_index:
-                print 'Same exon as stop codon'
-                if pos >= self.stop_codon:
-                    print 'After stop codon'
-                    return None
-                return (self.stop_codon - pos) % 3
             else:
-                print 'Does not share exon with start/stop'
                 if pos < self.start_codon or pos > self.stop_codon:
                     return None
                 seq_length = ((pos - self.intervals[pos_index - 1]) + 
@@ -493,7 +470,7 @@ class Transcript(object):
                               sum([self.intervals[i+1] - self.intervals[i]
                                 for i in xrange(self.start_codon_index + 1,
                                         pos_index - 1, 2)]))
-                return seq_length % 3
+                return ((seq_length - 1) % 3)
 
     def _seq_append(self, seq_list, seq, mutation_class, mutation_info, vaf):
         """ Appends mutation to seq_list, merging successive mutations.
@@ -554,11 +531,17 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
-            Return value: list of triples (sequence, variant, type) where 
-                variant is one of V, I, or D (for SNV, insertion, or deletion, 
-                respectively) and type is one of R, G, or S (for reference, 
-                germline edit, or somatic edit, respectively). Sequence will be 
-                deletion size (in bp) for deletion variants.
+            Return value: list of tuples (sequence, mutation class,
+                mutation information, variant allele frequency, position),
+                where sequence is a segment of sequence of the (possibly)
+                mutated transcript, mutation class is one of {'G', 'S', 'R'},
+                where 'G' denotes germline, 'S' denotes somatic, and 'R'
+                denotes reference sequence, mutation information is the
+                tuple (1-based position of {first base of deletion,
+                base before insertion, SNV},
+                {deleted sequence, inserted sequence, reference base},
+                {'D', 'I', 'V'}) , and position is the 1-based position
+                of the first base of sequence.
         """
         if end < start: return ''
         # Use 0-based coordinates internally
@@ -986,13 +969,18 @@ if __name__ == '__main__':
                         )
             self.reference_index = bowtie_index.BowtieIndexReference(
                                                         self.ref_prefix)
-            self.CDS_lines = self.cds['ENST00000335295.4_1']
             self.transcript = Transcript(self.reference_index, 
                                         [[str(chrom), 'blah', seq_type,
                                           str(start), str(end), '.', 
                                           strand] for (chrom, seq_type, start, 
                                                         end, strand) in 
-                                          self.CDS_lines])
+                                          self.cds['ENST00000335295.4_1']])
+            self.fwd_transcript = Transcript(self.reference_index, 
+                                        [[str(chrom), 'blah', seq_type,
+                                          str(start), str(end), '.', 
+                                          strand] for (chrom, seq_type, start, 
+                                                        end, strand) in 
+                                          self.cds['ENST00000308020.5_1']])
         def test_transcript_structure(self):
             """Fails if structure of unedited transcript is incorrect"""
             self.assertEqual(len(self.transcript.annotated_seq()), 1)
@@ -1005,6 +993,38 @@ if __name__ == '__main__':
             self.assertTrue(self.transcript.rev_strand)
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [])
+        def test_rev_reading_frame(self):
+            """Fails if incorrect reading frame is called in rev transcript"""
+            # Before and after exons
+            self.assertIsNone(self.transcript.reading_frame(5248350))
+            self.assertIsNone(self.transcript.reading_frame(5246600))
+            # In exons, before or after start/stop codons
+            self.assertIsNone(self.transcript.reading_frame(5248290))
+            self.assertIsNone(self.transcript.reading_frame(5246817))
+            # In start codon exon
+            self.assertEqual(self.transcript.reading_frame(5248161), 0)
+            self.assertEqual(self.transcript.reading_frame(5248217), 1)
+            self.assertEqual(self.transcript.reading_frame(5248249), 2)
+            # In other exon
+            self.assertEqual(self.transcript.reading_frame(5246848), 0)
+            self.assertEqual(self.transcript.reading_frame(5247859), 1)
+            self.assertEqual(self.transcript.reading_frame(5248014), 2)
+        def test_fwd_reading_frame(self):
+            """Fails if incorrect reading frame is called in fwd transcript"""
+            # Before and after exons
+            self.assertIsNone(self.fwd_transcript.reading_frame(450200))
+            self.assertIsNone(self.fwd_transcript.reading_frame(491392))
+            # In exons, before or after start/stop codons
+            self.assertIsNone(self.fwd_transcript.reading_frame(450394))
+            self.assertIsNone(self.fwd_transcript.reading_frame(490824))
+            # In start codon exon
+            self.assertEqual(self.fwd_transcript.reading_frame(450459), 0)
+            self.assertEqual(self.fwd_transcript.reading_frame(450550), 1)
+            self.assertEqual(self.fwd_transcript.reading_frame(450578), 2)
+            # In other exon
+            self.assertEqual(self.fwd_transcript.reading_frame(487029), 0)
+            self.assertEqual(self.fwd_transcript.reading_frame(460270), 1)
+            self.assertEqual(self.fwd_transcript.reading_frame(460259), 2)
         def test_irrelevant_edit(self):
             """Fails if edit is made for non-exon position"""
             self.transcript.edit('G', 5248155)
@@ -1157,28 +1177,29 @@ if __name__ == '__main__':
             self.assertEqual(seq[1][0:2], ('', 'S'))
             self.assertEqual(len(seq[0][0]), 140)
             self.assertEqual(len(seq[2][0]), 481)
-        '''
         def test_compound_variants(self):
-            # FIX THIS ONE
-
             """Fails if transcript with multiple variant types is incorrect"""
-            self.transcript.edit(918, 2181102, mutation_type="D")
-            self.transcript.edit('Q', 2181099, mutation_type="I")
-            self.transcript.edit('A', 2182386)
-            self.transcript.edit("C", 2181090)
-            self.transcript.edit("J", 2181092, mutation_type="I")
+            self.transcript.edit(137, 5248025, mutation_type="D")
+            self.transcript.edit('Q', 5248165, mutation_type='I')
+            self.transcript.edit('A', 5248299)
             self.assertEqual(len(self.transcript.edits.keys()), 2)
-            self.assertEqual(self.transcript.edits[2182385], [('A', 'V', 'S',
-                                                                (2182386, 
-                                                                  'A', 'V'), 
-                                                                None)])
-            self.assertEqual(self.transcript.edits[2181098], [('Q', 'I', 'S',
-                                                                (2181099, 'Q',
-                                                                  'I'), 
-                                                                None)])
+            self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
+                                                                    'S', 
+                                                                   (5248299, 
+                                                                    'A', 'V'),
+                                                                    None)]) 
+            self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
+                                                                (5248165, 'Q',
+                                                                'I'), None)])
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
-                                                    (2181100, 2182018, 'S'))
+                                                    (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
-            #self.assertEqual(len(seq), )
-            '''
+            self.assertEqual(len(seq), 7)
+            self.assertEqual(seq[0], ('AC', 'R', [''], []))
+            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], []))
+            self.assertEqual(len(seq[2][0]), 133)
+            self.assertEqual(seq[3], ('Q', 'S', [(5248165, 'Q', 'I')], []))
+            self.assertEqual(seq[4], ('GGGC', 'R', [''], []))
+            self.assertEqual(len(seq[5][2][0][1]), 137)
+            self.assertEqual(len(seq[6][0]), 481)
     unittest.main()
