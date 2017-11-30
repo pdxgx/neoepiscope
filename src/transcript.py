@@ -742,48 +742,68 @@ class Transcript(object):
             max_size = min_size
         if min_size < 2:
             return []
-        annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
-            include_germline=include_germline != 0)
-        coordinates = []
-        counter = 0 # hold transcript level coordinates
-        frame_shifts = []
-        sequence = '' # hold flattened nucleotide sequence
+        annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
+            include_germline=include_germline)
         # extract nucleotide sequence from annotated_seq
+        sequence = '' # hold flattened nucleotide sequence
         for seq in annotated_seq:
-            if seq[1] != 'D':
+            if seq[2][2] != 'D':
                 sequence += seq[0]
-        # locate position of start codon (first ATG in sequence)
-        start = sequence.find("ATG")
-        if start < 0:
-            return []
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
-        ref_sequence = '' # hold flattened nucleotide sequence
-        # extract nucleotide sequence from annotated_seq
-        for seq in reference_seq:
-            if seq[1] != 'D':
-                ref_sequence += seq[0]
-        # locate position of start codon (first ATG in reference)
-        ref_start = ref_sequence.find("ATG")
+        # extract nucleotide sequence from reference_seq
+        #ref_sequence = '' # hold flattened nucleotide sequence
+        #for seq in reference_seq:
+        #    if seq[2][2] != 'D':
+        #        ref_sequence += seq[0]
+        #
+        # some necessary preprocessing here to find the location of the start
+        # codon to use -- for majority of cases, this will simply be the
+        # original start_codon for reference sequence!  HOWEVER, it is possible
+        # that alteration in start codon and/or creation of new one upstream
+        # that could influence actual start site for annotated seq . . . for now
+        # ignoring all of this and assuming start site is the same
+        #
+        start = self.start_codon
+        reading_frame = 0
+        ## this will need to be updated to calculate appropriate reading frame
+        ## when new start codon introduced upstream or broken start gives
+        ## downstream start out of its original reading frame
+        ## for now, assuming that start codon is completely unchanged!     
+        #reading_frame = (start - self.start_codon) % 3  
+        coordinates = []
+        counter = 0 # hold edited transcript level coordinates
+        frame_shifts = []
+        # locate position of start codon is NOT always first ATG in sequence!!
         # this makes some BIG assumptions about self.start_codon!
         #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
         #  to calculate/update transcript relative coordinates
-        reading_frame = (start - self.start_codon) % 3
         if reading_frame != 0:
             frame_shifts.append([start, start])
         for seq in annotated_seq:
             # skip sequence fragments that occur prior to start codon 
-            if seq[1] != 'D' and counter + len(seq[0]) <= start:
+            if seq[2][2] != 'D' and seq[4] + len(seq[0]) <= start:
                 counter += len(seq[0])
                 continue
-            elif seq[1] == 'D' and counter < start:
+            elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) < start:
                 continue
             # skip sequence fragments that are not to be reported 
-            if (seq[2] == 'R' or (seq[2] == 'S' and somatic < 2) or 
-                (seq[2] == 'G' and germline < 2)):
-                if seq[1] != 'D':
+            if (seq[1] == 'R' or (seq[1] == 'S' and somatic < 2) or 
+                (seq[1] == 'G' and germline < 2)):
+                if seq[2][2] != 'D':
                     counter += len(seq[0])
                 continue
+        #tuples (sequence, mutation class,
+        #        mutation information, variant allele frequency, position)
+        #        where sequence is a segment of sequence of the (possibly)
+        #        mutated transcript, mutation class is one of {'G', 'S', 'R'},
+        #        where 'G' denotes germline, 'S' denotes somatic, and 'R'
+        #        denotes reference sequence, mutation information is the
+        #        tuple (1-based position of {first base of deletion,
+        #        base before insertion, SNV},
+        #        {deleted sequence, inserted sequence, reference base},
+        #        {'D', 'I', 'V'}) , and position is the 1-based position
+        #        of the first base of sequence.
             # handle unique case where variant precedes but includes start codon
             if counter < start:
                # future devel: 
