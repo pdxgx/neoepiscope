@@ -804,21 +804,25 @@ class Transcript(object):
         #        {deleted sequence, inserted sequence, reference base},
         #        {'D', 'I', 'V'}) , and position is the 1-based position
         #        of the first base of sequence.
+        ############################################################
+        ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
             # handle unique case where variant precedes but includes start codon
-            if counter < start:
-               # future devel: 
-                #    can propogate variant ID here to maintain link to epitope
-                coordinates.append([start, counter + len(seq[0])])
-                if seq[1] == 'I' and reading_frame == 0:
-                    reading_frame = (reading_frame + len(seq[0])) % 3
-                    if reading_frame != 0:
-                        frame_shifts.append([counter, counter])
-                elif seq[1] == 'I':
-                    reading_frame = (reading_frame + len(seq[0])) % 3
-                    if reading_frame == 0:
-                        frame_shifts[-1][1] = counter + len(seq[0]) 
-                counter += len(seq[0])                  #
-                continue
+            if seq[2][2] != 'D' and seq[4] < start:
+                break
+            if seq[2][2] == 'D' and seq[2][0] < start:
+                break
+            #    coordinates.append([start, counter + len(seq[0])])
+            #    if seq[1] == 'I' and reading_frame == 0:
+            #        reading_frame = (reading_frame + len(seq[0])) % 3
+            #        if reading_frame != 0:
+            #            frame_shifts.append([counter, counter])
+            #    elif seq[1] == 'I':
+            #        reading_frame = (reading_frame + len(seq[0])) % 3
+            #        if reading_frame == 0:
+            #            frame_shifts[-1][1] = counter + len(seq[0]) 
+            #    counter += len(seq[0])                  #
+            #    continue
+        ############################################################
             # handle potential frame shifts from indels
             if seq[1] == 'D' or seq[1] == 'I':
                 if reading_frame == 0:
