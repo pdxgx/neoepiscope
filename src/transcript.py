@@ -221,11 +221,11 @@ class Transcript(object):
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
                                         (pos, seq, mutation_type), vaf))
         elif mutation_type == 'V':
+            reference_seq = self.bowtie_reference_index.get_stretch(
+                                            self.chrom, pos - 1, len(seq))
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                        (pos, 
-                                         self.bowtie_reference_index.get_stretch(
-                                            self.chrom, pos - 1, len(seq)), 
-                                         mutation_type), vaf))
+                                        (pos, reference_seq, mutation_type), 
+                                        vaf))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
@@ -374,7 +374,7 @@ class Transcript(object):
                 if (include_somatic and edit[2] == 'S'
                         or include_germline and edit[2] == 'G'):
                     if edit[1] == 'V':
-                        if start_index % 2:
+                        if start_index % 2 and edit[3][1] != edit[0]:
                             # Add edit if and only if it lies within bounds
                             edits[pos].append(edit)
                     elif edit[1] == 'I':
