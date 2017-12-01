@@ -432,9 +432,7 @@ class Transcript(object):
         """ Retrieves reading frame (0, 1, or 2) at given coordinate.
             
             NOTE: must be updated to include chromosome to accommodate fusions
-
             pos: 1-based position at which reading frame is desired
-
             Return value: reading frame; 0 means first base of codon, 1 means
             second base, and 2 means third base. None means the coordinate is
             outside the coding sequence of a given transcript.
@@ -479,8 +477,7 @@ class Transcript(object):
                                         pos_index - 1, 2)]))
                 return ((seq_length - 1) % 3)
 
-    def _seq_append(self, seq_list, seq, mutation_class, mutation_info, vaf, 
-                        pos):
+    def _seq_append(self, seq_list, seq, mutation_class, mutation_info, vaf):
         """ Appends mutation to seq_list, merging successive mutations.
             seq_list: list of tuples (sequence, type) where type is one
                 of R, G, or S (for respectively reference, germline edit, or
@@ -490,7 +487,6 @@ class Transcript(object):
             mutation_info: tuple containing (1 based mutation position from 
                 vcf, mutation sequence, and mutation type)
             vaf: variant allele frequency
-            pos: 1-based genomic position of first base being added
             No return value; seq_list is merely updated.
         """
         try:
@@ -503,34 +499,30 @@ class Transcript(object):
                     seq_list.append((seq, mutation_class,
                                  [mutation_info[i] for i in xrange(0, 
                                                         len(mutation_info))], 
-                                 [] if vaf is None else [vaf], pos))
+                                 [] if vaf is None else [vaf]))
                 else:
                     seq_list.append((seq, mutation_class,
                                  [mutation_info], 
-                                 [] if vaf is None else [vaf], pos))
+                                 [] if vaf is None else [vaf]))
             return
         if condition:
-            if self.rev_strand:
-                adjusted_pos = pos
-            else:
-                adjusted_pos = seq_list[-1][4]
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class,
                             (seq_list[-1][2] + [mutation_info])
                             if mutation_info not in seq_list[-1][2]
                             else seq_list[-1][2], 
                             seq_list[-1][3]
                             if vaf is None or vaf in seq_list[-1][3]
-                            else (seq_list[-1][3] + [vaf]), adjusted_pos)
+                            else (seq_list[-1][3] + [vaf]))
         elif seq or mutation_class != 'R':
             if isinstance(mutation_info, list):
                 seq_list.append((seq, mutation_class,
                                  [mutation_info[i] for i in xrange(0, 
                                                         len(mutation_info))], 
-                                 [] if vaf is None else [vaf], pos))
+                                 [] if vaf is None else [vaf]))
             else:
                 seq_list.append((seq, mutation_class,
                                  [mutation_info], 
-                                 [] if vaf is None else [vaf], pos))
+                                 [] if vaf is None else [vaf]))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
                                 include_somatic=True, include_germline=True):
@@ -593,10 +585,10 @@ class Transcript(object):
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
-                        (self.bowtie_reference_index.get_stretch(
+                        self.bowtie_reference_index.get_stretch(
                                 self.chrom, intervals[i][0] + 1,
                                 intervals[i + 1][0] -
-                                intervals[i][0]), (intervals[i], intervals[i+1])
+                                intervals[i][0]
                             )
                     )
             # Now build sequence in order of increasing edit position
@@ -606,92 +598,59 @@ class Transcript(object):
                 if pos > intervals[i][0]:
                     last_index, last_pos = 0, intervals[i-1][0] + 1
                     for pos_to_add in pos_group:
-                        print 'here we are'
                         fill = pos_to_add - last_pos
                         if intervals[i-1][1] != 'R':
                             self._seq_append(final_seq, '', intervals[i-1][1],
                                              intervals[i-1][2],
-                                             intervals[i-1][3], 
-                                             intervals[i-1][2][0])
-                        if final_seq == []:
-                                genomic_pos = intervals[0][0] + 2
-                        elif (len(final_seq[-1][2][0]) == 3 and 
-                                final_seq[-1][2][0][2] == 'D'):
-                            genomic_pos = (final_seq[-1][4] + 
-                                            len(final_seq[-1][2][0][1]))
-                        else:
-                            if self.rev_strand:
-                                genomic_pos = last_pos + fill
-                            else:
-                                genomic_pos = (final_seq[-1][4] + 
-                                            len(final_seq[-1][0]))
-                        print final_seq[-1]
-                        print "adding sequence from " + str(genomic_pos)
-                        self._seq_append(final_seq, seqs[(i-1)/2][0][
+                                             intervals[i-1][3])
+                        self._seq_append(final_seq, seqs[(i-1)/2][
                                             last_index:last_index + fill
-                                        ], 'R', '', None, genomic_pos)
+                                        ], 'R', '', None)
                         # If no edits, snv is reference and no insertion
                         try:
-                            snv = (seqs[(i-1)/2][0][last_index + fill], 'R', 
-                                    '', None, genomic_pos + fill + 1)
+                            snv = (seqs[(i-1)/2][last_index + fill], 'R', 
+                                    '', None)
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
-                            print i
-                            assert (i - 1) / 2 == 0 and not seqs[0][0]
-                            snv = ('', 'R', '', None, genomic_pos)
-                        insertion = ('', 'R', '', None, genomic_pos)
+                            assert (i - 1) / 2 == 0 and not seqs[0]
+                            snv = ('', 'R', '', None)
+                        insertion = ('', 'R', '', None)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = (edit[0], edit[2], edit[3], edit[4], 
-                                       edit[3][0])
+                                snv = (edit[0], edit[2], edit[3], edit[4])
                             else:
                                 assert edit[1] == 'I'
-                                insertion = (edit[0], edit[2], edit[3], edit[4], 
-                                             edit[3][0])
+                                insertion = (edit[0],) + edit[2:]
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i-1][1], 
-                                         intervals[i-1][2], intervals[i-1][3],
-                                         intervals[i-1][2][0])
-                    ref_to_add = seqs[(i-1)/2][0][last_index:]
+                                         intervals[i-1][2], intervals[i-1][3])
+                    ref_to_add = seqs[(i-1)/2][last_index:]
                     if ref_to_add:
-                        if self.rev_strand:
-                            genomic_pos = seqs[(i-1)/2][1][0][0] + 2
-                        else:
-                            genomic_pos = (seqs[(i-1)/2][1][1][0] + 1 - 
-                                                len(ref_to_add) + 1)
                         self._seq_append(
-                                final_seq, ref_to_add, 'R', '', None, genomic_pos
+                                final_seq, ref_to_add, 'R', '', None
                             )
                     if intervals[i][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i][1], 
-                                            intervals[i][2], intervals[i][3],
-                                            intervals[i][2][0])
+                                            intervals[i][2], intervals[i][3])
                     i += 2
                     try:
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
-                                        intervals[i-1][2], intervals[i-1][3],
-                                        intervals[i-1][2][0]
+                                        intervals[i-1][2], intervals[i-1][3]
                                     )
-                            if self.rev_strand:
-                                genomic_pos = seqs[(i-1)/2][1][1][0] + 1
-                            else:
-                                genomic_pos = seqs[(i-1)/2][1][0][0] + 2
-
-                            self._seq_append(final_seq, seqs[(i-1)/2][0], 'R', 
-                                                '', None, genomic_pos)
+                            self._seq_append(final_seq, seqs[(i-1)/2], 'R', 
+                                                '', None)
                             if intervals[i][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i][1], 
-                                        intervals[i][2], intervals[i][3],
-                                        intervals[i][2][0]
+                                        intervals[i][2], intervals[i][3]
                                     )
                             i += 2
                     except IndexError:
@@ -703,8 +662,8 @@ class Transcript(object):
                     pos_group.append(pos)
             if self.rev_strand:
                 return ([(seq[::-1].translate(revcomp_translation_table),
-                            mutation_class, orig_seq, vaf, position)
-                            for seq, mutation_class, orig_seq, vaf, position in 
+                            mutation_class, orig_seq, vaf)
+                            for seq, mutation_class, orig_seq, vaf in 
                             final_seq][::-1])
             return final_seq
         raise NotImplementedError(
