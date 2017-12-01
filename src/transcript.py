@@ -856,8 +856,8 @@ class Transcript(object):
                     frame_shifts[i][3] = counter
 
         ##### work to be done below here still re: start coordinates and more
-        protein = seq_to_peptide(sequence[start:], reverse_strand=False)
-        peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
+        protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[coding_start:], 
             reverse_strand=False), min_size=min_size, max_size=max_size)
         reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
             reverse_strand=False), min_size=min_size, max_size=max_size)
