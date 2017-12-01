@@ -786,7 +786,7 @@ class Transcript(object):
         #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
         #  to calculate/update transcript relative coordinates
         if reading_frame != 0:
-            frame_shifts.append([start, -1, []])
+            frame_shifts.append([start, -1, 0, -1, []])
         for seq in annotated_seq:
             # skip sequence fragments that occur prior to start codon 
             if seq[2][2] != 'D' and seq[4] + len(seq[0]) <= start:
@@ -804,10 +804,11 @@ class Transcript(object):
         ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
             # handle unique case where variant precedes but includes start codon
             if seq[2][2] != 'D' and seq[4] < start:
-                coordinates.append([start, seq[4] + len(seq[0]), seq[2]])
+                coordinates.append([start, seq[4] + len(seq[0]),
+                    0, seq[4] + len(seq[0]) - start, seq[2]])
                 break
             if seq[2][2] == 'D' and seq[2][0] < start:
-                coordinates.append([start, start + 1, seq[2]])
+                coordinates.append([start, start + 1, 0, 0, seq[2]])
                 break
             #    coordinates.append([start, counter + len(seq[0])])
             #    if seq[1] == 'I' and reading_frame == 0:
@@ -826,7 +827,7 @@ class Transcript(object):
                 if reading_frame == 0:
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame != 0:
-                        frame_shifts.append([seq[2][0], -1, seq[2]])
+                        frame_shifts.append([seq[2][0], -1, counter, -1,seq[2]])
                 else:
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame == 0:
@@ -834,17 +835,20 @@ class Transcript(object):
                         for i in range(0, len(frame_shifts)):
                             if frame_shifts[i][1] < 0:
                                 frame_shifts[i][1] = seq[4] + len(seq[0])
+                                frame_shifts[i][3] = counter + len(seq[0])
                     elif len(seq[2][1]) % 3 != 0:
-                        frame_shifts.append([seq[2][0], -1, seq[2]])
+                        frame_shifts.append([seq[2][0], -1, counter, -1,seq[2]])
             # log variants                    
-            coordinates.append([seq[4], seq[4] + len(seq[0]), seq[2]])
+            coordinates.append([seq[4], seq[4] + len(seq[0]),
+                counter, counter + len(seq[0]), seq[2]])
             if seq[2][2] != 'D':
                 counter += len(seq[0])
-        # frame shift (if it exists) continues to end of transcript
+        # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
             for i in range(0, len(frame_shifts)):
                 if frame_shifts[i][1] < 0:
                     frame_shifts[i][1] = seq[4] + len(seq[0])
+                    frame_shifts[i][3] = counter
 
         ##### work to be done below here still re: start coordinates and more
         protein = seq_to_peptide(sequence[start:], reverse_strand=False)
