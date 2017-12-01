@@ -786,7 +786,7 @@ class Transcript(object):
         #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
         #  to calculate/update transcript relative coordinates
         if reading_frame != 0:
-            frame_shifts.append([start, start])
+            frame_shifts.append([start, -1, []])
         for seq in annotated_seq:
             # skip sequence fragments that occur prior to start codon 
             if seq[2][2] != 'D' and seq[4] + len(seq[0]) <= start:
@@ -824,38 +824,27 @@ class Transcript(object):
                 if reading_frame == 0:
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame != 0:
-                        frame_shifts.append([seq[2][0], -1])
+                        frame_shifts.append([seq[2][0], -1, seq[2]])
                 else:
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame == 0:
                         # close out all frame_shifts ending in -1
-                        frame_shifts[-1][1] = counter
-                    else:
-                        frame_shifts.append([seq[2][0], -1])
-                # this needs to be updated here to make sure that %3bp indel
-                # does not get added to propagate effects in any way
-
-        #tuples (sequence, mutation class,
-        #        mutation information, variant allele frequency, position)
-        #        where sequence is a segment of sequence of the (possibly)
-        #        mutated transcript, mutation class is one of {'G', 'S', 'R'},
-        #        where 'G' denotes germline, 'S' denotes somatic, and 'R'
-        #        denotes reference sequence, mutation information is the
-        #        tuple (1-based position of {first base of deletion,
-        #        base before insertion, SNV},
-        #        {deleted sequence, inserted sequence, reference base},
-        #        {'D', 'I', 'V'}) , and position is the 1-based position
-        #        of the first base of sequence.
-
+                        for i in range(0, len(frame_shifts)):
+                            if frame_shifts[i][1] < 0:
+                                frame_shifts[i][1] = seq[4] + len(seq[0])
+                    elif len(seq[2][1]) % 3 != 0:
+                        frame_shifts.append([seq[2][0], -1, seq[2]])
             # log variants                    
-            if seq[1] == 'D':
-                coordinates.append([counter, 0])
-            else:
-                coordinates.append([counter, len(seq[0])])
+            coordinates.append([seq[4], seq[4] + len(seq[0]), seq[2]])
+            if seq[2][2] != 'D':
                 counter += len(seq[0])
         # frame shift (if it exists) continues to end of transcript
         if reading_frame != 0:
-            frame_shifts[-1][1] = counter
+            for i in range(0, len(frame_shifts)):
+                if frame_shifts[i][1] < 0:
+                    frame_shifts[i][1] = seq[4] + len(seq[0])
+
+        ##### work to be done below here still re: start coordinates and more
         protein = seq_to_peptide(sequence[start:], reverse_strand=False)
         peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[start:], 
             reverse_strand=False), min_size=min_size, max_size=max_size)
