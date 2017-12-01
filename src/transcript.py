@@ -804,8 +804,10 @@ class Transcript(object):
         ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
             # handle unique case where variant precedes but includes start codon
             if seq[2][2] != 'D' and seq[4] < start:
+                coordinates.append([start, seq[4] + len(seq[0]), seq[2]])
                 break
             if seq[2][2] == 'D' and seq[2][0] < start:
+                coordinates.append([start, start + 1, seq[2]])
                 break
             #    coordinates.append([start, counter + len(seq[0])])
             #    if seq[1] == 'I' and reading_frame == 0:
