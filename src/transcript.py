@@ -416,6 +416,7 @@ class Transcript(object):
 
     def save(self):
         """ Creates save point for edits.
+            
             No return value.
         """
         self.last_edits = copy.copy(self.edits)
