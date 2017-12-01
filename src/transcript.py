@@ -821,12 +821,13 @@ class Transcript(object):
                 else:
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame == 0:
+                        # close out all frame_shifts ending in -1
                         frame_shifts[-1][1] = counter
                     else:
                         frame_shifts.append([seq[2][0], -1])
                 # this needs to be updated here to make sure that %3bp indel
                 # does not get added to propagate effects in any way
-                
+
         #tuples (sequence, mutation class,
         #        mutation information, variant allele frequency, position)
         #        where sequence is a segment of sequence of the (possibly)
