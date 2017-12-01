@@ -793,17 +793,6 @@ class Transcript(object):
                 if seq[2][2] != 'D':
                     counter += len(seq[0])
                 continue
-        #tuples (sequence, mutation class,
-        #        mutation information, variant allele frequency, position)
-        #        where sequence is a segment of sequence of the (possibly)
-        #        mutated transcript, mutation class is one of {'G', 'S', 'R'},
-        #        where 'G' denotes germline, 'S' denotes somatic, and 'R'
-        #        denotes reference sequence, mutation information is the
-        #        tuple (1-based position of {first base of deletion,
-        #        base before insertion, SNV},
-        #        {deleted sequence, inserted sequence, reference base},
-        #        {'D', 'I', 'V'}) , and position is the 1-based position
-        #        of the first base of sequence.
         ############################################################
         ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
             # handle unique case where variant precedes but includes start codon
@@ -824,15 +813,32 @@ class Transcript(object):
             #    continue
         ############################################################
             # handle potential frame shifts from indels
-            if seq[1] == 'D' or seq[1] == 'I':
+            if seq[2][2] == 'D' or seq[2][2] == 'I':
                 if reading_frame == 0:
-                    reading_frame = (reading_frame + seq[0]) % 3
+                    reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame != 0:
-                        frame_shifts.append([counter, counter])
+                        frame_shifts.append([seq[2][0], -1])
                 else:
-                    reading_frame = (reading_frame + seq[0]) % 3
+                    reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame == 0:
                         frame_shifts[-1][1] = counter
+                    else:
+                        frame_shifts.append([seq[2][0], -1])
+                # this needs to be updated here to make sure that %3bp indel
+                # does not get added to propagate effects in any way
+                
+        #tuples (sequence, mutation class,
+        #        mutation information, variant allele frequency, position)
+        #        where sequence is a segment of sequence of the (possibly)
+        #        mutated transcript, mutation class is one of {'G', 'S', 'R'},
+        #        where 'G' denotes germline, 'S' denotes somatic, and 'R'
+        #        denotes reference sequence, mutation information is the
+        #        tuple (1-based position of {first base of deletion,
+        #        base before insertion, SNV},
+        #        {deleted sequence, inserted sequence, reference base},
+        #        {'D', 'I', 'V'}) , and position is the 1-based position
+        #        of the first base of sequence.
+
             # log variants                    
             if seq[1] == 'D':
                 coordinates.append([counter, 0])
