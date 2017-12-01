@@ -794,6 +794,11 @@ class Transcript(object):
                 continue
             elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) < start:
                 continue
+            # find transcript-relative coordinates of start codon
+            if seq[2][2] != 'D' and seq[4] + len(seq[0]) > start:
+                coding_start = counter + start - seq[4] + 1 # not verified!!!!!
+            elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) >= start:
+                coding_start = counter + start - seq[2][0] # not verified!!!!!!
             # skip sequence fragments that are not to be reported 
             if (seq[1] == 'R' or (seq[1] == 'S' and somatic < 2) or 
                 (seq[1] == 'G' and germline < 2)):
