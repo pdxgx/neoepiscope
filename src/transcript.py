@@ -217,9 +217,15 @@ class Transcript(object):
                                     pos + deletion_size + 1  - pos - 1
                                 ), mutation_type), vaf)
                     )
-        elif mutation_type == 'V' or mutation_type == 'I':
+        elif mutation_type == 'I': 
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
                                         (pos, seq, mutation_type), vaf))
+        elif mutation_type == 'V':
+            self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
+                                        (pos, 
+                                         self.bowtie_reference_index.get_stretch(
+                                            self.chrom, pos - 1, len(seq)), 
+                                         mutation_type), vaf))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
