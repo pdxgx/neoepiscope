@@ -335,14 +335,14 @@ class Transcript(object):
                             )
                     # else deletion is entirely outside CDS within start/end
                 elif (start_index == (end_index - 1) and 
-                            deletion_intervals[i][0] == intervals[start_index]):
+                        deletion_intervals[i][0] == intervals[start_index]):
                     relevant_deletion_intervals.extend(
                                 deletion_intervals[i:i+2]
                             )
                 else:
                     assert end_index > start_index
                     if (start_index % 2 or 
-                            deletion_intervals[i][0] == intervals[start_index]):
+                        deletion_intervals[i][0] == intervals[start_index]):
                         pos = deletion_intervals[i]
                     else:
                         pos = (intervals[start_index], 'R', '', None)
@@ -389,35 +389,62 @@ class Transcript(object):
                              and intervals[i+1][0] != intervals[i][0])]
         # Only associate one end of a deletion interval with deletion
         #   to prevent including it multiple times
+        print intervals
+        print 'duh'
         adjusted_intervals = [intervals[0]]
         for i in xrange(1, len(intervals)):
             if (intervals[i][1] == 'R' or (intervals[i][1] != 'R' and 
                     intervals[i-1][1] == 'R')):
+                if i == 3:
+                    print 'got here 1'
+                    print intervals[i]
                 adjusted_intervals.append(intervals[i])
             elif intervals[i][1] != 'R' and intervals[i-1][1] != 'R':
                 if intervals[i][1] != intervals[i-1][1]:
                     mutation_class = ''.join([intervals[i-1][1], 
                                                 intervals[i][1]])
+                    if i == 3:
+                       print 'got here 2'
                 else:
                     mutation_class = intervals[i-1][1]
+                    if i == 3:
+                       print 'got here 3'
                 if intervals[i][2] != adjusted_intervals[i-1][2]:
                     mutation_data = []
+                    if i == 3:
+                       print 'got here 4'
                     if isinstance(adjusted_intervals[i-1][2], tuple):
+                        if i == 3:
+                            print 'got here 5'
                         mutation_data.append(adjusted_intervals[i-1][2])
                         mutation_data.append(intervals[i][2])
+                        print 'stuff1'
+                        print [adjusted_intervals[i-1][0],
+                                                    mutation_class,
+                                                    mutation_data,
+                                                    adjusted_intervals[i-1][3]]
                         adjusted_intervals[i-1] = [adjusted_intervals[i-1][0],
                                                     mutation_class,
                                                     mutation_data,
                                                     adjusted_intervals[i-1][3]]
                     else:
+                        if i == 3:
+                            print 'got here 6'
                         for j in xrange(0, len(intervals[i-1][2])):
                             mutation_data.append(intervals[i-1][2][j])
                         mutation_data.append(intervals[i][2])
+                        print 'stuff2'
+                        print [adjusted_intervals[i-1][0],
+                                                    mutation_class,
+                                                    mutation_data,
+                                                    adjusted_intervals[i-1][3]]
                         adjusted_intervals[i-1] = [adjusted_intervals[i-1][0],
                                                     mutation_class,
                                                     mutation_data,
                                                     adjusted_intervals[i-1][3]]
-                adjusted_intervals.append((intervals[i][0], 'R', '', ''))
+                adjusted_intervals.append(
+                        (intervals[i][0], 'R', tuple(), None)
+                    )
         return (edits, adjusted_intervals)
 
     def save(self):
@@ -477,7 +504,8 @@ class Transcript(object):
                                         pos_index - 1, 2)]))
                 return ((seq_length - 1) % 3)
 
-    def _seq_append(self, seq_list, seq, mutation_class, mutation_info, vaf):
+    def _seq_append(self, seq_list, seq, mutation_class,
+                        mutation_info, vaf, position):
         """ Appends mutation to seq_list, merging successive mutations.
             seq_list: list of tuples (sequence, type) where type is one
                 of R, G, or S (for respectively reference, germline edit, or
@@ -487,6 +515,7 @@ class Transcript(object):
             mutation_info: tuple containing (1 based mutation position from 
                 vcf, mutation sequence, and mutation type)
             vaf: variant allele frequency
+            position: 1-based genomic position of first base added
             No return value; seq_list is merely updated.
         """
         try:
@@ -499,30 +528,34 @@ class Transcript(object):
                     seq_list.append((seq, mutation_class,
                                  [mutation_info[i] for i in xrange(0, 
                                                         len(mutation_info))], 
-                                 [] if vaf is None else [vaf]))
+                                 [] if vaf is None else [vaf], position))
                 else:
                     seq_list.append((seq, mutation_class,
                                  [mutation_info], 
-                                 [] if vaf is None else [vaf]))
+                                 [] if vaf is None else [vaf], position))
             return
         if condition:
+            if self.rev_strand:
+                adjusted_position = position
+            else:
+                adjusted_position = seq_list[-1][4]
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class,
                             (seq_list[-1][2] + [mutation_info])
                             if mutation_info not in seq_list[-1][2]
                             else seq_list[-1][2], 
                             seq_list[-1][3]
                             if vaf is None or vaf in seq_list[-1][3]
-                            else (seq_list[-1][3] + [vaf]))
+                            else (seq_list[-1][3] + [vaf]), adjusted_position)
         elif seq or mutation_class != 'R':
             if isinstance(mutation_info, list):
                 seq_list.append((seq, mutation_class,
                                  [mutation_info[i] for i in xrange(0, 
                                                         len(mutation_info))], 
-                                 [] if vaf is None else [vaf]))
+                                 [] if vaf is None else [vaf], position))
             else:
                 seq_list.append((seq, mutation_class,
                                  [mutation_info], 
-                                 [] if vaf is None else [vaf]))
+                                 [] if vaf is None else [vaf], position))
 
     def annotated_seq(self, start=None, end=None, genome=True, 
                                 include_somatic=True, include_germline=True):
@@ -562,6 +595,7 @@ class Transcript(object):
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added.'''
+            print intervals
             new_edits = copy.copy(edits)
             i = 0
             while i < len(intervals):
@@ -585,10 +619,11 @@ class Transcript(object):
             seqs = []
             for i in xrange(0, len(intervals), 2):
                 seqs.append(
-                        self.bowtie_reference_index.get_stretch(
+                        (self.bowtie_reference_index.get_stretch(
                                 self.chrom, intervals[i][0] + 1,
                                 intervals[i + 1][0] -
-                                intervals[i][0]
+                                intervals[i][0]), 
+                        (intervals[i][0] + 2, intervals[i+1][0] + 1)
                             )
                     )
             # Now build sequence in order of increasing edit position
@@ -602,55 +637,82 @@ class Transcript(object):
                         if intervals[i-1][1] != 'R':
                             self._seq_append(final_seq, '', intervals[i-1][1],
                                              intervals[i-1][2],
-                                             intervals[i-1][3])
-                        self._seq_append(final_seq, seqs[(i-1)/2][
+                                             intervals[i-1][3],
+                                             intervals[i-1][2][0])
+                        if self.rev_strand:
+                            self._seq_append(final_seq, seqs[(i-1)/2][0][
                                             last_index:last_index + fill
-                                        ], 'R', '', None)
+                                        ], 'R', tuple(), None,
+                                        seqs[(i-1)/2][1][0] + fill - 1)
+                        else:
+                            self._seq_append(final_seq, seqs[(i-1)/2][0][
+                                            last_index:last_index + fill
+                                        ], 'R', tuple(),
+                                        None, seqs[(i-1)/2][1][0])
                         # If no edits, snv is reference and no insertion
                         try:
-                            snv = (seqs[(i-1)/2][last_index + fill], 'R', 
-                                    '', None)
+                            snv = (seqs[(i-1)/2][0][last_index + fill], 'R', 
+                                    '', None, seqs[(i-1)/2][1][0] + fill + 1)
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
-                            assert (i - 1) / 2 == 0 and not seqs[0]
-                            snv = ('', 'R', '', None)
-                        insertion = ('', 'R', '', None)
+                            assert (i - 1) / 2 == 0 and not seqs[0][0]
+                            snv = ('', 'R', '', None, seqs[(i-1)/2][1][0] + fill)
+                        insertion = ('', 'R', '', None, seqs[(i-1)/2][1][0] + fill)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = (edit[0], edit[2], edit[3], edit[4])
+                                snv = (edit[0], edit[2], edit[3], edit[4], 
+                                        edit[3][0])
                             else:
                                 assert edit[1] == 'I'
-                                insertion = (edit[0],) + edit[2:]
+                                insertion = (edit[0], edit[2], edit[3], edit[4], 
+                                                edit[3][0])
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i-1][1], 
-                                         intervals[i-1][2], intervals[i-1][3])
-                    ref_to_add = seqs[(i-1)/2][last_index:]
+                                         intervals[i-1][2], intervals[i-1][3],
+                                         intervals[i-1][2][0])
+                    ref_to_add = seqs[(i-1)/2][0][last_index:]
                     if ref_to_add:
-                        self._seq_append(
-                                final_seq, ref_to_add, 'R', '', None
+                        if self.rev_strand:
+                            self._seq_append(
+                                final_seq, ref_to_add, 'R', '', None, 
+                                seqs[(i-1)/2][1][1]
+                            )
+                        else:
+                            self._seq_append(
+                                final_seq, ref_to_add, 'R', '', None, 
+                                seqs[(i-1)/2][1][0] + fill + 1
                             )
                     if intervals[i][1] != 'R':
                         self._seq_append(final_seq, '', intervals[i][1], 
-                                            intervals[i][2], intervals[i][3])
+                                            intervals[i][2], intervals[i][3],
+                                            intervals[i][2][0])
                     i += 2
                     try:
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
-                                        intervals[i-1][2], intervals[i-1][3]
+                                        intervals[i-1][2], intervals[i-1][3],
+                                        intervals[i-1][2][0]
                                     )
-                            self._seq_append(final_seq, seqs[(i-1)/2], 'R', 
-                                                '', None)
+                            if self.rev_strand:
+                                self._seq_append(final_seq, seqs[(i-1)/2][0], 
+                                                    'R', '', None, 
+                                                    seqs[(i-1)/2][1][1])
+                            else:
+                                self._seq_append(final_seq, seqs[(i-1)/2][0], 
+                                                    'R', '', None, 
+                                                    seqs[(i-1)/2][1][0])
                             if intervals[i][1] != 'R':
                                 self._seq_append(
                                         final_seq, '', intervals[i][1], 
-                                        intervals[i][2], intervals[i][3]
+                                        intervals[i][2], intervals[i][3],
+                                        intervals[i][2][0]
                                     )
                             i += 2
                     except IndexError:
@@ -662,8 +724,8 @@ class Transcript(object):
                     pos_group.append(pos)
             if self.rev_strand:
                 return ([(seq[::-1].translate(revcomp_translation_table),
-                            mutation_class, orig_seq, vaf)
-                            for seq, mutation_class, orig_seq, vaf in 
+                            mutation_class, orig_seq, vaf, position)
+                            for seq, mutation_class, orig_seq, vaf, position in 
                             final_seq][::-1])
             return final_seq
         raise NotImplementedError(
