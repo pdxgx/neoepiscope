@@ -897,10 +897,12 @@ class Transcript(object):
                     reading_frame = (reading_frame + len(seq[2][1])) % 3
                     if reading_frame == 0:
                         # close out all frame_shifts ending in -1
-                        for i in range(0, len(frame_shifts)):
+                        for i in range(len(frame_shifts), 0, -1):
                             if frame_shifts[i][1] < 0:
                                 frame_shifts[i][1] = seq[4] + len(seq[0])
                                 frame_shifts[i][3] = counter + len(seq[0])
+                            else:
+                                break
                     elif len(seq[2][1]) % 3 != 0:
                         frame_shifts.append([seq[2][0], -1, counter, -1,seq[2]])
             # log variants                    
