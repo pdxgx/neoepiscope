@@ -910,10 +910,12 @@ class Transcript(object):
                 counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
-            for i in range(0, len(frame_shifts)):
+            for i in range(len(frame_shifts), 0, -1):
                 if frame_shifts[i][1] < 0:
                     frame_shifts[i][1] = seq[4] + len(seq[0])
                     frame_shifts[i][3] = counter
+                else:
+                    break
 
         ##### work to be done below here still re: start coordinates and more
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
