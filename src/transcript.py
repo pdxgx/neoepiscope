@@ -839,7 +839,7 @@ class Transcript(object):
         # extract nucleotide sequence from annotated_seq
         sequence = '' # hold flattened nucleotide sequence
         for seq in annotated_seq:
-            if seq[2][2] != 'D':
+            if seq[1] == 'R' or seq[2][2] != 'D':
                 sequence += seq[0]
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
