@@ -389,32 +389,37 @@ class Transcript(object):
                              and intervals[i+1][0] != intervals[i][0])]
         # Only associate one end of a deletion interval with deletion
         #   to prevent including it multiple times
-        adjusted_intervals = []
-        for i in xrange(0, len(intervals), 2):
-            adjusted_intervals.append(intervals[i])
-            if (intervals[i+1][1] == 'R' or (intervals[i+1][1] != 'R' and 
-                    intervals[i][1] == 'R')):
-                adjusted_intervals.append(intervals[i+1])
-            elif intervals[i+1][1] != 'R' and intervals[i][1] != 'R':
+        adjusted_intervals = [intervals[0]]
+        deletion_data = []
+        if intervals[0][1] != 'R':
+            deletion_data.append(intervals[0][2])
+        for i in xrange(1, len(intervals)):
+            if intervals[i][1] == 'R':
+                adjusted_intervals.append(intervals[i])
+            else:
+                if intervals[i][2] not in deletion_data:
+                    deletion_data.append(intervals[i][2])
                 # Adjust mutation class to reflect hybrid mutation if needed
-                if intervals[i][1] != intervals[i+1][1]:
-                    mutation_class = ''.join([intervals[i][1], 
-                                                intervals[i+1][1]])
+                if (intervals[i][1] != intervals[i-1][1] and i % 2 and 
+                        intervals[i][1] != 'R' and intervals[i-1][1] != 'R'):
+                    mutation_class = ''.join([intervals[i-1][1], 
+                                                intervals[i][1]])
                 else:
-                    mutation_class = intervals[i][1]
+                    mutation_class = intervals[i-1][1]
                 # Adjust mutation data to reflect hybrid mutation if needed
-                if intervals[i][2] != intervals[i+1][2]:
+                if (intervals[i-1][2] != intervals[i][2] and 
+                                intervals[i][2] not in deletion_data):
                     mutation_data = []
+                    mutation_data.append(intervals[i-1][2])
                     mutation_data.append(intervals[i][2])
-                    mutation_data.append(intervals[i+1][2])
                 else:
-                    mutation_data = intervals[i][2]
+                    mutation_data = intervals[i-1][2]
                 # Update previous interval
-                adjusted_intervals[i] = (adjusted_intervals[i][0],
+                adjusted_intervals[i-1] = (adjusted_intervals[i-1][0],
                                                 mutation_class,
                                                 mutation_data,
-                                                adjusted_intervals[i][3])
-                adjusted_intervals.append((intervals[i+1][0], 'R', 
+                                                adjusted_intervals[i-1][3])
+                adjusted_intervals.append((intervals[i][0], 'R', 
                                             tuple(), None))
         print intervals
         print
@@ -678,12 +683,12 @@ class Transcript(object):
                         if self.rev_strand:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(), None, 
-                                seqs[(i-1)/2][1][1]
+                                seqs[(i-1)/2][1][1] + last_index
                             )
                         else:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(), None, 
-                                seqs[(i-1)/2][1][0] + fill + 1
+                                seqs[(i-1)/2][1][0]
                             )
                     if intervals[i][1] != 'R':
                         if isinstance(intervals[i][2], list):
