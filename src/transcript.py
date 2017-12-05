@@ -862,7 +862,7 @@ class Transcript(object):
         # ignoring all of this and assuming start site is the same
         #
         start = self.start_codon
-        strand = self.rev_strand * 2 - 1
+        strand = 1 - self.rev_strand * 2
         reading_frame = 0
         coding_start = ref_start = -1
         ## this will need to be updated to calculate appropriate reading frame
@@ -882,13 +882,12 @@ class Transcript(object):
         for seq in annotated_seq:
             # find transcript-relative coordinates of start codon
             # skip sequence fragments that occur prior to start codon 
-            print coding_start, counter, seq[1], len(seq[0])
+            print coding_start, counter, seq[1], seq[4], (start-seq[4])*strand, strand, len(seq[0])
             if coding_start < 0:
                 if seq[1] == 'R':
                     if seq[4]*strand + len(seq[0]) > start*strand:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + (start - seq[4])*strand
-                        ref_start = ref_counter + (start - seq[4])*strand
+                        coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                        ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
@@ -919,9 +918,13 @@ class Transcript(object):
                         coding_start = counter + start - seq[4] + 1
                         break                        
             # skip sequence fragments that are not to be reported 
+            print "here", seq[2][0]
             if (seq[1] == 'R' or (seq[1] == 'S' and include_somatic < 2) or 
                 (seq[1] == 'G' and include_germline < 2)):
-                if seq[2][0][2] != 'D':
+                if seq[1] == 'R':
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                elif seq[2][0][2] != 'D':
                     counter += len(seq[0])
                     if seq[2][0][2] != 'I':
                         ref_counter += len(seq[0])
