@@ -858,14 +858,14 @@ class Transcript(object):
         #
         start = self.start_codon
         reading_frame = 0
-        coding_start = -1
+        coding_start = ref_start = -1
         ## this will need to be updated to calculate appropriate reading frame
         ## when new start codon introduced upstream or broken start gives
         ## downstream start out of its original reading frame
         ## for now, assuming that start codon is completely unchanged!     
         #reading_frame = (start - self.start_codon) % 3  
         coordinates = []
-        counter = 0 # hold edited transcript level coordinates
+        counter = ref_counter = 0 # hold edited transcript level coordinates
         frame_shifts = []
         # locate position of start codon is NOT always first ATG in sequence!!
         # this makes some BIG assumptions about self.start_codon!
@@ -877,20 +877,39 @@ class Transcript(object):
             # skip sequence fragments that occur prior to start codon 
             if seq[2][2] != 'D' and seq[4] + len(seq[0]) <= start:
                 counter += len(seq[0])
+                if (seq[2][2] != 'I'):
+                    ref_counter += len(seq[0])
                 continue
             elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) < start:
+                ref_counter += len(seq[2][1])
                 continue
             # find transcript-relative coordinates of start codon
             if coding_start < 0:
-                if seq[2][2] != 'D' and seq[4] + len(seq[0]) > start:
-                    coding_start = counter + start - seq[4] + 1 # not verified!!!!!
+                if seq[1] == 'R' and seq[4] + len(seq[0]) > start:
+                    # these coordinate calcs are NOT verified!!!!!!!
+                    coding_start = counter + start - seq[4] + 1
+                    ref_start = ref_counter + start - seq[4] + 1
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                elif seq[2][2] != 'D' and seq[4] + len(seq[0]) > start:
+                    # these coordinate calcs are NOT verified!!!!!!!
+                    coding_start = counter + start - seq[4] + 1
+                    break
                 elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) >= start:
-                    coding_start = counter + start - seq[2][0] # not verified!!!!!!
+                    # these coordinate calcs are NOT verified!!!!!!!
+                    coding_start = counter + start - seq[2][0]
+                    # this case not handled yet!  NO start codon mods allowed!!!
+                    break
             # skip sequence fragments that are not to be reported 
             if (seq[1] == 'R' or (seq[1] == 'S' and somatic < 2) or 
                 (seq[1] == 'G' and germline < 2)):
                 if seq[2][2] != 'D':
                     counter += len(seq[0])
+                    if seq[2][2] != 'I':
+                        ref_counter += len(seq[0])
+                else:
+                    ref_counter += len(seq[2][1])
                 continue
         ############################################################
         ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
@@ -937,6 +956,10 @@ class Transcript(object):
                 counter, counter + len(seq[0]), seq[2]])
             if seq[2][2] != 'D':
                 counter += len(seq[0])
+                if seq[2][2] != 'I':
+                    ref_counter += len(seq[0])
+            else:
+                ref_counter += len(seq[2][1])
         # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
             for i in range(len(frame_shifts), 0, -1):
@@ -946,6 +969,10 @@ class Transcript(object):
                 else:
                     break
 
+        print sequence
+        print sequence[coding_start:]
+        print ref_sequence
+        print ref_sequence[ref_start:]
         ##### work to be done below here still re: start coordinates and more
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
         peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[coding_start:], 
@@ -953,19 +980,19 @@ class Transcript(object):
         reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
             reverse_strand=False), min_size=min_size, max_size=max_size)
         # get amino acid ranges for kmerization
-        for size in range(min_size, max_size + 1):
-            epitope_coords = []
-            for coords in coordinates:
-                # future devel: 
-                #    can propogate variant ID here to maintain link to epitope
-                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)])
-            for coords in frame_shifts:
-                epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
-                    min(len(protein), ((coords[1] - start) // 3)+size)])
-            for coords in epitope_coords:
-                peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
-                    min_size=size, max_size=size)
+ ###       for size in range(min_size, max_size + 1):
+ ###           epitope_coords = []
+ ###           for coords in coordinates:
+ ###               # future devel: 
+ ###               #    can propogate variant ID here to maintain link to epitope
+ ###               epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
+ ###                   min(len(protein), ((coords[1] - start) // 3)+size)])
+ ###           for coords in frame_shifts:
+ ###               epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
+ ###                   min(len(protein), ((coords[1] - start) // 3)+size)])
+ ###           for coords in epitope_coords:
+ ###               peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
+ ###                   min_size=size, max_size=size)
         # return list of unique neoepitope sequences
         return list(set(peptide_seqs).difference(reference_seqs))
 
