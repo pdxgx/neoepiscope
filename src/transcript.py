@@ -874,33 +874,43 @@ class Transcript(object):
         if reading_frame != 0:
             frame_shifts.append([start, -1, 0, -1, []])
         for seq in annotated_seq:
-            # skip sequence fragments that occur prior to start codon 
-            if seq[2][2] != 'D' and seq[4] + len(seq[0]) <= start:
-                counter += len(seq[0])
-                if (seq[2][2] != 'I'):
-                    ref_counter += len(seq[0])
-                continue
-            elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) < start:
-                ref_counter += len(seq[2][1])
-                continue
             # find transcript-relative coordinates of start codon
+            # skip sequence fragments that occur prior to start codon 
             if coding_start < 0:
-                if seq[1] == 'R' and seq[4] + len(seq[0]) > start:
-                    # these coordinate calcs are NOT verified!!!!!!!
-                    coding_start = counter + start - seq[4] + 1
-                    ref_start = ref_counter + start - seq[4] + 1
+                if seq[1] == 'R':
+                    if seq[4] + len(seq[0]) > start:
+                        # these coordinate calcs are NOT verified!!!!!!!
+                        coding_start = counter + start - seq[4] + 1
+                        ref_start = ref_counter + start - seq[4] + 1
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
-                elif seq[2][2] != 'D' and seq[4] + len(seq[0]) > start:
-                    # these coordinate calcs are NOT verified!!!!!!!
-                    coding_start = counter + start - seq[4] + 1
-                    break
-                elif seq[2][2] == 'D' and seq[2][0] + len(seq[2][1]) >= start:
-                    # these coordinate calcs are NOT verified!!!!!!!
-                    coding_start = counter + start - seq[2][0]
-                    # this case not handled yet!  NO start codon mods allowed!!!
-                    break
+                elif seq[2][2] == 'D':
+                    if seq[2][0] + len(seq[2][1]) < start:
+                        ref_counter += len(seq[2][1])
+                        continue
+                    else:
+                        # these coordinate calcs are NOT verified!!!!!!!
+                        coding_start = counter + start - seq[2][0]
+                        # this case not handled yet!  NO start codon mods allowed!!!
+                        break
+                elif seq[2][2] == 'I':
+                    if seq[4] + len(seq[0]) <= start:
+                        counter += len(seq[0])
+                        continue
+                    else:
+                        # these coordinate calcs are NOT verified!!!!!!!
+                        coding_start = counter + start - seq[4] + 1
+                        break
+                elif seq[2][2] == 'V':
+                    if seq[4] + len(seq[0]) <= start:
+                        counter += len(seq[0])
+                        ref_counter += len(seq[0])
+                        continue
+                    else:
+                        # these coordinate calcs are NOT verified!!!!!!!
+                        coding_start = counter + start - seq[4] + 1
+                        break                        
             # skip sequence fragments that are not to be reported 
             if (seq[1] == 'R' or (seq[1] == 'S' and somatic < 2) or 
                 (seq[1] == 'G' and germline < 2)):
