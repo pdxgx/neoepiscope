@@ -843,9 +843,6 @@ class Transcript(object):
             include_germline=include_germline)
         # extract nucleotide sequence from annotated_seq
         sequence = '' # hold flattened nucleotide sequence
-        for seq in annotated_seq:
-            if seq[1] == 'R' or seq[2][0][2] != 'D':
-                sequence += seq[0]
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
         # extract nucleotide sequence from reference_seq
@@ -865,13 +862,57 @@ class Transcript(object):
         strand = 1 - self.rev_strand * 2
         reading_frame = 0
         coding_start = ref_start = -1
+        counter = ref_counter = 0 # hold edited transcript level coordinates
+        for seq in annotated_seq:
+            # find transcript-relative coordinates of start codon
+            # skip sequence fragments that occur prior to start codon 
+            if coding_start < 0:
+                if seq[1] == 'R':
+                    if seq[4]*strand + len(seq[0]) > start*strand:
+                        coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                        ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'D':
+                    ref_counter += len(seq[2][0][1])
+                    continue
+                elif seq[2][0][2] == 'I':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'V':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+            else:
+                if seq[1] == 'R':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'D':
+                    ref_counter += len(seq[2][0][1])
+                    continue
+                elif seq[2][0][2] == 'I':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'V':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+        print sequence, coding_start
+        return []
         ## this will need to be updated to calculate appropriate reading frame
         ## when new start codon introduced upstream or broken start gives
         ## downstream start out of its original reading frame
         ## for now, assuming that start codon is completely unchanged!     
         #reading_frame = (start - self.start_codon) % 3  
         coordinates = []
-        counter = ref_counter = 0 # hold edited transcript level coordinates
         frame_shifts = []
         # locate position of start codon is NOT always first ATG in sequence!!
         # this makes some BIG assumptions about self.start_codon!
@@ -882,7 +923,6 @@ class Transcript(object):
         for seq in annotated_seq:
             # find transcript-relative coordinates of start codon
             # skip sequence fragments that occur prior to start codon 
-            print coding_start, counter, seq[1], seq[4], (start-seq[4])*strand, strand, len(seq[0])
             if coding_start < 0:
                 if seq[1] == 'R':
                     if seq[4]*strand + len(seq[0]) > start*strand:
@@ -918,7 +958,6 @@ class Transcript(object):
                         coding_start = counter + start - seq[4] + 1
                         break                        
             # skip sequence fragments that are not to be reported 
-            print "here", seq[2][0]
             if (seq[1] == 'R' or (seq[1] == 'S' and include_somatic < 2) or 
                 (seq[1] == 'G' and include_germline < 2)):
                 if seq[1] == 'R':
