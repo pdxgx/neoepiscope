@@ -839,9 +839,6 @@ class Transcript(object):
             max_size = min_size
         if min_size < 2:
             return []
-        #### FOR REVERSE STRAND WHICH ORDER DO WE ASSUME?? HERE?  EVERYTHING
-        ### PROGRAMMED FOR FWD STRAND, IF REVERSE, NEED TO TREAT COORDS/ORDER
-        ## DIFFERENTLY????????  THIS NEEDS TO BE CLARIFIED!!
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
         # extract nucleotide sequence from annotated_seq
@@ -865,6 +862,7 @@ class Transcript(object):
         # ignoring all of this and assuming start site is the same
         #
         start = self.start_codon
+        strand = self.rev_strand * 2 - 1
         reading_frame = 0
         coding_start = ref_start = -1
         ## this will need to be updated to calculate appropriate reading frame
@@ -887,15 +885,15 @@ class Transcript(object):
             print coding_start, counter, seq[1], len(seq[0])
             if coding_start < 0:
                 if seq[1] == 'R':
-                    if seq[4] + len(seq[0]) > start:
+                    if seq[4]*strand + len(seq[0]) > start*strand:
                         # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] 
-                        ref_start = ref_counter + start - seq[4] 
+                        coding_start = counter + (start - seq[4])*strand
+                        ref_start = ref_counter + (start - seq[4])*strand
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'D':
-                    if seq[2][0][0] + len(seq[2][0][1]) < start:
+                    if seq[2][0][0]*strand + len(seq[2][0][1]) < start*strand:
                         ref_counter += len(seq[2][0][1])
                         continue
                     else:
@@ -904,7 +902,7 @@ class Transcript(object):
                         # this case not handled yet!  NO start codon mods allowed!!!
                         break
                 elif seq[2][0][2] == 'I':
-                    if seq[4] + len(seq[0]) <= start:
+                    if seq[4]*strand + len(seq[0]) <= start*strand:
                         counter += len(seq[0])
                         continue
                     else:
@@ -912,7 +910,7 @@ class Transcript(object):
                         coding_start = counter + start - seq[4] + 1
                         break
                 elif seq[2][0][2] == 'V':
-                    if seq[4] + len(seq[0]) <= start:
+                    if seq[4]*strand + len(seq[0]) <= start*strand:
                         counter += len(seq[0])
                         ref_counter += len(seq[0])
                         continue
@@ -933,12 +931,12 @@ class Transcript(object):
         ############################################################
         ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
             # handle unique case where variant precedes but includes start codon
-            if seq[2][0][2] != 'D' and seq[4] < start:
-                coordinates.append([start, seq[4] + len(seq[0]),
+            if seq[2][0][2] != 'D' and seq[4]*strand < start*strand:
+                coordinates.append([start, seq[4] + len(seq[0])*strand,
                     0, seq[4] + len(seq[0]) - start, seq[2]])
                 break
-            if seq[2][0][2] == 'D' and seq[2][0][0] < start:
-                coordinates.append([start, start + 1, 0, 0, seq[2]])
+            if seq[2][0][2] == 'D' and seq[2][0][0]*strand < start*strand:
+                coordinates.append([start, start + strand, 0, 0, seq[2]])
                 break
             #    coordinates.append([start, counter + len(seq[0])])
             #    if seq[1] == 'I' and reading_frame == 0:
@@ -971,7 +969,7 @@ class Transcript(object):
                     elif len(seq[2][0][1]) % 3 != 0:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
             # log variants                    
-            coordinates.append([seq[4], seq[4] + len(seq[0]),
+            coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
                 counter, counter + len(seq[0]), seq[2]])
             if seq[2][0][2] != 'D':
                 counter += len(seq[0])
