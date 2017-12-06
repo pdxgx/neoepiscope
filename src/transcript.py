@@ -823,16 +823,10 @@ class Transcript(object):
             max_size = min_size
         if min_size < 2:
             return []
-        #### FOR REVERSE STRAND WHICH ORDER DO WE ASSUME?? HERE?  EVERYTHING
-        ### PROGRAMMED FOR FWD STRAND, IF REVERSE, NEED TO TREAT COORDS/ORDER
-        ## DIFFERENTLY????????  THIS NEEDS TO BE CLARIFIED!!
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
         # extract nucleotide sequence from annotated_seq
         sequence = '' # hold flattened nucleotide sequence
-        for seq in annotated_seq:
-            if seq[1] == 'R' or seq[2][0][2] != 'D':
-                sequence += seq[0]
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
         # extract nucleotide sequence from reference_seq
@@ -849,64 +843,96 @@ class Transcript(object):
         # ignoring all of this and assuming start site is the same
         #
         start = self.start_codon
-        reading_frame = 0
+        strand = 1 - self.rev_strand * 2
         coding_start = ref_start = -1
-        ## this will need to be updated to calculate appropriate reading frame
-        ## when new start codon introduced upstream or broken start gives
-        ## downstream start out of its original reading frame
-        ## for now, assuming that start codon is completely unchanged!     
-        #reading_frame = (start - self.start_codon) % 3  
-        coordinates = []
         counter = ref_counter = 0 # hold edited transcript level coordinates
-        frame_shifts = []
-        # locate position of start codon is NOT always first ATG in sequence!!
-        # this makes some BIG assumptions about self.start_codon!
-        #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
-        #  to calculate/update transcript relative coordinates
-        if reading_frame != 0:
-            frame_shifts.append([start, -1, 0, -1, []])
         for seq in annotated_seq:
             # find transcript-relative coordinates of start codon
             # skip sequence fragments that occur prior to start codon 
-            print coding_start, counter, seq[1], len(seq[0])
             if coding_start < 0:
                 if seq[1] == 'R':
-                    if seq[4] + len(seq[0]) > start:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] 
-                        ref_start = ref_counter + start - seq[4] 
+                    if seq[4]*strand + len(seq[0]) > start*strand:
+                        coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                        ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                ##### NEED TO CONSIDER WHAT COULD HAPPEN HERE TO INTRODUCE A NEW
+                #### START CODON . . . for instance:
+                ## 1 - insert an entirely new codon or piece of one
+                ## 2 - Variant could change sequence to create an upstream ATG
+                ## 3 - deletion could create new upstream ATG
+                ## 4 - modification of original start codon by any of these
+                ## THIS NEEDS TO HANDLE NEW CODING START CALC STILL . . .
+                elif seq[2][0][2] == 'D':
+                    ref_counter += len(seq[2][0][1])
+                    continue
+                elif seq[2][0][2] == 'I':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'V':
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+            else:
+                if seq[1] == 'R':
+                    sequence += seq[0]
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'D':
-                    if seq[2][0][0] + len(seq[2][0][1]) < start:
-                        ref_counter += len(seq[2][0][1])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[2][0][0]
-                        # this case not handled yet!  NO start codon mods allowed!!!
-                        break
+                    ref_counter += len(seq[2][0][1])
+                    continue
                 elif seq[2][0][2] == 'I':
-                    if seq[4] + len(seq[0]) <= start:
-                        counter += len(seq[0])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] + 1
-                        break
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    continue
                 elif seq[2][0][2] == 'V':
-                    if seq[4] + len(seq[0]) <= start:
-                        counter += len(seq[0])
-                        ref_counter += len(seq[0])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] + 1
-                        break                        
+                    sequence += seq[0]
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+        ## THIS BLOCK OF CODE IS DEFINITELY NOT COMPLETE YET!!!!  STILL WORKING
+        if coding_start < 0 or sequence[coding_start:coding_start+3] != 'ATG':
+            # need to process here re: aberrant start codon!!!
+            # determine why start codon missing . . . and whether upstream context has changed
+            # if no changes upstream and start codon deleted/altered, then 
+            # find next downstream to use (even if more are already existing upstream)
+            # if novel start introduced upstream, then use that one!
+            if sequence.find('ATG') < 0:
+                return []
+            # changes upstream???
+            if False:
+                # if changes upstream, i.e. new start codon introduced compared
+                # to ref sequence, then consider using that as a new start!
+            else:
+                new_start = sequence[coding_start:].find('ATG')
+                if new_start < 0:
+                    return []
+                else:
+                    reading_frame = new_start % 3
+                    coding_start += new_start
+                    if reading_frame != 0:
+                        frame_shifts.append([start, -1, 0, -1, []])            
+            print "YIKES!!!!  WE ARE HERE!!!!!"
+            print sequence[coding_start:coding_start+20]
+            print ref_sequence[ref_start:ref_start+20]
+            return []
+        else:
+            reading_frame = 0
+        coordinates = []
+        frame_shifts = []
+        counter = ref_counter = 0 # hold edited transcript level coordinates
+        for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
-            if (seq[1] == 'R' or (seq[1] == 'S' and include_somatic < 2) or 
-                (seq[1] == 'G' and include_germline < 2)):
+            if seq[1] == 'R':
+                counter += len(seq[0])
+                ref_counter += len(seq[0])
+                continue
+            elif seq[1] == 'S' and include_somatic < 2:
                 if seq[2][0][2] != 'D':
                     counter += len(seq[0])
                     if seq[2][0][2] != 'I':
@@ -914,28 +940,40 @@ class Transcript(object):
                 else:
                     ref_counter += len(seq[2][0][1])
                 continue
-        ############################################################
-        ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
-            # handle unique case where variant precedes but includes start codon
-            if seq[2][0][2] != 'D' and seq[4] < start:
-                coordinates.append([start, seq[4] + len(seq[0]),
-                    0, seq[4] + len(seq[0]) - start, seq[2]])
-                break
-            if seq[2][0][2] == 'D' and seq[2][0][0] < start:
-                coordinates.append([start, start + 1, 0, 0, seq[2]])
-                break
-            #    coordinates.append([start, counter + len(seq[0])])
-            #    if seq[1] == 'I' and reading_frame == 0:
-            #        reading_frame = (reading_frame + len(seq[0])) % 3
-            #        if reading_frame != 0:
-            #            frame_shifts.append([counter, counter])
-            #    elif seq[1] == 'I':
-            #        reading_frame = (reading_frame + len(seq[0])) % 3
-            #        if reading_frame == 0:
-            #            frame_shifts[-1][1] = counter + len(seq[0]) 
-            #    counter += len(seq[0])                  #
-            #    continue
-        ############################################################
+            elif seq[1] == 'G' and include_germline < 2:
+                if seq[2][0][2] != 'D':
+                    counter += len(seq[0])
+                    if seq[2][0][2] != 'I':
+                        ref_counter += len(seq[0])
+                else:
+                    ref_counter += len(seq[2][0][1])
+                continue
+            # skip sequence fragments that occur prior to start codon 
+            # handle cases where variant involves start codon
+            if counter < coding_start:
+                if seq[2][0][2] == 'D':
+                    ref_counter += len(seq[2][0][1])
+                    continue
+                elif seq[2][0][2] == 'I':
+                    if counter + len(seq[0]) > coding_start:
+                        coordinates.append([start, seq[4] + len(seq[0])*strand,
+                    0, counter + len(seq[0]) - coding_start, seq[2]])
+                        if reading_frame != 0:
+                            frame_shifts.append([start, -1, 0, -1, []])
+                    counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'V':
+                    if counter + len(seq[0]) > coding_start:
+                        coordinates.append([start, seq[4] + len(seq[0])*strand,
+                    0, counter + len(seq[0]) - coding_start, seq[2]])
+                        if reading_frame != 0:
+                            frame_shifts.append([start, -1, 0, -1, []])
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                else:
+                    # other variant types not handled at this time
+                    break                        
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D' or seq[2][0][2] == 'I':
                 if reading_frame == 0:
@@ -955,7 +993,7 @@ class Transcript(object):
                     elif len(seq[2][0][1]) % 3 != 0:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
             # log variants                    
-            coordinates.append([seq[4], seq[4] + len(seq[0]),
+            coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
                 counter, counter + len(seq[0]), seq[2]])
             if seq[2][0][2] != 'D':
                 counter += len(seq[0])
