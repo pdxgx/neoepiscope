@@ -860,7 +860,6 @@ class Transcript(object):
         #
         start = self.start_codon
         strand = 1 - self.rev_strand * 2
-        reading_frame = 0
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
         for seq in annotated_seq:
@@ -905,93 +904,82 @@ class Transcript(object):
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
-        print sequence, coding_start
-        return []
-        ## this will need to be updated to calculate appropriate reading frame
-        ## when new start codon introduced upstream or broken start gives
-        ## downstream start out of its original reading frame
-        ## for now, assuming that start codon is completely unchanged!     
-        #reading_frame = (start - self.start_codon) % 3  
+        if coding_start < 0 or sequence[coding_start:coding_start+3] != 'ATG':
+            # need to process here re: aberrant start codon!!!
+            # determine why start codon missing . . . and whether upstream context has changed
+            # if no changes upstream and start codon deleted/altered, then 
+            # find next downstream to use (even if more are already existing upstream)
+            # if novel start introduced upstream, then use that one!
+            if sequence.find('ATG') < 0:
+                return []
+            # changes upstream???
+            if False:
+            else:
+                new_start = sequence[coding_start:].find('ATG')
+                if new_start < 0:
+                    return []
+                else:
+                    reading_frame = new_start % 3
+                    coding_start += new_start
+                    if reading_frame != 0:
+                        frame_shifts.append([start, -1, 0, -1, []])            
+            print "YIKES!!!!  WE ARE HERE!!!!!"
+            print sequence[coding_start:coding_start+20]
+            print ref_sequence[ref_start:ref_start+20]
+            return []
+        else:
+            reading_frame = 0
         coordinates = []
         frame_shifts = []
-        # locate position of start codon is NOT always first ATG in sequence!!
-        # this makes some BIG assumptions about self.start_codon!
-        #  MUST VERIFY PROPER COORDINATES / BEHAVIOR HERE, may need add'l code
-        #  to calculate/update transcript relative coordinates
-        if reading_frame != 0:
-            frame_shifts.append([start, -1, 0, -1, []])
+        counter = ref_counter = 0 # hold edited transcript level coordinates
         for seq in annotated_seq:
-            # find transcript-relative coordinates of start codon
-            # skip sequence fragments that occur prior to start codon 
-            if coding_start < 0:
-                if seq[1] == 'R':
-                    if seq[4]*strand + len(seq[0]) > start*strand:
-                        coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                        ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
-                    continue
-                elif seq[2][0][2] == 'D':
-                    if seq[2][0][0]*strand + len(seq[2][0][1]) < start*strand:
-                        ref_counter += len(seq[2][0][1])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[2][0][0]
-                        # this case not handled yet!  NO start codon mods allowed!!!
-                        break
-                elif seq[2][0][2] == 'I':
-                    if seq[4]*strand + len(seq[0]) <= start*strand:
-                        counter += len(seq[0])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] + 1
-                        break
-                elif seq[2][0][2] == 'V':
-                    if seq[4]*strand + len(seq[0]) <= start*strand:
-                        counter += len(seq[0])
-                        ref_counter += len(seq[0])
-                        continue
-                    else:
-                        # these coordinate calcs are NOT verified!!!!!!!
-                        coding_start = counter + start - seq[4] + 1
-                        break                        
             # skip sequence fragments that are not to be reported 
-            if (seq[1] == 'R' or (seq[1] == 'S' and include_somatic < 2) or 
-                (seq[1] == 'G' and include_germline < 2)):
-                if seq[1] == 'R':
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
-                elif seq[2][0][2] != 'D':
+            if seq[1] == 'R':
+                counter += len(seq[0])
+                ref_counter += len(seq[0])
+                continue
+            elif seq[1] == 'S' and include_somatic < 2:
+                if seq[2][0][2] != 'D':
                     counter += len(seq[0])
                     if seq[2][0][2] != 'I':
                         ref_counter += len(seq[0])
                 else:
                     ref_counter += len(seq[2][0][1])
                 continue
-        ############################################################
-        ###### THIS CASE NEEDS TO BE HANDLED!!  FOR NOW, THIS IS BEING IGNORED
-            # handle unique case where variant precedes but includes start codon
-            if seq[2][0][2] != 'D' and seq[4]*strand < start*strand:
-                coordinates.append([start, seq[4] + len(seq[0])*strand,
-                    0, seq[4] + len(seq[0]) - start, seq[2]])
-                break
-            if seq[2][0][2] == 'D' and seq[2][0][0]*strand < start*strand:
-                coordinates.append([start, start + strand, 0, 0, seq[2]])
-                break
-            #    coordinates.append([start, counter + len(seq[0])])
-            #    if seq[1] == 'I' and reading_frame == 0:
-            #        reading_frame = (reading_frame + len(seq[0])) % 3
-            #        if reading_frame != 0:
-            #            frame_shifts.append([counter, counter])
-            #    elif seq[1] == 'I':
-            #        reading_frame = (reading_frame + len(seq[0])) % 3
-            #        if reading_frame == 0:
-            #            frame_shifts[-1][1] = counter + len(seq[0]) 
-            #    counter += len(seq[0])                  #
-            #    continue
-        ############################################################
+            elif seq[1] == 'G' and include_germline < 2:
+                if seq[2][0][2] != 'D':
+                    counter += len(seq[0])
+                    if seq[2][0][2] != 'I':
+                        ref_counter += len(seq[0])
+                else:
+                    ref_counter += len(seq[2][0][1])
+                continue
+            # skip sequence fragments that occur prior to start codon 
+            # handle cases where variant involves start codon
+            if counter < coding_start:
+                if seq[2][0][2] == 'D':
+                    ref_counter += len(seq[2][0][1])
+                    continue
+                elif seq[2][0][2] == 'I':
+                    if counter + len(seq[0]) > coding_start:
+                        coordinates.append([start, seq[4] + len(seq[0])*strand,
+                    0, counter + len(seq[0]) - coding_start, seq[2]])
+                        if reading_frame != 0:
+                            frame_shifts.append([start, -1, 0, -1, []])
+                    counter += len(seq[0])
+                    continue
+                elif seq[2][0][2] == 'V':
+                    if counter + len(seq[0]) > coding_start:
+                        coordinates.append([start, seq[4] + len(seq[0])*strand,
+                    0, counter + len(seq[0]) - coding_start, seq[2]])
+                        if reading_frame != 0:
+                            frame_shifts.append([start, -1, 0, -1, []])
+                    counter += len(seq[0])
+                    ref_counter += len(seq[0])
+                    continue
+                else:
+                    # other variant types not handled
+                    break                        
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D' or seq[2][0][2] == 'I':
                 if reading_frame == 0:
