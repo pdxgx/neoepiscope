@@ -874,6 +874,13 @@ class Transcript(object):
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
+                ##### NEED TO CONSIDER WHAT COULD HAPPEN HERE TO INTRODUCE A NEW
+                #### START CODON . . . for instance:
+                ## 1 - insert an entirely new codon or piece of one
+                ## 2 - Variant could change sequence to create an upstream ATG
+                ## 3 - deletion could create new upstream ATG
+                ## 4 - modification of original start codon by any of these
+                ## THIS NEEDS TO HANDLE NEW CODING START CALC STILL . . .
                 elif seq[2][0][2] == 'D':
                     ref_counter += len(seq[2][0][1])
                     continue
@@ -904,6 +911,7 @@ class Transcript(object):
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
+        ## THIS BLOCK OF CODE IS DEFINITELY NOT COMPLETE YET!!!!  STILL WORKING
         if coding_start < 0 or sequence[coding_start:coding_start+3] != 'ATG':
             # need to process here re: aberrant start codon!!!
             # determine why start codon missing . . . and whether upstream context has changed
@@ -914,6 +922,8 @@ class Transcript(object):
                 return []
             # changes upstream???
             if False:
+                # if changes upstream, i.e. new start codon introduced compared
+                # to ref sequence, then consider using that as a new start!
             else:
                 new_start = sequence[coding_start:].find('ATG')
                 if new_start < 0:
@@ -978,7 +988,7 @@ class Transcript(object):
                     ref_counter += len(seq[0])
                     continue
                 else:
-                    # other variant types not handled
+                    # other variant types not handled at this time
                     break                        
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D' or seq[2][0][2] == 'I':
