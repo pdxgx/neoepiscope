@@ -398,7 +398,11 @@ class Transcript(object):
                 adjusted_intervals.append(intervals[i])
             else:
                 if intervals[i][2] not in deletion_data:
+                    adjusted_intervals.append(intervals[i])
                     deletion_data.append(intervals[i][2])
+                else:
+                    adjusted_intervals.append((intervals[i][0], 'R', 
+                                            tuple(), None))
                 # Adjust mutation class to reflect hybrid mutation if needed
                 if (intervals[i][1] != intervals[i-1][1] and i % 2 and 
                         intervals[i][1] != 'R' and intervals[i-1][1] != 'R'):
@@ -408,7 +412,8 @@ class Transcript(object):
                     mutation_class = intervals[i-1][1]
                 # Adjust mutation data to reflect hybrid mutation if needed
                 if (intervals[i-1][2] != intervals[i][2] and 
-                                intervals[i][2] not in deletion_data):
+                                intervals[i][2] not in deletion_data and
+                                intervals[i-1] != 'R'):
                     mutation_data = []
                     mutation_data.append(intervals[i-1][2])
                     mutation_data.append(intervals[i][2])
@@ -419,8 +424,6 @@ class Transcript(object):
                                                 mutation_class,
                                                 mutation_data,
                                                 adjusted_intervals[i-1][3])
-                adjusted_intervals.append((intervals[i][0], 'R', 
-                                            tuple(), None))
         print intervals
         print
         print adjusted_intervals
@@ -621,11 +624,7 @@ class Transcript(object):
                         fill = pos_to_add - last_pos
                         if intervals[i-1][1] != 'R':
                             if isinstance(intervals[i-1][2], list):
-                                if self.rev_strand:
-                                    genomic_position = max([x[0] for x 
-                                                        in intervals[i-1][2]])
-                                else:
-                                    genomic_position = min([x[0] for x 
+                                genomic_position = min([x[0] for x 
                                                         in intervals[i-1][2]])
                             else:
                                 genomic_position = intervals[i-1][2][0]
@@ -637,7 +636,7 @@ class Transcript(object):
                             self._seq_append(final_seq, seqs[(i-1)/2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(), None,
-                                        seqs[(i-1)/2][1][0] + fill - 1)
+                                        seqs[(i-1)/2][1][0] + last_index + fill - 1)
                         else:
                             self._seq_append(final_seq, seqs[(i-1)/2][0][
                                             last_index:last_index + fill
@@ -646,7 +645,8 @@ class Transcript(object):
                         # If no edits, snv is reference and no insertion
                         try:
                             snv = (seqs[(i-1)/2][0][last_index + fill], 'R', 
-                                    tuple(), None, seqs[(i-1)/2][1][0] + fill + 1)
+                                    tuple(), None, seqs[(i-1)/2][1][0] + fill)
+                            print snv
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
@@ -667,11 +667,7 @@ class Transcript(object):
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         if isinstance(intervals[i-1][2], list):
-                            if self.rev_strand:
-                                genomic_position = max([x[0] for x 
-                                                        in intervals[i-1][2]])
-                            else:
-                                genomic_position = min([x[0] for x 
+                            genomic_position = min([x[0] for x 
                                                         in intervals[i-1][2]])
                         else:
                             genomic_position = intervals[i-1][2][0]
@@ -683,20 +679,16 @@ class Transcript(object):
                         if self.rev_strand:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(), None, 
-                                seqs[(i-1)/2][1][1] + last_index
+                                seqs[(i-1)/2][1][1]
                             )
                         else:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(), None, 
-                                seqs[(i-1)/2][1][0]
+                                seqs[(i-1)/2][1][0] + last_index
                             )
                     if intervals[i][1] != 'R':
                         if isinstance(intervals[i][2], list):
-                            if self.rev_strand:
-                                genomic_position = max([x[0] for x 
-                                                        in intervals[i][2]])
-                            else:
-                                genomic_position = min([x[0] for x 
+                            genomic_position = min([x[0] for x 
                                                         in intervals[i][2]])
                         else:
                             genomic_position = intervals[i][2][0]
@@ -708,11 +700,7 @@ class Transcript(object):
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 if isinstance(intervals[i-1][2], list):
-                                    if self.rev_strand:
-                                        genomic_position = max([x[0] for x 
-                                                        in intervals[i-1][2]])
-                                    else:
-                                        genomic_position = min([x[0] for x 
+                                    genomic_position = min([x[0] for x 
                                                         in intervals[i-1][2]])
                                 else:
                                     genomic_position = intervals[i-1][2][0]
@@ -731,11 +719,7 @@ class Transcript(object):
                                                     seqs[(i-1)/2][1][0])
                             if intervals[i][1] != 'R':
                                 if isinstance(intervals[i][2], list):
-                                    if self.rev_strand:
-                                        genomic_position = max([x[0] for x 
-                                                        in intervals[i][2]])
-                                    else:
-                                        genomic_position = min([x[0] for x 
+                                    genomic_position = min([x[0] for x 
                                                         in intervals[i][2]])
                                 else:
                                     genomic_position = intervals[i][2][0]
@@ -1283,8 +1267,9 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[0], ('AC', 'R', [''], []))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], []))
+            self.assertEqual(seq[0], ('AC', 'R', [''], [], 5248301))
+            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], [], 
+                                        5248299))
             self.assertEqual(len(seq[2][0]), 625)
         def test_inside_insertion(self):
             """Fails if indel within exon is inserted incorrectly"""
@@ -1295,7 +1280,8 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [(5248165, 'Q', 'I')], []))
+            self.assertEqual(seq[1], ('Q', 'S', [(5248165, 'Q', 'I')], [], 
+                                        5248165))
             self.assertEqual(len(seq[0][0]), 136)
             self.assertEqual(len(seq[2][0]), 492)
         def test_adjacent_indel(self):
@@ -1307,11 +1293,11 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [(5248029, 'Q', 'I')], []))
+            self.assertEqual(seq[1], ('Q', 'S', [(5248029, 'Q', 'I')], [], 
+                                        5248029)) 
             self.assertEqual(len(seq[0][0]), 142)
             self.assertEqual(len(seq[2][0]), 486)
         def test_inside_deletion(self):
-            ### FIX
             """Fails if deletion completely within an exon is made improperly"""
             self.transcript.edit(3, 5246700, mutation_type='D')
             self.assertEqual(self.transcript.edits, {})
@@ -1322,9 +1308,10 @@ if __name__ == '__main__':
                                                                    None)])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [(5246700, 'TGA', 'D')], []))
-            self.assertEqual(seq[2], ('TTGCAA', 'R', [''], []))
-            self.assertEqual(len(seq[0][0]), 619)####
+            self.assertEqual(seq[1], ('', 'S', [(5246700, 'TGA', 'D')], [], 
+                                        5246700))
+            self.assertEqual(seq[2], ('TTGCAA', 'R', [''], [], 5246700))
+            self.assertEqual(len(seq[0][0]), 619)
         def test_overlapping_deletion(self):
             """Fails if deletion overlapping a junction is incorrect"""
             self.transcript.edit(10, 5246950, mutation_type='D')
@@ -1338,7 +1325,7 @@ if __name__ == '__main__':
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
             self.assertEqual(seq[1], ('', 'S', [(5246950,'CCAGGAGCTG', 'D')], 
-                                        []))
+                                        [], 5246950))
             self.assertEqual(len(seq[0][0]), 365)
             self.assertEqual(len(seq[2][0]), 256)
         def test_spanning_deletion(self):
@@ -1354,7 +1341,7 @@ if __name__ == '__main__':
             self.assertEqual(len(seq[2][0]), 481)
         def test_compound_variants(self):
             """Fails if transcript with multiple variant types is incorrect"""
-            self.transcript.edit(137, 5248025, mutation_type="D")
+            self.transcript.edit(137, 5248025, mutation_type='D')
             self.transcript.edit('Q', 5248165, mutation_type='I')
             self.transcript.edit('A', 5248299)
             self.assertEqual(len(self.transcript.edits.keys()), 2)
@@ -1370,11 +1357,12 @@ if __name__ == '__main__':
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 7)
-            self.assertEqual(seq[0], ('AC', 'R', [''], []))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], []))
+            self.assertEqual(seq[0], ('AC', 'R', [''], [], 5248301))
+            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], [], 
+                                        5248299))
             self.assertEqual(len(seq[2][0]), 133)
-            self.assertEqual(seq[3], ('Q', 'S', [(5248165, 'Q', 'I')], []))
-            self.assertEqual(seq[4], ('GGGC', 'R', [''], []))
-            self.assertEqual(len(seq[5][2][0][1]), 137)
+            self.assertEqual(seq[3], ('Q', 'S', [(5248165, 'Q', 'I')], [], 
+                                        5248165))
+            self.assertEqual(seq[4], ('GGGC', 'R', [''], [], 5248165))
             self.assertEqual(len(seq[6][0]), 481)
     unittest.main()
