@@ -790,7 +790,13 @@ if __name__ == '__main__':
         #   enumerate neoepitopes
         for affected_transcript in relevant_transcripts:
             # Create transcript object
-            transcript = Transcript(reference_index, 
+            transcriptA = Transcript(reference_index, 
+                            [[str(chrom), 'blah', seq_type, str(start), 
+                              str(end), '.', strand] for (chrom, seq_type, 
+                                                          start, end, strand) 
+                              in cds_dict[transcript_ID]]
+                            )
+            transcriptB = Transcript(reference_index, 
                             [[str(chrom), 'blah', seq_type, str(start), 
                               str(end), '.', strand] for (chrom, seq_type, 
                                                           start, end, strand) 
@@ -802,31 +808,39 @@ if __name__ == '__main__':
                 # Make edits for each mutation
                 for mutation in ht:
                     # Determine type of mutation
-                    if len(mutation[5] == len(mutation[6])):
+                    if len(mutation[2] == len(mutation[3])):
                         mutation_type = 'V'
-                    elif len(mutation[5]) < len(mutation[6]):
+                    elif len(mutation[2]) < len(mutation[3]):
                         mutation_type = 'I'
-                    elif len(mutation[5]) > len(mutation[6]):
+                    elif len(mutation[2]) > len(mutation[3]):
                         mutation_type = 'D'
                     else:
                         mutation_type = '?'
                     # Determine if mutation is somatic or germline
-                    if mutation[7][-1] == "*":
+                    if mutation[6][-1] == "*":
                         mutation_class = 'G'
                     else:
                         mutation_class = 'S'
                     # Determine VAF if available
                     if VAF_pos is not None:
-                        VAF = float(mutation[7][VAF_pos].strip('%'))
+                        VAF = float(mutation[6][VAF_pos].strip('*').strip('%'))
                     else:
                         VAF = None
-                    # Make edit to transcript
-                    transcipt.edit(mutation[3], int(mutation[1]), 
+                    # Determine which copies variant exists on & make edits
+                    if mutation[4] == '1':
+                        transciptA.edit(mutation[3], int(mutation[1]), 
                                     mutation_type=mutation_type, 
                                     mutation_class=mutation_class,
                                     VAF=VAF)
-                ## ENUMERATE NEOEPITOPES HERE
-                transcript.reset(reference=True)
+                    if mutation[5] == '1':
+                        transciptB.edit(mutation[3], int(mutation[1]), 
+                                    mutation_type=mutation_type, 
+                                    mutation_class=mutation_class,
+                                    VAF=VAF)
+                ## ENUMERATE NEOEPITOPES FROM BOTH COPIES HERE
+                ## WILL NEED TO CHECK FOR DUPLICATES BETWEEN THE TWO COPIES
+                transcriptA.reset(reference=True)
+                transcriptB.reset(reference=True)
     else:
         sys.exit("".join([args.subparser_name, 
                             " is not a valid software mode"]))
