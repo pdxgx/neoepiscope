@@ -847,14 +847,21 @@ class Transcript(object):
         strand = 1 - self.rev_strand * 2
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
+        seq_previous = []
         for seq in annotated_seq:
+            print ATGs
+            ATG1 = sequence.find('ATG', ATG_counter1)
+            ATG2 = ref_sequence.find('ATG', ATG_counter2)
             # find transcript-relative coordinates of start codon
             # skip sequence fragments that occur prior to start codon 
             if coding_start < 0:
-                if sequence.find('ATG')[ATG_counter1:] > 0
-                    or ref_sequence.find('ATG')[ATG_counter2:] > 0:
-                    # track ATG counters here and update ATGs list to hold
-                    # both ATG from annotated_seq and ref_seq
+                # build pairwise list of 'ATG's from annotated_seq and reference
+                while (ATG1 > 0 or ATG2 > 0):
+                    ATGs.append([ATG1, ATG2, -1, seq_previous])
+                    ATG_counter1 = max(ATG_counter1, ATG1)
+                    ATG_counter2 = max(ATG_counter2, ATG2)
+                    ATG1 = sequence.find('ATG', ATG_counter1)
+                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 if seq[1] == 'R':
                     if seq[4]*strand + len(seq[0]) > start*strand:
                         coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
@@ -897,6 +904,12 @@ class Transcript(object):
                     ref_counter += len(seq[0])
                     continue
             else:
+                while (ATG1 > 0 or ATG2 > 0):
+                    ATGs.append([ATG1, ATG2, 1, seq_previous])
+                    ATG_counter1 = max(ATG_counter1, ATG1)
+                    ATG_counter2 = max(ATG_counter2, ATG2)
+                    ATG1 = sequence.find('ATG', ATG_counter1)
+                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 if seq[1] == 'R':
                     sequence += seq[0]
                     counter += len(seq[0])
@@ -937,18 +950,18 @@ class Transcript(object):
             if sequence.find('ATG') < 0:
                 return []
             # changes upstream???
-            if False:
+#            if False:
                 # if changes upstream, i.e. new start codon introduced compared
                 # to ref sequence, then consider using that as a new start!
-            else:
-                new_start = sequence[coding_start:].find('ATG')
-                if new_start < 0:
-                    return []
-                else:
-                    reading_frame = new_start % 3
-                    coding_start += new_start
-                    if reading_frame != 0:
-                        frame_shifts.append([start, -1, 0, -1, []])            
+#            else:
+#                new_start = sequence[coding_start:].find('ATG')
+#                if new_start < 0:
+#                    return []
+#                else:
+#                    reading_frame = new_start % 3
+#                    coding_start += new_start
+#                    if reading_frame != 0:
+#                        frame_shifts.append([start, -1, 0, -1, []])            
             print "YIKES!!!!  WE ARE HERE!!!!!"
             print sequence[coding_start:coding_start+20]
             print ref_sequence[ref_start:ref_start+20]
