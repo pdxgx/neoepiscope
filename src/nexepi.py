@@ -261,9 +261,9 @@ def process_haplotypes(hapcut_output, interval_dict):
 
         Return value: dictinoary linking haplotypes to transcripts
     """
-    affected_transcripts = {}
+    affected_transcripts = collections.defaultdict(list)
     with open(hapcut_output, "r") as f:
-        block_transcripts = {}
+        block_transcripts = collections.defaultdict(list)
         for line in f:
             if line.startswith('BLOCK'):
                 # Skip block header lines
@@ -272,16 +272,11 @@ def process_haplotypes(hapcut_output, interval_dict):
                 # Process all transcripts for the block
                 for transcript_ID in block_transcripts:
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
-                    if transcript_ID not in affected_transcripts:
-                        affected_transcripts[transcript_ID] = [
-                                            block_transcripts[transcript_ID]
-                                            ]
-                    else:
-                        affected_transcripts[transcript_ID].append(
+                    affected_transcripts[transcript_ID].append(
                                                 block_transcripts[transcript_ID]
                                                 )
                 # Reset transcript dictionary
-                block_transcripts = {}
+                block_transcripts = collections.defaultdict(list)
             else:
                 # Add mutation to transcript dictionary for the block
                 tokens = line.strip("\n").split()
@@ -290,25 +285,15 @@ def process_haplotypes(hapcut_output, interval_dict):
                 overlapping_transcripts = get_transcripts_from_tree(tokens[3], 
                                                                 int(tokens[4]), 
                                                                 end,
-                                                                interval_dict
-                                                                   )
+                                                                interval_dict)
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele
                 #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
-                    if transcript not in block_transcripts:
-                        block_transcripts[transcript] = [[tokens[3], tokens[4], 
+                    block_transcripts[transcript].append([tokens[3], tokens[4], 
                                                           tokens[5], tokens[6], 
                                                           tokens[1], tokens[2], 
-                                                          tokens[7]]]
-                    else:
-                        block_transcripts[transcript].append([tokens[3], 
-                                                              tokens[4], 
-                                                              tokens[5], 
-                                                              tokens[6], 
-                                                              tokens[1], 
-                                                              tokens[2], 
-                                                              tokens[7]])
+                                                          tokens[7]])
     return affected_transcripts
 
 
