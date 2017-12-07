@@ -826,14 +826,13 @@ class Transcript(object):
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
         # extract nucleotide sequence from annotated_seq
-        sequence = '' # hold flattened nucleotide sequence
-        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
-            include_germline=include_germline > 1)
-        # extract nucleotide sequence from reference_seq
-        ref_sequence = '' # hold flattened nucleotide sequence
-        for seq in reference_seq:
-            if seq[1] == 'R' or seq[2][0][2] != 'D':
-                ref_sequence += seq[0]
+        sequence = ref_sequence = '' # hold flattened nucleotide sequence
+#        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
+#            include_germline=include_germline > 1)
+#        # extract nucleotide sequence from reference_seq
+#        for seq in reference_seq:
+#            if seq[1] == 'R' or seq[2][0][2] != 'D':
+#                ref_sequence += seq[0]
         #
         # some necessary preprocessing here to find the location of the start
         # codon to use -- for majority of cases, this will simply be the
@@ -843,6 +842,8 @@ class Transcript(object):
         # ignoring all of this and assuming start site is the same
         #
         start = self.start_codon
+        ATGs = []
+        ATG_counter1 = ATG_counter2 = 0
         strand = 1 - self.rev_strand * 2
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
@@ -850,11 +851,16 @@ class Transcript(object):
             # find transcript-relative coordinates of start codon
             # skip sequence fragments that occur prior to start codon 
             if coding_start < 0:
+                if sequence.find('ATG')[ATG_counter1:] > 0
+                    or ref_sequence.find('ATG')[ATG_counter2:] > 0:
+                    # track ATG counters here and update ATGs list to hold
+                    # both ATG from annotated_seq and ref_seq
                 if seq[1] == 'R':
                     if seq[4]*strand + len(seq[0]) > start*strand:
                         coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                         ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     sequence += seq[0]
+                    ref_sequence += seq[0]
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
@@ -865,34 +871,60 @@ class Transcript(object):
                 ## 3 - deletion could create new upstream ATG
                 ## 4 - modification of original start codon by any of these
                 ## THIS NEEDS TO HANDLE NEW CODING START CALC STILL . . .
-                elif seq[2][0][2] == 'D':
-                    ref_counter += len(seq[2][0][1])
+
+                if seq[2][0][2] == 'D':
+                    if ((seq[1] == 'G' and include_germline == 1) or 
+                        (seq[1] == 'S' and include_somatic == 1)):                  
+                        ref_sequence += seq[2][0][1]
+                        ref_counter += len(seq[2][0][1])
                     continue
                 elif seq[2][0][2] == 'I':
                     sequence += seq[0]
                     counter += len(seq[0])
+                    if ((seq[1] == 'G' and include_germline == 2) or 
+                        (seq[1] == 'S' and include_somatic == 2)):                  
+                        ref_sequence += seq[0]
+                        ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'V':
                     sequence += seq[0]
                     counter += len(seq[0])
+                    if ((seq[1] == 'G' and include_germline == 2) or 
+                        (seq[1] == 'S' and include_somatic == 2)):                  
+                        ref_sequence += seq[0]
+                    else:
+                        ref_sequence += seq[2][0][1]
                     ref_counter += len(seq[0])
                     continue
             else:
                 if seq[1] == 'R':
                     sequence += seq[0]
                     counter += len(seq[0])
+                    ref_sequence += seq[0]
                     ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'D':
-                    ref_counter += len(seq[2][0][1])
+                    if ((seq[1] == 'G' and include_germline == 1) or 
+                        (seq[1] == 'S' and include_somatic == 1)):                  
+                        ref_sequence += seq[2][0][1]
+                        ref_counter += len(seq[2][0][1])
                     continue
                 elif seq[2][0][2] == 'I':
                     sequence += seq[0]
                     counter += len(seq[0])
+                    if ((seq[1] == 'G' and include_germline == 2) or 
+                        (seq[1] == 'S' and include_somatic == 2)):                  
+                        ref_sequence += seq[0]
+                        ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'V':
                     sequence += seq[0]
                     counter += len(seq[0])
+                    if ((seq[1] == 'G' and include_germline == 2) or 
+                        (seq[1] == 'S' and include_somatic == 2)):                  
+                        ref_sequence += seq[0]
+                    else:
+                        ref_sequence += seq[2][0][1]
                     ref_counter += len(seq[0])
                     continue
         ## THIS BLOCK OF CODE IS DEFINITELY NOT COMPLETE YET!!!!  STILL WORKING
