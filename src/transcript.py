@@ -857,9 +857,24 @@ class Transcript(object):
             if coding_start < 0:
                 # build pairwise list of 'ATG's from annotated_seq and reference
                 while (ATG1 > 0 or ATG2 > 0):
-                    ATGs.append([ATG1, ATG2, -1, seq_previous])
-                    ATG_counter1 = max(ATG_counter1, ATG1)
-                    ATG_counter2 = max(ATG_counter2, ATG2)
+                    if ATG1 > 0 and ATG2 < 0:
+                        ATGs.append([ATG1, -1, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)                        
+                    elif ATG1 < 0 and ATG2 > 0:
+                        ATGs.append([-1, ATG2, -1, seq_previous])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    elif ATG1-ATG_counter1 == ATG2-ATG_counter2:
+                        ATGs.append([ATG1, ATG2, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    elif ATG1-ATG_counter1 < ATG2-ATG_counter2:
+                        ATGs.append([ATG1, -1, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                    else:
+                        ATGs.append([-1, ATG2, -1, seq_previous])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    print sequence[ATG1:]
+                    print ref_sequence[ATG2:]
                     ATG1 = sequence.find('ATG', ATG_counter1)
                     ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 if seq[1] == 'R':
@@ -905,9 +920,25 @@ class Transcript(object):
                     continue
             else:
                 while (ATG1 > 0 or ATG2 > 0):
-                    ATGs.append([ATG1, ATG2, 1, seq_previous])
-                    ATG_counter1 = max(ATG_counter1, ATG1)
-                    ATG_counter2 = max(ATG_counter2, ATG2)
+                    if ATG1 > 0 and ATG2 < 0:
+                        ATGs.append([ATG1, -1, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)                        
+                    elif ATG1 < 0 and ATG2 > 0:
+                        ATGs.append([-1, ATG2, -1, seq_previous])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    elif ATG1-ATG_counter1 == ATG2-ATG_counter2:
+                        ATGs.append([ATG1, ATG2, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    elif ATG1-ATG_counter1 < ATG2-ATG_counter2:
+                        ATGs.append([ATG1, -1, -1, seq_previous])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                    else:
+                        ATGs.append([-1, ATG2, -1, seq_previous])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    print ATG1, ATG2, ATG1-ATG_counter1, ATG2-ATG_counter2
+                    print sequence[ATG1:]
+                    print ref_sequence[ATG2:]
                     ATG1 = sequence.find('ATG', ATG_counter1)
                     ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 if seq[1] == 'R':
