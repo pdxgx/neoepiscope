@@ -1077,19 +1077,30 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if tokens[2] in ['exon', 'start_codon', 'stop_codon']: 
+                if (tokens[2] in ['exon', 'start_codon', 'stop_codon'] and 
+                    'protein_coding' in line): 
                     transcript_id = re.sub(
                                 r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
                                 r'\1', tokens[8]
                                 )
-                    # Create new dictionary entry for new transcripts
-                    cds_dict[transcript_id].append([tokens[0].replace(
-                                                                    "chr", ""),
+                    transcript_type = re.sub(
+                                r'.*transcript_type \"([a-z_]+)\"[;].*', 
+                                r'\1', tokens[8]
+                                )
+                    if transcript_type == 'protein_coding':
+                        # Create new dictionary entry for new transcripts
+                        cds_dict[transcript_id].append([tokens[0].replace(
+                                                                          "chr", 
+                                                                          ""),
                                                     tokens[2], int(tokens[3]), 
                                                     int(tokens[4]), tokens[6]])
     # Sort cds_dict coordinates (left -> right) for each transcript                                
-    for transcript_id in cds_dict:
+    for transcript_id in cds_dict.keys():
             cds_dict[transcript_id].sort(key=lambda x: x[0])
+            seq_types = [x[1] for x in cds_dict[transcript_id]]
+            if 'start_codon' not in seq_types or 'stop_codon' not in seq_types:
+                # Remove incompletely annotated transcript
+                del cds_dict[transcript_id]
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = "".join([dictdir, "/", "transcript_to_CDS.pickle"])
