@@ -825,6 +825,7 @@ class Transcript(object):
             return []
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
+        # if no edits to return, then skip all next steps and return []
         # extract nucleotide sequence from annotated_seq
         sequence = ref_sequence = '' # hold flattened nucleotide sequence
 #        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
@@ -849,6 +850,9 @@ class Transcript(object):
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
         seq_previous = []
+        # the ATG stuff here is working retrospectively, so may need to run loop
+        # one additional time at end to ensure capture start (i.e. what if it occurs
+        # during only or final segment in annotated_seq???)
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
             ATG1 = sequence.find('ATG', ATG_counter1)
@@ -878,7 +882,8 @@ class Transcript(object):
                 ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_counter1 = max(0, len(sequence)-2)
             ATG_counter2 = max(0, len(ref_sequence)-2)
-            seq_previous = seq[2]
+            if seq != []:
+                seq_previous = seq[2]
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
