@@ -844,6 +844,7 @@ class Transcript(object):
         start = self.start_codon
         ATGs = []
         ATG_counter1 = ATG_counter2 = 0
+        ATG_limit = 2
         strand = 1 - self.rev_strand * 2
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
@@ -854,7 +855,10 @@ class Transcript(object):
             ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_temp1 = ATG_counter1
             ATG_temp2 = ATG_counter2
-            while (ATG1 > 0 or ATG2 > 0):
+            while (ATG1 > 0 or ATG2 > 0) and ATG_limit > 0:
+                if (coding_start > 0 and ATG1 > 0):
+                    ATG_limit -= 1
+#            while (ATG1 > 0 or ATG2 > 0):
                 if ATG1 > 0 and ATG2 < 0:
                     ATGs.append([ATG1, -1, ATG1 >= coding_start, seq_previous])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -875,8 +879,8 @@ class Transcript(object):
                 ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_counter1 = max(0, len(sequence)-2)
             ATG_counter2 = max(0, len(ref_sequence)-2)
-            # find transcript-relative coordinates of start codon
-            # skip sequence fragments that occur prior to start codon 
+            # find transcript-relative coordinates of start codons
+            # skip sequence fragments that occur prior to start codons 
             if coding_start < 0:
                 if seq[1] == 'R':
                     if seq[4]*strand + len(seq[0]) > start*strand:
