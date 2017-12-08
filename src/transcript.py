@@ -820,6 +820,7 @@ class Transcript(object):
             return []
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
+        annotated_seq.append([])
         # if no edits to return, then skip all next steps and return []
         # extract nucleotide sequence from annotated_seq
         sequence = ref_sequence = '' # hold flattened nucleotide sequence
@@ -838,6 +839,10 @@ class Transcript(object):
         # ignoring all of this and assuming start site is the same
         #
         start = self.start_codon
+        # hold list of ATGs (from 5' UTR, start, and one downstream of start)
+        # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
+        # (-1 if absent), mutation information, is downstream of start codon?, 
+        # is ATG new in annotated seq?, is ATG missing in annotated seq?]
         ATGs = []
         ATG_counter1 = ATG_counter2 = 0
         ATG_limit = 2
@@ -845,6 +850,8 @@ class Transcript(object):
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
         seq_previous = []
+        new_ATG_upstream = False
+        missing_start_ATG = False
         # the ATG stuff here is working retrospectively, so may need to run loop
         # one additional time at end to ensure capture start (i.e. what if it occurs
         # during only or final segment in annotated_seq???)
@@ -858,27 +865,33 @@ class Transcript(object):
                 if (coding_start > 0 and ATG1 > 0):
                     ATG_limit -= 1
                 if ATG1 > 0 and ATG2 < 0:
-                    ATGs.append([ATG1, -1, ATG1 >= coding_start, seq_previous])
+                    ATGs.append([ATG1, -1, seq_previous,
+                        ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 elif ATG1 < 0 and ATG2 > 0:
-                    ATGs.append([-1, ATG2, ATG2 >= ref_start, seq_previous])
+                    ATGs.append([-1, ATG2, seq_previous,
+                        ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
-                    ATGs.append([ATG1, ATG2, ATG2 >= ref_start, seq_previous])
+                    ATGs.append([ATG1, ATG2, seq_previous,
+                        ATG2 >= ref_start and ref_start >= 0, False, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
-                    ATGs.append([ATG1, -1, ATG1 >= coding_start, seq_previous])
+                    ATGs.append([ATG1, -1, seq_previous,
+                        ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 else:
-                    ATGs.append([-1, ATG2, ATG2 >= ref_start, seq_previous])
+                    ATGs.append([-1, ATG2, seq_previous,
+                        ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 ATG1 = sequence.find('ATG', ATG_counter1)
                 ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_counter1 = max(0, len(sequence)-2)
             ATG_counter2 = max(0, len(ref_sequence)-2)
-            if seq != []:
-                seq_previous = seq[2]
+            if seq == []:
+                break
+            seq_previous = seq[2]
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
@@ -942,7 +955,7 @@ class Transcript(object):
 #                        frame_shifts.append([start, -1, 0, -1, []]) 
         print sequence[coding_start:]
         print ref_sequence[ref_start:]
-        return []           
+        return ATGs         
         reading_frame = 0
         coordinates = []
         frame_shifts = []
