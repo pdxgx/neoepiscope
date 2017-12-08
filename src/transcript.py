@@ -1095,7 +1095,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
 
         Return value: dictionary
     """
-    cds_dict = {}
+    cds_dict = collections.defaultdict(list)
     # Parse GTF to obtain CDS/stop codon info
     with open(gtf_file, "r") as f:
         for line in f:
@@ -1107,20 +1107,10 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                 r'\1', tokens[8]
                                 )
                     # Create new dictionary entry for new transcripts
-                    if transcript_id not in cds_dict:
-                        cds_dict[transcript_id] = [[tokens[0].replace(
+                    cds_dict[transcript_id].append([tokens[0].replace(
                                                                     "chr", ""),
-                                                        tokens[2], 
-                                                        int(tokens[3]), 
-                                                        int(tokens[4]), 
-                                                        tokens[6]]]
-                    else:
-                        cds_dict[transcript_id].append([tokens[0].replace(
-                                                                    "chr", ""),
-                                                            tokens[2], 
-                                                            int(tokens[3]), 
-                                                            int(tokens[4]), 
-                                                            tokens[6]])
+                                                    tokens[2], int(tokens[3]), 
+                                                    int(tokens[4]), tokens[6]])
     # Sort cds_dict coordinates (left -> right) for each transcript                                
     for transcript_id in cds_dict:
             cds_dict[transcript_id].sort(key=lambda x: x[0])
@@ -1181,6 +1171,8 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     """
     transcript_ids = []
     # Interval coordinates are inclusive of start, exclusive of stop
+    if chrom not in cds_tree:
+        return []
     cds = list(cds_tree[chrom].search(start, stop))
     for cd in cds:
         if cd.data not in transcript_ids:
