@@ -424,10 +424,6 @@ class Transcript(object):
                                                 mutation_class,
                                                 mutation_data,
                                                 adjusted_intervals[i-1][3])
-        print intervals
-        print
-        print adjusted_intervals
-        print
         return (edits, adjusted_intervals)
 
     def save(self):
@@ -646,7 +642,6 @@ class Transcript(object):
                         try:
                             snv = (seqs[(i-1)/2][0][last_index + fill], 'R', 
                                     tuple(), None, seqs[(i-1)/2][1][0] + fill)
-                            print snv
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
@@ -1245,32 +1240,32 @@ if __name__ == '__main__':
             self.transcript.edit('G', 5248155)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248154], [('G', 'V', 'S', 
-                                                              (5248155, 'G', 
+                                                              (5248155, 'C', 
                                                                 'V'), None)])
             self.assertEqual(relevant_edits[0], {})
-            self.assertEqual(relevant_edits[1], [(5246692, 'R', '', None),
-                                                 (5246955, 'R', '', None),
-                                                 (5247805, 'R', '', None), 
-                                                 (5248028, 'R', '', None), 
-                                                 (5248158, 'R', '', None), 
-                                                 (5248300, 'R', '', None)])
+            self.assertEqual(relevant_edits[1], [(5246692, 'R', (), None),
+                                                 (5246955, 'R', (), None),
+                                                 (5247805, 'R', (), None), 
+                                                 (5248028, 'R', (), None), 
+                                                 (5248158, 'R', (), None), 
+                                                 (5248300, 'R', (), None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 1)
         def test_relevant_edit(self):
             """Fails if edit is not made for position within exon"""
             self.transcript.edit('A', 5248299)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 'S',
-                                                              (5248299, 'A', 
+                                                              (5248299, 'T', 
                                                                 'V'), None)])
             self.assertEqual(relevant_edits[0][5248298], [('A', 'V', 'S',
-                                                          (5248299, 'A', 
+                                                          (5248299, 'T', 
                                                                 'V'), None)])
-            self.assertEqual(relevant_edits[1], [(5246692, 'R', '', None),
-                                                 (5246955, 'R', '', None),
-                                                 (5247805, 'R', '', None), 
-                                                 (5248028, 'R', '', None), 
-                                                 (5248158, 'R', '', None), 
-                                                 (5248300, 'R', '', None)])
+            self.assertEqual(relevant_edits[1], [(5246692, 'R', (), None),
+                                                 (5246955, 'R', (), None),
+                                                 (5247805, 'R', (), None), 
+                                                 (5248028, 'R', (), None), 
+                                                 (5248158, 'R', (), None), 
+                                                 (5248300, 'R', (), None)])
             self.assertEqual(len(self.transcript.annotated_seq()), 3)
             self.assertEqual(self.transcript.annotated_seq()[1][0], 'T')
             self.assertEqual(self.transcript.annotated_seq()[1][1], 'S')
@@ -1287,7 +1282,7 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
                                                                    (5248299, 
-                                                                    'A', 'V'),
+                                                                    'T', 'V'),
                                                                     None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
                                 [(5246692, 5246695, 'S', (5246694, 'TTG', 
@@ -1299,14 +1294,14 @@ if __name__ == '__main__':
             self.transcript.save()
             self.transcript.edit('G', 5248165)
             self.assertEqual(self.transcript.edits[5248164], [('G', 'V', 'S',
-                                                              (5248165, 'G',
+                                                              (5248165, 'C',
                                                                 'V'), None)])
             self.transcript.reset(reference=False)
             self.assertNotIn(2182387, self.transcript.edits)
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
                                                                    (5248299, 
-                                                                    'A', 'V'),
+                                                                    'T', 'V'),
                                                                     None)])
             self.assertEqual(self.transcript.last_deletion_intervals,
                                 [(5246692, 5246695, 'S', (5246694, 'TTG', 
@@ -1318,13 +1313,13 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
                                                                     'S', 
                                                                    (5248299, 
-                                                                    'A', 'V'),
+                                                                    'T', 'V'),
                                                                     None)])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[0], ('AC', 'R', [''], [], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], [], 
+            self.assertEqual(seq[0], ('AC', 'R', [()], [], 5248301))
+            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'T', 'V')], [], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 625)
         def test_inside_insertion(self):
@@ -1366,7 +1361,7 @@ if __name__ == '__main__':
             self.assertEqual(len(seq), 3)
             self.assertEqual(seq[1], ('', 'S', [(5246700, 'TGA', 'D')], [], 
                                         5246700))
-            self.assertEqual(seq[2], ('TTGCAA', 'R', [''], [], 5246700))
+            self.assertEqual(seq[2], ('TTGCAA', 'R', [()], [], 5246699))
             self.assertEqual(len(seq[0][0]), 619)
         def test_overlapping_deletion(self):
             """Fails if deletion overlapping a junction is incorrect"""
@@ -1404,7 +1399,7 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
                                                                     'S', 
                                                                    (5248299, 
-                                                                    'A', 'V'),
+                                                                    'T', 'V'),
                                                                     None)]) 
             self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
                                                                 (5248165, 'Q',
@@ -1413,12 +1408,12 @@ if __name__ == '__main__':
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 7)
-            self.assertEqual(seq[0], ('AC', 'R', [''], [], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'A', 'V')], [], 
+            self.assertEqual(seq[0], ('AC', 'R', [()], [], 5248301))
+            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'T', 'V')], [], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 133)
             self.assertEqual(seq[3], ('Q', 'S', [(5248165, 'Q', 'I')], [], 
                                         5248165))
-            self.assertEqual(seq[4], ('GGGC', 'R', [''], [], 5248165))
+            self.assertEqual(seq[4], ('GGGC', 'R', [()], [], 5248165))
             self.assertEqual(len(seq[6][0]), 481)
     unittest.main()
