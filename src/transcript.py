@@ -865,6 +865,8 @@ class Transcript(object):
                 if (coding_start > 0 and ATG1 > 0):
                     ATG_limit -= 1
                 if ATG1 > 0 and ATG2 < 0:
+                    if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
+                        new_ATG_upstream = True
                     ATGs.append([ATG1, -1, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -878,6 +880,8 @@ class Transcript(object):
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
+                    if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
+                        new_ATG_upstream = True
                     ATGs.append([ATG1, -1, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -936,13 +940,6 @@ class Transcript(object):
                     ref_sequence += seq[2][0][1]
                 ref_counter += len(seq[0])
                 continue
-                ##### NEED TO CONSIDER WHAT COULD HAPPEN HERE TO INTRODUCE A NEW
-                #### START CODON . . . for instance:
-                ## 1 - insert an entirely new codon or piece of one
-                ## 2 - Variant could change sequence to create an upstream ATG
-                ## 3 - deletion could create new upstream ATG
-                ## 4 - modification of original start codon by any of these
-                ## THIS NEEDS TO HANDLE NEW CODING START CALC STILL . . .
             # need to process here re: aberrant start codon!!!
             # determine why start codon missing . . . and whether upstream context has changed
             # if no changes upstream and start codon deleted/altered, then 
@@ -953,13 +950,36 @@ class Transcript(object):
 #                    coding_start += new_start
 #                    if reading_frame != 0:
 #                        frame_shifts.append([start, -1, 0, -1, []]) 
-        print sequence[coding_start:]
-        print ref_sequence[ref_start:]
-        return ATGs         
+        # find location of start codon in annotated_seq v. reference
+        if ATGs == []:
+            return []
+        start_codon = []
         reading_frame = 0
         coordinates = []
         frame_shifts = []
         counter = ref_counter = 0 # hold edited transcript level coordinates
+        for ATG in ATGs:
+            if not ATG[3] or ATG[5]:
+                continue
+            start_codon = ATG
+            break
+        if start_codon == [] and new_ATG_upstream:
+            for ATG in ATGs[::-1]:
+                if not ATG[3] and not ATG[4]:
+                    continue
+                start_codon = ATG
+                break
+            new_start = start_codon[1]
+            frame_shifts.append([start, -1, 0, -1, start_codon[3]])
+        coding_start = start_codon[0]
+        new_start = start_codon[1]
+        reading_frame = (new_start - ref_start) % 3
+#        print sequence[coding_start:]
+#        print ref_sequence[new_start:]
+#        print ref_sequence[ref_start:]        
+#        print start_codon, ref_start, coding_start
+#        return ATGs
+        annotated_seq.pop()
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
             if seq[1] == 'R':
@@ -992,16 +1012,12 @@ class Transcript(object):
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[4] + len(seq[0])*strand,
                     0, counter + len(seq[0]) - coding_start, seq[2]])
-                        if reading_frame != 0:
-                            frame_shifts.append([start, -1, 0, -1, []])
                     counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'V':
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[4] + len(seq[0])*strand,
                     0, counter + len(seq[0]) - coding_start, seq[2]])
-                        if reading_frame != 0:
-                            frame_shifts.append([start, -1, 0, -1, []])
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
