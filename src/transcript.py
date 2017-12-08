@@ -858,7 +858,6 @@ class Transcript(object):
             while (ATG1 > 0 or ATG2 > 0) and ATG_limit > 0:
                 if (coding_start > 0 and ATG1 > 0):
                     ATG_limit -= 1
-#            while (ATG1 > 0 or ATG2 > 0):
                 if ATG1 > 0 and ATG2 < 0:
                     ATGs.append([ATG1, -1, ATG1 >= coding_start, seq_previous])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -866,86 +865,64 @@ class Transcript(object):
                     ATGs.append([-1, ATG2, ATG2 >= ref_start, seq_previous])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
-                    ATGs.append([ATG1, ATG2, ATG1 >= coding_start, seq_previous])
+                    ATGs.append([ATG1, ATG2, ATG2 >= ref_start, seq_previous])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
                     ATGs.append([ATG1, -1, ATG1 >= coding_start, seq_previous])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 else:
-                    ATGs.append([-1, ATG2, ATG_counter2 >= ref_start, seq_previous])
+                    ATGs.append([-1, ATG2, ATG2 >= ref_start, seq_previous])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 ATG1 = sequence.find('ATG', ATG_counter1)
                 ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_counter1 = max(0, len(sequence)-2)
             ATG_counter2 = max(0, len(ref_sequence)-2)
+            seq_previous = seq[2]
             # find transcript-relative coordinates of start codons
-            # skip sequence fragments that occur prior to start codons 
-            if coding_start < 0:
-                if seq[1] == 'R':
-                    if seq[4]*strand + len(seq[0]) > start*strand:
-                        coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                        ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    sequence += seq[0]
-                    ref_sequence += seq[0]
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
-                    continue
-                if seq[2][0][2] == 'D':
-                    if ((seq[1] == 'G' and include_germline == 1) or 
-                        (seq[1] == 'S' and include_somatic == 1)):                  
-                        ref_sequence += seq[2][0][1]
-                        ref_counter += len(seq[2][0][1])
-                    continue
-                elif seq[2][0][2] == 'I':
-                    sequence += seq[0]
-                    counter += len(seq[0])
-                    if ((seq[1] == 'G' and include_germline == 2) or 
-                        (seq[1] == 'S' and include_somatic == 2)):                  
-                        ref_sequence += seq[0]
-                        ref_counter += len(seq[0])
-                    continue
-                elif seq[2][0][2] == 'V':
-                    sequence += seq[0]
-                    counter += len(seq[0])
-                    if ((seq[1] == 'G' and include_germline == 2) or 
-                        (seq[1] == 'S' and include_somatic == 2)):                  
-                        ref_sequence += seq[0]
-                    else:
-                        ref_sequence += seq[2][0][1]
-                    ref_counter += len(seq[0])
-                    continue
-            else:
-                if seq[1] == 'R':
-                    sequence += seq[0]
-                    counter += len(seq[0])
+            # flatten strings from annotated and reference seqs 
+            if seq[1] == 'R':
+                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                sequence += seq[0]
+                ref_sequence += seq[0]
+                counter += len(seq[0])
+                ref_counter += len(seq[0])
+                continue
+            elif seq[2][0][2] == 'D':
+                if ref_start < 0 and seq[4]*strand + len(seq[2][0][1]) > start*strand:
+                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                if ((seq[1] == 'G' and include_germline == 1) or 
+                    (seq[1] == 'S' and include_somatic == 1)):                  
+                    ref_sequence += seq[2][0][1]
+                    ref_counter += len(seq[2][0][1])
+                continue
+            elif seq[2][0][2] == 'I':
+                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                sequence += seq[0]
+                counter += len(seq[0])
+                if ((seq[1] == 'G' and include_germline == 2) or 
+                    (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
-                    continue
-                elif seq[2][0][2] == 'D':
-                    if ((seq[1] == 'G' and include_germline == 1) or 
-                        (seq[1] == 'S' and include_somatic == 1)):                  
-                        ref_sequence += seq[2][0][1]
-                        ref_counter += len(seq[2][0][1])
-                    continue
-                elif seq[2][0][2] == 'I':
-                    sequence += seq[0]
-                    counter += len(seq[0])
-                    if ((seq[1] == 'G' and include_germline == 2) or 
-                        (seq[1] == 'S' and include_somatic == 2)):                  
-                        ref_sequence += seq[0]
-                        ref_counter += len(seq[0])
-                    continue
-                elif seq[2][0][2] == 'V':
-                    sequence += seq[0]
-                    counter += len(seq[0])
-                    if ((seq[1] == 'G' and include_germline == 2) or 
-                        (seq[1] == 'S' and include_somatic == 2)):                  
-                        ref_sequence += seq[0]
-                    else:
-                        ref_sequence += seq[2][0][1]
-                    ref_counter += len(seq[0])
-                    continue
+                continue
+            elif seq[2][0][2] == 'V':
+                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                sequence += seq[0]
+                counter += len(seq[0])
+                if ((seq[1] == 'G' and include_germline == 2) or 
+                    (seq[1] == 'S' and include_somatic == 2)):                  
+                    ref_sequence += seq[0]
+                else:
+                    ref_sequence += seq[2][0][1]
+                ref_counter += len(seq[0])
+                continue
                 ##### NEED TO CONSIDER WHAT COULD HAPPEN HERE TO INTRODUCE A NEW
                 #### START CODON . . . for instance:
                 ## 1 - insert an entirely new codon or piece of one
@@ -959,18 +936,13 @@ class Transcript(object):
             # find next downstream to use (even if more are already existing upstream)
             # if novel start introduced upstream, then use that one!
             # changes upstream???
-#            if False:
-                # if changes upstream, i.e. new start codon introduced compared
-                # to ref sequence, then consider using that as a new start!
-#            else:
-#                new_start = sequence[coding_start:].find('ATG')
-#                if new_start < 0:
-#                    return []
-#                else:
 #                    reading_frame = new_start % 3
 #                    coding_start += new_start
 #                    if reading_frame != 0:
-#                        frame_shifts.append([start, -1, 0, -1, []])            
+#                        frame_shifts.append([start, -1, 0, -1, []]) 
+        print sequence[coding_start:]
+        print ref_sequence[ref_start:]
+        return []           
         reading_frame = 0
         coordinates = []
         frame_shifts = []
