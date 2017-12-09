@@ -852,6 +852,7 @@ class Transcript(object):
         seq_previous = []
         new_ATG_upstream = False
         missing_start_ATG = False
+        ref_frame = []
         # the ATG stuff here is working retrospectively, so may need to run loop
         # one additional time at end to ensure capture start (i.e. what if it occurs
         # during only or final segment in annotated_seq???)
@@ -867,11 +868,11 @@ class Transcript(object):
                 if ATG1 > 0 and ATG2 < 0:
                     if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
                         new_ATG_upstream = True
-                    ATGs.append([ATG1, -1, seq_previous,
+                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 elif ATG1 < 0 and ATG2 > 0:
-                    ATGs.append([-1, ATG2, seq_previous,
+                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                         ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
@@ -882,11 +883,11 @@ class Transcript(object):
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
                     if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
                         new_ATG_upstream = True
-                    ATGs.append([ATG1, -1, seq_previous,
+                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 else:
-                    ATGs.append([-1, ATG2, seq_previous,
+                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                         ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 ATG1 = sequence.find('ATG', ATG_counter1)
@@ -895,7 +896,7 @@ class Transcript(object):
             ATG_counter2 = max(0, len(ref_sequence)-2)
             if seq == []:
                 break
-            seq_previous = seq[2]
+            seq_previous = seq
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
@@ -905,6 +906,7 @@ class Transcript(object):
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
+                ref_frame.append([ref_counter, self.reading_frame(seq[4]), len(seq[0])])
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][2] == 'D':
@@ -914,8 +916,9 @@ class Transcript(object):
                 if ((seq[1] == 'G' and include_germline == 1) or 
                     (seq[1] == 'S' and include_somatic == 1)):                  
                     ref_sequence += seq[2][0][1]
+                    ref_frame.append([ref_counter, self.reading_frame(seq[2][0][0]), len(seq[2][0][1])])
                     ref_counter += len(seq[2][0][1])
-                continue
+                continue    
             elif seq[2][0][2] == 'I':
                 if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
@@ -925,6 +928,7 @@ class Transcript(object):
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
+                    ref_frame.append([ref_counter, self.reading_frame(seq[4]), len(seq[0])])
                     ref_counter += len(seq[0])
                 continue
             elif seq[2][0][2] == 'V':
@@ -938,6 +942,7 @@ class Transcript(object):
                     ref_sequence += seq[0]
                 else:
                     ref_sequence += seq[2][0][1]
+                ref_frame.append([ref_counter, self.reading_frame(seq[4]), len(seq[0])])
                 ref_counter += len(seq[0])
                 continue
             # need to process here re: aberrant start codon!!!
@@ -969,16 +974,28 @@ class Transcript(object):
                     continue
                 start_codon = ATG
                 break
-            new_start = start_codon[1]
             frame_shifts.append([start, -1, 0, -1, start_codon[3]])
-        coding_start = start_codon[0]
         new_start = start_codon[1]
+        coding_start = start_codon[0]
         reading_frame = (new_start - ref_start) % 3
-#        print sequence[coding_start:]
-#        print ref_sequence[new_start:]
-#        print ref_sequence[ref_start:]        
-#        print start_codon, ref_start, coding_start
-#        return ATGs
+        ##  STORAGE OF READING FRAME StRINGS HERE FOR COMPARISON/TRACKING
+        # (i.e. yet another method for tracking/matching reading frames)
+        # problem with all of this is if splicing variation or for instance a 
+        # deletion cuts across an entire intron . . . does the deleted sequence
+        # need to get added to the ref_sequence?  NO  This complicates significantly
+        # .. . need to clarify behavior to avoid introducing problem.
+        # implemented frame_shift function here to get coords for each seq fragment
+        # that was stored in ref_frame list!!
+        ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
+        ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
+        print sequence[coding_start:]
+        print ref_sequence[new_start:]
+        print ref_sequence[ref_start:]
+        print ann_read_frame, len(ann_read_frame)        
+        print ref_read_frame, len(ref_read_frame)        
+        print start_codon, ref_start, coding_start
+        print ref_frame
+        return ATGs
         annotated_seq.pop()
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
