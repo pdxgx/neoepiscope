@@ -986,6 +986,9 @@ class Transcript(object):
         # .. . need to clarify behavior to avoid introducing problem.
         # implemented frame_shift function here to get coords for each seq fragment
         # that was stored in ref_frame list!!
+        ##  OK, really need annotated seq to smartly process deletion_intervals to respect
+        # the CDS coordinates . . . future splicing variation can EDIT these CDS coordinates
+        # which would be the first thing to happen before any further processing . . .
         ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
         ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
         print sequence[coding_start:]
