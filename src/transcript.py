@@ -109,6 +109,9 @@ class Transcript(object):
         assert len(CDS) > 0
         self.bowtie_reference_index = bowtie_reference_index
         self.intervals = []
+        # Internal representation is 0-based
+        self._start_codon, self._stop_codon = None, None
+        # Public representation is 1-based
         self.start_codon, self.stop_codon = None, None
         last_chrom, last_strand = None, None
         for line in CDS:
@@ -132,9 +135,12 @@ class Transcript(object):
                         [int(line[3]) - 2, int(line[4]) - 1]
                     )
             elif line[2] == "start_codon":
-                self.start_codon = int(line[3]) - 1
+                # 1-based public, 0-based private
+                self.start_codon = int(line[3])
+                self._start_codon = self.start_codon - 1
             elif line[2] == "stop_codon":
-                self.stop_codon = int(line[3]) - 1
+                self.stop_codon = int(line[3])
+                self._stop_codon = self.stop_codon - 1
             else:
                 raise NotImplementedError(
                                     'GTF sequence type not currently supported'
@@ -160,14 +166,14 @@ class Transcript(object):
         self.last_deletion_intervals = []
         # Need to sort to bisect_left properly when editing!
         self.intervals.sort()
-        if self.start_codon:
+        if self._start_codon:
             self.start_codon_index = bisect.bisect_left(self.intervals, 
-                                                        self.start_codon)
+                                                        self._start_codon)
         else:
             self.start_codon_index = None
         if self.stop_codon:
             self.stop_codon_index = bisect.bisect_left(self.intervals, 
-                                                        self.stop_codon)
+                                                        self._stop_codon)
         else:
             self.stop_codon_index = None
 
@@ -452,15 +458,15 @@ class Transcript(object):
         if self.rev_strand:
             if pos_index == self.start_codon_index:
                 # Within the same interval as the start codon
-                if pos > self.start_codon + 2:
+                if pos > self._start_codon + 2:
                     # Outside coding sequence
                     return None
-                return ((self.start_codon + 2 - pos) % 3)
+                return ((self._start_codon + 2 - pos) % 3)
             else:
-                if pos > self.start_codon or pos < self.stop_codon:
+                if pos > self._start_codon or pos < self._stop_codon:
                     return None
                 seq_length = ((self.intervals[pos_index] - pos + 1) + 
-                              (self.start_codon + 2 - 
+                              (self._start_codon + 2 - 
                                 self.intervals[self.start_codon_index - 1]) + 
                               sum([self.intervals[i+1] - self.intervals[i]
                                 for i in xrange(pos_index + 1, 
@@ -469,15 +475,15 @@ class Transcript(object):
                 return (seq_length - 1) % 3
         else:
             if pos_index == self.start_codon_index:
-                if pos < self.start_codon:
+                if pos < self._start_codon:
                     return None
-                return (pos - self.start_codon) % 3
+                return (pos - self._start_codon) % 3
             else:
-                if pos < self.start_codon or pos > self.stop_codon:
+                if pos < self._start_codon or pos > self._stop_codon:
                     return None
                 seq_length = ((pos - self.intervals[pos_index - 1]) + 
                               (self.intervals[self.start_codon_index] - 
-                                self.start_codon + 1) + 
+                                self._start_codon + 1) + 
                               sum([self.intervals[i+1] - self.intervals[i]
                                 for i in xrange(self.start_codon_index + 1,
                                         pos_index - 1, 2)]))
@@ -897,7 +903,8 @@ class Transcript(object):
             ATG_counter2 = max(0, len(ref_sequence)-2)
             if seq == []:
                 break
-            seq_previous = seq
+#            seq_previous = seq
+            seq_previous = 9
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
@@ -1048,7 +1055,6 @@ class Transcript(object):
         annotated_seq.pop()
         for i in range(0,len(annotated_seq)):
             print annotated_seq[i],annotated_seq[i][4], ref_frame[annotated_seq[i][4]]
-        return ATGs
         print sequence[coding_start:]
         print ref_sequence[new_start:]
         print ref_sequence[ref_start:]
@@ -1102,11 +1108,11 @@ class Transcript(object):
                 ## e.g. if ref_frame[seq[4]][0] == 0 and ref_frame[seq[4]][0] != ref_frame[seq[4]+1][0]
                 ## --> this is a frame shifting variant!!
                 if reading_frame == 0:
-                    reading_frame = (reading_frame + len(seq[2][0][1])) % 3
+                    reading_frame = (ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
                     if reading_frame != 0:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                 else:
-                    reading_frame = (reading_frame + len(seq[2][0][1])) % 3
+                    reading_frame = (reading_frame + ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
                     if reading_frame == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
@@ -1115,7 +1121,7 @@ class Transcript(object):
                                 frame_shifts[i][3] = counter + len(seq[0])
                             else:
                                 break
-                    elif len(seq[2][0][1]) % 3 != 0:
+                    elif ref_frame[seq[4]][0] != ref_frame[seq[4]][1]:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
             # log variants                    
             coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
