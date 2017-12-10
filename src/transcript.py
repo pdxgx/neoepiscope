@@ -914,46 +914,47 @@ class Transcript(object):
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
-                ref_frame[seq[4]] = [self.reading_frame(seq[4]), 
-                    self.reading_frame(seq[4]+len(seq[0])-1), ref_counter]
+                # MAKE MORE EFFICIENT BY USING LENGTH INSTEAD OF 2x READING FRAME CALLS
+#                ref_frame[seq[4]] = [self.reading_frame(seq[4]), 
+#                    self.reading_frame(seq[4]+len(seq[0])-1), ref_counter]
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][2] == 'D':
                 if ref_start < 0 and seq[4]*strand + len(seq[2][0][1]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                read_frame1 = self.reading_frame(seq[4])
-                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]) - 1)
-                if ((seq[1] == 'G' and include_germline == 2) or 
-                    (seq[1] == 'S' and include_somatic == 2)):                  
+#                read_frame1 = self.reading_frame(seq[4])
+#                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]) - 1)
+#                if ((seq[1] == 'G' and include_germline == 2) or 
+#                    (seq[1] == 'S' and include_somatic == 2)):                  
 #                    ref_sequence += seq[2][0][1]
-                    if read_frame1 is not None and read_frame2 is not None:
-                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
-                            (read_frame1+shift) % 3, ref_counter]
-                        shift = (shift + read_frame1-read_frame2) % 3
-                    elif read_frame1 is not None:
+#                    if read_frame1 is not None and read_frame2 is not None:
+#                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
+#                            (read_frame1+shift) % 3, ref_counter]
+#                        shift = (shift + read_frame1-read_frame2) % 3
+#                    elif read_frame1 is not None:
                         # this part not handled yet!!
                         # (i.e. what happens if delete part of exon into intron)
-                        break
-                    elif read_frame2 is not None:
+#                        break
+#                    elif read_frame2 is not None:
                         # this part not handled yet!!
                         # (i.e. what happens if delete part of intron into exon)
-                        break
-                    else:
-                        ref_frame[seq[4]] = [None, None, ref_counter]
+#                        break
+#                    else:
+#                        ref_frame[seq[4]] = [None, None, ref_counter]
 #                    ref_counter += len(seq[2][0][1])
-                else:
-                    if read_frame1 is not None and read_frame2 is not None:
-                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
-                            (read_frame1+shift) % 3, ref_counter]
-                    elif read_frame1 is not None:
-                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, None, 
-                            ref_counter]
-                    elif read_frame2 is not None:
-                        ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
-                            ref_counter]
-                    else:
-                        ref_frame[seq[4]] = [None, None, ref_counter]
+#                else:
+ #                   if read_frame1 is not None and read_frame2 is not None:
+ #                       ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
+ #                           (read_frame1+shift) % 3, ref_counter]
+#                    elif read_frame1 is not None:
+#                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, None, 
+#                            ref_counter]
+#                    elif read_frame2 is not None:
+#                        ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
+#                            ref_counter]
+#                    else:
+#                        ref_frame[seq[4]] = [None, None, ref_counter]
                 continue    
             elif seq[2][0][2] == 'I':
                 if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
@@ -961,23 +962,23 @@ class Transcript(object):
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 counter += len(seq[0])
-                read_frame = self.reading_frame(seq[4])
+#                read_frame = self.reading_frame(seq[4])
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
-                    if read_frame is not None:
-                        ref_frame[seq[4]] = [(read_frame+shift) % 3, 
-                            (read_frame+shift+len(seq[0])) % 3, ref_counter]
-                        shift = (shift + len(seq[0])) % 3
-                    else:
-                        ref_frame[seq[4]] = [None, None, ref_counter]
+#                    if read_frame is not None:
+#                        ref_frame[seq[4]] = [(read_frame+shift) % 3, 
+#                            (read_frame+shift+len(seq[0])) % 3, ref_counter]
+#                        shift = (shift + len(seq[0])) % 3
+#                    else:
+#                        ref_frame[seq[4]] = [None, None, ref_counter]
                     ref_counter += len(seq[0])
-                else:
-                    if read_frame is not None:
-                        ref_frame[seq[4]] = [(read_frame+shift) % 3, 
-                            (read_frame+shift) % 3, ref_counter]
-                    else:
-                        ref_frame[seq[4]] = [None, None, ref_counter]
+ #               else:
+ #                   if read_frame is not None:
+ #                       ref_frame[seq[4]] = [(read_frame+shift) % 3, 
+ #                           (read_frame+shift) % 3, ref_counter]
+ #                   else:
+ #                       ref_frame[seq[4]] = [None, None, ref_counter]
                 continue
             elif seq[2][0][2] == 'V':
                 if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
@@ -990,19 +991,19 @@ class Transcript(object):
                     ref_sequence += seq[0]
                 else:
                     ref_sequence += seq[2][0][1]
-                read_frame1 = self.reading_frame(seq[4])
-                read_frame2 = self.reading_frame(seq[4] + len(seq[0]) - 1)
-                if read_frame1 is not None and read_frame2 is not None:
-                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
-                        (read_frame2+shift) % 3, ref_counter]
-                elif read_frame1 is not None:
-                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, None,
-                        ref_counter]
-                elif read_frame2 is not None:
-                    ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
-                        ref_counter]
-                else:
-                    ref_frame[seq[4]] = [None, None, ref_counter]
+#                read_frame1 = self.reading_frame(seq[4])
+#                read_frame2 = self.reading_frame(seq[4] + len(seq[0]) - 1)
+#                if read_frame1 is not None and read_frame2 is not None:
+#                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
+#                        (read_frame2+shift) % 3, ref_counter]
+#                elif read_frame1 is not None:
+#                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, None,
+#                        ref_counter]
+#                elif read_frame2 is not None:
+#                    ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
+#                        ref_counter]
+#                else:
+#                    ref_frame[seq[4]] = [None, None, ref_counter]
                 ref_counter += len(seq[0])
                 continue
             # need to process here re: aberrant start codon!!!
@@ -1034,6 +1035,7 @@ class Transcript(object):
                     continue
                 start_codon = ATG
                 break
+            # test if actually frame shift or not
             frame_shifts.append([start, -1, 0, -1, start_codon[3]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
@@ -1049,8 +1051,8 @@ class Transcript(object):
         ##  OK, really need annotated seq to smartly process deletion_intervals to respect
         # the CDS coordinates . . . future splicing variation can EDIT these CDS coordinates
         # which would be the first thing to happen before any further processing . . .
-        ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
-        ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
+#        ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
+#        ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
         print ref_frame
         annotated_seq.pop()
         for i in range(0,len(annotated_seq)):
@@ -1102,17 +1104,47 @@ class Transcript(object):
                     # other variant types not handled at this time
                     break                        
             # handle potential frame shifts from indels
-            if seq[2][0][2] == 'D' or seq[2][0][2] == 'I':
-                print seq[4], ref_frame[seq[4]]
-                #### WORKING HERE NOW . . . USE NEW REF_FRAME STRUCTURE TO CALC!!
-                ## e.g. if ref_frame[seq[4]][0] == 0 and ref_frame[seq[4]][0] != ref_frame[seq[4]+1][0]
-                ## --> this is a frame shifting variant!!
-                if reading_frame == 0:
-                    reading_frame = (ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
-                    if reading_frame != 0:
+            if seq[2][0][2] == 'D':
+                read_frame1 = self.reading_frame(seq[4])
+                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]) - 1)
+                if read_frame1 != read_frame2:
+                    # splicing variation (e.g. deletion of part of intron/exon)
+                    if read_frame1 is None or read_frame2 is None:
+                        # this case NOT addressed at present
+                        break
+                    if reading_frame == 0:
+                        reading_frame = (read_frame1 - read_frame2) % 3
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
-                else:
-                    reading_frame = (reading_frame + ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
+                    elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
+                        # close out all frame_shifts ending in -1
+                        for i in range(len(frame_shifts), 0, -1):
+                            if frame_shifts[i][1] < 0:
+                                frame_shifts[i][1] = seq[4] + len(seq[0])
+                                frame_shifts[i][3] = counter + len(seq[0])
+                            else:
+                                break
+                        reading_frame = 0
+                    else:
+                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
+            elif seq[2][0][2] == 'I':
+                if len(seq[0]) % 3 != 0:
+                    if reading_frame == 0:
+                        reading_frame = len(seq[0]) % 3
+                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                    elif (reading_frame + len(seq[0])) % 3 == 0:
+                        for i in range(len(frame_shifts), 0, -1):
+                            if frame_shifts[i][1] < 0:
+                                frame_shifts[i][1] = seq[4] + len(seq[0])
+                                frame_shifts[i][3] = counter + len(seq[0])
+                            else:
+                                break
+                        reading_frame = 0
+                    else:
+                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        reading_frame = (reading_frame + len(seq[0])) % 3
+
+                reading_frame = (reading_frame + ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
                     if reading_frame == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
