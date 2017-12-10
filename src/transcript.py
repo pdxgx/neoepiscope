@@ -858,7 +858,6 @@ class Transcript(object):
         seq_previous = []
         new_ATG_upstream = False
         missing_start_ATG = False
-        ref_frame = {}
         shift = 0
         # the ATG stuff here is working retrospectively, so may need to run loop
         # one additional time at end to ensure capture start (i.e. what if it occurs
@@ -923,38 +922,6 @@ class Transcript(object):
                 if ref_start < 0 and seq[4]*strand + len(seq[2][0][1]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-#                read_frame1 = self.reading_frame(seq[4])
-#                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]) - 1)
-#                if ((seq[1] == 'G' and include_germline == 2) or 
-#                    (seq[1] == 'S' and include_somatic == 2)):                  
-#                    ref_sequence += seq[2][0][1]
-#                    if read_frame1 is not None and read_frame2 is not None:
-#                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
-#                            (read_frame1+shift) % 3, ref_counter]
-#                        shift = (shift + read_frame1-read_frame2) % 3
-#                    elif read_frame1 is not None:
-                        # this part not handled yet!!
-                        # (i.e. what happens if delete part of exon into intron)
-#                        break
-#                    elif read_frame2 is not None:
-                        # this part not handled yet!!
-                        # (i.e. what happens if delete part of intron into exon)
-#                        break
-#                    else:
-#                        ref_frame[seq[4]] = [None, None, ref_counter]
-#                    ref_counter += len(seq[2][0][1])
-#                else:
- #                   if read_frame1 is not None and read_frame2 is not None:
- #                       ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
- #                           (read_frame1+shift) % 3, ref_counter]
-#                    elif read_frame1 is not None:
-#                        ref_frame[seq[4]] = [(read_frame1+shift) % 3, None, 
-#                            ref_counter]
-#                    elif read_frame2 is not None:
-#                        ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
-#                            ref_counter]
-#                    else:
-#                        ref_frame[seq[4]] = [None, None, ref_counter]
                 continue    
             elif seq[2][0][2] == 'I':
                 if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
@@ -966,19 +933,7 @@ class Transcript(object):
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
-#                    if read_frame is not None:
-#                        ref_frame[seq[4]] = [(read_frame+shift) % 3, 
-#                            (read_frame+shift+len(seq[0])) % 3, ref_counter]
-#                        shift = (shift + len(seq[0])) % 3
-#                    else:
-#                        ref_frame[seq[4]] = [None, None, ref_counter]
                     ref_counter += len(seq[0])
- #               else:
- #                   if read_frame is not None:
- #                       ref_frame[seq[4]] = [(read_frame+shift) % 3, 
- #                           (read_frame+shift) % 3, ref_counter]
- #                   else:
- #                       ref_frame[seq[4]] = [None, None, ref_counter]
                 continue
             elif seq[2][0][2] == 'V':
                 if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
@@ -991,19 +946,6 @@ class Transcript(object):
                     ref_sequence += seq[0]
                 else:
                     ref_sequence += seq[2][0][1]
-#                read_frame1 = self.reading_frame(seq[4])
-#                read_frame2 = self.reading_frame(seq[4] + len(seq[0]) - 1)
-#                if read_frame1 is not None and read_frame2 is not None:
-#                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, 
-#                        (read_frame2+shift) % 3, ref_counter]
-#                elif read_frame1 is not None:
-#                    ref_frame[seq[4]] = [(read_frame1+shift) % 3, None,
-#                        ref_counter]
-#                elif read_frame2 is not None:
-#                    ref_frame[seq[4]] = [None, (read_frame2+shift) % 3, 
-#                        ref_counter]
-#                else:
-#                    ref_frame[seq[4]] = [None, None, ref_counter]
                 ref_counter += len(seq[0])
                 continue
             # need to process here re: aberrant start codon!!!
@@ -1053,17 +995,11 @@ class Transcript(object):
         # which would be the first thing to happen before any further processing . . .
 #        ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
 #        ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
-        print ref_frame
         annotated_seq.pop()
-        for i in range(0,len(annotated_seq)):
-            print annotated_seq[i],annotated_seq[i][4], ref_frame[annotated_seq[i][4]]
         print sequence[coding_start:]
         print ref_sequence[new_start:]
         print ref_sequence[ref_start:]
-        print ann_read_frame, len(ann_read_frame)        
-        print ref_read_frame, len(ref_read_frame)        
         print start_codon, ref_start, coding_start
-        print ref_frame
         return ATGs
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
