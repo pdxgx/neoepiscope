@@ -1137,6 +1137,7 @@ class Transcript(object):
                         reading_frame = len(seq[0]) % 3
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                     elif (reading_frame + len(seq[0])) % 3 == 0:
+                        # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
                             if frame_shifts[i][1] < 0:
                                 frame_shifts[i][1] = seq[4] + len(seq[0])
@@ -1147,18 +1148,6 @@ class Transcript(object):
                     else:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + len(seq[0])) % 3
-
-                reading_frame = (reading_frame + ref_frame[seq[4]][1] - ref_frame[seq[4]][0]) % 3
-                    if reading_frame == 0:
-                        # close out all frame_shifts ending in -1
-                        for i in range(len(frame_shifts), 0, -1):
-                            if frame_shifts[i][1] < 0:
-                                frame_shifts[i][1] = seq[4] + len(seq[0])
-                                frame_shifts[i][3] = counter + len(seq[0])
-                            else:
-                                break
-                    elif ref_frame[seq[4]][0] != ref_frame[seq[4]][1]:
-                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                 counter += len(seq[0])
             elif seq[2][0][2] == 'V':
                 counter += len(seq[0])
