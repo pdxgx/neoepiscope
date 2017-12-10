@@ -1103,6 +1103,9 @@ class Transcript(object):
                 else:
                     # other variant types not handled at this time
                     break                        
+            # log variants                    
+            coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                counter, counter + len(seq[0]), seq[2]])
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
                 read_frame1 = self.reading_frame(seq[4])
@@ -1127,6 +1130,7 @@ class Transcript(object):
                     else:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
+#                ref_counter += len(seq[2][0][1])
             elif seq[2][0][2] == 'I':
                 if len(seq[0]) % 3 != 0:
                     if reading_frame == 0:
@@ -1155,15 +1159,10 @@ class Transcript(object):
                                 break
                     elif ref_frame[seq[4]][0] != ref_frame[seq[4]][1]:
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
-            # log variants                    
-            coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
-                counter, counter + len(seq[0]), seq[2]])
-            if seq[2][0][2] != 'D':
                 counter += len(seq[0])
-                if seq[2][0][2] != 'I':
-                    ref_counter += len(seq[0])
-            else:
-                ref_counter += len(seq[2][0][1])
+            elif seq[2][0][2] == 'V':
+                counter += len(seq[0])
+                ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
             for i in range(len(frame_shifts), 0, -1):
