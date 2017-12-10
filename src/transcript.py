@@ -826,7 +826,6 @@ class Transcript(object):
             return []
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
-        annotated_seq.append([])
         # if no edits to return, then skip all next steps and return []
         # extract nucleotide sequence from annotated_seq
         sequence = ref_sequence = '' # hold flattened nucleotide sequence
@@ -859,9 +858,7 @@ class Transcript(object):
         new_ATG_upstream = False
         missing_start_ATG = False
         shift = 0
-        # the ATG stuff here is working retrospectively, so may need to run loop
-        # one additional time at end to ensure capture start (i.e. what if it occurs
-        # during only or final segment in annotated_seq???)
+        annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
             ATG1 = sequence.find('ATG', ATG_counter1)
@@ -907,15 +904,12 @@ class Transcript(object):
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
-                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
-                # MAKE MORE EFFICIENT BY USING LENGTH INSTEAD OF 2x READING FRAME CALLS
-#                ref_frame[seq[4]] = [self.reading_frame(seq[4]), 
-#                    self.reading_frame(seq[4]+len(seq[0])-1), ref_counter]
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][2] == 'D':
@@ -924,19 +918,18 @@ class Transcript(object):
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                 continue    
             elif seq[2][0][2] == 'I':
-                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 counter += len(seq[0])
-#                read_frame = self.reading_frame(seq[4])
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
                 continue
             elif seq[2][0][2] == 'V':
-                if coding_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
+                if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
                 sequence += seq[0]
@@ -981,26 +974,18 @@ class Transcript(object):
             frame_shifts.append([start, -1, 0, -1, start_codon[3]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
+        # not sure this is correct here . . . to calculate frame shift
+        # between coding_start and ref_start, need to fetch the reading_frame()
+        # from genomic based coordinates? keep this for now, but I think it's
+        # very much flawed, need to fix this!!!!!!!!!
+        # !!!!!
         reading_frame = (new_start - ref_start) % 3
-        ##  STORAGE OF READING FRAME StRINGS HERE FOR COMPARISON/TRACKING
-        # (i.e. yet another method for tracking/matching reading frames)
-        # problem with all of this is if splicing variation or for instance a 
-        # deletion cuts across an entire intron . . . does the deleted sequence
-        # need to get added to the ref_sequence?  NO  This complicates significantly
-        # .. . need to clarify behavior to avoid introducing problem.
-        # implemented frame_shift function here to get coords for each seq fragment
-        # that was stored in ref_frame list!!
-        ##  OK, really need annotated seq to smartly process deletion_intervals to respect
-        # the CDS coordinates . . . future splicing variation can EDIT these CDS coordinates
-        # which would be the first thing to happen before any further processing . . .
-#        ann_read_frame = '-' * coding_start + '012' * ((len(sequence)-coding_start) // 3) + '012'[0:((len(sequence)-coding_start) % 3)]
-#        ref_read_frame = '-' * ref_start + '012' * ((len(ref_sequence)-ref_start) // 3) + '012'[0:((len(ref_sequence)-ref_start) % 3)]
-        annotated_seq.pop()
         print sequence[coding_start:]
         print ref_sequence[new_start:]
         print ref_sequence[ref_start:]
         print start_codon, ref_start, coding_start
-        return ATGs
+        print ATGs
+        annotated_seq.pop()
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
             if seq[1] == 'R':
@@ -1045,12 +1030,13 @@ class Transcript(object):
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
                 read_frame1 = self.reading_frame(seq[4])
-                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]) - 1)
+                read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]))
+                if read_frame1 is None or read_frame2 is None:
+                    # these cases NOT addressed at present 
+                    # (e.g. deletion involves all or part of intron)
+                    break
                 if read_frame1 != read_frame2:
                     # splicing variation (e.g. deletion of part of intron/exon)
-                    if read_frame1 is None or read_frame2 is None:
-                        # this case NOT addressed at present
-                        break
                     if reading_frame == 0:
                         reading_frame = (read_frame1 - read_frame2) % 3
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
@@ -1101,28 +1087,21 @@ class Transcript(object):
         print sequence[coding_start:]
         print ref_sequence
         print ref_sequence[ref_start:]
-        ##### work to be done below here still re: start coordinates and more
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
-        peptide_seqs = kmerize_peptide(seq_to_peptide(sequence[coding_start:], 
-            reverse_strand=False), min_size=min_size, max_size=max_size)
-        reference_seqs = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
-            reverse_strand=False), min_size=min_size, max_size=max_size)
         # get amino acid ranges for kmerization
- ###       for size in range(min_size, max_size + 1):
- ###           epitope_coords = []
- ###           for coords in coordinates:
- ###               # future devel: 
- ###               #    can propogate variant ID here to maintain link to epitope
- ###               epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
- ###                   min(len(protein), ((coords[1] - start) // 3)+size)])
- ###           for coords in frame_shifts:
- ###               epitope_coords.append([max(0, ((coords[0]-start) // 3)-size+1), 
- ###                   min(len(protein), ((coords[1] - start) // 3)+size)])
- ###           for coords in epitope_coords:
- ###               peptide_seqs += kmerize_peptide(protein[coords[0]:coords[1]], 
- ###                   min_size=size, max_size=size)
+        for size in range(min_size, max_size + 1):
+            epitope_coords = []
+            for coords in coordinates:
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size+1), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+            for coords in frame_shifts:
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size+1), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+            for coords in epitope_coords:
+                peptide_seqs += [kmerize_peptide(protein[coords[0]:coords[1]], 
+                    min_size=size, max_size=size), coords[2]]
         # return list of unique neoepitope sequences
-        return list(set(peptide_seqs).difference(reference_seqs))
+        return peptide_seqs
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
