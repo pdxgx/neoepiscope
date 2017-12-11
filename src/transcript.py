@@ -899,14 +899,13 @@ class Transcript(object):
             ATG_counter2 = max(0, len(ref_sequence)-2)
             if seq == []:
                 break
-#            seq_previous = seq
-            seq_previous = 9
+            seq_previous = seq
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
@@ -914,13 +913,13 @@ class Transcript(object):
                 continue
             elif seq[2][0][2] == 'D':
                 if ref_start < 0 and seq[4]*strand + len(seq[2][0][1]) > start*strand:
-                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
                 continue    
             elif seq[2][0][2] == 'I':
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or 
@@ -930,8 +929,8 @@ class Transcript(object):
                 continue
             elif seq[2][0][2] == 'V':
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[4] + 1 + 2*self.rev_strand)*strand
+                    coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
+                    ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or 
@@ -952,6 +951,7 @@ class Transcript(object):
 #                    if reading_frame != 0:
 #                        frame_shifts.append([start, -1, 0, -1, []]) 
         # find location of start codon in annotated_seq v. reference
+        print sequence[coding_start:coding_start+10]
         if ATGs == []:
             return []
         start_codon = []
@@ -980,9 +980,9 @@ class Transcript(object):
         # very much flawed, need to fix this!!!!!!!!!
         # !!!!!
         reading_frame = (new_start - ref_start) % 3
-        print sequence[coding_start:]
-        print ref_sequence[new_start:]
-        print ref_sequence[ref_start:]
+        print sequence[coding_start:coding_start+10]
+        print ref_sequence[new_start:new_start+10]
+        print ref_sequence[ref_start:ref_start+10]
         print start_codon, ref_start, coding_start
         print ATGs
         annotated_seq.pop()
@@ -1043,9 +1043,9 @@ class Transcript(object):
                     elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
-                            if frame_shifts[i][1] < 0:
-                                frame_shifts[i][1] = seq[4] + len(seq[0])
-                                frame_shifts[i][3] = counter + len(seq[0])
+                            if frame_shifts[i-1][1] < 0:
+                                frame_shifts[i-1][1] = seq[4] + len(seq[0])
+                                frame_shifts[i-1][3] = counter + len(seq[0])
                             else:
                                 break
                         reading_frame = 0
@@ -1061,9 +1061,9 @@ class Transcript(object):
                     elif (reading_frame + len(seq[0])) % 3 == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
-                            if frame_shifts[i][1] < 0:
-                                frame_shifts[i][1] = seq[4] + len(seq[0])
-                                frame_shifts[i][3] = counter + len(seq[0])
+                            if frame_shifts[i-1][1] < 0:
+                                frame_shifts[i-1][1] = seq[4] + len(seq[0])
+                                frame_shifts[i-1][3] = counter + len(seq[0])
                             else:
                                 break
                         reading_frame = 0
@@ -1076,18 +1076,21 @@ class Transcript(object):
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
+            print frame_shifts
             for i in range(len(frame_shifts), 0, -1):
-                if frame_shifts[i][1] < 0:
-                    frame_shifts[i][1] = seq[4] + len(seq[0])
-                    frame_shifts[i][3] = counter
+                print i, frame_shifts[i-1][1]
+                if frame_shifts[i-1][1] < 0:
+                    frame_shifts[i-1][1] = seq[4] + len(seq[0])
+                    frame_shifts[i-1][3] = counter
                 else:
                     break
 
-        print sequence
         print sequence[coding_start:]
-        print ref_sequence
         print ref_sequence[ref_start:]
+        print coordinates
+        print frame_shifts
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        peptide_seqs = []
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -1098,8 +1101,8 @@ class Transcript(object):
                 epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size+1), 
                     min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
             for coords in epitope_coords:
-                peptide_seqs += [kmerize_peptide(protein[coords[0]:coords[1]], 
-                    min_size=size, max_size=size), coords[2]]
+                peptide_seqs.append([kmerize_peptide(protein[coords[0]:coords[1]], 
+                    min_size=size, max_size=size), coords[2]])
         # return list of unique neoepitope sequences
         return peptide_seqs
 
