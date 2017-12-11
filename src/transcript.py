@@ -959,21 +959,25 @@ class Transcript(object):
         coordinates = []
         frame_shifts = []
         counter = ref_counter = 0 # hold edited transcript level coordinates
+        coding_ref_start = -1
         for ATG in ATGs:
+            if ATG[1] == ref_start:
+                coding_ref_start = ATG[0]
             if not ATG[3] or ATG[5]:
                 continue
-            start_codon = ATG
-            break
+            if len(start_codon) <= 0:
+                start_codon = ATG
         if start_codon == [] and new_ATG_upstream:
             for ATG in ATGs[::-1]:
                 if not ATG[3] and not ATG[4]:
                     continue
                 start_codon = ATG
                 break
-            # test if actually frame shift or not
-            frame_shifts.append([start, -1, 0, -1, start_codon[3]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
+        # assess if start_codon location introduces frame shift
+        if (coding_start - coding_ref_start) % 3 != 0:
+            frame_shifts.append([start, -1, 0, -1, start_codon[3]])
         # not sure this is correct here . . . to calculate frame shift
         # between coding_start and ref_start, need to fetch the reading_frame()
         # from genomic based coordinates? keep this for now, but I think it's
