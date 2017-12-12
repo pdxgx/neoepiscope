@@ -96,6 +96,10 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
 class Transcript(object):
     """ Transforms transcript with edits (SNPs, indels) from haplotype. """
 
+    # Should we handle somatic deletions that overlap germline mutations?
+    # I.E., should we break up a somatic deletion into two separate mutations
+    #       that surround the germline mutation? Or do we only call the somatic?
+
     def __init__(self, bowtie_reference_index, CDS):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
@@ -206,6 +210,7 @@ class Transcript(object):
             mutation_class: S for somatic, G for germline
             No return value.
         """
+        ## Need to add check for only 1 mutation of each class per position
         if mutation_type == 'D':
             try:
                 deletion_size = int(seq)
