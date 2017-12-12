@@ -806,8 +806,8 @@ class Transcript(object):
 
     def peptides(self, min_size=8, max_size=11, include_somatic=1, 
         include_germline=2):
-        """ Retrieves list of predicted peptide fragments from transcript that 
-            include one or more variants.
+        """ Retrieves dict of predicted peptide fragments from transcript that 
+            include one or more variants. 
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
             include_somatic: 0 = do not include somatic mutations, 1 = exlude
@@ -818,32 +818,23 @@ class Transcript(object):
             mutations in both annotated sequence and reference comparison
             Return value: list of peptides of desired length.
         """
+        # if no edits to process, then skip all next steps and return {}
         if include_somatic == include_germline and include_somatic != 1:
-            return []
+            return {}
+        if len(self.edits) <= 0 and len(self.deletion_intervals) <= 0:
+            return {}
+        # min size to process is 2 amino acids, otherwise skip and return {}
+        if min_size < 2:
+            return {}
+        # ensure max_size is not smaller than min_size
         if max_size < min_size:
             max_size = min_size
-        if min_size < 2:
-            return []
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
-        # if no edits to return, then skip all next steps and return []
-        # extract nucleotide sequence from annotated_seq
+
         sequence = ref_sequence = '' # hold flattened nucleotide sequence
-#        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
-#            include_germline=include_germline > 1)
-#        # extract nucleotide sequence from reference_seq
-#        for seq in reference_seq:
-#            if seq[1] == 'R' or seq[2][0][2] != 'D':
-#                ref_sequence += seq[0]
-        #
-        # some necessary preprocessing here to find the location of the start
-        # codon to use -- for majority of cases, this will simply be the
-        # original start_codon for reference sequence!  HOWEVER, it is possible
-        # that alteration in start codon and/or creation of new one upstream
-        # that could influence actual start site for annotated seq . . . for now
-        # ignoring all of this and assuming start site is the same
-        #
         start = self.start_codon
+        strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
@@ -851,13 +842,10 @@ class Transcript(object):
         ATGs = []
         ATG_counter1 = ATG_counter2 = 0
         ATG_limit = 2
-        strand = 1 - self.rev_strand * 2
         coding_start = ref_start = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
-        missing_start_ATG = False
-        shift = 0
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
@@ -940,20 +928,10 @@ class Transcript(object):
                     ref_sequence += seq[2][0][1]
                 ref_counter += len(seq[0])
                 continue
-            # need to process here re: aberrant start codon!!!
-            # determine why start codon missing . . . and whether upstream context has changed
-            # if no changes upstream and start codon deleted/altered, then 
-            # find next downstream to use (even if more are already existing upstream)
-            # if novel start introduced upstream, then use that one!
-            # changes upstream???
-#                    reading_frame = new_start % 3
-#                    coding_start += new_start
-#                    if reading_frame != 0:
-#                        frame_shifts.append([start, -1, 0, -1, []]) 
         # find location of start codon in annotated_seq v. reference
-        print sequence[coding_start:coding_start+10]
+        print '#',sequence[coding_start:coding_start+10]
         if ATGs == []:
-            return []
+            return {}
         start_codon = []
         reading_frame = 0
         coordinates = []
@@ -978,12 +956,12 @@ class Transcript(object):
         # assess if start_codon location introduces frame shift
         reading_frame = (coding_start - coding_ref_start) % 3
         if reading_frame != 0:
-            frame_shifts.append([start, -1, 0, -1, start_codon[3]])
-        print sequence[coding_start:coding_start+10]
-        print ref_sequence[new_start:new_start+10]
-        print ref_sequence[ref_start:ref_start+10]
-        print start_codon, ref_start, coding_start
-        print ATGs
+            frame_shifts.append([start, -1, 0, -1, start_codon[2]])
+        print ' ',sequence[coding_start:coding_start+10]
+        print '#',ref_sequence[new_start:new_start+10]
+        print ' ',ref_sequence[ref_start:ref_start+10]
+        print coding_ref_start, '-->', coding_start, '(', ref_start, ')', reading_frame
+#        print ATGs
         annotated_seq.pop()
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
@@ -1075,33 +1053,31 @@ class Transcript(object):
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
-            print frame_shifts
             for i in range(len(frame_shifts), 0, -1):
-                print i, frame_shifts[i-1][1]
                 if frame_shifts[i-1][1] < 0:
                     frame_shifts[i-1][1] = seq[4] + len(seq[0])
                     frame_shifts[i-1][3] = counter
                 else:
                     break
-
-        print sequence[coding_start:]
-        print ref_sequence[ref_start:]
-        print coordinates
-        print frame_shifts
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
-        peptide_seqs = []
+        peptide_seqs = {}
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
             for coords in coordinates:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size+1), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size-1), coords[4]])
             for coords in frame_shifts:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size+1), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size-1), coords[4]])
             for coords in epitope_coords:
-                peptide_seqs.append([kmerize_peptide(protein[coords[0]:coords[1]], 
-                    min_size=size, max_size=size), coords[2]])
+                peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
+                    min_size=size, max_size=size)
+                for pep in peptides:
+                    if pep in peptide_seqs:
+                        peptide_seqs[pep].append(coords[2])
+                    else:
+                        peptide_seqs[pep] = [coords[2]]
         # return list of unique neoepitope sequences
         return peptide_seqs
 
