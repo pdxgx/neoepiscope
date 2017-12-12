@@ -748,68 +748,11 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def neoepitopes(self, min_size=8, max_size=11, include_somatic=1, 
-        include_germline=2):
-        """ Retrieves list of predicted peptide fragments from transcript that 
-            include one or more variants.
-            min_size: minimum subpeptide length (specified as # of amino acids)
-            max_size: maximum subpeptide length (specified as # of amino acids)
-            include_somatic: 0 = do not include somatic mutations, 1 = exlude
-            somatic mutations from reference comparison, 2 = include somatic
-            mutations in both annotated sequence and reference comparison
-            include_germline: 0 = do not include germline mutations, 1 = exlude
-            germline mutations from reference comparison, 2 = include germline
-            mutations in both annotated sequence and reference comparison
-            Return value: list of peptides of desired length.
-        """
-        if include_somatic == include_germline and include_somatic != 1:
-            return []
-        if max_size < min_size:
-            max_size = min_size
-        if min_size < 2:
-            return []
-        def flatten_annotated_seq(annotated_seq):
-            sequence = '' # hold flattened nucleotide sequence
-            # extract nucleotide sequence from annotated_seq
-            for seq in annotated_seq:
-                if seq[1] != 'D':
-                    sequence += seq[0]
-            return sequence
-        annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
-            include_germline=include_germline != 0)
-        sequence = flatten_annotated_seq(annotated_seq)
-        start = sequence.find('ATG')
-        # locate position of start codon (first ATG in sequence)
-        variant_peps = kmerize_peptide(seq_to_peptide(sequence[start:], 
-            reverse_strand=False, require_ATG=True), 
-            min_size=min_size, max_size=max_size)
-        if variant_peps == []:
-            return []
-        reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
-            include_germline=include_germline > 1)
-        ref_sequence = flatten_annotated_seq(reference_seq)
-        ref_start = ref_sequence.find('ATG')
-        reference_peps = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
-            reverse_strand=False, require_ATG=True), 
-            min_size=min_size, max_size=max_size)
-        neoepitopes = list(set(variant_peps).difference(reference_peps))
-        edits = [seq for seq in annotated_seq if seq[1] != 'R']
-        # in order to link each variants to a neoepitope, pick off one at a time
-        # and test if any neoepitopes are lost in a list diff -- if any lost,
-        # then those variants are REQUIRED for the presence of that peptide!!!
-        # easy peasy, independent of complexity BUT will be computationally
-        # slower (more robust = good though!!)
-        # going to require re-engineering annotated_seq() to select individual
-        # edits
 
-
-        # return list of unique neoepitope sequences
-        return neoepitopes
-
-    def peptides(self, min_size=8, max_size=11, include_somatic=1, 
+    def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
         include_germline=2):
         """ Retrieves dict of predicted peptide fragments from transcript that 
-            include one or more variants. 
+            arise from one or more variants. 
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
             include_somatic: 0 = do not include somatic mutations, 1 = exlude
@@ -818,7 +761,8 @@ class Transcript(object):
             include_germline: 0 = do not include germline mutations, 1 = exlude
             germline mutations from reference comparison, 2 = include germline
             mutations in both annotated sequence and reference comparison
-            Return value: list of peptides of desired length.
+            Return value: dict of peptides of desired length(s) [KEYS] with 
+            values equivalent to a list of causal variants [VALUES].
         """
         # if no edits to process, then skip all next steps and return {}
         if include_somatic == include_germline and include_somatic != 1:
@@ -947,7 +891,6 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
-        print '#',sequence[coding_start:coding_start+10]
         if ATGs == []:
             return {}
         start_codon = []
@@ -975,11 +918,6 @@ class Transcript(object):
         reading_frame = (coding_start - coding_ref_start) % 3
         if reading_frame != 0:
             frame_shifts.append([start, -1, 0, -1, start_codon[2]])
-        print ' ',sequence[coding_start:coding_start+10]
-        print '#',ref_sequence[new_start:new_start+10]
-        print ' ',ref_sequence[ref_start:ref_start+10]
-        print coding_ref_start, '-->', coding_start, '(', ref_start, ')', reading_frame
-#        print ATGs
         annotated_seq.pop()
         for seq in annotated_seq:
             # skip sequence fragments that are not to be reported 
