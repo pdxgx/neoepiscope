@@ -976,14 +976,9 @@ class Transcript(object):
         new_start = start_codon[1]
         coding_start = start_codon[0]
         # assess if start_codon location introduces frame shift
-        if (coding_start - coding_ref_start) % 3 != 0:
+        reading_frame = (coding_start - coding_ref_start) % 3
+        if reading_frame != 0:
             frame_shifts.append([start, -1, 0, -1, start_codon[3]])
-        # not sure this is correct here . . . to calculate frame shift
-        # between coding_start and ref_start, need to fetch the reading_frame()
-        # from genomic based coordinates? keep this for now, but I think it's
-        # very much flawed, need to fix this!!!!!!!!!
-        # !!!!!
-        reading_frame = (new_start - ref_start) % 3
         print sequence[coding_start:coding_start+10]
         print ref_sequence[new_start:new_start+10]
         print ref_sequence[ref_start:ref_start+10]
