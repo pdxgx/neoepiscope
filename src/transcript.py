@@ -778,8 +778,9 @@ class Transcript(object):
         annotated_seq = self.annotated_seq(include_somatic=include_somatic != 0, 
             include_germline=include_germline != 0)
         sequence = flatten_annotated_seq(annotated_seq)
+        start = sequence.find('ATG')
         # locate position of start codon (first ATG in sequence)
-        variant_peps = kmerize_peptide(seq_to_peptide(sequence, 
+        variant_peps = kmerize_peptide(seq_to_peptide(sequence[start:], 
             reverse_strand=False, require_ATG=True), 
             min_size=min_size, max_size=max_size)
         if variant_peps == []:
@@ -787,7 +788,8 @@ class Transcript(object):
         reference_seq = self.annotated_seq(include_somatic=include_somatic > 1, 
             include_germline=include_germline > 1)
         ref_sequence = flatten_annotated_seq(reference_seq)
-        reference_peps = kmerize_peptide(seq_to_peptide(ref_sequence,
+        ref_start = ref_sequence.find('ATG')
+        reference_peps = kmerize_peptide(seq_to_peptide(ref_sequence[ref_start:],
             reverse_strand=False, require_ATG=True), 
             min_size=min_size, max_size=max_size)
         neoepitopes = list(set(variant_peps).difference(reference_peps))
@@ -834,15 +836,16 @@ class Transcript(object):
 
         sequence = ref_sequence = '' # hold flattened nucleotide sequence
         start = self.start_codon
+        stop = self.stop_codon
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
         # is ATG new in annotated seq?, is ATG missing in annotated seq?]
-        ATGs = []
+        ATGs = TAA_TGA_TAG = []
         ATG_counter1 = ATG_counter2 = 0
         ATG_limit = 2
-        coding_start = ref_start = -1
+        coding_start = ref_start = coding_stop = ref_stop = -1
         counter = ref_counter = 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
@@ -894,6 +897,9 @@ class Transcript(object):
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
+                if ref_stop < 0 and seq[4]*strand + len(seq[0]) > stop*strand:
+                    coding_stop = counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    ref_stop = ref_counter + (stop - seq[4] + 2*self.rev_strand)*strand
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
@@ -903,11 +909,19 @@ class Transcript(object):
                 if ref_start < 0 and seq[4]*strand + len(seq[2][0][1]) > start*strand:
                     coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
+                if ref_stop < 0 and seq[4]*strand + len(seq[0]) > stop*strand:
+                    coding_stop = counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    ref_stop = ref_counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    TAA_TGA_TAG = seq
                 continue    
             elif seq[2][0][2] == 'I':
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
+                if ref_stop < 0 and seq[4]*strand + len(seq[0]) > stop*strand:
+                    coding_stop = counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    ref_stop = ref_counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or 
@@ -919,6 +933,10 @@ class Transcript(object):
                 if ref_start < 0 and seq[4]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[4] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[4] + 2*self.rev_strand)*strand
+                if ref_stop < 0 and seq[4]*strand + len(seq[0]) > stop*strand:
+                    coding_stop = counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    ref_stop = ref_counter + (stop - seq[4] + 2*self.rev_strand)*strand
+                    TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or 
@@ -1060,6 +1078,8 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        if len(protein) > (coding_stop - coding_start) // 3:
+            frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
         peptide_seqs = {}
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
