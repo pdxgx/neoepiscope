@@ -91,10 +91,6 @@ def adjust_tumor_column(in_vcf, out_vcf):
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
-        
-        #### WE NEED TO ADJUST THIS ####
-        ## Where are header lines going? ##
-        ## Position of tumor vs. normal in somatic vcf is variable ##
 
         No return value.
     """

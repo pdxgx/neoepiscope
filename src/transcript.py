@@ -234,9 +234,20 @@ class Transcript(object):
         elif mutation_type == 'V':
             reference_seq = self.bowtie_reference_index.get_stretch(
                                             self.chrom, pos - 1, len(seq))
-            self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                        (pos, reference_seq, mutation_type), 
-                                        vaf))
+            other_snvs = [edit for edit in self.edits[pos - 1]]
+            if mutation_class not in [snv[2] for snv in other_snvs]:
+                self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
+                                            (pos, reference_seq, mutation_type), 
+                                            vaf))
+            else:
+                class_dict = {'S':'somatic', 'G':'germline'}
+                raise NotImplementedError(''.join(['2 SNVs of same class cannot ', 
+                                                    'be added at same position',
+                                                    ' - was mutation of ', 
+                                                    reference_seq, ' to ', seq, 
+                                                    ' at ', str(pos), ' not a ',
+                                                    class_dict[mutation_class], 
+                                                    ' mutation?']))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
