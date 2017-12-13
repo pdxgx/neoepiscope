@@ -794,7 +794,7 @@ class Transcript(object):
         annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
             include_germline=include_germline)
 
-        sequence = ref_sequence = '' # hold flattened nucleotide sequence
+        sequence, ref_sequence = '', '' # hold flattened nucleotide sequence
         start = self.start_codon
         stop = self.stop_codon
         strand = 1 - self.rev_strand * 2
@@ -802,11 +802,11 @@ class Transcript(object):
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
         # is ATG new in annotated seq?, is ATG missing in annotated seq?]
-        ATGs = TAA_TGA_TAG = []
-        ATG_counter1 = ATG_counter2 = 0
+        ATGs, TAA_TGA_TAG = [], []
+        ATG_counter1, ATG_counter2 = 0, 0
         ATG_limit = 2
-        coding_start = ref_start = coding_stop = ref_stop = -1
-        counter = ref_counter = 0 # hold edited transcript level coordinates
+        coding_start, ref_start, coding_stop, ref_stop = -1, -1, -1, -1
+        counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
         annotated_seq.append([])
@@ -913,7 +913,7 @@ class Transcript(object):
         reading_frame = 0
         coordinates = []
         frame_shifts = []
-        counter = ref_counter = 0 # hold edited transcript level coordinates
+        counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         coding_ref_start = -1
         for ATG in ATGs:
             if ATG[1] == ref_start:
@@ -1032,6 +1032,11 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        if TAA_TGA_TAG == []:
+            assert 'X' in protein
+            for i in xrange(coding_start, len(sequence), 3):
+                if sequence[i:i+3] in ['TAA', 'TGA', 'TAG']:
+                    coding_stop = i+3
         if len(protein) > (coding_stop - coding_start) // 3:
             frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
         peptide_seqs = {}
@@ -1424,4 +1429,8 @@ if __name__ == '__main__':
                                         5248165))
             self.assertEqual(seq[4], ('GGGC', 'R', [()], [], 5248165))
             self.assertEqual(len(seq[6][0]), 481)
+        def no_peptides(self):
+            """Fails if peptides are returned for unmutated sequence"""
+            peptides = self.fwd_transcript.neopeptides()
+            self.assertEqual(peptides, {})
     unittest.main()
