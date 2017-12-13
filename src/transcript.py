@@ -980,7 +980,7 @@ class Transcript(object):
                     break                        
             # log variants                    
             coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
-                counter, counter + len(seq[0]), seq[2]])
+                                counter, counter + len(seq[0]), seq[2]])
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
                 read_frame1 = self.reading_frame(seq[4])
@@ -1446,15 +1446,6 @@ if __name__ == '__main__':
             self.fwd_transcript.edit('T', 450502)
             peptides = self.fwd_transcript.neopeptides().keys()
             F_peptides = [pep for pep in peptides if 'F' in pep]
-            self.assertEqual(len(peptides), 38)
-            self.assertEqual(len(peptides), len(F_peptides))
-            self.assertEqual(sorted(peptides)[0], 'AGGPRPEF')
-            self.assertEqual(sorted(peptides)[-1], 'RRDAGGPRPEF')
-        def internal_insertion_peptides(self):
-            """Fails if incorrect peptides are returned for simple SNV"""
-            self.fwd_transcript.edit('AAA', 450502, mutation_type='I')
-            peptides = self.fwd_transcript.neopeptides().keys()
-            N_peptides = [pep for pep in peptides if 'N' in pep]
             self.assertEqual(len(peptides), 38)
             self.assertEqual(len(peptides), len(F_peptides))
             self.assertEqual(sorted(peptides)[0], 'AGGPRPEF')
