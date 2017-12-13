@@ -797,6 +797,8 @@ class Transcript(object):
         sequence, ref_sequence = '', '' # hold flattened nucleotide sequence
         start = self.start_codon
         stop = self.stop_codon
+        if start == None or stop == None:
+            return {}
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
@@ -912,6 +914,9 @@ class Transcript(object):
         start_codon = []
         reading_frame = 0
         coordinates = []
+        # Frame shifts: [genomic start coordinate, genomic end coordinate, CDS-
+        # level start coordinate, CDS-level end coordinate, mutation info associated 
+        # with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         coding_ref_start = -1
@@ -1039,24 +1044,27 @@ class Transcript(object):
                     coding_stop = i+3
         if len(protein) > (coding_stop - coding_start) // 3:
             frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
-        peptide_seqs = {}
+        peptide_seqs = collections.defaultdict(list)
+        print coordinates
+        print
+        print protein
+        print
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
             for coords in coordinates:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size-1), coords[4]])
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
             for coords in frame_shifts:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size-1), coords[4]])
+                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
+                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+            print size
+            print epitope_coords
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
                 for pep in peptides:
-                    if pep in peptide_seqs:
-                        peptide_seqs[pep].append(coords[2])
-                    else:
-                        peptide_seqs[pep] = [coords[2]]
+                    peptide_seqs[pep].append(coords[2])
         # return list of unique neoepitope sequences
         return peptide_seqs
 
@@ -1431,6 +1439,24 @@ if __name__ == '__main__':
             self.assertEqual(len(seq[6][0]), 481)
         def no_peptides(self):
             """Fails if peptides are returned for unmutated sequence"""
-            peptides = self.fwd_transcript.neopeptides()
-            self.assertEqual(peptides, {})
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(peptides, [])
+        def internal_snv_peptides(self):
+            """Fails if incorrect peptides are returned for simple SNV"""
+            self.fwd_transcript.edit('T', 450502)
+            peptides = self.fwd_transcript.neopeptides().keys()
+            F_peptides = [pep for pep in peptides if 'F' in pep]
+            self.assertEqual(len(peptides), 38)
+            self.assertEqual(len(peptides), len(F_peptides))
+            self.assertEqual(sorted(peptides)[0], 'AGGPRPEF')
+            self.assertEqual(sorted(peptides)[-1], 'RRDAGGPRPEF')
+        def internal_insertion_peptides(self):
+            """Fails if incorrect peptides are returned for simple SNV"""
+            self.fwd_transcript.edit('AAA', 450502, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            N_peptides = [pep for pep in peptides if 'N' in pep]
+            self.assertEqual(len(peptides), 38)
+            self.assertEqual(len(peptides), len(F_peptides))
+            self.assertEqual(sorted(peptides)[0], 'AGGPRPEF')
+            self.assertEqual(sorted(peptides)[-1], 'RRDAGGPRPEF')
     unittest.main()
