@@ -29,7 +29,7 @@ Instructions for running Neoepiscope:
    
    ```extractHAIRS --indels 1 --bam [TUMOR BAM] --vcf [SOMATIC OR MERGED VCF] --out [OUTPUT FRAGMENT FILE]```
    
-   b) Run HAPCUT2 to produce haplotypes"
+   b) Run HAPCUT2 to produce haplotypes:
    
     ```HAPCUT2 --fragments [FRAGMENT FILE (from step 3a)] --vcf [SOMATIC OR MERGED VCF] --output [HAPLOTYPE OUTPUT]```
     
