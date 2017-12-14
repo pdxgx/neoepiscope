@@ -1035,6 +1035,7 @@ class Transcript(object):
                 A1 = 3*((counter - coding_start) // 3) + coding_start
                 B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
                 A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                C = 3*((seq[4]-coding_start) // 3) + coding_start
                 for i in range(0, B1-A1, 3):
                     A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
                     B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
