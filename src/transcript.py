@@ -905,7 +905,8 @@ class Transcript(object):
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
                 else:
-                    ref_sequence += seq[2][0][1]
+                    for i in seq[2]:
+                        ref_sequence += i[1]
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
@@ -996,6 +997,8 @@ class Transcript(object):
                                 counter, counter + len(seq[0]) - 1, seq[2]])
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
+                coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                                counter, counter + len(seq[0]), seq[2]])
                 read_frame1 = self.reading_frame(seq[4])
                 read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]))
                 if read_frame1 is None or read_frame2 is None:
@@ -1020,7 +1023,10 @@ class Transcript(object):
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
 #                ref_counter += len(seq[2][0][1])
+            # handle potential frame shifts from insertions
             elif seq[2][0][2] == 'I':
+                coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                                counter, counter + len(seq[0]), seq[2]])
                 if len(seq[0]) % 3 != 0:
                     if reading_frame == 0:
                         reading_frame = len(seq[0]) % 3
@@ -1038,7 +1044,18 @@ class Transcript(object):
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + len(seq[0])) % 3
                 counter += len(seq[0])
+            # handle a collection of one or more single nucleotide variants
             elif seq[2][0][2] == 'V':
+                # only document neopeptides corresponding to missense SNVs
+                A1 = 3*((counter - coding_start) // 3) + coding_start
+                B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
+                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                for i in range(0, B1-A1, 3):
+                    A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
+                    B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
+                    if A != B:
+                        coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                                counter+i*3, counter+i*3+2, seq[2]])
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
@@ -1497,7 +1514,6 @@ if __name__ == '__main__':
             peptides = self.fwd_transcript.neopeptides().keys()
             self.assertEqual(len(peptides), 38)
             ## NEED TO FIX THE CODE FOR THIS ##
-            pass
         def in_frame_deletion_peptides(self):
             """Fails if incorrect peptides are given for in-frame deletion"""
             self.fwd_transcript.edit(3, 450555, mutation_type='D')
