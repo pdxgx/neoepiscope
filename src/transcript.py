@@ -978,8 +978,18 @@ class Transcript(object):
                 else:
                     # other variant types not handled at this time
                     break                        
-            # log variants                    
-            coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+            # log variants
+            if seq[2][0][2] == 'V':
+                A1 = 3*((counter - coding_start) // 3) + coding_start
+                B1 = 3*(1 + (counter+len(seq[0])-coding_start) // 3) + coding_start
+                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                B2 = 3*(1 + (ref_counter+len(seq[0])-ref_start) // 3) + ref_start
+                # skip unless missense mutation
+                if seq_to_peptide(sequence[A1:A2]) != seq_to_peptide(ref_sequence[B1:B2])
+                    coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                                counter, counter + len(seq[0]), seq[2]])
+            else:
+                coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
                                 counter, counter + len(seq[0]), seq[2]])
             # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
