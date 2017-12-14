@@ -965,7 +965,7 @@ class Transcript(object):
                     continue
                 elif seq[2][0][2] == 'I':
                     if counter + len(seq[0]) > coding_start:
-                        coordinates.append([start, seq[4] + len(seq[0])*strand,
+                        coordinates.append([start, seq[4] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start, seq[2]])
                     counter += len(seq[0])
                     continue
@@ -979,7 +979,23 @@ class Transcript(object):
                 else:
                     # other variant types not handled at this time
                     break                        
-            # handle potential frame shifts from deletions
+            # log variants
+            if seq[2][0][2] == 'V':
+                A1 = 3*((counter - coding_start) // 3) + coding_start
+                B1 = 3*(1 + (counter+len(seq[0])-coding_start) // 3) + coding_start
+                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                B2 = 3*(1 + (ref_counter+len(seq[0])-ref_start) // 3) + ref_start
+                # skip unless missense mutation
+                print sequence[A1:A2], seq_to_peptide(sequence[A1:A2]), "!=", ref_sequence[B1:B2],seq_to_peptide(ref_sequence[B1:B2])
+                if seq_to_peptide(sequence[A1:A2]) != seq_to_peptide(ref_sequence[B1:B2]):
+                    
+                    coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
+                                counter, counter + len(seq[0]), seq[2]])
+            else:
+                # need to handle indels here to make sure that coordinates being passed are accurate
+                coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
+                                counter, counter + len(seq[0]) - 1, seq[2]])
+            # handle potential frame shifts from indels
             if seq[2][0][2] == 'D':
                 coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
                                 counter, counter + len(seq[0]), seq[2]])
@@ -1236,10 +1252,14 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.intervals, [5246692, 5246955, 
                                                          5247805, 5248028,
                                                          5248158, 5248300])
-            self.assertEqual(self.transcript.start_codon, 5248248)
+            self.assertEqual(self.transcript.start_codon, 5248249)
+            self.assertEqual(self.transcript._start_codon, 5248248)
+            self.assertEqual(self.transcript.stop_codon, 5246828)
+            self.assertEqual(self.transcript._stop_codon, 5246827)
             self.assertTrue(self.transcript.rev_strand)
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [])
+        # Reading frame tests
         def test_rev_reading_frame(self):
             """Fails if incorrect reading frame is called in rev transcript"""
             # Before and after exons
@@ -1272,6 +1292,7 @@ if __name__ == '__main__':
             self.assertEqual(self.fwd_transcript.reading_frame(487029), 0)
             self.assertEqual(self.fwd_transcript.reading_frame(460270), 1)
             self.assertEqual(self.fwd_transcript.reading_frame(460259), 2)
+        # Transcript sequence editing tests
         def test_irrelevant_edit(self):
             """Fails if edit is made for non-exon position"""
             self.transcript.edit('G', 5248155)
@@ -1453,12 +1474,24 @@ if __name__ == '__main__':
                                         5248165))
             self.assertEqual(seq[4], ('GGGC', 'R', [()], [], 5248165))
             self.assertEqual(len(seq[6][0]), 481)
-        def no_peptides(self):
+        # Neopeptide tests
+        def no_mutations_peptides(self):
             """Fails if peptides are returned for unmutated sequence"""
             peptides = self.fwd_transcript.neopeptides().keys()
             self.assertEqual(peptides, [])
-        def internal_snv_peptides(self):
-            """Fails if incorrect peptides are returned for simple SNV"""
+        def noncoding_mutation_peptdies(self):
+            """Fails if peptides are returned for mutation in noncoding 
+                sequence"""
+            self.fwd_transcript.edit('G', 450286)
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(peptides, [])
+        def synonymous_snv_peptides(self):
+            """Fails if peptides are returned for a synonymous snv"""
+            self.fwd_transcript.edit('A', 450464)
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(peptides, [])
+        def missense_snv_peptides(self):
+            """Fails if incorrect peptides are returned for missense SNV"""
             self.fwd_transcript.edit('T', 450502)
             peptides = self.fwd_transcript.neopeptides().keys()
             F_peptides = [pep for pep in peptides if 'F' in pep]
@@ -1466,4 +1499,35 @@ if __name__ == '__main__':
             self.assertEqual(len(peptides), len(F_peptides))
             self.assertEqual(sorted(peptides)[0], 'AGGPRPEF')
             self.assertEqual(sorted(peptides)[-1], 'RRDAGGPRPEF')
+        def in_frame_insertion_peptides(self):
+            """Fails if incorrect peptides are returned for in-frame 
+                insertion"""
+            self.fwd_transcript.edit('AAA', 450551, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            K_peptides = [pep for pep in peptides if 'K' in pep]
+            self.assertEqual(len(peptides), 38)
+            self.assertEqual(len(peptides), len(K_peptides))
+            self.assertEqual(sorted(peptides)[0], 'ASLEEPPDGPK')
+            self.assertEqual(sorted(peptides)[-1], 'SLEEPPDGPKS')
+        def synonymous_inframe_insertion_peptides(self):
+            """Fails if incorrect peptides are returned for in insertion into
+                a codon that maintains the AA sequence of that codon"""
+            self.fwd_transcript.edit('AAA', 450502, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 38)
+            ## NEED TO FIX THE CODE FOR THIS ##
+        def in_frame_deletion_peptides(self):
+            """Fails if incorrect peptides are given for in-frame deletion"""
+            self.fwd_transcript.edit(3, 450555, mutation_type='D')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 34)
+            self.assertEqual(sorted(peptides)[0], 'DGPSGQAT')
+            self.assertEqual(sorted(peptides)[-1], 'SLEEPPDGPSG')
+        def synonymous_inframe_insertion_peptides(self):
+            """Fails if incorrect peptides are returned for in insertion into
+                a codon that maintains the AA sequence of that codon"""
+            self.fwd_transcript.edit(3, 473918, mutation_type='D')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 34)
+            ## NEED TO FIX THE CODE FOR THIS ##
     unittest.main()
