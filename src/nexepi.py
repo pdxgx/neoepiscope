@@ -69,25 +69,25 @@ def adjust_tumor_column(in_vcf, out_vcf):
     header_lines = []
     other_lines = []
     # Process input vcf
-    with open(in_vcf, "r") as f:
+    with open(in_vcf, 'r') as f:
         for line in f:
             # Preserve header lines with out change
-            if line[0:2] == "##":
-                header_lines.append(line.strip("\n"))
+            if line[0:2] == '##':
+                header_lines.append(line.strip('\n'))
             # Adjust column header and variant lines
             else:
-                tokens = line.strip("\n").split("\t")
-                new_line = "\t".join([tokens[0], tokens[1], tokens[2], 
+                tokens = line.strip('\n').split('\t')
+                new_line = '\t'.join([tokens[0], tokens[1], tokens[2], 
                                         tokens[3], tokens[4], tokens[5], 
                                         tokens[6], tokens[7], tokens[8], 
                                         tokens[10], tokens[9]])
                 other_lines.append(new_line)
     # Write new vcf
-    with open(out_vcf, "w") as f:
+    with open(out_vcf, 'w') as f:
         for line in header_lines:
-            f.write(line + "\n")
+            f.write(line + '\n')
         for line in other_lines:
-            f.write(line + "\n")
+            f.write(line + '\n')
 
 def combinevcf(vcf1, vcf2, outfile="Combined.vcf"):
     """ Combines VCFs
@@ -305,6 +305,10 @@ if __name__ == '__main__':
                                         help=('produces pickled dictionaries '
                                         'linking transcripts to intervals and '
                                         ' CDS lines in a GTF'))
+    swap_parser = subparsers.add_parser('swap',
+                                        help=('swaps tumor and normal columns '
+                                        'in a somatic vcf if necessary for '
+                                        'proper HapCUT2 results'))
     merge_parser = subparsers.add_parser('merge',
                                          help=('merges germline and somatic '
                                                'VCFS for combined mutation '
@@ -319,6 +323,12 @@ if __name__ == '__main__':
         )  
     index_parser.add_argument('-d', '--dicts', type=str, required=True,
             help='output path to pickled CDS dictionary'
+        )
+    swap_parser.add_argument('-i', '--input', type=str, required=True,
+            help='input path to somatic VCF'
+        )
+    swap_parser.add_argument('-o', '--output', type=str, required=False,
+            help='output path to column-swapped VCF'
         )
     merge_parser.add_argument('-g', '--germline', type=str, required=True,
             help='input path to germline VCF'
@@ -581,7 +591,7 @@ if __name__ == '__main__':
                     tokens = line.split('\t')
                     pos = int(tokens[1])
                     alt_alleles = tokens[4].split(',')
-                    for allele in alt_alleles
+                    for allele in alt_alleles:
                         if (tokens[3], allele) not in phased[
                                                     (tokens[0], pos)
                                                 ]:
