@@ -1524,11 +1524,19 @@ if __name__ == '__main__':
             self.transcript.edit('TTT', 5246874, mutation_type='I')
             rev_peptides = self.transcript.neopeptides().keys()
             self.assertEqual(len(rev_peptides), 38)
-             ## NEED TO FIX THE CODE FOR THIS ##
+             ## NEED TO FIX THE CODE FOR THIS - CODON ISSUE ##
         def test_frameshift_insertion(self):
             """Fails if incorrect peptides are returned for frameshift
                 insertion"""
-            pass
+            self.fwd_transcript.edit('AAAAA', 473925, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 108)
+            self.assertEqual(sorted(peptides)[0], 'ASILVFLK')
+            self.assertEqual(sorted(peptides)[-1], 'VLESHKLKTGH')
+            self.transcript.edit('AAAAA', 5247883, mutation_type='I')
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(sorted(rev_peptides)[0], 'AFSDGLAHLV')
+            self.assertEqual(sorted(rev_peptides)[-1], 'VFTTSRAPLPH')
         def test_in_frame_deletion_peptides(self):
             """Fails if incorrect peptides are given for in-frame deletion"""
             self.fwd_transcript.edit(3, 450555, mutation_type='D')
@@ -1550,11 +1558,20 @@ if __name__ == '__main__':
             self.transcript.edit(3, 5247922, mutation_type='D')
             rev_peptides = self.transcript.neopeptides().keys()
             self.assertEqual(len(rev_peptides), 34)
-            ## NEED TO FIX THE CODE FOR THIS ##
+            ## NEED TO FIX THE CODE FOR THIS - CODON ISSUE ##
         def test_frameshift_deletion(self):
             """Fails if incorrect peptides are returned for frameshift
                 deletion"""
-            pass
+            self.fwd_transcript.edit(5, 473912, mutation_type='D')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 40)
+            self.assertEqual(sorted(peptides)[0], 'ASSFLMFW')
+            self.assertEqual(sorted(peptides)[-1], 'YNTKRGIVASS')
+            self.transcript.edit(5, 5247930, mutation_type='D')
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 32)
+            self.assertEqual(sorted(rev_peptides)[0], 'AVMGNPKVKG')
+            self.assertEqual(sorted(rev_peptides)[-1], 'VMGNPKVKGQE')
         def test_nonstop_mutation_peptides(self):
             """Fails if mutation altering stop codon does not return peptides
                 past the end of the original peptide to the new stop"""
@@ -1583,17 +1600,51 @@ if __name__ == '__main__':
         def test_start_lost_and_new_inframe_start(self):
             """Fails if peptides aren't returned from a new in frame start codon 
                 when the original is disrupted"""
-            pass
+            self.fwd_transcript.edit('ATG', 450446, mutation_type='I')
+            self.fwd_transcript.edit('T', 450456)
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 16)
+            self.transcript.edit('CAT', 5248279, mutation_type='I')
+            self.transcript.edit('G', 5248251)
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 44)
+            ## NEED TO FIX THE CODE FOR THIS - LOOKS FOR DOWNSTREAM START ##
         def test_start_lost_and_new_out_of_frame_start(self):
             """Fails if peptides aren't returned from a new out of frame start 
                 codon when the original is disrupted"""
-            pass
+            self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
+            self.fwd_transcript.edit('T', 450456)
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 'LENGTH')
+            self.transcript.edit('CAT', 5248280, mutation_type='I')
+            self.transcript.edit('G', 5248251)
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 'LENGTH')
+            ## NEED TO FIX THE CODE FOR THIS - LOOKS FOR DOWNSTREAM START ##
         def test_skipping_new_start(self):
             """Fails if peptides are returned from a new start codon when the 
                 original is retained"""
-            pass
+            self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(peptides, [])
+            self.transcript.edit('CAT', 5248280, mutation_type='I')
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(rev_peptides, [])
         def test_compound_indel_peptides(self):
             """Fails if incorrect peptides are returned with complementary
                 indels are introduced (i.e. frameshift then return to frame)"""
-            pass
+            self.fwd_transcript.edit(4, 473924, mutation_type='D')
+            self.fwd_transcript.edit('AAAA', 473952, mutation_type='I')
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 74)
+            self.assertEqual(sorted(peptides)[0], 'ASILVFFL')
+            self.assertEqual(sorted(peptides)[-1], 'VFFLESHKLKT')
+            ### ABOVE IS BROKEN BECAUSE OF SYNONYMOUS CODON ISSUE
+
+            self.transcript.edit(4, 5247921, mutation_type='D')
+            self.transcript.edit('AAAA', 5247933, mutation_type='I')
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 50)
+            ### THIS IS BROKEN TOO - DON'T KNOW WHY ###
+
     unittest.main()
