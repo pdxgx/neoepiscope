@@ -1034,12 +1034,14 @@ class Transcript(object):
                 A1 = 3*((counter - coding_start) // 3) + coding_start
                 B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
                 A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                C = 3*((seq[4]-coding_start) // 3) + coding_start
                 for i in range(0, B1-A1, 3):
                     A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
                     B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
                     if A != B:
+                        # subselect only those variants that overlap with AA change
                         coordinates.append([seq[4], seq[4] + len(seq[0])*strand,
-                                counter+i*3, counter+i*3+2, seq[2]])
+                                counter+i, counter+i+2, [(a,b,c) for (a,b,c) in seq[2] if a-C>=i and a-C<=i+2]])
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
