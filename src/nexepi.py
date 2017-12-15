@@ -779,6 +779,7 @@ if __name__ == '__main__':
                                                     interval_dict)
         # Iterate over relevant transcripts to create transcript objects and
         #   enumerate neoepitopes
+        neoepitopes = collections.defaultdict(list)
         for affected_transcript in relevant_transcripts:
             # Create transcript object
             transcriptA = Transcript(reference_index, 
@@ -828,10 +829,23 @@ if __name__ == '__main__':
                                     mutation_type=mutation_type, 
                                     mutation_class=mutation_class,
                                     VAF=VAF)
-                ## ENUMERATE NEOEPITOPES FROM BOTH COPIES HERE
+                # Extract neoepitopes
+                A_peptides = transcriptA.neopeptides(min_size=size_list[0], 
+                                                     max_size=size_list[-1],
+                                                     include_somatic=1,
+                                                     include_germline=2)
+                B_peptides = transcriptB.neopeptides(min_size=size_list[0], 
+                                                     max_size=size_list[-1],
+                                                     include_somatic=1,
+                                                     include_germline=2)
+                for pep in A_peptides:
+                    neoepitopes[pep].append(A_peptides[pep])
+                for pep in B_peptides:
+                    neoepitopes[pep].append(B_peptides[pep])
                 ## WILL NEED TO CHECK FOR DUPLICATES BETWEEN THE TWO COPIES
                 transcriptA.reset(reference=True)
                 transcriptB.reset(reference=True)
+        ## WRITE NEOEPITOPES TO OUTPUT FILE 
     else:
         sys.exit("".join([args.subparser_name, 
                             " is not a valid software mode"]))

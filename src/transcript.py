@@ -921,6 +921,9 @@ class Transcript(object):
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         coding_ref_start = -1
+        print ATGs
+        print new_ATG_upstream
+        print
         for ATG in ATGs:
             if ATG[1] == ref_start:
                 coding_ref_start = ATG[0]
@@ -928,6 +931,7 @@ class Transcript(object):
                 continue
             if len(start_codon) <= 0:
                 start_codon = ATG
+        print start_codon
         if start_codon == [] and new_ATG_upstream:
             for ATG in ATGs[::-1]:
                 if not ATG[3] and not ATG[4]:
@@ -1061,8 +1065,6 @@ class Transcript(object):
         if len(protein) > (coding_stop - coding_start) // 3:
             frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
         peptide_seqs = collections.defaultdict(list)
-        print coordinates
-        print
         print protein
         print
         # get amino acid ranges for kmerization
@@ -1074,8 +1076,6 @@ class Transcript(object):
             for coords in frame_shifts:
                 epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
                     min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
-            print size
-            print epitope_coords
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
