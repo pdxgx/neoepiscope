@@ -823,7 +823,12 @@ class Transcript(object):
                     ATG_limit -= 1
                 if ATG1 > 0 and ATG2 < 0:
                     if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
-                        new_ATG_upstream = True
+                        #new_ATG_upstream = True
+                        new_ATG_upstream = [ATG1, ATG1-ATG_temp1+ATG_temp2, 
+                                            seq_previous,
+                                            (ATG1 >= coding_start and 
+                                                coding_start >= 0), 
+                                            True, False]
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -838,7 +843,12 @@ class Transcript(object):
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
                     if ref_start < 0 or (ATG1 < coding_start and ref_start >= 0):
-                        new_ATG_upstream = True
+                        #new_ATG_upstream = True
+                        new_ATG_upstream = [ATG1, ATG1-ATG_temp1+ATG_temp2, 
+                                            seq_previous,
+                                            (ATG1 >= coding_start and 
+                                                coding_start >= 0), 
+                                            True, False]
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                         ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
@@ -921,17 +931,19 @@ class Transcript(object):
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         coding_ref_start = -1
-        print ATGs
-        print new_ATG_upstream
-        print
         for ATG in ATGs:
+            print ATG
             if ATG[1] == ref_start:
                 coding_ref_start = ATG[0]
             if not ATG[3] or ATG[5]:
                 continue
             if len(start_codon) <= 0:
-                start_codon = ATG
-        print start_codon
+                ## This fix works ONLY if original start is disrupted
+                ## Maybe we could add a check for whether it is disrupted?
+                if new_ATG_upstream:
+                    start_codon = new_ATG_upstream
+                else:
+                    start_codon = ATG
         if start_codon == [] and new_ATG_upstream:
             for ATG in ATGs[::-1]:
                 if not ATG[3] and not ATG[4]:
@@ -1603,7 +1615,8 @@ if __name__ == '__main__':
             self.fwd_transcript.edit('ATG', 450446, mutation_type='I')
             self.fwd_transcript.edit('T', 450456)
             peptides = self.fwd_transcript.neopeptides().keys()
-            self.assertEqual(len(peptides), 16)
+            self.assertEqual(len(peptides), 20)
+            ### Got to fix this one below
             self.transcript.edit('CAT', 5248279, mutation_type='I')
             self.transcript.edit('G', 5248251)
             rev_peptides = self.transcript.neopeptides().keys()
