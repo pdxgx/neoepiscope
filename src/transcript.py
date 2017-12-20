@@ -792,37 +792,37 @@ class Transcript(object):
         encountered_true_start = False
         atg_priority_list = []
         for atg in atgs:
-            if (not encountered_true_start
-                and atg[3] and not atg[4]):
-                if not atg[5]
-                    '''If the original start codon is in the edited transcript,
-                    immediately return it.'''
-                    return 0, atg
-            if atg[3]:
-                '''If ATG is de novo, add it to priority list '''
-                atg_priority_list.append(atg)
-
-
-            if atg[3]: encountered_true_start = True
-        start_codon, coding_ref_start = , -1
-        for i, atg in enumerate(atgs):
-            if atg[1] == ref_start:
+            if (not encountered_true_start and atg[3] and not atg[4] 
+                    and not atg[5]):
+                '''If the original start codon is maintained in the edited 
+                    transcript, immediately return it.'''
+                return 0, atg
+            elif (not encountered_true_start and atg[3] and not atg[4] 
+                    and atg[5]):
+                '''If the original start codon is missing in the edited
+                    transcript, maintain it to keep track of reading frame
+                    changes for new start'''
                 coding_ref_start = atg[0]
-            if not atg[3] or atg[5]:
-                continue
-            if not start_codon:
-                ## This fix works ONLY if original start is disrupted
-                ## Maybe we could add a check for whether it is disrupted?
-                if new_atg_upstream:
-                    start_codon = new_atg_upstream
-                else:
-                    start_codon = atg
-        if start_codon and new_atg_upstream:
-            for atg in atgs[::-1]:
-                if not atg[3] and not atg[4]:
-                    continue
-                start_codon = atg
-                break
+            if atg[3]:
+                encountered_true_start = True
+            if not only_reference:
+                '''If not true start codon and accepting non-reference starts, 
+                    assess the start codon option'''
+                if only_downstream:
+                    if atg[3] and not atg[5]:
+                        atg_priority_list.append(atg)
+                elif only_novel_upstream:
+                    if (atg[3] or atg[4]) and not atg[5]:
+                        atg_priority_list.append(atg)
+                elif not only_novel_upstream and not only_downstream:
+                    atg_priority_list.append(atg)
+        if atg_priority_list == []:
+            # No valid ATGs
+            return None, None
+        else:
+            # The start codon is the first of the valid start codons
+            atg_priority_list = sorted(atg_priority_list)
+            start_codon = atg_priority_list[0]
         return (start_codon[0] - coding_ref_start) % 3, start_codon
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
@@ -986,6 +986,7 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
+        print ATGs
         if not ATGs:
             return {}
         start_codon = []
