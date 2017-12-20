@@ -654,7 +654,8 @@ class Transcript(object):
                             self._seq_append(final_seq, seqs[(i-1)/2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(), None,
-                                        seqs[(i-1)/2][1][0] + last_index + fill - 1)
+                                        seqs[(i-1)/2][1][0]
+                                            + last_index + fill - 1)
                         else:
                             self._seq_append(final_seq, seqs[(i-1)/2][0][
                                             last_index:last_index + fill
@@ -668,16 +669,18 @@ class Transcript(object):
                             '''Should happen only for insertions at beginning
                             of sequence.'''
                             assert (i - 1) / 2 == 0 and not seqs[0][0]
-                            snv = ('', 'R', tuple(), None, seqs[(i-1)/2][1][0] + fill)
-                        insertion = ('', 'R', tuple(), None, seqs[(i-1)/2][1][0] + fill)
+                            snv = ('', 'R', tuple(), None,
+                                        seqs[(i-1)/2][1][0] + fill)
+                        insertion = ('', 'R', tuple(), None,
+                                        seqs[(i-1)/2][1][0] + fill)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
                                 snv = (edit[0], edit[2], edit[3], edit[4], 
                                         edit[3][0])
                             else:
                                 assert edit[1] == 'I'
-                                insertion = (edit[0], edit[2], edit[3], edit[4], 
-                                                edit[3][0])
+                                insertion = (edit[0], edit[2],
+                                                edit[3], edit[4],  edit[3][0])
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
@@ -764,41 +767,104 @@ class Transcript(object):
             'yet fully supported.'
         )
 
+    def _atg_choice(atgs, only_novel_upstream=True,
+                    only_downstream=False, only_reference=False):
+        """ Chooses best start codon from a list of start codons.
+
+            atgs: list of lists, each representing a start codon, of the form
+                [pos in sequence or -1 if absent, pos in reference seq or -1 if
+                 absent, mutation information,
+                 True iff downstream of or at start codon, 
+                 True iff ATG de novo,
+                 True iff ATG absent in annotated seq]
+            only_novel_upstream: True if and only if only novel start codons
+                upstream of original start codon following reference ATGs
+                in 5'UTR are to be considered; otherwise, all upstream ATGs
+                are considered.
+            only_downstream: True if and only if only downstream alternative
+                start codons are to be considered; overrides 
+                only_novel_upstream.
+            only_reference: True if and only if only the original start codon
+                is allowed; overrides only_downstream and only_novel_upstream
+
+            Return value: tuple (reading_frame, chosen atg from atgs)
+        """
+        encountered_true_start = False
+        atg_priority_list = []
+        for atg in atgs:
+            if (not encountered_true_start
+                and atg[3] and not atg[4]):
+                if not atg[5]
+                    '''If the original start codon is in the edited transcript,
+                    immediately return it.'''
+                    return 0, atg
+            if atg[3]:
+                '''If ATG is de novo, add it to priority list '''
+                atg_priority_list.append(atg)
+
+
+            if atg[3]: encountered_true_start = True
+        start_codon, coding_ref_start = , -1
+        for i, atg in enumerate(atgs):
+            if atg[1] == ref_start:
+                coding_ref_start = atg[0]
+            if not atg[3] or atg[5]:
+                continue
+            if not start_codon:
+                ## This fix works ONLY if original start is disrupted
+                ## Maybe we could add a check for whether it is disrupted?
+                if new_atg_upstream:
+                    start_codon = new_atg_upstream
+                else:
+                    start_codon = atg
+        if start_codon and new_atg_upstream:
+            for atg in atgs[::-1]:
+                if not atg[3] and not atg[4]:
+                    continue
+                start_codon = atg
+                break
+        return (start_codon[0] - coding_ref_start) % 3, start_codon
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
         include_germline=2):
         """ Retrieves dict of predicted peptide fragments from transcript that 
             arise from one or more variants. 
+
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
-            include_somatic: 0 = do not include somatic mutations, 1 = exlude
-            somatic mutations from reference comparison, 2 = include somatic
-            mutations in both annotated sequence and reference comparison
-            include_germline: 0 = do not include germline mutations, 1 = exlude
-            germline mutations from reference comparison, 2 = include germline
-            mutations in both annotated sequence and reference comparison
+            include_somatic: 0 = do not include somatic mutations,
+                1 = exclude somatic mutations from reference comparison,
+                2 = include somatic mutations in both annotated sequence and
+                reference comparison
+            include_germline: 0 = do not include germline mutations,
+                1 = exclude germline mutations from reference comparison,
+                2 = include germline mutations in both annotated sequence and
+                reference comparison
+
             Return value: dict of peptides of desired length(s) [KEYS] with 
-            values equivalent to a list of causal variants [VALUES].
+                values equivalent to a list of causal variants [VALUES].
         """
         # if no edits to process, then skip all next steps and return {}
         if include_somatic == include_germline and include_somatic != 1:
             return {}
-        if len(self.edits) <= 0 and len(self.deletion_intervals) <= 0:
+        if not self.edits and not self.deletion_intervals:
             return {}
         # min size to process is 2 amino acids, otherwise skip and return {}
         if min_size < 2:
             return {}
         # ensure max_size is not smaller than min_size
-        if max_size < min_size:
-            max_size = min_size
-        annotated_seq = self.annotated_seq(include_somatic=include_somatic, 
-            include_germline=include_germline)
+        assert max_size >= min_size
+        annotated_seq = self.annotated_seq(
+                            include_somatic=include_somatic, 
+                            include_germline=include_germline
+                        )
 
         sequence, ref_sequence = '', '' # hold flattened nucleotide sequence
-        start = self.start_codon
-        stop = self.stop_codon
-        if start == None or stop == None:
+        start = self.start_codon # redundant var; can change
+        stop = self.stop_codon # redundant var; can change
+        if start is None or stop is None:
             return {}
+        # +1 is + strand, -1 is - strand
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
@@ -920,7 +986,7 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
-        if ATGs == []:
+        if not ATGs:
             return {}
         start_codon = []
         reading_frame = 0
@@ -932,7 +998,6 @@ class Transcript(object):
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         coding_ref_start = -1
         for ATG in ATGs:
-            print ATG
             if ATG[1] == ref_start:
                 coding_ref_start = ATG[0]
             if not ATG[3] or ATG[5]:
@@ -1077,8 +1142,6 @@ class Transcript(object):
         if len(protein) > (coding_stop - coding_start) // 3:
             frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
         peptide_seqs = collections.defaultdict(list)
-        print protein
-        print
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
