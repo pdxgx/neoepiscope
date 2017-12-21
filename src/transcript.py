@@ -1635,11 +1635,11 @@ if __name__ == '__main__':
             peptides = self.fwd_transcript.neopeptides().keys()
             self.assertEqual(peptides, [])
             # Next start immediately followed by stop for fwd strand transcript
-            #self.transcript.edit('G', 5248251)
-            #rev_peptides = self.transcript.neopeptides().keys()
-            #self.assertEqual(len(rev_peptides), 122)
-            #self.assertEqual(sorted(rev_peptides)[0], 'AGCWWSTL')
-            #self.assertEqual(sorted(rev_peptides)[-1], 'WWSTLGPRGSL')
+            self.transcript.edit('G', 5248251)
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 122)
+            self.assertEqual(sorted(rev_peptides)[0], 'AGCWWSTL')
+            self.assertEqual(sorted(rev_peptides)[-1], 'WWSTLGPRGSL')
         def test_start_lost_and_new_inframe_start(self):
             """Fails if peptides aren't returned from a new in frame start codon 
                 when the original is disrupted"""
@@ -1648,23 +1648,21 @@ if __name__ == '__main__':
             peptides = self.fwd_transcript.neopeptides().keys()
             self.assertEqual(len(peptides), 20)
             ### Got to fix this one below
-            #self.transcript.edit('CAT', 5248279, mutation_type='I')
-            #self.transcript.edit('G', 5248251)
-            #rev_peptides = self.transcript.neopeptides().keys()
-            #self.assertEqual(len(rev_peptides), 44)
-            ## NEED TO FIX THE CODE FOR THIS - LOOKS FOR DOWNSTREAM START ##
+            self.transcript.edit('CAT', 5248263, mutation_type='I')
+            self.transcript.edit('G', 5248251)
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 24)
         def test_start_lost_and_new_out_of_frame_start(self):
             """Fails if peptides aren't returned from a new out of frame start 
                 codon when the original is disrupted"""
             self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
             self.fwd_transcript.edit('T', 450456)
             peptides = self.fwd_transcript.neopeptides().keys()
-            self.assertEqual(len(peptides), 'LENGTH')
+            self.assertEqual(len(peptides), 98)
             self.transcript.edit('CAT', 5248280, mutation_type='I')
             self.transcript.edit('G', 5248251)
-            #rev_peptides = self.transcript.neopeptides().keys()
-            #self.assertEqual(len(peptides), 'LENGTH')
-            ## NEED TO FIX THE CODE FOR THIS - LOOKS FOR DOWNSTREAM START ##
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 22)
         def test_skipping_new_start(self):
             """Fails if peptides are returned from a new start codon when the 
                 original is retained"""
@@ -1683,12 +1681,9 @@ if __name__ == '__main__':
             self.assertEqual(len(peptides), 74)
             self.assertEqual(sorted(peptides)[0], 'ASILVFFL')
             self.assertEqual(sorted(peptides)[-1], 'VFFLESHKLKT')
-            ### ABOVE IS BROKEN BECAUSE OF SYNONYMOUS CODON ISSUE
-
             self.transcript.edit(4, 5247921, mutation_type='D')
             self.transcript.edit('AAAA', 5247933, mutation_type='I')
             rev_peptides = self.transcript.neopeptides().keys()
-            self.assertEqual(len(peptides), 50)
-            ### THIS IS BROKEN TOO - DON'T KNOW WHY ###
+            self.assertEqual(len(rev_peptides), 50)
 
     unittest.main()
