@@ -958,8 +958,14 @@ class Transcript(object):
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
                 else:
-                    for i in seq[2]:
-                        ref_sequence += i[1]
+                    if self.rev_strand:
+                        for i in seq[2]:
+                            ref_sequence += i[1][::-1].translate(
+                                                    revcomp_translation_table
+                                                )
+                    else:
+                        for i in seq[2]:
+                            ref_sequence += i[1]
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
@@ -971,13 +977,15 @@ class Transcript(object):
         # with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
-        reading_frame, start_codon = self._atg_choice(ATGs, 
-                                        only_novel_upstream=only_novel_upstream,
-                                        only_downstream=only_downstream, 
-                                        only_reference=only_reference)
+        reading_frame, start_codon = self._atg_choice(
+                                    ATGs, 
+                                    only_novel_upstream=only_novel_upstream,
+                                    only_downstream=only_downstream, 
+                                    only_reference=only_reference
+                                )
         if start_codon is None:
             return {}
-        if reading_frame != 0:
+        if reading_frame:
             frame_shifts.append([start, -1, 0, -1, start_codon[2]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
@@ -1053,11 +1061,11 @@ class Transcript(object):
             elif seq[2][0][2] == 'I':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) - 1, seq[2]])
-                if len(seq[0]) % 3 != 0:
-                    if reading_frame == 0:
+                if len(seq[0]) % 3:
+                    if not reading_frame:
                         reading_frame = len(seq[0]) % 3
                         frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
-                    elif (reading_frame + len(seq[0])) % 3 == 0:
+                    elif not (reading_frame + len(seq[0])) % 3:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
                             if frame_shifts[i-1][1] < 0:
