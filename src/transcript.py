@@ -398,6 +398,13 @@ class Transcript(object):
                         if start_index % 2 or pos == intervals[start_index][0]:
                             # An insertion is valid before or after a block
                             edits[pos].append(edit)
+            # If there is more than 1 SNV at the same position, one must be 
+            #   germline and the other somatic, as only 1 mutation per mutation 
+            #   class is allowed at the same position. Favor the somatic mutation.
+            snvs = [v for v in edits[pos] if v[1] == 'V']
+            if len(snvs) > 1:
+                germ = [v for v in snvs if v[2] == 'G'][0]
+                edits[pos].remove(germ)
         # Remove empty intervals
         intervals = [intervals[i] for i in xrange(len(intervals))
                          if (i % 2
