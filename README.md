@@ -3,11 +3,19 @@ Neoepiscope
 Neoepiscope is a tool that takes a cancer patient's seq data (DNA and RNA from tumor and germline) and hollistically predicts a set of the most likely neoantigens for possible personalized vaccine treatments.  We found that previous methods were limiting in their breadth, often accounting for only a single, unphased SNV per epitope and not fully enumerating neoepitopes resulting from indels and start/stop codon mutations.  With this in mind, Neoepiscope emphasizes a combination of efficiency, coverage, and flexibility to provide the most accurate predictions of neoantigens resulting from a variety of mutation types and combinations.
 
 Software prerequisites:
+
 [HapCUT2](https://github.com/vibansal/HapCUT2)
+
+Binding affinity predictor (either [netMHCpan](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan) or [netMHCIIpan](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan))
+
 Python packages: 
+
   Install via pip:
+  
   intervaltree, sortedcontainers
+  
   Other:
+  
   bowtie_index?
 
 Installing Neoepiscope:
