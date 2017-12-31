@@ -1025,8 +1025,20 @@ class Transcript(object):
 #                ref_counter += len(seq[2][0][1])
             # handle potential frame shifts from insertions
             elif seq[2][0][2] == 'I':
-                coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) - 1, seq[2]])
+                A1 = 3*((counter - coding_start) // 3) + coding_start
+                B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
+                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
+                for i in range(0, B1-A1, 3):
+                    A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
+                    B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
+                    if A != B:
+                        coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
+                            counter+i, counter+B1-A1, seq[2]])
+                        break
+                if A == B:
+                    coordinates.append([seq[4] + len(seq[0])*strand - 1, 
+                        seq[4] + len(seq[0])*strand,
+                        counter+B1-A1, counter + B1-A1+1, seq[2]])
                 if len(seq[0]) % 3 != 0:
                     if reading_frame == 0:
                         reading_frame = len(seq[0]) % 3
@@ -1056,7 +1068,8 @@ class Transcript(object):
                     B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
                     if A != B:
                         coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
-                                counter+i*3, counter+i*3+2 - 1, seq[2]])
+                            counter+i, counter+i+2, 
+                            [(a,b,c) for (a,b,c) in seq[2] if a-C>=i and a-C<=i+2]])
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
