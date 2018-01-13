@@ -811,6 +811,7 @@ class Transcript(object):
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
+        compare_peptides_to_ref = False
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
@@ -982,6 +983,7 @@ class Transcript(object):
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[4] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
+                        compare_peptides_to_ref = True
                     counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'V':
@@ -999,6 +1001,7 @@ class Transcript(object):
             if seq[2][0][2] == 'D':
                 coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) -1 , seq[2]])
+                compare_peptides_to_ref = True
                 read_frame1 = self.reading_frame(seq[4])
                 read_frame2 = self.reading_frame(seq[4] + len(seq[2][0][1]))
                 if read_frame1 is None or read_frame2 is None:
@@ -1025,20 +1028,9 @@ class Transcript(object):
 #                ref_counter += len(seq[2][0][1])
             # handle potential frame shifts from insertions
             elif seq[2][0][2] == 'I':
-                A1 = 3*((counter - coding_start) // 3) + coding_start
-                B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
-                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
-                for i in range(0, B1-A1, 3):
-                    A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
-                    B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
-                    if A != B:
-                        coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
-                            counter+i, counter+B1-A1, seq[2]])
-                        break
-                if A == B:
-                    coordinates.append([seq[4] + len(seq[0])*strand - 1, 
-                        seq[4] + len(seq[0])*strand,
-                        counter+B1-A1, counter + B1-A1+1, seq[2]])
+                coordinates.append([seq[4], seq[4] + len(seq[0])*strand - 1,
+                                counter, counter + len(seq[0]) -1 , seq[2]])
+                compare_peptides_to_ref = True
                 if len(seq[0]) % 3 != 0:
                     if reading_frame == 0:
                         reading_frame = len(seq[0]) % 3
@@ -1081,6 +1073,8 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        if compare_peptides_to_ref:
+            protein_ref = seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
         if TAA_TGA_TAG == []:
             assert 'X' in protein
             for i in xrange(coding_start, len(sequence), 3):
@@ -1092,6 +1086,8 @@ class Transcript(object):
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
+            if compare_peptides_to_ref:
+                peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size)
             for coords in coordinates:
                 epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
                     min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
@@ -1101,9 +1097,11 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
+                if compare_peptides_to_ref:
+                    peptides = list(set(peptides).difference(peptides_ref))
                 for pep in peptides:
                     peptide_seqs[pep].append(coords[2])
-        # return list of unique neoepitope sequences
+       # return list of unique neoepitope sequences
         return peptide_seqs
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
