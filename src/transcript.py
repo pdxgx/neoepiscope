@@ -401,10 +401,11 @@ class Transcript(object):
             # If there is more than 1 SNV at the same position, one must be 
             #   germline and the other somatic, as only 1 mutation per mutation 
             #   class is allowed at the same position. Favor the somatic mutation.
-            snvs = [v for v in edits[pos] if v[1] == 'V']
-            if len(snvs) > 1:
-                germ = [v for v in snvs if v[2] == 'G'][0]
-                edits[pos].remove(germ)
+            if pos in edits:
+                snvs = [v for v in edits[pos] if v[1] == 'V']
+                if len(snvs) > 1:
+                    germ = [v for v in snvs if v[2] == 'G'][0]
+                    edits[pos].remove(germ)
         # Remove empty intervals
         intervals = [intervals[i] for i in xrange(len(intervals))
                          if (i % 2
@@ -937,7 +938,21 @@ class Transcript(object):
                     coding_stop = counter + (stop - seq[3] + 2*self.rev_strand)*strand
                     ref_stop = ref_counter + (stop - seq[3] + 2*self.rev_strand)*strand
                     TAA_TGA_TAG = seq
-                continue    
+                ref_sequence
+                if ((seq[1] == 'G' and include_germline == 2) or 
+                    (seq[1] == 'S' and include_somatic == 2)):                  
+                    ref_sequence += seq[0]
+                else:
+                    if self.rev_strand:
+                        for i in seq[2]:
+                            ref_sequence += i[1][::-1].translate(
+                                                    revcomp_translation_table
+                                                )
+                    else:
+                        for i in seq[2]:
+                            ref_sequence += i[1]
+                ref_counter += len(seq[0])
+                continue
             elif seq[2][0][2] == 'I':
                 if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -1341,9 +1356,9 @@ if __name__ == '__main__':
         # Transcript sequence editing tests
         def test_irrelevant_edit(self):
             """Fails if edit is made for non-exon position"""
-            self.transcript.edit('G', 5248155)
+            self.transcript.edit('A', 5248155)
             relevant_edits = self.transcript.expressed_edits()
-            self.assertEqual(self.transcript.edits[5248154], [('G', 'V', 'S', 
+            self.assertEqual(self.transcript.edits[5248154], [('A', 'V', 'S', 
                                                               (5248155, 'C', 
                                                                 'V', None))])
             self.assertEqual(relevant_edits[0], {})
@@ -1584,8 +1599,7 @@ if __name__ == '__main__':
             self.assertEqual(len(peptides), 38)
             self.transcript.edit('TTT', 5246874, mutation_type='I')
             rev_peptides = self.transcript.neopeptides().keys()
-            self.assertEqual(len(rev_peptides), 38)
-             ## NEED TO FIX THE CODE FOR THIS - CODON ISSUE ##
+            self.assertEqual(len(rev_peptides), 34)
         def test_frameshift_insertion(self):
             """Fails if incorrect peptides are returned for frameshift
                 insertion"""
@@ -1618,8 +1632,7 @@ if __name__ == '__main__':
             self.assertEqual(len(peptides), 34)
             self.transcript.edit(3, 5247922, mutation_type='D')
             rev_peptides = self.transcript.neopeptides().keys()
-            self.assertEqual(len(rev_peptides), 34)
-            ## NEED TO FIX THE CODE FOR THIS - CODON ISSUE ##
+            self.assertEqual(len(rev_peptides), 30)
         def test_frameshift_deletion(self):
             """Fails if incorrect peptides are returned for frameshift
                 deletion"""
