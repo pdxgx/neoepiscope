@@ -875,6 +875,7 @@ class Transcript(object):
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
+        compare_peptides_to_ref = False
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
@@ -1023,6 +1024,7 @@ class Transcript(object):
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
+                        compare_peptides_to_ref = True
                     counter += len(seq[0])
                     continue
                 elif seq[2][0][2] == 'V':
@@ -1040,6 +1042,7 @@ class Transcript(object):
             if seq[2][0][2] == 'D':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) -1 , seq[2]])
+                compare_peptides_to_ref = True
                 read_frame1 = self.reading_frame(seq[3])
                 read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][1]))
                 if read_frame1 is None or read_frame2 is None:
@@ -1068,6 +1071,7 @@ class Transcript(object):
             elif seq[2][0][2] == 'I':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) - 1, seq[2]])
+                compare_peptides_to_ref = True
                 if len(seq[0]) % 3:
                     if not reading_frame:
                         reading_frame = len(seq[0]) % 3
@@ -1109,6 +1113,8 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        if compare_peptides_to_ref:
+            protein_ref = seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
         if TAA_TGA_TAG == []:
             assert 'X' in protein
             for i in xrange(coding_start, len(sequence), 3):
@@ -1120,6 +1126,8 @@ class Transcript(object):
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
+            if compare_peptides_to_ref:
+                peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size)
             for coords in coordinates:
                 epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
                     min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
@@ -1129,6 +1137,8 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
+                if compare_peptides_to_ref:
+                    peptides = list(set(peptides).difference(peptides_ref))
                 for pep in peptides:
                     for mutation_data in coords[2]:
                         peptide_seqs[pep].append(mutation_data)
