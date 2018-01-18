@@ -851,7 +851,8 @@ class Transcript(object):
         if min_size < 2:
             return {}
         # ensure max_size is not smaller than min_size
-        assert max_size >= min_size
+        if max_size < min_size:
+            max_size = min_size
         annotated_seq = self.annotated_seq(
                             include_somatic=include_somatic, 
                             include_germline=include_germline
