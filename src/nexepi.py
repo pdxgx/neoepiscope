@@ -615,14 +615,14 @@ if __name__ == '__main__':
                     counter += 1
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
-        interval_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
-                                '/', 'intervals_to_transcript.pickle']), 'rb'))
-        cds_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
-                                '/', 'transcript_to_CDS.pickle']), 'rb'))
+        interval_dict = pickle.load(open(args.dicts + "".join([dictdir, 
+                                "/", "intervals_to_transcript.pickle"]), "rb"))
+        cds_dict = pickle.load(open(args.dicts + "".join([dictdir, 
+                                "/", "transcript_to_CDS.pickle"]), "rb"))
         # Check affinity predictor
         program = which(args.affinity_predictor)
         if program is None:
-            raise ValueError(' '.join([program, 'is not a valid software']))
+            raise ValueError(" ".join([program, "is not a valid software"]))
         elif 'netMHCIIpan' in program:
             def get_affinity(peptides, allele, netmhciipan=program,
                                             remove_files=True):
@@ -833,7 +833,7 @@ if __name__ == '__main__':
                     else:
                         mutation_type = '?'
                     # Determine if mutation is somatic or germline
-                    if mutation[6][-1] == '*':
+                    if mutation[6][-1] == "*":
                         mutation_class = 'G'
                     else:
                         mutation_class = 'S'
@@ -870,7 +870,6 @@ if __name__ == '__main__':
                                                      only_reference=only_reference)
                 # Store neoepitopes and their metadata
                 for pep in A_peptides:
-                    ## Meta data does not include chromosome at the moment
                     for meta_data in A_peptides[pep]:
                         if meta_data not in neoepitopes[pep]:
                             neoepitopes[pep].append(meta_data)
@@ -881,17 +880,8 @@ if __name__ == '__main__':
                 transcriptA.reset(reference=True)
                 transcriptB.reset(reference=True)
         binding_scores = get_affinity(sorted(neoepitopes.keys()), args.allele)
-        ## Do we want more to run for more than one allele at a time?
-        ## What value do we want from netMHCpan? affinity or score?
-        for i in range(0, sorted(neoepitopes.keys())):
-            meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
-            for mutation in meta_data:
-                mutation = mutation + (binding_scores[i])
-        ## What format do we want for the output file?
-        with open(args.output_file, 'w') as o:
-            o.write('\t'.join(['DATA GOES HERE']) + '\n')
-            for epitope in neoepitopes:
-                o.write('\t'.join(['DATA GOES HERE']) + '\n')
+        ## ADD BINDING SCORE METADATA TO STORED METADATA FOR EACH NEOEPITOPE
+        ## WRITE NEOEPITOPES TO OUTPUT FILE 
     else:
         sys.exit(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
