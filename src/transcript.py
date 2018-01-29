@@ -44,22 +44,22 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
 
 # X below denotes a stop codon
 _codon_table = {
-        "TTT":"F", "TTC":"F", "TTA":"L", "TTG":"L",
-        "TCT":"S", "TCC":"S", "TCA":"S", "TCG":"S",
-        "TAT":"Y", "TAC":"Y", "TAA":"X", "TAG":"X",
-        "TGT":"C", "TGC":"C", "TGA":"X", "TGG":"W",
-        "CTT":"L", "CTC":"L", "CTA":"L", "CTG":"L",
-        "CCT":"P", "CCC":"P", "CCA":"P", "CCG":"P",
-        "CAT":"H", "CAC":"H", "CAA":"Q", "CAG":"Q",
-        "CGT":"R", "CGC":"R", "CGA":"R", "CGG":"R",
-        "ATT":"I", "ATC":"I", "ATA":"I", "ATG":"M",
-        "ACT":"T", "ACC":"T", "ACA":"T", "ACG":"T",
-        "AAT":"N", "AAC":"N", "AAA":"K", "AAG":"K",
-        "AGT":"S", "AGC":"S", "AGA":"R", "AGG":"R",
-        "GTT":"V", "GTC":"V", "GTA":"V", "GTG":"V",
-        "GCT":"A", "GCC":"A", "GCA":"A", "GCG":"A",
-        "GAT":"D", "GAC":"D", "GAA":"E", "GAG":"E",
-        "GGT":"G", "GGC":"G", "GGA":"G", "GGG":"G"
+        'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
+        'TCT':'S', 'TCC':'S', 'TCA':'S', 'TCG':'S',
+        'TAT':'Y', 'TAC':'Y', 'TAA':'X', 'TAG':'X',
+        'TGT':'C', 'TGC':'C', 'TGA':'X', 'TGG':'W',
+        'CTT':'L', 'CTC':'L', 'CTA':'L', 'CTG':'L',
+        'CCT':'P', 'CCC':'P', 'CCA':'P', 'CCG':'P',
+        'CAT':'H', 'CAC':'H', 'CAA':'Q', 'CAG':'Q',
+        'CGT':'R', 'CGC':'R', 'CGA':'R', 'CGG':'R',
+        'ATT':'I', 'ATC':'I', 'ATA':'I', 'ATG':'M',
+        'ACT':'T', 'ACC':'T', 'ACA':'T', 'ACG':'T',
+        'AAT':'N', 'AAC':'N', 'AAA':'K', 'AAG':'K',
+        'AGT':'S', 'AGC':'S', 'AGA':'R', 'AGG':'R',
+        'GTT':'V', 'GTC':'V', 'GTA':'V', 'GTG':'V',
+        'GCT':'A', 'GCC':'A', 'GCA':'A', 'GCG':'A',
+        'GAT':'D', 'GAC':'D', 'GAA':'E', 'GAG':'E',
+        'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G'
     }
 
 def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
@@ -76,7 +76,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     if reverse_strand:
         seq = seq[::-1].translate(_complement_table)
     if require_ATG:
-        start = seq.find("ATG")
+        start = seq.find('ATG')
         if start >= 0:
             seq = seq[start:]
         else:
@@ -134,15 +134,15 @@ class Transcript(object):
                     pass
                 else: raise
             # Use exclusive start, inclusive end 0-based coordinates internally
-            if line[2] == "exon":
+            if line[2] == 'exon':
                 self.intervals.extend(
                         [int(line[3]) - 2, int(line[4]) - 1]
                     )
-            elif line[2] == "start_codon":
+            elif line[2] == 'start_codon':
                 # 1-based public, 0-based private
                 self.start_codon = int(line[3])
                 self._start_codon = self.start_codon - 1
-            elif line[2] == "stop_codon":
+            elif line[2] == 'stop_codon':
                 self.stop_codon = int(line[3])
                 self._stop_codon = self.stop_codon - 1
             else:
@@ -1498,7 +1498,7 @@ if __name__ == '__main__':
             self.assertEqual(len(seq[0][0]), 365)
             self.assertEqual(len(seq[2][0]), 256)
         def test_spanning_deletion(self):
-            self.transcript.edit(137, 5248025, mutation_type="D")
+            self.transcript.edit(137, 5248025, mutation_type='D')
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (5248023, 5248160, 'S'))
