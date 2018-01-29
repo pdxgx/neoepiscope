@@ -785,7 +785,11 @@ if __name__ == '__main__':
         #   enumerate neoepitopes
         neoepitopes = collections.defaultdict(list)
         # Establish handling of ATGs
-        if args.upstream_atgs == 'all':
+        if arg.upstream_atgs == 'novel':
+            only_novel_upstream = True
+            only_downstream = False
+            only_reference = False
+        elif args.upstream_atgs == 'all':
             only_novel_upstream = False
             only_downstream = False
             only_reference = False
@@ -798,9 +802,8 @@ if __name__ == '__main__':
             only_downstream = False
             only_reference = True
         else:
-            only_novel_upstream = True
-            only_downstream = False
-            only_reference = False
+            raise RuntimeError('--upstream_atgs must be one of {"novel", "all", '
+                                '"none", "reference"}')
         for affected_transcript in relevant_transcripts:
             # Create transcript object
             transcriptA = Transcript(reference_index, 
