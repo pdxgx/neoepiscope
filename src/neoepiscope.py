@@ -373,8 +373,9 @@ if __name__ == '__main__':
             required=False, default='netMHCpan', 
             help='path to executable for binding affinity prediction software'
         )
-    call_parser.add_argument('-a', '--allele', type=str, required=True,
-            help='allele; see documentation online for more information'
+    call_parser.add_argument('-a', '--alleles', type=str, required=True,
+            help='comma separated list of alleles; '
+                 'see documentation online for more information'
         )
     call_parser.add_argument('-o', '--output_file', type=str, required=True,
             help='path to output file'
@@ -776,6 +777,7 @@ if __name__ == '__main__':
             size_list.sort()
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
+        hla_alleles = args.alleles.split(',')
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
@@ -880,18 +882,24 @@ if __name__ == '__main__':
                             neoepitopes[pep].append(meta_data)
                 transcriptA.reset(reference=True)
                 transcriptB.reset(reference=True)
-        binding_scores = get_affinity(sorted(neoepitopes.keys()), args.allele)
-        ## Do we want more to run for more than one allele at a time?
-        ## What value do we want from netMHCpan? affinity or score?
-        for i in range(0, sorted(neoepitopes.keys())):
-            meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
-            for mutation in meta_data:
-                mutation = mutation + (binding_scores[i])
+        for allele in hla_alleles:
+            ## What value do we want from netMHCpan? affinity or score?
+            binding_scores = get_affinity(sorted(neoepitopes.keys()), args.allele)
+            for i in range(0, sorted(neoepitopes.keys())):
+                meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
+                for mutation in meta_data:
+                    mutation = mutation + (binding_scores[i])
+        final_data = []
+        for epitope in neoepitopes:
+            for meta_data in neoepitopes[epitope]
+            final_data.append([epitope] + list(meta_data))
+        ## Should we sort results in a particular order?
+        final_data.sort(key = itemgetter(slice(5,None)))
         ## What format do we want for the output file?
         with open(args.output_file, 'w') as o:
-            o.write('\t'.join(['DATA GOES HERE']) + '\n')
-            for epitope in neoepitopes:
-                o.write('\t'.join(['DATA GOES HERE']) + '\n')
+            o.write('\t'.join(['Neoepitope', 'OTHER HEADERS']) + '\n')
+            for epitope_set in final_data:
+                o.write('\t'.join(epitope_set) + '\n')
     else:
         sys.exit(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
