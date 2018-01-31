@@ -217,10 +217,20 @@ class Transcript(object):
                 deletion_size = int(seq)
             except ValueError:
                 deletion_size = len(seq)
-                self.deletion_intervals.append(
-                        (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            (self.chrom, pos, seq, mutation_type, vaf))
-                    )
+                ref_deletion = self.bowtie_reference_index.get_stretch(
+                                    self.chrom, pos - 1, 
+                                    pos + deletion_size + 1  - pos - 1
+                                )
+                if seq == ref_deletion:
+                    self.deletion_intervals.append(
+                            (pos - 2, pos + deletion_size - 2, mutation_class, 
+                                (self.chrom, pos, seq, mutation_type, vaf))
+                        )
+                else:
+                    raise RuntimeError(''.join(['Deletion of ', seq, 
+                                                ' at position ', str(pos), 
+                                                ' on contig ', self.chrom, 
+                                                ' is incompatible with reference']))
             else:
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
