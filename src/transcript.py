@@ -219,27 +219,28 @@ class Transcript(object):
                 deletion_size = len(seq)
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            (pos, seq, mutation_type, vaf))
+                            (self.chrom, pos, seq, mutation_type, vaf))
                     )
             else:
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            (pos, self.bowtie_reference_index.get_stretch(
+                            (self.chrom, pos, self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
                                 ), mutation_type, vaf))
                     )
         elif mutation_type == 'I': 
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                        (pos, seq, mutation_type, vaf)))
+                                        (self.chrom, pos, seq, mutation_type, 
+                                         vaf)))
         elif mutation_type == 'V':
             reference_seq = self.bowtie_reference_index.get_stretch(
                                             self.chrom, pos - 1, len(seq))
             other_snvs = [edit for edit in self.edits[pos - 1]]
             if mutation_class not in [snv[2] for snv in other_snvs]:
                 self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                            (pos, reference_seq, mutation_type, 
-                                             vaf)))
+                                            (self.chrom, pos, reference_seq, 
+                                             mutation_type, vaf)))
             else:
                 class_dict = {'S':'somatic', 'G':'germline'}
                 raise NotImplementedError(''.join(['2 SNVs of same class cannot ', 
@@ -641,10 +642,10 @@ class Transcript(object):
                         fill = pos_to_add - last_pos
                         if intervals[i-1][1] != 'R':
                             if isinstance(intervals[i-1][2], list):
-                                genomic_position = min([x[0] for x 
+                                genomic_position = min([x[1] for x 
                                                         in intervals[i-1][2]])
                             else:
-                                genomic_position = intervals[i-1][2][0]
+                                genomic_position = intervals[i-1][2][1]
                             self._seq_append(final_seq, '', intervals[i-1][1],
                                              intervals[i-1][2],
                                              genomic_position)
@@ -674,21 +675,21 @@ class Transcript(object):
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
                                 snv = (edit[0], edit[2], edit[3], 
-                                        edit[3][0])
+                                        edit[3][1])
                             else:
                                 assert edit[1] == 'I'
                                 insertion = (edit[0], edit[2],
-                                                edit[3], edit[3][0])
+                                                edit[3], edit[3][1])
                         self._seq_append(final_seq, *snv)
                         self._seq_append(final_seq, *insertion)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         if isinstance(intervals[i-1][2], list):
-                            genomic_position = min([x[0] for x 
+                            genomic_position = min([x[1] for x 
                                                         in intervals[i-1][2]])
                         else:
-                            genomic_position = intervals[i-1][2][0]
+                            genomic_position = intervals[i-1][2][1]
                         self._seq_append(final_seq, '', intervals[i-1][1], 
                                          intervals[i-1][2], 
                                          genomic_position)
@@ -706,10 +707,10 @@ class Transcript(object):
                             )
                     if intervals[i][1] != 'R':
                         if isinstance(intervals[i][2], list):
-                            genomic_position = min([x[0] for x 
+                            genomic_position = min([x[1] for x 
                                                         in intervals[i][2]])
                         else:
-                            genomic_position = intervals[i][2][0]
+                            genomic_position = intervals[i][2][1]
                         self._seq_append(final_seq, '', intervals[i][1], 
                                             intervals[i][2], 
                                             genomic_position)
@@ -718,10 +719,10 @@ class Transcript(object):
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 if isinstance(intervals[i-1][2], list):
-                                    genomic_position = min([x[0] for x 
+                                    genomic_position = min([x[1] for x 
                                                         in intervals[i-1][2]])
                                 else:
-                                    genomic_position = intervals[i-1][2][0]
+                                    genomic_position = intervals[i-1][2][1]
                                 self._seq_append(
                                         final_seq, '', intervals[i-1][1], 
                                         intervals[i-1][2], 
@@ -737,10 +738,10 @@ class Transcript(object):
                                                     seqs[(i-1)/2][1][0])
                             if intervals[i][1] != 'R':
                                 if isinstance(intervals[i][2], list):
-                                    genomic_position = min([x[0] for x 
+                                    genomic_position = min([x[1] for x 
                                                         in intervals[i][2]])
                                 else:
-                                    genomic_position = intervals[i][2][0]
+                                    genomic_position = intervals[i][2][1]
                                 self._seq_append(
                                         final_seq, '', intervals[i][1], 
                                         intervals[i][2], 
@@ -930,7 +931,7 @@ class Transcript(object):
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][2] == 'D':
+            elif seq[2][0][3] == 'D':
                 if ref_start < 0 and seq[3]*strand + len(seq[3][0][1]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -945,15 +946,15 @@ class Transcript(object):
                 else:
                     if self.rev_strand:
                         for i in seq[2]:
-                            ref_sequence += i[1][::-1].translate(
+                            ref_sequence += i[2][::-1].translate(
                                                     revcomp_translation_table
                                                 )
                     else:
                         for i in seq[2]:
-                            ref_sequence += i[1]
+                            ref_sequence += i[2]
                 ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][2] == 'I':
+            elif seq[2][0][3] == 'I':
                 if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -968,7 +969,7 @@ class Transcript(object):
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][2] == 'V':
+            elif seq[2][0][3] == 'V':
                 if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -984,12 +985,12 @@ class Transcript(object):
                 else:
                     if self.rev_strand:
                         for i in seq[2]:
-                            ref_sequence += i[1][::-1].translate(
+                            ref_sequence += i[2][::-1].translate(
                                                     revcomp_translation_table
                                                 )
                     else:
                         for i in seq[2]:
-                            ref_sequence += i[1]
+                            ref_sequence += i[2]
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
@@ -1022,28 +1023,28 @@ class Transcript(object):
                 continue
             elif ((seq[1] == 'S' and include_somatic != 1) or
                 (seq[1] == 'G' and include_germline != 1)):
-                if seq[2][0][2] == 'V':
+                if seq[2][0][3] == 'V':
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
-                elif seq[2][0][2] == 'I':
+                elif seq[2][0][3] == 'I':
                     counter += len(seq[0])
-#                elif seq[2][0][2] == 'D':
+#                elif seq[2][0][3] == 'D':
 #                    continue
                 continue
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
             if counter < coding_start:
-                if seq[2][0][2] == 'D':
-#                    ref_counter += len(seq[2][0][1])
+                if seq[2][0][3] == 'D':
+#                    ref_counter += len(seq[2][0][2])
                     continue
-                elif seq[2][0][2] == 'I':
+                elif seq[2][0][3] == 'I':
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
                         compare_peptides_to_ref = True
                     counter += len(seq[0])
                     continue
-                elif seq[2][0][2] == 'V':
+                elif seq[2][0][3] == 'V':
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
@@ -1055,12 +1056,12 @@ class Transcript(object):
                     break                        
             # log variants
             # handle potential frame shifts from indels
-            if seq[2][0][2] == 'D':
+            if seq[2][0][3] == 'D':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) -1 , seq[2]])
                 compare_peptides_to_ref = True
                 read_frame1 = self.reading_frame(seq[3])
-                read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][1]))
+                read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
                 if read_frame1 is None or read_frame2 is None:
                     # these cases NOT addressed at present 
                     # (e.g. deletion involves all or part of intron)
@@ -1069,7 +1070,7 @@ class Transcript(object):
                     # splicing variation (e.g. deletion of part of intron/exon)
                     if reading_frame == 0:
                         reading_frame = (read_frame1 - read_frame2) % 3
-                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
                     elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
@@ -1080,18 +1081,18 @@ class Transcript(object):
                                 break
                         reading_frame = 0
                     else:
-                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
-#                ref_counter += len(seq[2][0][1])
+#                ref_counter += len(seq[2][0][2])
             # handle potential frame shifts from insertions
-            elif seq[2][0][2] == 'I':
+            elif seq[2][0][3] == 'I':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) - 1, seq[2]])
                 compare_peptides_to_ref = True
                 if len(seq[0]) % 3:
                     if not reading_frame:
                         reading_frame = len(seq[0]) % 3
-                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
                     elif not (reading_frame + len(seq[0])) % 3:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
@@ -1102,11 +1103,11 @@ class Transcript(object):
                                 break
                         reading_frame = 0
                     else:
-                        frame_shifts.append([seq[2][0][0], -1, counter, -1,seq[2]])
+                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
                         reading_frame = (reading_frame + len(seq[0])) % 3
                 counter += len(seq[0])
             # handle a collection of one or more single nucleotide variants
-            elif seq[2][0][2] == 'V':
+            elif seq[2][0][3] == 'V':
                 # only document neopeptides corresponding to missense SNVs
                 A1 = 3*((counter - coding_start) // 3) + coding_start
                 B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
@@ -1359,8 +1360,8 @@ if __name__ == '__main__':
             self.transcript.edit('A', 5248155)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248154], [('A', 'V', 'S', 
-                                                              (5248155, 'C', 
-                                                                'V', None))])
+                                                              ("11", 5248155, 
+                                                               'C', 'V', None))])
             self.assertEqual(relevant_edits[0], {})
             self.assertEqual(relevant_edits[1], [(5246692, 'R', ()),
                                                  (5246955, 'R', ()),
@@ -1374,10 +1375,10 @@ if __name__ == '__main__':
             self.transcript.edit('A', 5248299)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 'S',
-                                                              (5248299, 'T', 
+                                                              ('11', 5248299, 'T', 
                                                                 'V', None))])
             self.assertEqual(relevant_edits[0][5248298], [('A', 'V', 'S',
-                                                          (5248299, 'T', 
+                                                          ('11', 5248299, 'T', 
                                                                 'V', None))])
             self.assertEqual(relevant_edits[1], [(5246692, 'R', ()),
                                                  (5246955, 'R', ()),
@@ -1400,11 +1401,11 @@ if __name__ == '__main__':
             self.transcript.save()
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   (5248299, 
+                                                                   ('11', 5248299, 
                                                                     'T', 'V',
                                                                     None))])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                [(5246692, 5246695, 'S', (5246694, 'TTG', 
+                                [(5246692, 5246695, 'S', ('11', 5246694, 'TTG', 
                                                            'D', None))])
         def test_reset_to_save_point(self):
             """Fails if new edit not erased or old edits not retained"""
@@ -1413,17 +1414,17 @@ if __name__ == '__main__':
             self.transcript.save()
             self.transcript.edit('G', 5248165)
             self.assertEqual(self.transcript.edits[5248164], [('G', 'V', 'S',
-                                                              (5248165, 'C',
+                                                              ('11', 5248165, 'C',
                                                                 'V', None))])
             self.transcript.reset(reference=False)
             self.assertNotIn(2182387, self.transcript.edits)
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   (5248299, 
+                                                                   ('11', 5248299, 
                                                                     'T', 'V', 
                                                                     None))])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                [(5246692, 5246695, 'S', (5246694, 'TTG', 
+                                [(5246692, 5246695, 'S', ('11', 5246694, 'TTG', 
                                                            'D', None))])
             self.assertNotEqual(self.transcript.edits, {})
         def test_SNV_seq(self):
@@ -1431,26 +1432,26 @@ if __name__ == '__main__':
             self.transcript.edit('A', 5248299)
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   (5248299, 
+                                                                   ('11', 5248299, 
                                                                     'T', 'V',
                                                                     None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'T', 'V', None)], 
+            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'V', None)], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 625)
         def test_inside_insertion(self):
             """Fails if indel within exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248165, mutation_type='I')
             self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
-                                                                (5248165, 'Q',
+                                                                ('11', 5248165, 'Q',
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [(5248165, 'Q', 'I', None)], 
+            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248165, 'Q', 'I', None)], 
                                       5248165))
             self.assertEqual(len(seq[0][0]), 136)
             self.assertEqual(len(seq[2][0]), 492)
@@ -1458,12 +1459,12 @@ if __name__ == '__main__':
             """Fails if indel right before exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248029, mutation_type='I')
             self.assertEqual(self.transcript.edits[5248028], [('Q', 'I', 'S',
-                                                                (5248029, 'Q',
+                                                                ('11', 5248029, 'Q',
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [(5248029, 'Q', 'I', None)], 
+            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248029, 'Q', 'I', None)], 
                                         5248029)) 
             self.assertEqual(len(seq[0][0]), 142)
             self.assertEqual(len(seq[2][0]), 486)
@@ -1473,12 +1474,12 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246698, 
                                                                    5246701, 'S',
-                                                                   (5246700, 
+                                                                   ('11', 5246700, 
                                                                     'TGA', 'D',
                                                                     None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [(5246700, 'TGA', 'D', None)],
+            self.assertEqual(seq[1], ('', 'S', [('11', 5246700, 'TGA', 'D', None)],
                                         5246700))
             self.assertEqual(seq[2], ('TTGCAA', 'R', [()], 5246699))
             self.assertEqual(len(seq[0][0]), 619)
@@ -1488,12 +1489,12 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246948,
                                                                    5246958, 'S',
-                                                                   (5246950,
+                                                                   ('11', 5246950,
                                                                     'CCAGGAGCTG',
                                                                     'D', None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [(5246950,'CCAGGAGCTG', 'D', 
+            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', 'D', 
                                                  None)], 5246950))
             self.assertEqual(len(seq[0][0]), 365)
             self.assertEqual(len(seq[2][0]), 256)
@@ -1504,7 +1505,7 @@ if __name__ == '__main__':
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(len(seq[1][2][0][1]), 137)
+            self.assertEqual(len(seq[1][2][0][2]), 137)
             self.assertEqual(seq[1][0:2], ('', 'S'))
             self.assertEqual(len(seq[0][0]), 140)
             self.assertEqual(len(seq[2][0]), 481)
@@ -1516,21 +1517,21 @@ if __name__ == '__main__':
             self.assertEqual(len(self.transcript.edits.keys()), 2)
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   (5248299, 
+                                                                   ('11', 5248299, 
                                                                     'T', 'V', 
                                                                     None))]) 
             self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
-                                                                (5248165, 'Q',
+                                                                ('11', 5248165, 'Q',
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 7)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [(5248299, 'T', 'V', None)], 
+            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'V', None)], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 133)
-            self.assertEqual(seq[3], ('Q', 'S', [(5248165, 'Q', 'I', None)], 
+            self.assertEqual(seq[3], ('Q', 'S', [('11', 5248165, 'Q', 'I', None)], 
                                         5248165))
             self.assertEqual(seq[4], ('GGGC', 'R', [()], 5248165))
             self.assertEqual(len(seq[6][0]), 481)

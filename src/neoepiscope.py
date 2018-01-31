@@ -894,7 +894,7 @@ if __name__ == '__main__':
             for meta_data in neoepitopes[epitope]
             final_data.append([epitope] + list(meta_data))
         ## Should we sort results in a particular order?
-        final_data.sort(key = itemgetter(slice(5,None)))
+        final_data.sort(key = itemgetter(slice(6,None)))
         ## What format do we want for the output file?
         with open(args.output_file, 'w') as o:
             o.write('\t'.join(['Neoepitope', 'OTHER HEADERS']) + '\n')
