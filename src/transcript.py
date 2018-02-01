@@ -1716,5 +1716,35 @@ if __name__ == '__main__':
             self.transcript.edit('AAAA', 5247933, mutation_type='I')
             rev_peptides = self.transcript.neopeptides().keys()
             self.assertEqual(len(rev_peptides), 50)
+        def test_compound_all(self):
+            """Fails if incorrect peptides are returned with complementary
+                indels are introduced (i.e. frameshift then return to frame)"""
+            self.fwd_transcript.edit('AAA', 490579, 
+                mutation_type='I', mutation_class='G')
+            self.fwd_transcript.edit('C', 490580, mutation_type='V')
+            self.fwd_transcript.edit('A', 490582, mutation_type='I')
+            self.fwd_transcript.edit('A', 490586, mutation_type='V')
+            self.fwd_transcript.edit('G', 490587, mutation_type='D')
+            self.fwd_transcript.edit('C', 490588, mutation_type='V')
+            self.fwd_transcript.edit('A', 490593, 
+                mutation_type='V', mutation_class='G')  
+            self.fwd_transcript.edit("GAGGAGGAGGAG",450536,mutation_type="I")
+            self.fwd_transcript.save()
+            self.fwd_transcript.edit('T', 450457, mutation_type='D')
+            self.fwd_transcript.reset()                                 
+            peptides = self.fwd_transcript.neopeptides().keys()
+            self.assertEqual(len(peptides), 62)
+            self.assertEqual(sorted(peptides)[6], 'APTPNKRTYP')
+            self.assertEqual(sorted(peptides)[-1], 'VPAGRASLEEE')
+            self.assertEqual(sorted(peptides)[-5], 'SLEEEEEEP')
+            peptides = self.fwd_transcript.neopeptides(
+                include_germline=1).keys()
+            #self.assertEqual(len(peptides), ????)   
+            # germline/somatic context NOT working???         
+            # need to test compound stuff for reverse
+#            self.transcript.edit(4, 5247921, mutation_type='D')
+#            self.transcript.edit('AAAA', 5247933, mutation_type='I')
+#            rev_peptides = self.transcript.neopeptides().keys()
+#            self.assertEqual(len(rev_peptides), 50)
 
     unittest.main()
