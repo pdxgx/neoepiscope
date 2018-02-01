@@ -180,73 +180,6 @@ def get_VAF_pos(VCF):
                     break
     return VAF_pos
 
-def seq_to_peptide(seq, reverse_strand=False):
-    """ Translates nucleotide sequence into peptide sequence.
-
-        All codons after stop codon (X) are omitted.
-
-        seq: nucleotide sequence
-        reverse_strand: True iff strand is -
-
-        Return value: peptide string
-    """
-    seq_size = len(seq)
-    if reverse_strand:
-        seq = seq[::-1].translate(_complement_table)
-    peptide = []
-    for i in xrange(0, seq_size - seq_size % 3, 3):
-        codon = _codon_table[seq[i:i+3]]
-        peptide.append(codon)
-        if codon == 'X':
-            break
-    # defunct behavior: return X's for all codons after stop codon
-    #for j in xrange(i + 3, seq_size - seq_size % 3, 3):
-    #    peptide.append('X')
-    return ''.join(peptide)
-
-def median(numbers):
-    numbers = sorted(numbers)
-    center = len(numbers) / 2
-    if len(numbers) == 1:
-        return numbers[0]
-    elif len(numbers) % 2 == 0:
-        return sum(numbers[center - 1:center + 1]) / 2.0
-    else:
-        return numbers[center]
-
-def kmerize_peptide(peptide, min_size=8, max_size=11):
-    """ Obtains subsequences of a peptide.
-
-        normal_peptide: normal peptide seq
-        min_size: minimum subsequence size
-        max_size: maximum subsequence size
-
-        Return value: list of all possible subsequences of size between
-            min_size and max_size
-    """
-    peptide_size = len(peptide)
-    return [item for sublist in
-                [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
-                    for size in xrange(min_size, max_size + 1)]
-            for item in sublist if 'X' not in item]
-
-def neoepitopes(mutated_seq, reverse_strand=False, min_size=8, max_size=11):
-    """ Finds neoepitopes from normal and mutated seqs.
-
-        mutated_seq: mutated nucelotide sequence
-        reverse_strand: True iff strand is -
-        min_size: minimum peptide kmer size to write
-        max_size: maximum petide kmer size to write
-
-        Return value: List of mutated_kmers
-    """
-    return kmerize_peptide(seq_to_peptide(mutated_seq, 
-                                            reverse_strand=reverse_strand
-                                            ),
-                            min_size=min_size,
-                            max_size=max_size
-                            )
-
 def process_haplotypes(hapcut_output, interval_dict):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
 
@@ -268,28 +201,46 @@ def process_haplotypes(hapcut_output, interval_dict):
                 # Process all transcripts for the block
                 for transcript_ID in block_transcripts:
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
-                    affected_transcripts[transcript_ID].append(
-                                                block_transcripts[transcript_ID]
-                                                )
+                    for mut in block_transcripts[transcript_ID]:
+                        affected_transcripts[transcript_ID].append(mut)
                 # Reset transcript dictionary
                 block_transcripts = collections.defaultdict(list)
             else:
                 # Add mutation to transcript dictionary for the block
                 tokens = line.strip("\n").split()
-                mut_size = min(len(tokens[5]), len(tokens[6]))
-                end = int(tokens[4]) + mut_size
+                if len(tokens[5]) == len(tokens[6]):
+                    mutation_type = 'V'
+                    pos = int(tokens[4])
+                    ref = tokens[5]
+                    alt = tokens[6]
+                    mut_size = len(tokens[5])
+                    end = pos + mut_size
+                elif len(tokens[5]) > len(tokens[6]):
+                    mutation_type = 'D'
+                    deletion_size = len(tokens[5]) - len(tokens[6])
+                    pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
+                    ref = tokens[5]
+                    alt = deletion_size
+                    end = pos + deletion_size
+                elif len(tokens[5]) < len(tokens[6]):
+                    mutation_type = 'I'
+                    insertion_size = len(tokens[6]) - len(tokens[5])
+                    pos = int(tokens[4])
+                    ref = tokens[5]
+                    alt = tokens[6][len(ref):]
+                    end = pos + 1
                 overlapping_transcripts = get_transcripts_from_tree(tokens[3], 
-                                                                int(tokens[4]), 
+                                                                pos, 
                                                                 end,
                                                                 interval_dict)
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele
                 #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
-                    block_transcripts[transcript].append([tokens[3], tokens[4], 
-                                                          tokens[5], tokens[6], 
+                    block_transcripts[transcript].append([tokens[3], pos, 
+                                                          ref, alt, 
                                                           tokens[1], tokens[2], 
-                                                          tokens[7]])
+                                                          tokens[7], mutation_type])
     return affected_transcripts
 
 
@@ -405,18 +356,18 @@ if __name__ == '__main__':
                 self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
             def test_transcript_to_CDS(self):
                 """Fails if dictionary was built incorrectly"""
-                self.assertEqual(len(self.Ycds.keys()), 901)
+                self.assertEqual(len(self.Ycds.keys()), 164)
             def test_CDS_tree(self):
                 """Fails if dictionary was built incorrectly"""
                 self.assertEqual(len(self.Ytree.keys()), 1)
-                self.assertEqual(len(self.Ytree['Y']), 4808)
+                self.assertEqual(len(self.Ytree['Y']), 2174)
             def test_transcript_extraction(self):
                 """Fails if incorrect transcripts are pulled"""
                 self.assertEqual(len(get_transcripts_from_tree(
                                                                 'Y', 150860, 
                                                                 150861,
                                                                 self.Ytree)), 
-                                                                11
+                                                                3
                                                                 )
                 self.coordinate_search = list(self.Ytree['Y'].search(150860,
                                                                      150861))
@@ -427,15 +378,7 @@ if __name__ == '__main__':
                 self.assertEqual(
                                  self.transcripts, ['ENST00000381657.7_3_PAR_Y',
                                                     'ENST00000381663.8_3_PAR_Y',
-                                                    'ENST00000399012.6_3_PAR_Y',
-                                                    'ENST00000415337.6_3_PAR_Y',
-                                                    'ENST00000429181.6_2_PAR_Y',
-                                                    'ENST00000430923.7_3_PAR_Y',
-                                                    'ENST00000443019.6_2_PAR_Y',
-                                                    'ENST00000445062.6_2_PAR_Y',
-                                                    'ENST00000447472.6_3_PAR_Y',
-                                                    'ENST00000448477.6_2_PAR_Y',
-                                                    'ENST00000484611.7_1_PAR_Y']
+                                                    'ENST00000399012.6_3_PAR_Y']
                                 )
         class TestVCFmerging(unittest.TestCase):
             """Tests proper merging of somatic and germline VCFS"""
@@ -537,30 +480,16 @@ if __name__ == '__main__':
                                 ) 
             def test_hap_processing(self):
                 """Fails if file is processed incorrectly"""
-                Ychrom_txs = process_haplotypes(self.Yhapcut, self.Ytree)
                 Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree)
-                self.assertEqual(sorted(Ychrom_txs.keys()), 
-                                        ['ENST00000431853.1_1'])
-                self.assertEqual(Ychrom_txs['ENST00000431853.1_1'], 
-                                 [[['Y', '59001513', 'G', 'A', '0', '0', 
-                                    '0/0:.:256:242:13:5.1%:184,58,9,4:.:2'], 
-                                 ['Y', '59001559', 'G', 'A', '0', '0',
-                                  '0/0:.:276:261:14:5.09%:117,144,6,8:.:2']]]
-                                )
                 self.assertEqual(sorted(Chr11_txs.keys()), 
-                                        ['ENST00000398531.2_2', 
-                                        'ENST00000528813.1_1'])
+                                        ['ENST00000398531.2_2'])
                 self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
-                                [[['11', '71276861', 'T', 'C', '0', '0', 
-                                   '0/0:.:53:52:0:0%:22,30,0,0:.:2'], 
-                                 ['11', '71276900', 'C', 'G', '0', '0',
-                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2']]]
-                    )
-                self.assertEqual(Chr11_txs['ENST00000528813.1_1'],
-                                [[['11', '56099004', 'C', 'T', '0', '0', 
-                                   '0/0:.:30:30:0:0%:14,16,0,0:.:2'], 
-                                 ['11', '56099010', 'A', 'G', '0', '0',
-                                  '0/0:.:29:29:0:0%:15,14,0,0:.:2']]]
+                                [['11', 71276862, 'TGT', 2, '0', '0', 
+                                   '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'], 
+                                 ['11', 71276900, 'C', 'G', '0', '0',
+                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
+                                  ['11', 71277000, 'G', 'AA', '0', '0',
+                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]
                     )
         unittest.main()
     elif args.subparser_name == 'index':
@@ -825,15 +754,6 @@ if __name__ == '__main__':
             for ht in haplotypes:
                 # Make edits for each mutation
                 for mutation in ht:
-                    # Determine type of mutation
-                    if len(mutation[2] == len(mutation[3])):
-                        mutation_type = 'V'
-                    elif len(mutation[2]) < len(mutation[3]):
-                        mutation_type = 'I'
-                    elif len(mutation[2]) > len(mutation[3]):
-                        mutation_type = 'D'
-                    else:
-                        mutation_type = '?'
                     # Determine if mutation is somatic or germline
                     if mutation[6][-1] == '*':
                         mutation_class = 'G'
@@ -846,13 +766,13 @@ if __name__ == '__main__':
                         VAF = None
                     # Determine which copies variant exists on & make edits
                     if mutation[4] == '1':
-                        transciptA.edit(mutation[3], int(mutation[1]), 
-                                    mutation_type=mutation_type, 
+                        transciptA.edit(mutation[3], mutation[1], 
+                                    mutation_type=mutation[7], 
                                     mutation_class=mutation_class,
                                     VAF=VAF)
                     if mutation[5] == '1':
-                        transciptB.edit(mutation[3], int(mutation[1]), 
-                                    mutation_type=mutation_type, 
+                        transciptB.edit(mutation[3], mutation[1], 
+                                    mutation_type=mutation[7], 
                                     mutation_class=mutation_class,
                                     VAF=VAF)
                 # Extract neoepitopes
@@ -891,10 +811,10 @@ if __name__ == '__main__':
                     mutation = mutation + (binding_scores[i])
         final_data = []
         for epitope in neoepitopes:
-            for meta_data in neoepitopes[epitope]
-            final_data.append([epitope] + list(meta_data))
+            for meta_data in neoepitopes[epitope]:
+                final_data.append([epitope] + list(meta_data))
         ## Should we sort results in a particular order?
-        final_data.sort(key = itemgetter(slice(5,None)))
+        final_data.sort(key = itemgetter(slice(6,None)))
         ## What format do we want for the output file?
         with open(args.output_file, 'w') as o:
             o.write('\t'.join(['Neoepitope', 'OTHER HEADERS']) + '\n')
