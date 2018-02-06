@@ -1031,13 +1031,15 @@ class Transcript(object):
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
-            elif ((seq[1] == 'S' and include_somatic != 1) or
-                (seq[1] == 'G' and include_germline != 1)):
+            elif ((seq[1] == 'S' and include_somatic == 2) or
+                (seq[1] == 'G' and include_germline == 2)):
                 if seq[2][0][3] == 'V':
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                 elif seq[2][0][3] == 'I':
                     counter += len(seq[0])
+                    ref_counter +=len(seq[0])
+                    compare_peptides_to_ref = True
 #                elif seq[2][0][3] == 'D':
 #                    continue
                 continue
@@ -1053,6 +1055,9 @@ class Transcript(object):
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
                         compare_peptides_to_ref = True
                     counter += len(seq[0])
+                    if ((seq[1] == 'G' and include_germline == 2) or 
+                                (seq[1] == 'S' and include_somatic == 2)):
+                        ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][3] == 'V':
                     if counter + len(seq[0]) > coding_start:
@@ -1140,6 +1145,9 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        print protein
+        print seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
+        print
         if compare_peptides_to_ref:
             protein_ref = seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
         if TAA_TGA_TAG == []:
@@ -1744,14 +1752,16 @@ if __name__ == '__main__':
             self.fwd_transcript.edit('T', 450457, mutation_type='D')
             self.fwd_transcript.reset()                                 
             peptides = self.fwd_transcript.neopeptides().keys()
-            self.assertEqual(len(peptides), 62)
-            self.assertEqual(sorted(peptides)[6], 'APTPNKRTYP')
+            self.assertEqual(len(peptides), 58)
+            self.assertEqual(sorted(peptides)[5], 'APTPNKRTYP')
             self.assertEqual(sorted(peptides)[-1], 'VPAGRASLEEE')
             self.assertEqual(sorted(peptides)[-5], 'SLEEEEEEP')
             peptides = self.fwd_transcript.neopeptides(
                 include_germline=1).keys()
-            #self.assertEqual(len(peptides), ????)   
-            # germline/somatic context NOT working???         
+            self.assertEqual(len(peptides), 62)
+            self.assertEqual(sorted(peptides)[0], 'AEGEGAPTPNK')
+            self.assertEqual(sorted(peptides)[32], 'EGEGAPTPNKR')
+            self.assertEqual(sorted(peptides)[-5], 'SLEEEEEEP')        
             # need to test compound stuff for reverse
 #            self.transcript.edit(4, 5247921, mutation_type='D')
 #            self.transcript.edit('AAAA', 5247933, mutation_type='I')

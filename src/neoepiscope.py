@@ -804,12 +804,12 @@ if __name__ == '__main__':
                 transcriptB.reset(reference=True)
         for allele in hla_alleles:
             ## What value do we want from netMHCpan? affinity or score?
-            binding_scores = get_affinity(sorted(neoepitopes.keys()), args.allele)
+            binding_scores = get_affinity(sorted(neoepitopes.keys()), allele)
             for i in range(0, sorted(neoepitopes.keys())):
                 meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
                 for mutation in meta_data:
                     mutation = mutation + (binding_scores[i])
-        final_data = []
+
         for epitope in neoepitopes:
             for meta_data in neoepitopes[epitope]:
                 final_data.append([epitope] + list(meta_data))
@@ -817,9 +817,18 @@ if __name__ == '__main__':
         final_data.sort(key = itemgetter(slice(6,None)))
         ## What format do we want for the output file?
         with open(args.output_file, 'w') as o:
-            o.write('\t'.join(['Neoepitope', 'OTHER HEADERS']) + '\n')
-            for epitope_set in final_data:
-                o.write('\t'.join(epitope_set) + '\n')
+            headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt', 'VAF']
+            for allele in hla_alleles:
+                headers.append('_'.join([allele, 'score']))
+            o.write('\t'.join(headers) + '\n')
+            for epitope in neoepitopes:
+                for mutation in neoepitopes[epitope][2]:
+                    if mutation[3] == 'D':
+                    out_line = [epitope, mutation[1], str(mutation[2]), mutation[3], 
+                                neoepitopes[epitope][0], str(mutation[4])]
+                    for i in range(5:len(mutation)):
+                        out_line.append(str(mutation[i]))
+                o.write('\t'.join(out_line) + '\n')
     else:
         sys.exit(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
