@@ -100,7 +100,7 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     #       that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, CDS):
+    def __init__(self, bowtie_reference_index, CDS, ID):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -109,9 +109,11 @@ class Transcript(object):
                 reference genome sequence
             CDS: list of all CDS lines for exactly one transcript from GTF;
                 a line can be a list pre-split by '\t' or not yet split
+            ID: transcript ID
         """
         assert len(CDS) > 0
         self.bowtie_reference_index = bowtie_reference_index
+        self.transcript_id = ID
         self.intervals = []
         # Internal representation is 0-based
         self._start_codon, self._stop_codon = None, None
@@ -1735,9 +1737,33 @@ if __name__ == '__main__':
             self.transcript.edit('AAAA', 5247933, mutation_type='I')
             rev_peptides = self.transcript.neopeptides().keys()
             self.assertEqual(len(rev_peptides), 50)
+        def test_germline_vs_somatic(self):
+            """"Fails if incorrect peptides are returned for different
+                germline/somatic mutation inclusion decisions"""
+            self.fwd_transcript.edit('T', 450502)
+            self.fwd_transcript.edit('T', 450503, mutation_class='G')
+            self.assertEqual(len(self.fwd_transcript.neopeptides().keys()), 38)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_germline=1).keys()), 38)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=0).keys()), 0)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=1).keys()), 0)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=2).keys()), 0)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_somatic=2,
+                                            include_germline=0).keys()), 0)
+            self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                            include_somatic=2,
+                                            include_germline=1).keys()), 0)
+
         def test_compound_all(self):
-            """Fails if incorrect peptides are returned with complementary
-                indels are introduced (i.e. frameshift then return to frame)"""
+            """Fails if incorrect peptides are returned when multiple
+                germline/somatic mutations are introduced"""
             self.fwd_transcript.edit('AAA', 490579, 
                 mutation_type='I', mutation_class='G')
             self.fwd_transcript.edit('C', 490580, mutation_type='V')
@@ -1761,11 +1787,22 @@ if __name__ == '__main__':
             self.assertEqual(len(peptides), 62)
             self.assertEqual(sorted(peptides)[0], 'AEGEGAPTPNK')
             self.assertEqual(sorted(peptides)[32], 'EGEGAPTPNKR')
-            self.assertEqual(sorted(peptides)[-5], 'SLEEEEEEP')        
-            # need to test compound stuff for reverse
-#            self.transcript.edit(4, 5247921, mutation_type='D')
-#            self.transcript.edit('AAAA', 5247933, mutation_type='I')
-#            rev_peptides = self.transcript.neopeptides().keys()
-#            self.assertEqual(len(rev_peptides), 50)
+            self.assertEqual(sorted(peptides)[-5], 'SLEEEEEEP')
+            # Reverse transcript      
+            self.transcript.edit(4, 5247921, mutation_type='D')
+            self.transcript.edit('AAAA', 5247933, mutation_type='I')
+            self.transcript.edit(3, 5248170, mutation_type='D', 
+                mutation_class='G')
+            self.transcript.edit('T', 5246872, mutation_type='V')
+            rev_peptides = self.transcript.neopeptides().keys()
+            self.assertEqual(len(rev_peptides), 88)
+            self.assertEqual(sorted(rev_peptides)[0], 'AAYQKMVA')
+            self.assertEqual(sorted(rev_peptides)[-1], 'YQKMVAGVANA')
+            rev_peptides = self.transcript.neopeptides(
+                            include_germline=1).keys()
+            self.assertEqual(len(rev_peptides), 122)            
+            self.assertEqual(sorted(rev_peptides)[13], 'DEVGGALG')
+            self.assertEqual(sorted(rev_peptides)[-13], 'VNVDEVGGALG')
+            self.assertEqual(sorted(rev_peptides)[0], 'AAYQKMVA')
 
     unittest.main()
