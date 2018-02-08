@@ -205,8 +205,10 @@ def process_haplotypes(hapcut_output, interval_dict):
                 # Process all transcripts for the block
                 for transcript_ID in block_transcripts:
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
+                    haplotype = []
                     for mut in block_transcripts[transcript_ID]:
-                        affected_transcripts[transcript_ID].append(mut)
+                        haplotype.append(mut)
+                    affected_transcripts[transcript_ID].append(haplotype)
                 # Reset transcript dictionary
                 block_transcripts = collections.defaultdict(list)
             else:
@@ -247,145 +249,242 @@ def process_haplotypes(hapcut_output, interval_dict):
                                                           tokens[7], mutation_type])
     return affected_transcripts
 
-def get_affinity_netMHCIIpan(peptides, allele, netmhciipan=program,
+def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
+                                  only_novel_upstream, only_downstream, 
+                                  only_reference, reference_index, size_list):
+    """ For transcripts that are affected by a mutation, mutations are applied
+        and neoepitopes resulting from mutations are called
+        
+        relevant_transcripts: dictionary linking haplotypes to transcripts;
+            output from process_haplotypes()
+        VAF_pos: position of VAF in VCF mutation data from HapCUT2
+        cds_dict: dictionary linking transcript IDs, to lists of
+            relevant CDS/stop codon data; output from gtf_to_cds()
+        only_novel_upstream: whether to start translation from novel upstream
+            start codons (boolean)
+        only_downstream: whether to start translation from only downstream of
+            a disrupted canonical start codon (boolean)
+        only_reference: whether to start translation only from the canonical
+            start codon for a transcript
+        reference_index: BowtieIndexReference object for retrieving
+            reference genome sequence
+        size_list: list of peptide sizes for neoepitope enumeration
+
+        return value: dictionary linking neoepitopes to their associated 
+            metadata ()
+
+        """
+    neoepitopes = collections.defaultdict(list)
+    for affected_transcript in relevant_transcripts:
+        # Create transcript object
+        transcriptA = Transcript(reference_index, 
+                        [[str(chrom), 'blah', seq_type, str(start), 
+                          str(end), '.', strand] for (chrom, seq_type, 
+                                                      start, end, strand) 
+                          in cds_dict[affected_transcript]], affected_transcript
+                        )
+        transcriptB = Transcript(reference_index, 
+                        [[str(chrom), 'blah', seq_type, str(start), 
+                          str(end), '.', strand] for (chrom, seq_type, 
+                                                      start, end, strand) 
+                          in cds_dict[affected_transcript]], affected_transcript
+                        )
+        # Iterate over haplotypes associated with this transcript
+        haplotypes = relevant_transcripts[affected_transcript]
+        for ht in haplotypes:
+            # Make edits for each mutation
+            for mutation in ht:
+                print mutation
+                # Determine if mutation is somatic or germline
+                if mutation[6][-1] == '*':
+                    mutation_class = 'G'
+                else:
+                    mutation_class = 'S'
+                # Determine VAF if available
+                if VAF_pos is not None:
+                    VAF = float(mutation[6].strip('*').split(':')[VAF_pos].strip('%'))
+                else:
+                    VAF = None
+                # Determine which copies variant exists on & make edits
+                if mutation[4] == '1':
+                    transcriptA.edit(mutation[3], mutation[1], 
+                                mutation_type=mutation[7], 
+                                mutation_class=mutation_class,
+                                vaf=VAF)
+                if mutation[5] == '1':
+                    transcriptB.edit(mutation[3], mutation[1], 
+                                mutation_type=mutation[7], 
+                                mutation_class=mutation_class,
+                                vaf=VAF)
+            # Extract neoepitopes
+            A_peptides = transcriptA.neopeptides(min_size=size_list[0], 
+                                                 max_size=size_list[-1],
+                                                 include_somatic=1,
+                                                 include_germline=2, 
+                                                 only_novel_upstream=only_novel_upstream,
+                                                 only_downstream=only_downstream, 
+                                                 only_reference=only_reference)
+            B_peptides = transcriptB.neopeptides(min_size=size_list[0], 
+                                                 max_size=size_list[-1],
+                                                 include_somatic=1,
+                                                 include_germline=2, 
+                                                 only_novel_upstream=only_novel_upstream,
+                                                 only_downstream=only_downstream, 
+                                                 only_reference=only_reference)
+            # Store neoepitopes and their metadata
+            for pep in A_peptides:
+                for meta_data in A_peptides[pep]:
+                    adj_meta_data = meta_data + (transcriptA.transcript_id,)
+                    if adj_meta_data not in neoepitopes[pep]:
+                        neoepitopes[pep].append(adj_meta_data)
+            for pep in B_peptides:
+                for meta_data in B_peptides[pep]:
+                    adj_meta_data = meta_data + (transcriptB.transcript_id,)
+                    if adj_meta_data not in neoepitopes[pep]:
+                        neoepitopes[pep].append(adj_meta_data)
+            transcriptA.reset(reference=True)
+            transcriptB.reset(reference=True)
+    return neoepitopes
+
+def get_affinity_netMHCIIpan(peptides, allele, netmhciipan,
                                             remove_files=True):
-                """ Obtains binding affinities from list of peptides
+    """ Obtains binding affinities from list of peptides
 
-                    peptides: peptides of interest (list of strings)
-                    allele: Allele to use for binding affinity (string)
-                    remove_files: option to remove intermediate files
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string)
+        remove_files: option to remove intermediate files
 
-                    Return value: affinities (a list of binding affinities 
-                                    as strings)
-                """
-                files_to_remove = []
-                try:
-                    # Check that allele is valid for method
-                    with open(''.join([os.path.dirname(__file__),
-                             '/availableAlleles.pickle']), 'rb'
-                            ) as allele_stream:
-                        avail_alleles = pickle.load(allele_stream)
-                    # Homogenize format
-                    allele = allele.replace('HLA-', '')
-                    if allele not in avail_alleles['netMHCIIpan']:
-                        print ''.join(['WARNING: ', allele, 
-                                    ' is not a valid allele for netMHCIIpan'])
-                        return ['NA' for i in range(0,len(peptides))]
-                    # Establish return list and sample id
-                    sample_id = '.'.join([peptides[0],
-                                            str(len(peptides)), allele,
-                                            'netmhciipan'])
-                    affinities = []
-                    # Write one peptide per line to a temporary file for 
-                    #   input if peptide length is at least 9
-                    # Count instances of smaller peptides
-                    na_count = 0
-                    peptide_file = tempfile.mkstemp(
-                                    suffix='.peptides', prefix='id.', text=True)
-                    files_to_remove.append(peptide_file)
-                    with open(peptide_file[1], 'w') as f:
-                        for sequence in peptides:
-                            if len(sequence) >= 9:
-                                print >>f, sequence
-                            else:
-                                na_count += 1
-                    if na_count > 0:
-                        print ' ' .join(['WARNING:', str(na_count),
-                                        'peptides not compatible with'
-                                        'netMHCIIpan will not receive score'])
-                    # Establish temporary file to hold output
-                    mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out', 
-                                                prefix='id.', text=True)
-                    files_to_remove.append(mhc_out)
-                    # Run netMHCIIpan
-                    subprocess.check_call(
-                                    [netmhciipan, '-a', allele, '-inptype', '1', 
-                                     '-xls', '-xlsfile', mhc_out, peptide_file]
-                                )
-                    # Retrieve scores for valid peptides
-                    score_dict = {}
-                    with open(mhc_out[1], 'r') as f:
-                        # Skip headers
-                        f.readline()
-                        f.readline()
-                        for line in f:
-                            tokens = line.split('\t')
-                            # token 1 is peptide; token 4 is score
-                            score_dict[tokens[1]] = tokens[4]
-                    # Produce list of scores for valid peptides
-                    # Invalid peptides receive "NA" score
-                    for sequence in peptides:
-                        if sequence in score_dict:
-                            nM = score_dict[sequence]
-                        else:
-                            nM = 'NA'
-                            affinities.append(nM)
-                    return affinities
-                finally:
-                    if remove_files:
-                        for file_to_remove in files_to_remove:
-                            os.remove(file_to_remove)
+        Return value: affinities (a list of binding affinities 
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(''.join([os.path.dirname(__file__),
+                 '/availableAlleles.pickle']), 'rb'
+                ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        # Homogenize format
+        allele = allele.replace('HLA-', '')
+        if allele not in avail_alleles['netMHCIIpan']:
+            print ''.join(['WARNING: ', allele, 
+                        ' is not a valid allele for netMHCIIpan'])
+            return ['NA' for i in range(0,len(peptides))]
+        # Establish return list and sample id
+        sample_id = '.'.join([peptides[0],
+                                str(len(peptides)), allele,
+                                'netmhciipan'])
+        affinities = []
+        # Write one peptide per line to a temporary file for 
+        #   input if peptide length is at least 9
+        # Count instances of smaller peptides
+        na_count = 0
+        peptide_file = tempfile.mkstemp(
+                        suffix='.peptides', prefix='id.', text=True)
+        files_to_remove.append(peptide_file)
+        with open(peptide_file[1], 'w') as f:
+            for sequence in peptides:
+                if len(sequence) >= 9:
+                    print >>f, sequence
+                else:
+                    na_count += 1
+        if na_count > 0:
+            print ' ' .join(['WARNING:', str(na_count),
+                            'peptides not compatible with'
+                            'netMHCIIpan will not receive score'])
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out', 
+                                    prefix='id.', text=True)
+        files_to_remove.append(mhc_out)
+        # Run netMHCIIpan
+        subprocess.check_call(
+                        [netmhciipan, '-a', allele, '-inptype', '1', 
+                         '-xls', '-xlsfile', mhc_out, peptide_file]
+                    )
+        # Retrieve scores for valid peptides
+        score_dict = {}
+        with open(mhc_out[1], 'r') as f:
+            # Skip headers
+            f.readline()
+            f.readline()
+            for line in f:
+                tokens = line.split('\t')
+                # token 1 is peptide; token 4 is score
+                score_dict[tokens[1]] = tokens[4]
+        # Produce list of scores for valid peptides
+        # Invalid peptides receive "NA" score
+        for sequence in peptides:
+            if sequence in score_dict:
+                nM = score_dict[sequence]
+            else:
+                nM = 'NA'
+                affinities.append(nM)
+        return affinities
+    finally:
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
 
-def get_affinity_netMHCpan(peptides, allele, netmhcpan=program,
+def get_affinity_netMHCpan(peptides, allele, netmhcpan,
                                 remove_files=True):
-                """ Obtains binding affinities from list of peptides
+    """ Obtains binding affinities from list of peptides
 
-                    peptides: peptides of interest (list of strings)
-                    allele: allele to use for binding affinity 
-                                (string, format HLA-A02:01)
-                    remove_files: option to remove intermediate files
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity 
+                    (string, format HLA-A02:01)
+        remove_files: option to remove intermediate files
 
-                    Return value: affinities (a list of binding affinities 
-                                    as strings)
-                """
-                files_to_remove = []
-                try:
-                    # Check that allele is valid for method
-                    with open(''.join([os.path.dirname(__file__),
-                             '/availableAlleles.pickle']), 'rb'
-                            ) as allele_stream:
-                        avail_alleles = pickle.load(allele_stream)
-                    allele = allele.replace('*', '')
-                    if allele not in avail_alleles['netMHCpan']:
-                        print ''.join(['WARNING: ', allele, 
-                                    ' is not a valid allele for netMHCpan'])
-                        return ['NA' for i in range(0,len(peptides))]
-                    # Establish return list and sample id
-                    sample_id = '.'.join([peptides[0], str(len(peptides)), 
-                                            allele, 'netmhcpan'])
-                    affinities = []
-                    # Write one peptide per line to a temporary file for input
-                    peptide_file = tempfile.mkstemp(suffix='.peptides', 
-                                                    prefix=''.join([sample_id, 
-                                                                    '.']), 
-                                                    text=True)
-                    files_to_remove.append(peptide_file)
-                    with open(peptide_file[1], 'w') as f:
-                        for sequence in peptides:
-                            print >>f, sequence
-                    # Establish temporary file to hold output
-                    mhc_out = tempfile.mkstemp(suffix='.netMHCpan.out', 
-                                                prefix=''.join([sample_id, 
-                                                                '.']), 
-                                                text=True)
-                    files_to_remove.append(mhc_out)
-                    # Run netMHCpan
-                    subprocess.check_call(
-                        [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls', 
-                            '-xlsfile', mhc_out, peptide_file])
-                    with open(mhc_out[1], 'r') as f:
-                        f.readline()
-                        f.readline()
-                        for line in f:
-                            line = line.strip('\n').split('\t')
-                            nM = line[5]
-                            affinities.append(nM)
-                    return affinities
-                finally:
-                    # Remove temporary files
-                    if remove_files:
-                        for file_to_remove in files_to_remove:
-                            os.remove(file_to_remove)
+        Return value: affinities (a list of binding affinities 
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(''.join([os.path.dirname(__file__),
+                 '/availableAlleles.pickle']), 'rb'
+                ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace('*', '')
+        if allele not in avail_alleles['netMHCpan']:
+            print ''.join(['WARNING: ', allele, 
+                        ' is not a valid allele for netMHCpan'])
+            return ['NA' for i in range(0,len(peptides))]
+        # Establish return list and sample id
+        sample_id = '.'.join([peptides[0], str(len(peptides)), 
+                                allele, 'netmhcpan'])
+        affinities = []
+        # Write one peptide per line to a temporary file for input
+        peptide_file = tempfile.mkstemp(suffix='.peptides', 
+                                        prefix=''.join([sample_id, 
+                                                        '.']), 
+                                        text=True)
+        files_to_remove.append(peptide_file)
+        with open(peptide_file[1], 'w') as f:
+            for sequence in peptides:
+                print >>f, sequence
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(suffix='.netMHCpan.out', 
+                                    prefix=''.join([sample_id, 
+                                                    '.']), 
+                                    text=True)
+        files_to_remove.append(mhc_out)
+        # Run netMHCpan
+        subprocess.check_call(
+            [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls', 
+                '-xlsfile', mhc_out, peptide_file])
+        with open(mhc_out[1], 'r') as f:
+            f.readline()
+            f.readline()
+            for line in f:
+                line = line.strip('\n').split('\t')
+                nM = line[5]
+                affinities.append(nM)
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
@@ -594,22 +693,15 @@ if __name__ == '__main__':
             """Tests proper processing of HAPCUT2 files"""
             def setUp(self):
                 """Sets up input files and dictionaries to use for tests"""
-                self.Ygtf = os.path.join(
+                self.ref_prefix = os.path.join(
+                            os.path.dirname(
                                     os.path.dirname(
-                                            os.path.dirname(
-                                                    os.path.realpath(__file__)
-                                                )
-                                        ), 'test', 'Ychrom.gtf'
-                                )
-                self.Ycds = gtf_to_cds(self.Ygtf, 'NA', pickle_it=False)
-                self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
-                self.Yhapcut = os.path.join(
-                                    os.path.dirname(
-                                            os.path.dirname(
-                                                    os.path.realpath(__file__)
-                                                )
-                                        ), 'test', 'Ychrom.hapcut.out'
-                                )
+                                            os.path.realpath(__file__)
+                                        )
+                                ), 'test', 'Chr11.ref'
+                        )
+                self.reference_index = bowtie_index.BowtieIndexReference(
+                                                                self.ref_prefix)
                 self.Chr11gtf = os.path.join(
                                     os.path.dirname(
                                             os.path.dirname(
@@ -626,20 +718,45 @@ if __name__ == '__main__':
                                                     os.path.realpath(__file__)
                                                 )
                                         ), 'test', 'Chr11.hapcut.out'
-                                ) 
+                                )
             def test_hap_processing(self):
                 """Fails if file is processed incorrectly"""
                 Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree)
                 self.assertEqual(sorted(Chr11_txs.keys()), 
                                         ['ENST00000398531.2_2'])
                 self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
-                                [['11', 71276862, 'TGT', 2, '0', '0', 
+                                [[['11', 71276862, 'TGT', 2, '0', '0', 
                                    '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'], 
-                                 ['11', 71276900, 'C', 'G', '0', '0',
-                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
+                                  ['11', 71276900, 'C', 'G', '0', '0',
+                                   '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
                                   ['11', 71277000, 'G', 'AA', '0', '0',
-                                  '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]
+                                   '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]]
                     )
+            def test_peptide_gathering(self):
+                Chr11_txs = {'ENST00000398531.2_2': [
+                                    [['11', 71276651, 'CTC', 3, '0', '1', 
+                                      '0/0:.:53:52:0:3.0%:22,30,0,0:.:2', 'D'], 
+                                     ['11', 71277229, 'A', 'C', '0', '1',
+                                      '0/0:.:35:34:0:15.7%:19,15,0,0:.:2', 'V'],
+                                     ['11', 71277056, 'G', 'AAA', '1', '1',
+                                      '0/0:.:35:34:0:0.1%:19,15,0,0:.:2', 'I']]
+                                     ]
+                            }
+                transcript_blocks = self.Chr11cds['ENST00000398531.2_2']
+                neoepitopes = get_peptides_from_transcripts(Chr11_txs, 5, 
+                                                            self.Chr11cds,
+                                                            True, False, False, 
+                                                            self.reference_index,
+                                                            [8,9,10,11])
+                self.assertEqual(len(neoepitopes.keys()), 70)
+                self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, 
+                                                              'AAA', 'I', 0.1, 
+                                                              'ENST00000398531.2_2')])
+                self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229, 
+                                                              'A', 'V', 15.7, 
+                                                              'ENST00000398531.2_2')])
+                self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
+                self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -725,9 +842,6 @@ if __name__ == '__main__':
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
-        # Iterate over relevant transcripts to create transcript objects and
-        #   enumerate neoepitopes
-        neoepitopes = collections.defaultdict(list)
         # Establish handling of ATGs
         if arg.upstream_atgs == 'novel':
             only_novel_upstream = True
@@ -748,72 +862,14 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('--upstream_atgs must be one of {"novel", "all", '
                                 '"none", "reference"}')
-        for affected_transcript in relevant_transcripts:
-            # Create transcript object
-            transcriptA = Transcript(reference_index, 
-                            [[str(chrom), 'blah', seq_type, str(start), 
-                              str(end), '.', strand] for (chrom, seq_type, 
-                                                          start, end, strand) 
-                              in cds_dict[transcript_ID]], transcript_ID
-                            )
-            transcriptB = Transcript(reference_index, 
-                            [[str(chrom), 'blah', seq_type, str(start), 
-                              str(end), '.', strand] for (chrom, seq_type, 
-                                                          start, end, strand) 
-                              in cds_dict[transcript_ID]], transcript_ID
-                            )
-            # Iterate over haplotypes associated with this transcript
-            haplotypes = relevant_transcripts[affected_transcript]
-            for ht in haplotypes:
-                # Make edits for each mutation
-                for mutation in ht:
-                    # Determine if mutation is somatic or germline
-                    if mutation[6][-1] == '*':
-                        mutation_class = 'G'
-                    else:
-                        mutation_class = 'S'
-                    # Determine VAF if available
-                    if VAF_pos is not None:
-                        VAF = float(mutation[6][VAF_pos].strip('*').strip('%'))
-                    else:
-                        VAF = None
-                    # Determine which copies variant exists on & make edits
-                    if mutation[4] == '1':
-                        transcriptA.edit(mutation[3], mutation[1], 
-                                    mutation_type=mutation[7], 
-                                    mutation_class=mutation_class,
-                                    VAF=VAF)
-                    if mutation[5] == '1':
-                        transcriptB.edit(mutation[3], mutation[1], 
-                                    mutation_type=mutation[7], 
-                                    mutation_class=mutation_class,
-                                    VAF=VAF)
-                # Extract neoepitopes
-                A_peptides = transcriptA.neopeptides(min_size=size_list[0], 
-                                                     max_size=size_list[-1],
-                                                     include_somatic=1,
-                                                     include_germline=2, 
-                                                     only_novel_upstream=only_novel_upstream,
-                                                     only_downstream=only_downstream, 
-                                                     only_reference=only_reference)
-                B_peptides = transcriptB.neopeptides(min_size=size_list[0], 
-                                                     max_size=size_list[-1],
-                                                     include_somatic=1,
-                                                     include_germline=2, 
-                                                     only_novel_upstream=only_novel_upstream,
-                                                     only_downstream=only_downstream, 
-                                                     only_reference=only_reference)
-                # Store neoepitopes and their metadata
-                for pep in A_peptides:
-                    for meta_data in A_peptides[pep]:
-                        if meta_data not in neoepitopes[pep]:
-                            neoepitopes[pep].append(meta_data + (transcriptA.transcript_ID,))
-                for pep in B_peptides:
-                    for meta_data in B_peptides[pep]:
-                        if meta_data not in neoepitopes[pep]:
-                            neoepitopes[pep].append(meta_data + (transcriptB.transcript_ID,))
-                transcriptA.reset(reference=True)
-                transcriptB.reset(reference=True)
+        # Apply mutations to transcripts and get neoepitopes
+        neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
+                                                    VAF_pos, cds_dict,
+                                                    only_novel_upstream,
+                                                    only_downstream, 
+                                                    only_reference,
+                                                    reference_index,
+                                                    size_list)
         for allele in hla_alleles:
             ## What value do we want from netMHCpan? affinity or score?
             binding_scores = get_affinity(sorted(neoepitopes.keys()), allele)
@@ -830,12 +886,12 @@ if __name__ == '__main__':
             o.write('\t'.join(headers) + '\n')
             for epitope in neoepitopes:
                 for mutation in neoepitopes[epitope][2]:
-                    out_line = [epitope, mutation[1], str(mutation[2]), mutation[3], 
-                                neoepitopes[epitope][0], str(mutation[4]),
+                    out_line = [epitope, mutation[0], str(mutation[1]), 'HELP', 
+                                'HELP', str(mutation[4]),
                                 mutation[5]]
-                    for i in range(5:len(mutation)):
+                    for i in range(5,len(mutation)):
                         out_line.append(str(mutation[i]))
                 o.write('\t'.join(out_line) + '\n')
     else:
-        sys.exit(''.join([args.subparser_name, 
+        raise RuntimeError(''.join([args.subparser_name, 
                             ' is not a valid software mode']))

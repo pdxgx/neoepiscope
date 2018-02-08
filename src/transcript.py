@@ -1763,7 +1763,26 @@ if __name__ == '__main__':
             self.assertEqual(len(self.fwd_transcript.neopeptides(
                                             include_somatic=2,
                                             include_germline=1).keys()), 0)
-
+            self.transcript.edit('T', 5248006)
+            self.transcript.edit('C', 5248007, mutation_class='G')
+            self.assertEqual(len(self.transcript.neopeptides().keys()), 38)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_germline=1).keys()), 38)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=0).keys()), 0)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=1).keys()), 38)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_somatic=0,
+                                            include_germline=2).keys()), 0)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_somatic=2,
+                                            include_germline=0).keys()), 0)
+            self.assertEqual(len(self.transcript.neopeptides(
+                                            include_somatic=2,
+                                            include_germline=1).keys()), 38)
         def test_compound_all(self):
             """Fails if incorrect peptides are returned when multiple
                 germline/somatic mutations are introduced"""
