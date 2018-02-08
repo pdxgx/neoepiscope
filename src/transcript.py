@@ -890,7 +890,8 @@ class Transcript(object):
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         seq_previous = []
         new_ATG_upstream = False
-        compare_peptides_to_ref = False
+        #compare_peptides_to_ref = False
+        compare_peptides_to_ref = True
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
@@ -1319,13 +1320,15 @@ if __name__ == '__main__':
                                           str(start), str(end), '.', 
                                           strand] for (chrom, seq_type, start, 
                                                         end, strand) in 
-                                          self.cds['ENST00000335295.4_1']])
+                                          self.cds['ENST00000335295.4_1']],
+                                          'ENST00000335295.4_1')
             self.fwd_transcript = Transcript(self.reference_index, 
                                         [[str(chrom), 'blah', seq_type,
                                           str(start), str(end), '.', 
                                           strand] for (chrom, seq_type, start, 
                                                         end, strand) in 
-                                          self.cds['ENST00000308020.5_1']])
+                                          self.cds['ENST00000308020.5_1']],
+                                          'ENST00000308020.5_1')
         def test_transcript_structure(self):
             """Fails if structure of unedited transcript is incorrect"""
             self.assertEqual(len(self.transcript.annotated_seq()), 1)
