@@ -20,6 +20,7 @@ import collections
 import tempfile
 import subprocess
 import string
+import warnings
 from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
 from operator import itemgetter
 from sortedcontainers import SortedDict
@@ -78,9 +79,10 @@ def adjust_tumor_column(in_vcf, out_vcf):
             else:
                 tokens = line.strip('\n').split('\t')
                 if line[0] == '#':
-                    print ''.join(['WARNING: Reading ', tokens[9], 
-                                    'as normal tissue and ', tokens[10],
-                                    'as tumor tissue'])
+                    warnings.warn(''.join(['Reading ', tokens[9], 
+                                           'as normal tissue and ', tokens[10],
+                                           'as tumor tissue']), 
+                                  Warning)
                 new_line = '\t'.join([tokens[0], tokens[1], tokens[2], 
                                         tokens[3], tokens[4], tokens[5], 
                                         tokens[6], tokens[7], tokens[8], 
@@ -151,7 +153,6 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
     """
     phased = collections.defaultdict(set)
     with open(output, 'w') as output_stream:
-        print >>output_stream, '********'
         with open(hapcut2_output) as hapcut2_stream:
             for line in hapcut2_stream:
                 if line[0] != '*' and not line.startswith('BLOCK'):
@@ -160,6 +161,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                                     (tokens[5], tokens[6])
                                                 )
                 print >>output_stream, line,
+        print >>output_stream, '********'
         with open(vcf) as vcf_stream:
             first_char = '#'
             while first_char == '#':
@@ -178,9 +180,9 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                                 (tokens[0], pos)
                                             ]:
                         print >>output_stream, 'BLOCK: unphased'
-                        print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
+                        print >>output_stream, ('{vcf_line}\t1\t0\t{chrom}\t'
                                                '{pos}\t{ref}\t{alt}\t'
-                                               '{genotype}\tNA\tNA\tNA').format(
+                                               '{genotype}\tNA\tNA').format(
                                                     vcf_line=counter,
                                                     chrom=tokens[0],
                                                     pos=pos,
@@ -347,7 +349,6 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
         for ht in haplotypes:
             # Make edits for each mutation
             for mutation in ht:
-                print mutation
                 # Determine if mutation is somatic or germline
                 if mutation[6][-1] == '*':
                     mutation_class = 'G'
@@ -422,8 +423,9 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
         # Homogenize format
         allele = allele.replace('HLA-', '')
         if allele not in avail_alleles['netMHCIIpan']:
-            print ''.join(['WARNING: ', allele, 
-                        ' is not a valid allele for netMHCIIpan'])
+            warnings.warn(' '.join([allele, 
+                                    'is not a valid allele for netMHCIIpan']),
+                          Warning)
             if len(scores) == 1:
                 return [('NA',) for i in range(0,len(peptides))]
             else:
@@ -447,9 +449,10 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                 else:
                     na_count += 1
         if na_count > 0:
-            print ' ' .join(['WARNING:', str(na_count),
-                            'peptides not compatible with'
-                            'netMHCIIpan will not receive score'])
+            warnings.warn(' '.join([str(na_count),
+                                    'peptides not compatible with',
+                                    'netMHCIIpan will not receive score']),
+                            Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out', 
                                     prefix='id.', text=True)
@@ -515,8 +518,9 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
             avail_alleles = pickle.load(allele_stream)
         allele = allele.replace('*', '')
         if allele not in avail_alleles['netMHCpan']:
-            print ''.join(['WARNING: ', allele, 
-                        ' is not a valid allele for netMHCpan'])
+            warnings.warn(' '.join([allele, 
+                                    'is not a valid allele for netMHCpan']),
+                            Warning)
             if len(scores) == 1:
                 return [('NA',) for i in range(0,len(peptides))]
             else:
@@ -782,11 +786,48 @@ if __name__ == '__main__':
                 os.remove(self.outvcf)
         class TestPrepHapCUT(unittest.TestCase):
             """Tests addition of unphased mutations to HapCUT2 output"""
-            pass
+            def setUp(self):
+                """Sets up hapcut and vcf files to use for tests"""
+                self.hapcut = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'test.hapcut.out'
+                                )
+                self.vcf = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'test.vcf'
+                                )
+                self.complete_hapcut = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'complete_hapcut.out'
+                                )
+                self.test_hapcut = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'test_complete_hapcut.out'
+                                )
+            def test_haplotype_prep(self):
+                """Tests that output of haplotype prep is correct"""
+                prep_hapcut_output(self.test_hapcut, self.hapcut, self.vcf)
+                self.assertTrue(filecmp.cmp(self.test_hapcut,
+                                            self.complete_hapcut))
+            def tearDown(self):
+                """Removes test file"""
+                os.remove(self.test_hapcut)
         class TestVAFpos(unittest.TestCase):
             """Tests fetching of VAF position from VCF file"""
             def setUp(self):
-                """ Sets up vcf files to use for tests """
+                """Sets up vcf files to use for tests"""
                 self.varscan = os.path.join(
                                     os.path.dirname(
                                             os.path.dirname(
@@ -910,8 +951,9 @@ if __name__ == '__main__':
                         acceptable_scoring = ['rank', 'affinity']
                         for method in scoring:
                             if method not in acceptable_scoring:
-                                print ''.join(['WARNING: ', method, 
-                                            'not compatible with netMHCIIpan'])
+                                warnings.warn(' '.join([method, 
+                                            'not compatible with netMHCIIpan']),
+                                            Warning)
                                 scoring.remove(method)
                         if len(scoring) > 0:
                             tool_dict['netMHCIIpan3'] = [program, sorted(scoring)]
@@ -930,8 +972,9 @@ if __name__ == '__main__':
                         acceptable_scoring = ['rank', 'affinity']
                         for method in scoring:
                             if method not in acceptable_scoring:
-                                print ''.join(['WARNING: ', method, 
-                                            'not compatible with netMHCpan'])
+                                warnings.warn(' '.join([method, 
+                                            'not compatible with netMHCpan']),
+                                        Warning)
                                 scoring.remove(method)
                         if len(scoring) > 0:
                             if version == '3':
@@ -955,8 +998,9 @@ if __name__ == '__main__':
                                               'for binding predictions'])
                                     )
         if len(tool_dict.keys()) == 0:
-            print ''.join(['WARNING: no binding prediction tools given,',
-                           ' will proceed without binding predictions'])
+            warnings.warn(' '.join(['No binding prediction tools given,',
+                                    'will proceed without binding predictions']),
+                            Warning)
         # Obtain VAF frequency VCF position
         VAF_pos = get_VAF_pos(args.vcf)
         # Obtain peptide sizes for kmerizing peptides

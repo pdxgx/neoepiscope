@@ -1148,9 +1148,6 @@ class Transcript(object):
                 else:
                     break
         protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
-        print protein
-        print seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
-        print
         if compare_peptides_to_ref:
             protein_ref = seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
         if TAA_TGA_TAG == []:
