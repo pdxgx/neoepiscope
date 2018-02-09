@@ -226,7 +226,7 @@ class Transcript(object):
                 if seq == ref_deletion:
                     self.deletion_intervals.append(
                             (pos - 2, pos + deletion_size - 2, mutation_class, 
-                                (self.chrom, pos, seq, mutation_type, vaf))
+                                (self.chrom, pos, seq, '', mutation_type, vaf))
                         )
                 else:
                     raise RuntimeError(''.join(['Deletion of ', seq, 
@@ -239,11 +239,11 @@ class Transcript(object):
                             (self.chrom, pos, self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
-                                ), mutation_type, vaf))
+                                ), '', mutation_type, vaf))
                     )
         elif mutation_type == 'I': 
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                        (self.chrom, pos, seq, mutation_type, 
+                                        (self.chrom, pos, '', seq, mutation_type, 
                                          vaf)))
         elif mutation_type == 'V':
             reference_seq = self.bowtie_reference_index.get_stretch(
@@ -251,7 +251,7 @@ class Transcript(object):
             other_snvs = [edit for edit in self.edits[pos - 1]]
             if mutation_class not in [snv[2] for snv in other_snvs]:
                 self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                            (self.chrom, pos, reference_seq, 
+                                            (self.chrom, pos, reference_seq, seq,
                                              mutation_type, vaf)))
             else:
                 class_dict = {'S':'somatic', 'G':'germline'}
@@ -944,7 +944,7 @@ class Transcript(object):
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][3] == 'D':
+            elif seq[2][0][4] == 'D':
                 if ref_start < 0 and seq[3]*strand + len(seq[3][0][1]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -967,7 +967,7 @@ class Transcript(object):
                             ref_sequence += i[2]
                 ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][3] == 'I':
+            elif seq[2][0][4] == 'I':
                 if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -982,7 +982,7 @@ class Transcript(object):
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
                 continue
-            elif seq[2][0][3] == 'V':
+            elif seq[2][0][4] == 'V':
                 if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
                     coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
                     ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
@@ -1036,23 +1036,23 @@ class Transcript(object):
                 continue
             elif ((seq[1] == 'S' and include_somatic == 2) or
                 (seq[1] == 'G' and include_germline == 2)):
-                if seq[2][0][3] == 'V':
+                if seq[2][0][4] == 'V':
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
-                elif seq[2][0][3] == 'I':
+                elif seq[2][0][4] == 'I':
                     counter += len(seq[0])
                     ref_counter +=len(seq[0])
-                    compare_peptides_to_ref = True
-#                elif seq[2][0][3] == 'D':
+                    #compare_peptides_to_ref = True
+#                elif seq[2][0][4] == 'D':
 #                    continue
                 continue
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
             if counter < coding_start:
-                if seq[2][0][3] == 'D':
+                if seq[2][0][4] == 'D':
 #                    ref_counter += len(seq[2][0][2])
                     continue
-                elif seq[2][0][3] == 'I':
+                elif seq[2][0][4] == 'I':
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
@@ -1062,7 +1062,7 @@ class Transcript(object):
                                 (seq[1] == 'S' and include_somatic == 2)):
                         ref_counter += len(seq[0])
                     continue
-                elif seq[2][0][3] == 'V':
+                elif seq[2][0][4] == 'V':
                     if counter + len(seq[0]) > coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
                     0, counter + len(seq[0]) - coding_start - 1, seq[2]])
@@ -1074,7 +1074,7 @@ class Transcript(object):
                     break                        
             # log variants
             # handle potential frame shifts from indels
-            if seq[2][0][3] == 'D':
+            if seq[2][0][4] == 'D':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) -1 , seq[2]])
                 compare_peptides_to_ref = True
@@ -1103,7 +1103,7 @@ class Transcript(object):
                         reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
 #                ref_counter += len(seq[2][0][2])
             # handle potential frame shifts from insertions
-            elif seq[2][0][3] == 'I':
+            elif seq[2][0][4] == 'I':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) - 1, seq[2]])
                 compare_peptides_to_ref = True
@@ -1125,7 +1125,7 @@ class Transcript(object):
                         reading_frame = (reading_frame + len(seq[0])) % 3
                 counter += len(seq[0])
             # handle a collection of one or more single nucleotide variants
-            elif seq[2][0][3] == 'V':
+            elif seq[2][0][4] == 'V':
                 # only document neopeptides corresponding to missense SNVs
                 A1 = 3*((counter - coding_start) // 3) + coding_start
                 B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
@@ -1380,8 +1380,9 @@ if __name__ == '__main__':
             self.transcript.edit('A', 5248155)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248154], [('A', 'V', 'S', 
-                                                              ("11", 5248155, 
-                                                               'C', 'V', None))])
+                                                              ('11', 5248155, 
+                                                               'C', 'A',
+                                                               'V', None))])
             self.assertEqual(relevant_edits[0], {})
             self.assertEqual(relevant_edits[1], [(5246692, 'R', ()),
                                                  (5246955, 'R', ()),
@@ -1395,11 +1396,12 @@ if __name__ == '__main__':
             self.transcript.edit('A', 5248299)
             relevant_edits = self.transcript.expressed_edits()
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 'S',
-                                                              ('11', 5248299, 'T', 
+                                                              ('11', 5248299, 
+                                                                'T', 'A', 
                                                                 'V', None))])
             self.assertEqual(relevant_edits[0][5248298], [('A', 'V', 'S',
                                                           ('11', 5248299, 'T', 
-                                                                'V', None))])
+                                                            'A', 'V', None))])
             self.assertEqual(relevant_edits[1], [(5246692, 'R', ()),
                                                  (5246955, 'R', ()),
                                                  (5247805, 'R', ()), 
@@ -1421,12 +1423,14 @@ if __name__ == '__main__':
             self.transcript.save()
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   ('11', 5248299, 
-                                                                    'T', 'V',
+                                                                   ('11', 
+                                                                    5248299, 
+                                                                    'T', 'A', 
+                                                                    'V', 
                                                                     None))])
             self.assertEqual(self.transcript.last_deletion_intervals,
-                                [(5246692, 5246695, 'S', ('11', 5246694, 'TTG', 
-                                                           'D', None))])
+                                [(5246692, 5246695, 'S', ('11', 5246694, 'TTG',
+                                                            '', 'D', None))])
         def test_reset_to_save_point(self):
             """Fails if new edit not erased or old edits not retained"""
             self.transcript.edit('A', 5248299)
@@ -1434,44 +1438,52 @@ if __name__ == '__main__':
             self.transcript.save()
             self.transcript.edit('G', 5248165)
             self.assertEqual(self.transcript.edits[5248164], [('G', 'V', 'S',
-                                                              ('11', 5248165, 'C',
+                                                              ('11', 5248165, 
+                                                                'C', 'G',
                                                                 'V', None))])
             self.transcript.reset(reference=False)
             self.assertNotIn(2182387, self.transcript.edits)
             self.assertEqual(self.transcript.last_edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   ('11', 5248299, 
-                                                                    'T', 'V', 
+                                                                   ('11',
+                                                                    5248299, 
+                                                                    'T', 'A', 
+                                                                    'V', 
                                                                     None))])
             self.assertEqual(self.transcript.last_deletion_intervals,
                                 [(5246692, 5246695, 'S', ('11', 5246694, 'TTG', 
-                                                           'D', None))])
+                                                           '', 'D', None))])
             self.assertNotEqual(self.transcript.edits, {})
         def test_SNV_seq(self):
             """Fails if SNV is edited incorrectly"""
             self.transcript.edit('A', 5248299)
             self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
                                                                     'S', 
-                                                                   ('11', 5248299, 
-                                                                    'T', 'V',
+                                                                   ('11', 
+                                                                    5248299, 
+                                                                    'T', 'A',
+                                                                    'V',
                                                                     None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'V', None)], 
+            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'A', 
+                                                    'V', None)], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 625)
         def test_inside_insertion(self):
             """Fails if indel within exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248165, mutation_type='I')
             self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
-                                                                ('11', 5248165, 'Q',
-                                                                'I', None))])
+                                                                ('11', 5248165, 
+                                                                 '', 'Q',
+                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248165, 'Q', 'I', None)], 
+            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248165, '', 
+                                                  'Q', 'I', None)], 
                                       5248165))
             self.assertEqual(len(seq[0][0]), 136)
             self.assertEqual(len(seq[2][0]), 492)
@@ -1479,12 +1491,14 @@ if __name__ == '__main__':
             """Fails if indel right before exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248029, mutation_type='I')
             self.assertEqual(self.transcript.edits[5248028], [('Q', 'I', 'S',
-                                                                ('11', 5248029, 'Q',
+                                                                ('11', 5248029, 
+                                                                    '', 'Q',
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248029, 'Q', 'I', None)], 
+            self.assertEqual(seq[1], ('Q', 'S', [('11', 5248029, '', 'Q', 'I', 
+                                                  None)], 
                                         5248029)) 
             self.assertEqual(len(seq[0][0]), 142)
             self.assertEqual(len(seq[2][0]), 486)
@@ -1494,12 +1508,15 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246698, 
                                                                    5246701, 'S',
-                                                                   ('11', 5246700, 
-                                                                    'TGA', 'D',
+                                                                   ('11', 
+                                                                    5246700, 
+                                                                    'TGA', '',
+                                                                    'D',
                                                                     None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [('11', 5246700, 'TGA', 'D', None)],
+            self.assertEqual(seq[1], ('', 'S', [('11', 5246700, 'TGA', '', 'D', 
+                                                None)],
                                         5246700))
             self.assertEqual(seq[2], ('TTGCAA', 'R', [()], 5246699))
             self.assertEqual(len(seq[0][0]), 619)
@@ -1509,13 +1526,15 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246948,
                                                                    5246958, 'S',
-                                                                   ('11', 5246950,
+                                                                   ('11', 
+                                                                    5246950,
                                                                     'CCAGGAGCTG',
-                                                                    'D', None))])
+                                                                    '', 'D', 
+                                                                    None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', 'D', 
-                                                 None)], 5246950))
+            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', '', 
+                                                 'D', None)], 5246950))
             self.assertEqual(len(seq[0][0]), 365)
             self.assertEqual(len(seq[2][0]), 256)
         def test_spanning_deletion(self):
@@ -1535,23 +1554,25 @@ if __name__ == '__main__':
             self.transcript.edit('Q', 5248165, mutation_type='I')
             self.transcript.edit('A', 5248299)
             self.assertEqual(len(self.transcript.edits.keys()), 2)
-            self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 
-                                                                    'S', 
-                                                                   ('11', 5248299, 
-                                                                    'T', 'V', 
+            self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 'S', 
+                                                               ('11', 5248299, 
+                                                                'T', 'A','V', 
                                                                     None))]) 
             self.assertEqual(self.transcript.edits[5248164], [('Q', 'I', 'S',
-                                                                ('11', 5248165, 'Q',
+                                                                ('11', 5248165, 
+                                                                 '', 'Q',
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 7)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
-            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'V', None)], 
+            self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'A', 'V', 
+                                                    None)], 
                                         5248299))
             self.assertEqual(len(seq[2][0]), 133)
-            self.assertEqual(seq[3], ('Q', 'S', [('11', 5248165, 'Q', 'I', None)], 
+            self.assertEqual(seq[3], ('Q', 'S', [('11', 5248165, '', 'Q', 'I', 
+                                                    None)], 
                                         5248165))
             self.assertEqual(seq[4], ('GGGC', 'R', [()], 5248165))
             self.assertEqual(len(seq[6][0]), 481)

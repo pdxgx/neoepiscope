@@ -906,11 +906,11 @@ if __name__ == '__main__':
                                                             self.reference_index,
                                                             [8,9,10,11])
                 self.assertEqual(len(neoepitopes.keys()), 70)
-                self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, 
+                self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, '',
                                                             'AAA', 'I', 0.1, 
                                                             'ENST00000398531.2_2')])
                 self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229, 
-                                                            'A', 'V', 15.7, 
+                                                            'A', 'C', 'V', 15.7, 
                                                             'ENST00000398531.2_2')])
                 self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
                 self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
