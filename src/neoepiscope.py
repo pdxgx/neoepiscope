@@ -139,6 +139,59 @@ def combinevcf(vcf1, vcf2, outfile='Combined.vcf'):
         cleanup = ''.join(['rm ', vcf2, file])
         subprocess.call(cleanup, shell=True)
 
+def prep_hapcut_output(output, hapcut2_output, vcf):
+    """ Adds unphased mutations to HapCUT2 output as their own haplotypes
+        
+        output: path to output file to write adjusted haplotypes
+        hapcut2_output: path to original output from HapCUT2 with only 
+            phased mutations
+        vcf: path to vcf used to generate original HapCUT2 output
+
+        Return value: None
+    """
+    phased = collections.defaultdict(set)
+    with open(output, 'w') as output_stream:
+        print >>output_stream, '********'
+        with open(hapcut2_output) as hapcut2_stream:
+            for line in hapcut2_stream:
+                if line[0] != '*' and not line.startswith('BLOCK'):
+                    tokens = line.strip().split('\t')
+                    phased[(tokens[3], int(tokens[4]))].add(
+                                                    (tokens[5], tokens[6])
+                                                )
+                print >>output_stream, line,
+        with open(vcf) as vcf_stream:
+            first_char = '#'
+            while first_char == '#':
+                line = vcf_stream.readline().strip()
+                try:
+                    first_char = line[0]
+                except IndexError:
+                    first_char = '#'
+            counter = 1
+            while line:
+                tokens = line.split('\t')
+                pos = int(tokens[1])
+                alt_alleles = tokens[4].split(',')
+                for allele in alt_alleles:
+                    if (tokens[3], allele) not in phased[
+                                                (tokens[0], pos)
+                                            ]:
+                        print >>output_stream, 'BLOCK: unphased'
+                        print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
+                                               '{pos}\t{ref}\t{alt}\t'
+                                               '{genotype}\tNA\tNA\tNA').format(
+                                                    vcf_line=counter,
+                                                    chrom=tokens[0],
+                                                    pos=pos,
+                                                    ref=tokens[3],
+                                                    alt=tokens[4],
+                                                    genotype=tokens[9]
+                                                )
+                        print >>output_stream, '********' 
+                line = vcf_stream.readline().strip()
+                counter += 1
+
 def which(path):
     """ Searches for whether executable is present and returns version
 
@@ -271,7 +324,7 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
         size_list: list of peptide sizes for neoepitope enumeration
 
         return value: dictionary linking neoepitopes to their associated 
-            metadata ()
+            metadata
 
         """
     neoepitopes = collections.defaultdict(list)
@@ -346,12 +399,14 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
             transcriptB.reset(reference=True)
     return neoepitopes
 
-def get_affinity_netMHCIIpan(peptides, allele, netmhciipan,
+def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                                             remove_files=True):
     """ Obtains binding affinities from list of peptides
 
         peptides: peptides of interest (list of strings)
         allele: Allele to use for binding affinity (string)
+        netmhciipan: path to netMHCIIpan executable
+        scores: list of scoring methods
         remove_files: option to remove intermediate files
 
         Return value: affinities (a list of binding affinities 
@@ -369,7 +424,10 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan,
         if allele not in avail_alleles['netMHCIIpan']:
             print ''.join(['WARNING: ', allele, 
                         ' is not a valid allele for netMHCIIpan'])
-            return ['NA' for i in range(0,len(peptides))]
+            if len(scores) == 1:
+                return [('NA',) for i in range(0,len(peptides))]
+            else:
+                return [('NA', 'NA') for i in range(0,len(peptides))]
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0],
                                 str(len(peptides)), allele,
@@ -408,16 +466,24 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan,
             f.readline()
             f.readline()
             for line in f:
+                # token 1 is peptide; token 4 is affinity; token[5] is rank
                 tokens = line.split('\t')
-                # token 1 is peptide; token 4 is score
-                score_dict[tokens[1]] = tokens[4]
+                if scores == ['affinity', 'rank']:
+                    score_dict[tokens[1]] = (tokens[4], tokens[5])
+                elif scores == ['affinity']:
+                    score_dict[tokens[1]] = (tokens[4],)
+                elif scores == ['rank']:
+                    score_dict[tokens[1]] = (tokens[5],)
         # Produce list of scores for valid peptides
         # Invalid peptides receive "NA" score
         for sequence in peptides:
             if sequence in score_dict:
                 nM = score_dict[sequence]
             else:
-                nM = 'NA'
+                if len(scores) == 1:
+                    nM = ('NA',)
+                else:
+                    nM = ('NA', 'NA')
                 affinities.append(nM)
         return affinities
     finally:
@@ -425,13 +491,16 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan,
             for file_to_remove in files_to_remove:
                 os.remove(file_to_remove)
 
-def get_affinity_netMHCpan(peptides, allele, netmhcpan,
+def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                                 remove_files=True):
     """ Obtains binding affinities from list of peptides
 
         peptides: peptides of interest (list of strings)
         allele: allele to use for binding affinity 
                     (string, format HLA-A02:01)
+        netmhcpan: path to netMHCpan executable
+        version: version of netMHCpan software
+        scores: list of scoring methods
         remove_files: option to remove intermediate files
 
         Return value: affinities (a list of binding affinities 
@@ -448,7 +517,10 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan,
         if allele not in avail_alleles['netMHCpan']:
             print ''.join(['WARNING: ', allele, 
                         ' is not a valid allele for netMHCpan'])
-            return ['NA' for i in range(0,len(peptides))]
+            if len(scores) == 1:
+                return [('NA',) for i in range(0,len(peptides))]
+            else:
+                return [('NA', 'NA') for i in range(0,len(peptides))]
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0], str(len(peptides)), 
                                 allele, 'netmhcpan'])
@@ -476,8 +548,24 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan,
             f.readline()
             f.readline()
             for line in f:
-                line = line.strip('\n').split('\t')
-                nM = line[5]
+                tokens = tokens.strip('\n').split('\t')
+                # for v3, tokens[5] is affinity, tokens[6] is rank
+                # for v4, tokens[6] is affinty, tokens[7] is rank
+                if scores == ['affinity', 'rank']:
+                    if version == '3':
+                        nM = (tokens[5], tokens[6])
+                    elif version == '4':
+                        nM = (tokens[6], tokens[7])
+                elif scores == ['affinity']:
+                    if version == '3':
+                        nM = (tokens[5], )
+                    elif version == '4':
+                        nM = (tokens[6], )
+                elif scores == ['rank']:
+                    if version == '3':
+                        nM = (tokens[6], )
+                    elif version == '4':
+                        nM = (tokens[7], )
                 affinities.append(nM)
         return affinities
     finally:
@@ -485,6 +573,33 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan,
         if remove_files:
             for file_to_remove in files_to_remove:
                 os.remove(file_to_remove)
+
+def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
+    """ Writes predicted neoepitopes out to file
+        
+        output_file: path to output file
+        hla_alleles: list of HLA alleles used for binding predictions
+        neoepitopes: dictionary linking neoepitopes to their metadata
+        tool_dict: dictionary storing prediction tool data
+
+        Return value: None.   
+    """
+    with open(output_file, 'w') as o:
+        headers = ['Neoepitope', 'Chromsome', 'Pos', 'Seq', 'Mutation_type', 
+                   'VAF', 'Transcript_ID']
+        for allele in hla_alleles:
+            for tool in sorted(tool_dict.keys()):
+                for score_method in tool_dict[tool][1]:
+                    headers.append('_'.join([tool, allele, score_method]))
+        o.write('\t'.join(headers) + '\n')
+        for epitope in neoepitopes:
+            for mutation in neoepitopes[epitope][2]:
+                out_line = [epitope, mutation[0], str(mutation[1]), 'HELP', 
+                            'HELP', str(mutation[4]),
+                            mutation[5]]
+                for i in range(5,len(mutation)):
+                    out_line.append(str(mutation[i]))
+            o.write('\t'.join(out_line) + '\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
@@ -545,7 +660,7 @@ if __name__ == '__main__':
     prep_parser.add_argument('-o', '--output', type=str, required=True,
             help='path to output file to be input to call mode'
         )
-    # Call parser optinos (calls neoepitopes)
+    # Call parser options (calls neoepitopes)
     call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
             help='path to Bowtie index basename'
         )
@@ -563,14 +678,12 @@ if __name__ == '__main__':
             default='8,11', help='kmer size for epitope calculation'
         )
     call_parser.add_argument('-p', '--affinity-predictor', type=str, 
-            required=False, default='netMHCpan', 
-            help='path to executable for binding affinity prediction software; '
-                'for multiple softwares, use comma-separated list of paths'
-        )
-    call_parser.add_argument('-s', '--predictor-scores', type=str, 
-            required=False, default='rank', 
-            help='comma separated list of scoring methods to use, see '
-            'documentation online for more information'
+            nargs=3, required=False, action='append',
+            help='path to executable for binding affinity prediction software,'
+                'associated version number, and scoring method(s) '
+                '(e.g. -p netMHCpan 4 rank,affinity); '
+                'for multiple softwares, repeat the argument;'
+                'see documentation for details'
         )
     call_parser.add_argument('-a', '--alleles', type=str, required=True,
             help='comma separated list of alleles; '
@@ -667,6 +780,9 @@ if __name__ == '__main__':
             def tearDown(self):
                 """Removes test file"""
                 os.remove(self.outvcf)
+        class TestPrepHapCUT(unittest.TestCase):
+            """Tests addition of unphased mutations to HapCUT2 output"""
+            pass
         class TestVAFpos(unittest.TestCase):
             """Tests fetching of VAF position from VCF file"""
             def setUp(self):
@@ -750,65 +866,29 @@ if __name__ == '__main__':
                                                             [8,9,10,11])
                 self.assertEqual(len(neoepitopes.keys()), 70)
                 self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, 
-                                                              'AAA', 'I', 0.1, 
-                                                              'ENST00000398531.2_2')])
+                                                            'AAA', 'I', 0.1, 
+                                                            'ENST00000398531.2_2')])
                 self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229, 
-                                                              'A', 'V', 15.7, 
-                                                              'ENST00000398531.2_2')])
+                                                            'A', 'V', 15.7, 
+                                                            'ENST00000398531.2_2')])
                 self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
                 self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
+        class TestBindingPrediction(unittest.TestCase):
+            """Tests binding prediction functions"""
+            pass
+        class TestOutput(unittest.TestCase):
+            """Tests function to write output"""
+            pass
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
-        # FM indexing of proteome??
     elif args.subparser_name == 'swap':
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == 'merge':
         combinevcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == 'prep':
-        phased = collections.defaultdict(set)
-        with open(args.output, 'w') as output_stream:
-            print >>output_stream, '********'
-            with open(args.hapcut2_output) as hapcut2_stream:
-                for line in hapcut2_stream:
-                    if line[0] != '*' and not line.startswith('BLOCK'):
-                        tokens = line.strip().split('\t')
-                        phased[(tokens[3], int(tokens[4]))].add(
-                                                        (tokens[5], tokens[6])
-                                                    )
-                    print >>output_stream, line,
-            with open(args.vcf) as vcf_stream:
-                first_char = '#'
-                while first_char == '#':
-                    line = vcf_stream.readline().strip()
-                    try:
-                        first_char = line[0]
-                    except IndexError:
-                        first_char = '#'
-                counter = 1
-                while line:
-                    tokens = line.split('\t')
-                    pos = int(tokens[1])
-                    alt_alleles = tokens[4].split(',')
-                    for allele in alt_alleles:
-                        if (tokens[3], allele) not in phased[
-                                                    (tokens[0], pos)
-                                                ]:
-                            print >>output_stream, 'BLOCK: unphased'
-                            print >>output_stream, ('{vcf_line}\tNA\tNA\t{chrom}\t'
-                                                   '{pos}\t{ref}\t{alt}\t'
-                                                   '{genotype}\tNA\tNA\tNA').format(
-                                                        vcf_line=counter,
-                                                        chrom=tokens[0],
-                                                        pos=pos,
-                                                        ref=tokens[3],
-                                                        alt=tokens[4],
-                                                        genotype=tokens[9]
-                                                    )
-                            print >>output_stream, '********' 
-                    line = vcf_stream.readline().strip()
-                    counter += 1
+        prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
         interval_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
@@ -816,18 +896,67 @@ if __name__ == '__main__':
         cds_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
                                 '/', 'transcript_to_CDS.pickle']), 'rb'))
         # Check affinity predictor
-        for tool in ','.split(args.affinity_predictor):
-            program = which(tool)
-            if program is None:
-                raise ValueError(' '.join([program, 'is not a valid software']))
-            elif 'netMHCIIpan' in program:
-                pass
-                # Deal with version/score checking
-            elif 'netMHCpan' in program:
-                pass
-                # Deal with version/score checking
-            else:
-                raise ValueError(' '.join([program, 'is not a valid software']))
+        tool_dict = {}
+        if args.affinity_predictor is not None:
+            for tool in args.affinity_predictor:
+                program = which(tool[0])
+                version = tool[1]
+                scoring = tool[2].split(',')
+                if program is None:
+                    raise ValueError(' '.join([program, 
+                                               'is not a valid software']))
+                elif 'netMHCIIpan' in program:
+                    if version == '3' and 'netMHCIIpan3' not in tool_dict:
+                        acceptable_scoring = ['rank', 'affinity']
+                        for method in scoring:
+                            if method not in acceptable_scoring:
+                                print ''.join(['WARNING: ', method, 
+                                            'not compatible with netMHCIIpan'])
+                                scoring.remove(method)
+                        if len(scoring) > 0:
+                            tool_dict['netMHCIIpan3'] = [program, sorted(scoring)]
+                    elif 'netMHCIIpan3' in tool_dict:
+                        raise RuntimeError('Conflicting or repetitive installs'
+                                            'of netMHCIIpan given')
+                    else:
+                        raise NotImplementedError(
+                            ' '.join(['Neoepiscope does not support version', 
+                                      version, 'of netMHCIIpan'])
+                            )
+                elif 'netMHCpan' in program:
+                    if (('netMHCpan3' not in tool_dict and version == '3') or 
+                                    ('netMHCpan4' not in tool_dict and 
+                                        version == '4')):
+                        acceptable_scoring = ['rank', 'affinity']
+                        for method in scoring:
+                            if method not in acceptable_scoring:
+                                print ''.join(['WARNING: ', method, 
+                                            'not compatible with netMHCpan'])
+                                scoring.remove(method)
+                        if len(scoring) > 0:
+                            if version == '3':
+                                name = 'netMHCpan3'
+                            elif version == '4':
+                                name = 'netMHCpan4'
+                            tool_dict[name] = [program, sorted(scoring)]
+                    elif (('netMHCpan3' in tool_dict and version == '3') or 
+                                ('netMHCpan4' in tool_dict and version == '4')):
+                        raise RuntimeError('Conflicting or repetitive installs'
+                                            'of netMHCpan given')
+                    else:
+                        raise NotImplementedError(
+                            ' '.join(['Neoepiscope does not support version', 
+                                      version, 'of netMHCpan'])
+                            )
+                else:
+                    raise NotImplementedError(
+                                    ' '.join(['Neoepiscope does not support', 
+                                              program, 
+                                              'for binding predictions'])
+                                    )
+        if len(tool_dict.keys()) == 0:
+            print ''.join(['WARNING: no binding prediction tools given,',
+                           ' will proceed without binding predictions'])
         # Obtain VAF frequency VCF position
         VAF_pos = get_VAF_pos(args.vcf)
         # Obtain peptide sizes for kmerizing peptides
@@ -836,7 +965,7 @@ if __name__ == '__main__':
             size_list.sort()
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
-        hla_alleles = args.alleles.split(',')
+        hla_alleles = sorted(args.alleles.split(','))
         # For retrieving genome sequence
         reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
@@ -871,27 +1000,33 @@ if __name__ == '__main__':
                                                     reference_index,
                                                     size_list)
         for allele in hla_alleles:
-            ## What value do we want from netMHCpan? affinity or score?
-            binding_scores = get_affinity(sorted(neoepitopes.keys()), allele)
-            for i in range(0, sorted(neoepitopes.keys())):
-                meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
-                for mutation in meta_data:
-                    mutation = mutation + (binding_scores[i],)
-        ## What format do we want for the output file?
-        with open(args.output_file, 'w') as o:
-            headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt', 'VAF', 
-                        'Transcript_ID']
-            for allele in hla_alleles:
-                headers.append('_'.join([allele, 'score']))
-            o.write('\t'.join(headers) + '\n')
-            for epitope in neoepitopes:
-                for mutation in neoepitopes[epitope][2]:
-                    out_line = [epitope, mutation[0], str(mutation[1]), 'HELP', 
-                                'HELP', str(mutation[4]),
-                                mutation[5]]
-                    for i in range(5,len(mutation)):
-                        out_line.append(str(mutation[i]))
-                o.write('\t'.join(out_line) + '\n')
+            for tool in sorted(tool_dict.keys()):
+                if tool == 'netMHCIIpan3':
+                    binding_scores = get_affinity_netMHCIIpan(
+                                                    sorted(neoepitopes.keys()), 
+                                                    allele, tool_dict[tool][0], 
+                                                    tool_dict[tool][2],
+                                                    remove_files=True
+                                                    )
+                elif tool == 'netMHCpan3':
+                    binding_scores = get_affinity_netMHCpan(
+                                                    sorted(neoepitopes.keys()), 
+                                                    allele, tool_dict[tool][0], 
+                                                    '3', tool_dict[tool][2],
+                                                    remove_files=True
+                                                    )
+                elif tool == 'netMHCpan4':
+                    binding_scores = get_affinity_netMHCpan(
+                                                    sorted(neoepitopes.keys()), 
+                                                    allele, tool_dict[tool][0], 
+                                                    '4', tool_dict[tool][2],
+                                                    remove_files=True
+                                                    )
+                for i in range(0, sorted(neoepitopes.keys())):
+                    meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
+                    for mutation in meta_data:
+                        mutation = mutation + binding_scores[i]
+        write_results(args.output_file, hla_alleles, neoepitopes, tool_dict)
     else:
         raise RuntimeError(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
