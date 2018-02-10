@@ -589,21 +589,64 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
         Return value: None.   
     """
     with open(output_file, 'w') as o:
-        headers = ['Neoepitope', 'Chromsome', 'Pos', 'Seq', 'Mutation_type', 
-                   'VAF', 'Transcript_ID']
+        headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt', 
+                   'Mutation_type', 'VAF', 'Transcript_ID']
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):
-                for score_method in tool_dict[tool][1]:
+                for score_method in sorted(tool_dict[tool][1]):
                     headers.append('_'.join([tool, allele, score_method]))
         o.write('\t'.join(headers) + '\n')
-        for epitope in neoepitopes:
-            for mutation in neoepitopes[epitope][2]:
-                out_line = [epitope, mutation[0], str(mutation[1]), 'HELP', 
-                            'HELP', str(mutation[4]),
-                            mutation[5]]
-                for i in range(5,len(mutation)):
+        for epitope in sorted(neoepitopes.keys()):
+            print neoepitopes[epitope]
+            print len(neoepitopes[epitope])
+            print epitope
+            if len(neoepitopes[epitope]) == 1:
+                mutation = neoepitopes[epitope][0]
+                if mutation[2] == '':
+                    ref = "''"
+                else:
+                    ref = mutation[2]
+                if mutation[3] == '':
+                    alt = "''"
+                else:
+                    alt = mutation[2]
+                out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
+                            mutation[4], str(mutation[5]), mutation[6]]
+                for i in range(7,len(mutation)):
                     out_line.append(str(mutation[i]))
-            o.write('\t'.join(out_line) + '\n')
+                o.write('\t'.join(out_line) + '\n')
+            else:
+                mutation_dict = collections.defaultdict(list)
+                ep_scores = []
+                for i in range(7, len(neoepitopes[epitope][0])):
+                    ep_scores.append(neoepitopes[epitope][0][i])
+                for mut in neoepitopes[epitope]:
+                    if mut[2] == '':
+                        ref = "''"
+                    else:
+                        ref = mut[2]
+                    if mut[3] == '':
+                        alt = "''"
+                    else:
+                        alt = mut[3]
+                    if mut[4] == 'V':
+                        mut_type = 'SNV'
+                    elif mut[4] == 'I':
+                        mut_type = 'Insertion'
+                    elif mut[4] == 'D':
+                        mut_type = 'Deletion'
+                    mutation_dict[(mut[0], mut[1], ref, alt, mut_type)].append(
+                                                                [str(mut[5]), 
+                                                                 mut[6]]
+                                                                 )
+                for mut in sorted(mutation_dict.keys()):
+                    out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
+                                mut[4],
+                                ';'.join([x[0] for x in mutation_dict[mut]]),
+                                ';'.join([x[1] for x in mutation_dict[mut]])]
+                    for score in ep_scores:
+                        out_line.append(str(score))
+                    o.write('\t'.join(out_line) + '\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=_help_intro, 
@@ -919,7 +962,47 @@ if __name__ == '__main__':
             pass
         class TestOutput(unittest.TestCase):
             """Tests function to write output"""
-            pass
+            def setUp(self):
+                """Sets up paths and dictionaries"""
+                self.out_file = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'neoepiscope.out'
+                                )
+                self.correct_out = os.path.join(
+                                    os.path.dirname(
+                                            os.path.dirname(
+                                                    os.path.realpath(__file__)
+                                                )
+                                        ), 'test', 'expected.neoepiscope.out'
+                                )
+                self.tools = {'netMHCpan4': ['netMHCpan', ['rank', 'affinity']],
+                              'netMHCIIpan3': ['netMHCIIpan', ['rank']]}
+                self.HLA_alleles = ['HLA*A01:01', 'HLA*A02:01']
+                self.neoepitopes = {'CGCSQKCN': [('11', 71277056, '',
+                                                  'AAA', 'I', 0.1, 
+                                                  'ENST00000398531.2_2',
+                                                  5, 10000.0, 1, 5, 150, 4),
+                                                 ('4', 300000, 'A',
+                                                  'T', 'V', 10.2, 
+                                                  'ENST00000398554.1_1',
+                                                  0.5, 100, 0.5, 3, 150, 4)],
+                                    'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V', 
+                                                  15.7, 'ENST00000398531.2_2',
+                                                  10, 50.57, 1.2, 3, 10.1, 7),
+                                                 ('11', 71277229, 'A', 'C', 'V', 
+                                                  20.3, 'ENST00000398200.3_1',
+                                                  10, 50.57, 1.2, 3, 10.1, 7)]}
+            def testwrite(self):
+                """Tests that output file is written correctly"""
+                write_results(self.out_file, self.HLA_alleles, self.neoepitopes,
+                              self.tools)
+                self.assertTrue(filecmp.cmp(self.out_file, self.correct_out))
+            def tearDown(self):
+                """Removes test file"""
+                os.remove(self.out_file)
         unittest.main()
     elif args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
