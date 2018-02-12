@@ -21,6 +21,8 @@ import tempfile
 import subprocess
 import string
 import warnings
+#import exe_paths
+import exe_paths_mary as exe_paths
 from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
 from operator import itemgetter
 from sortedcontainers import SortedDict
@@ -301,7 +303,8 @@ def process_haplotypes(hapcut_output, interval_dict):
                     block_transcripts[transcript].append([tokens[3], pos, 
                                                           ref, alt, 
                                                           tokens[1], tokens[2], 
-                                                          tokens[7], mutation_type])
+                                                          tokens[7], 
+                                                          mutation_type])
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
@@ -371,20 +374,23 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 mutation_class=mutation_class,
                                 vaf=VAF)
             # Extract neoepitopes
-            A_peptides = transcriptA.neopeptides(min_size=size_list[0], 
-                                                 max_size=size_list[-1],
-                                                 include_somatic=1,
-                                                 include_germline=2, 
-                                                 only_novel_upstream=only_novel_upstream,
-                                                 only_downstream=only_downstream, 
-                                                 only_reference=only_reference)
-            B_peptides = transcriptB.neopeptides(min_size=size_list[0], 
-                                                 max_size=size_list[-1],
-                                                 include_somatic=1,
-                                                 include_germline=2, 
-                                                 only_novel_upstream=only_novel_upstream,
-                                                 only_downstream=only_downstream, 
-                                                 only_reference=only_reference)
+            A_peptides = transcriptA.neopeptides(
+                                        min_size=size_list[0], 
+                                        max_size=size_list[-1],
+                                        include_somatic=1,
+                                        include_germline=2, 
+                                        only_novel_upstream=only_novel_upstream,
+                                        only_downstream=only_downstream, 
+                                        only_reference=only_reference
+                                        )
+            B_peptides = transcriptB.neopeptides(
+                                        min_size=size_list[0], 
+                                        max_size=size_list[-1],
+                                        include_somatic=1,
+                                        include_germline=2, 
+                                        only_novel_upstream=only_novel_upstream,
+                                        only_downstream=only_downstream, 
+                                        only_reference=only_reference)
             # Store neoepitopes and their metadata
             for pep in A_peptides:
                 for meta_data in A_peptides[pep]:
@@ -416,8 +422,11 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
     files_to_remove = []
     try:
         # Check that allele is valid for method
-        with open(''.join([os.path.dirname(__file__),
-                 '/availableAlleles.pickle']), 'rb'
+        with open(os.path.join(
+                            os.path.dirname(
+                                            os.path.realpath(__file__)
+                                ), 'availableAlleles.pickle'
+                        ), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         # Homogenize format
@@ -430,6 +439,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                 return [('NA',) for i in range(0,len(peptides))]
             else:
                 return [('NA', 'NA') for i in range(0,len(peptides))]
+        allele = allele.replace('*', '_').replace(':', '')
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0],
                                 str(len(peptides)), allele,
@@ -440,9 +450,9 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
         # Count instances of smaller peptides
         na_count = 0
         peptide_file = tempfile.mkstemp(
-                        suffix='.peptides', prefix='id.', text=True)
+                        suffix='.peptides', prefix='id.', text=True)[1]
         files_to_remove.append(peptide_file)
-        with open(peptide_file[1], 'w') as f:
+        with open(peptide_file, 'w') as f:
             for sequence in peptides:
                 if len(sequence) >= 9:
                     print >>f, sequence
@@ -455,27 +465,27 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out', 
-                                    prefix='id.', text=True)
+                                    prefix='id.', text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         subprocess.check_call(
                         [netmhciipan, '-a', allele, '-inptype', '1', 
-                         '-xls', '-xlsfile', mhc_out, peptide_file]
+                         '-xls', '-xlsfile', mhc_out, '-f', peptide_file]
                     )
         # Retrieve scores for valid peptides
         score_dict = {}
-        with open(mhc_out[1], 'r') as f:
+        with open(mhc_out, 'r') as f:
             # Skip headers
             f.readline()
             f.readline()
             for line in f:
                 # token 1 is peptide; token 4 is affinity; token[5] is rank
                 tokens = line.split('\t')
-                if scores == ['affinity', 'rank']:
+                if sorted(scores) == ['affinity', 'rank']:
                     score_dict[tokens[1]] = (tokens[4], tokens[5])
-                elif scores == ['affinity']:
+                elif sorted(scores) == ['affinity']:
                     score_dict[tokens[1]] = (tokens[4],)
-                elif scores == ['rank']:
+                elif (scores) == ['rank']:
                     score_dict[tokens[1]] = (tokens[5],)
         # Produce list of scores for valid peptides
         # Invalid peptides receive "NA" score
@@ -487,7 +497,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                     nM = ('NA',)
                 else:
                     nM = ('NA', 'NA')
-                affinities.append(nM)
+            affinities.append(nM)
         return affinities
     finally:
         if remove_files:
@@ -512,8 +522,11 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
     files_to_remove = []
     try:
         # Check that allele is valid for method
-        with open(''.join([os.path.dirname(__file__),
-                 '/availableAlleles.pickle']), 'rb'
+        with open(os.path.join(
+                            os.path.dirname(
+                                            os.path.realpath(__file__)
+                                ), 'availableAlleles.pickle'
+                        ), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         allele = allele.replace('*', '')
@@ -533,39 +546,44 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         peptide_file = tempfile.mkstemp(suffix='.peptides', 
                                         prefix=''.join([sample_id, 
                                                         '.']), 
-                                        text=True)
+                                        text=True)[1]
         files_to_remove.append(peptide_file)
-        with open(peptide_file[1], 'w') as f:
+        with open(peptide_file, 'w') as f:
             for sequence in peptides:
                 print >>f, sequence
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCpan.out', 
                                     prefix=''.join([sample_id, 
                                                     '.']), 
-                                    text=True)
+                                    text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCpan
-        subprocess.check_call(
-            [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls', 
-                '-xlsfile', mhc_out, peptide_file])
-        with open(mhc_out[1], 'r') as f:
+        if version == '3':
+            subprocess.check_call(
+                [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls', 
+                    '-xlsfile', mhc_out, peptide_file])
+        elif version == '4':
+            subprocess.check_call(
+                [netmhcpan, '-BA', '-a', allele, '-inptype', '1', '-p', '-xls', 
+                    '-xlsfile', mhc_out, peptide_file])
+        with open(mhc_out, 'r') as f:
             f.readline()
             f.readline()
             for line in f:
-                tokens = tokens.strip('\n').split('\t')
+                tokens = line.strip('\n').split('\t')
                 # for v3, tokens[5] is affinity, tokens[6] is rank
                 # for v4, tokens[6] is affinty, tokens[7] is rank
-                if scores == ['affinity', 'rank']:
+                if sorted(scores) == ['affinity', 'rank']:
                     if version == '3':
                         nM = (tokens[5], tokens[6])
                     elif version == '4':
                         nM = (tokens[6], tokens[7])
-                elif scores == ['affinity']:
+                elif sorted(scores) == ['affinity']:
                     if version == '3':
                         nM = (tokens[5], )
                     elif version == '4':
                         nM = (tokens[6], )
-                elif scores == ['rank']:
+                elif sorted(scores) == ['rank']:
                     if version == '3':
                         nM = (tokens[6], )
                     elif version == '4':
@@ -577,6 +595,45 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         if remove_files:
             for file_to_remove in files_to_remove:
                 os.remove(file_to_remove)
+
+def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
+    """ Adds binding scores from desired programs to neoepitope metadata
+        
+        neoepitopes: dictionary linking neoepitopes to their metadata
+        tool_dict: dictionary storing prediction tool data
+        hla_alleles: list of HLA alleles used for binding predictions
+        
+        Return value: dictionary linking neoepitopes to their metadata,
+            which now includes binding scores
+    """
+    for allele in hla_alleles:
+        for tool in sorted(tool_dict.keys()):
+            if tool == 'netMHCIIpan3':
+                binding_scores = get_affinity_netMHCIIpan(
+                                                sorted(neoepitopes.keys()), 
+                                                allele, tool_dict[tool][0], 
+                                                tool_dict[tool][1],
+                                                remove_files=True
+                                                )
+            elif tool == 'netMHCpan3':
+                binding_scores = get_affinity_netMHCpan(
+                                                sorted(neoepitopes.keys()), 
+                                                allele, tool_dict[tool][0], 
+                                                '3', tool_dict[tool][1],
+                                                remove_files=True
+                                                )
+            elif tool == 'netMHCpan4':
+                binding_scores = get_affinity_netMHCpan(
+                                                sorted(neoepitopes.keys()), 
+                                                allele, tool_dict[tool][0], 
+                                                '4', tool_dict[tool][1],
+                                                remove_files=True
+                                                )
+            for i in range(0, len(neoepitopes.keys())):
+                meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
+                for j in range(0, len(meta_data)):
+                    neoepitopes[sorted(neoepitopes.keys())[i]][j] = meta_data[j] + binding_scores[i]
+    return neoepitopes
 
 def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     """ Writes predicted neoepitopes out to file
@@ -597,9 +654,6 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     headers.append('_'.join([tool, allele, score_method]))
         o.write('\t'.join(headers) + '\n')
         for epitope in sorted(neoepitopes.keys()):
-            print neoepitopes[epitope]
-            print len(neoepitopes[epitope])
-            print epitope
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
                 if mutation[2] == '':
@@ -726,7 +780,7 @@ if __name__ == '__main__':
         )
     call_parser.add_argument('-p', '--affinity-predictor', type=str, 
             nargs=3, required=False, action='append',
-            help='path to executable for binding affinity prediction software,'
+            help='binding affinity prediction software,'
                 'associated version number, and scoring method(s) '
                 '(e.g. -p netMHCpan 4 rank,affinity); '
                 'for multiple softwares, repeat the argument;'
@@ -959,7 +1013,63 @@ if __name__ == '__main__':
                 self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
         class TestBindingPrediction(unittest.TestCase):
             """Tests binding prediction functions"""
-            pass
+            def setUp(self):
+                """"""
+                self.neoepitopes = {'CGCSQKCN': [('11', 71277056, '', 'AAA', 
+                                                  'I', 0.1, 
+                                                  'ENST00000398531.2_2')],
+                                    'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V', 
+                                                  15.7, 'ENST00000398531.2_2')]}
+                self.tools = {'netMHCpan4': [exe_paths.netMHCpan4, 
+                                             ['rank', 'affinity']],
+                              'netMHCpan3': [exe_paths.netMHCpan3, 
+                                             ['rank', 'affinity']]}
+                self.alleles = ['HLA-A*02:01', 'HLA-B*07:02']
+                self.neoepitopesII = {'AHWTEARIMLDNINM': [('11', 71277056, '', 'AAA', 
+                                                  'I', 0.1, 
+                                                  'ENST00000398531.2_2')]}
+                self.toolsII = {'netMHCIIpan3': [exe_paths.netMHCIIpan3, 
+                                               ['rank', 'affinity']]}
+                self.allelesII = ['HLA-DRB1*01:01']
+            def test_binding_scores(self):
+                new_neoepitopes = gather_binding_scores(self.neoepitopes, 
+                                                        self.tools, 
+                                                        self.alleles)
+                new_neoepitopesII = gather_binding_scores(self.neoepitopesII, 
+                                                        self.toolsII, 
+                                                        self.allelesII)
+                self.assertEqual(new_neoepitopes['CGCSQKCN'], [('11', 71277056, 
+                                                                '', 'AAA', 
+                                                                'I', 0.1, 
+                                                                'ENST00000398531.2_2',
+                                                                '48126.8320', 
+                                                                '100.0000', 
+                                                                '47206.2734', 
+                                                                '96.4206', 
+                                                                '48380.5781', 
+                                                                '100.0000',
+                                                                '47300.3477',
+                                                                '97.0230'
+                                                                )])
+                self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229, 
+                                                                'A', 'C', 'V', 
+                                                                15.7, 
+                                                                'ENST00000398531.2_2',
+                                                                '41484.8242', 
+                                                                '70.0000', 
+                                                                '38923.1328', 
+                                                                '66.8880',
+                                                                '22375.3965', 
+                                                                '18.0000',
+                                                                '29030.9199',
+                                                                '25.8751'
+                                                                )])
+                self.assertEqual(new_neoepitopesII['AHWTEARIMLDNINM'], 
+                                 [('11', 71277056, '', 'AAA', 'I', 0.1, 
+                                   'ENST00000398531.2_2', '295.78', '49.00')])
+                self.assertEqual(15, len(new_neoepitopes['PVCCPCKI'][0]))
+                self.assertEqual(15, len(new_neoepitopes['CGCSQKCN'][0]))
+                self.assertEqual(9, len(new_neoepitopesII['AHWTEARIMLDNINM'][0]))
         class TestOutput(unittest.TestCase):
             """Tests function to write output"""
             def setUp(self):
@@ -1023,14 +1133,21 @@ if __name__ == '__main__':
         tool_dict = {}
         if args.affinity_predictor is not None:
             for tool in args.affinity_predictor:
-                program = which(tool[0])
+                program = tool[0]
                 version = tool[1]
                 scoring = tool[2].split(',')
-                if program is None:
-                    raise ValueError(' '.join([program, 
-                                               'is not a valid software']))
-                elif 'netMHCIIpan' in program:
+                if 'netMHCIIpan' in program:
                     if version == '3' and 'netMHCIIpan3' not in tool_dict:
+                        program = exe_paths.netMHCIIpan3
+                        if program is None:
+                            program = which('netMHCIIpan3')
+                        else:
+                            program = which(program)
+                        if program is None:
+                            warnings.warn(' '.join(['No valid install of', 
+                                            'netMHCIIpan available']),
+                                            Warning)
+                            continue
                         acceptable_scoring = ['rank', 'affinity']
                         for method in scoring:
                             if method not in acceptable_scoring:
@@ -1052,6 +1169,27 @@ if __name__ == '__main__':
                     if (('netMHCpan3' not in tool_dict and version == '3') or 
                                     ('netMHCpan4' not in tool_dict and 
                                         version == '4')):
+                        if version == '3':
+                            program = exe_paths.netMHCpan3
+                            if program is None:
+                                program = which('netMHCpan3')
+                            else:
+                                program = which(program)
+                        elif version == '4':
+                            if program is None:
+                                program = which('netMHCpan4')
+                            else:
+                                program = which(program)
+                        if program is None:
+                            warnings.warn(' '.join(['No valid install of ', 
+                                            'netMHCIIpan available']),
+                                            Warning)
+                            continue
+                        if program is None:
+                            warnings.warn(' '.join(['No valid install of', 
+                                            'netMHCpan version', version, 
+                                            'available']),  Warning)
+                            continue
                         acceptable_scoring = ['rank', 'affinity']
                         for method in scoring:
                             if method not in acceptable_scoring:
@@ -1126,34 +1264,9 @@ if __name__ == '__main__':
                                                     only_reference,
                                                     reference_index,
                                                     size_list)
-        for allele in hla_alleles:
-            for tool in sorted(tool_dict.keys()):
-                if tool == 'netMHCIIpan3':
-                    binding_scores = get_affinity_netMHCIIpan(
-                                                    sorted(neoepitopes.keys()), 
-                                                    allele, tool_dict[tool][0], 
-                                                    tool_dict[tool][2],
-                                                    remove_files=True
-                                                    )
-                elif tool == 'netMHCpan3':
-                    binding_scores = get_affinity_netMHCpan(
-                                                    sorted(neoepitopes.keys()), 
-                                                    allele, tool_dict[tool][0], 
-                                                    '3', tool_dict[tool][2],
-                                                    remove_files=True
-                                                    )
-                elif tool == 'netMHCpan4':
-                    binding_scores = get_affinity_netMHCpan(
-                                                    sorted(neoepitopes.keys()), 
-                                                    allele, tool_dict[tool][0], 
-                                                    '4', tool_dict[tool][2],
-                                                    remove_files=True
-                                                    )
-                for i in range(0, sorted(neoepitopes.keys())):
-                    meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
-                    for mutation in meta_data:
-                        mutation = mutation + binding_scores[i]
-        write_results(args.output_file, hla_alleles, neoepitopes, tool_dict)
+        full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
+                                                 hla_alleles)
+        write_results(args.output_file, hla_alleles, full_neoepitopes, tool_dict)
     else:
         raise RuntimeError(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
