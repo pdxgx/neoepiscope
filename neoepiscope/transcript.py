@@ -667,28 +667,28 @@ class Transcript(object):
                                              intervals[i-1][2],
                                              genomic_position)
                         if self.rev_strand:
-                            self._seq_append(final_seq, seqs[(i-1)/2][0][
+                            self._seq_append(final_seq, seqs[(i-1)//2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(), 
-                                        seqs[(i-1)/2][1][0]
+                                        seqs[(i-1)//2][1][0]
                                             + last_index + fill - 1)
                         else:
-                            self._seq_append(final_seq, seqs[(i-1)/2][0][
+                            self._seq_append(final_seq, seqs[(i-1)//2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(),
-                                        seqs[(i-1)/2][1][0])
+                                        seqs[(i-1)//2][1][0])
                         # If no edits, snv is reference and no insertion
                         try:
-                            snv = (seqs[(i-1)/2][0][last_index + fill], 'R', 
-                                    tuple(), seqs[(i-1)/2][1][0] + fill)
+                            snv = (seqs[(i-1)//2][0][last_index + fill], 'R', 
+                                    tuple(), seqs[(i-1)//2][1][0] + fill)
                         except IndexError:
                             '''Should happen only for insertions at beginning
                             of sequence.'''
-                            assert (i - 1) / 2 == 0 and not seqs[0][0]
+                            assert (i - 1) // 2 == 0 and not seqs[0][0]
                             snv = ('', 'R', tuple(),
-                                        seqs[(i-1)/2][1][0] + fill)
+                                        seqs[(i-1)//2][1][0] + fill)
                         insertion = ('', 'R', tuple(),
-                                        seqs[(i-1)/2][1][0] + fill)
+                                        seqs[(i-1)//2][1][0] + fill)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
                                 snv = (edit[0], edit[2], edit[3], 
@@ -710,17 +710,17 @@ class Transcript(object):
                         self._seq_append(final_seq, '', intervals[i-1][1], 
                                          intervals[i-1][2], 
                                          genomic_position)
-                    ref_to_add = seqs[(i-1)/2][0][last_index:]
+                    ref_to_add = seqs[(i-1)//2][0][last_index:]
                     if ref_to_add:
                         if self.rev_strand:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(),
-                                seqs[(i-1)/2][1][1]
+                                seqs[(i-1)//2][1][1]
                             )
                         else:
                             self._seq_append(
                                 final_seq, ref_to_add, 'R', tuple(), 
-                                seqs[(i-1)/2][1][0] + last_index
+                                seqs[(i-1)//2][1][0] + last_index
                             )
                     if intervals[i][1] != 'R':
                         if isinstance(intervals[i][2], list):
@@ -746,13 +746,13 @@ class Transcript(object):
                                         genomic_position
                                     )
                             if self.rev_strand:
-                                self._seq_append(final_seq, seqs[(i-1)/2][0], 
+                                self._seq_append(final_seq, seqs[(i-1)//2][0], 
                                                     'R', tuple(), 
-                                                    seqs[(i-1)/2][1][1])
+                                                    seqs[(i-1)//2][1][1])
                             else:
-                                self._seq_append(final_seq, seqs[(i-1)/2][0], 
+                                self._seq_append(final_seq, seqs[(i-1)//2][0], 
                                                     'R', tuple(), 
-                                                    seqs[(i-1)/2][1][0])
+                                                    seqs[(i-1)//2][1][0])
                             if intervals[i][1] != 'R':
                                 if isinstance(intervals[i][2], list):
                                     genomic_position = min([x[1] for x 
@@ -1230,7 +1230,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 del cds_dict[transcript_id]
     # Write to pickled dictionary
     if pickle_it:
-        pickle_dict = ''.join([dictdir, '/', 'transcript_to_CDS.pickle'])
+        pickle_dict = os.path.join(dictdir, 'transcript_to_CDS.pickle')
         with open(pickle_dict, 'wb') as f:
             pickle.dump(cds_dict, f)
     return cds_dict
@@ -1267,7 +1267,7 @@ def cds_to_tree(cds_dict, dictdir, pickle_it=True):
                 # report an error?
     # Write to pickled dictionary
     if pickle_it:
-        pickle_dict = ''.join([dictdir, '/', 'intervals_to_transcript.pickle'])
+        pickle_dict = os.path.join(dictdir, 'intervals_to_transcript.pickle')
         with open(pickle_dict, 'wb') as f:
             pickle.dump(searchable_tree, f)
     return searchable_tree

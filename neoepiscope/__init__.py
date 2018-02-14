@@ -1102,10 +1102,14 @@ def main():
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
-        interval_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
-                                '/', 'intervals_to_transcript.pickle']), 'rb'))
-        cds_dict = pickle.load(open(args.dicts + ''.join([dictdir, 
-                                '/', 'transcript_to_CDS.pickle']), 'rb'))
+        with open(os.path.join(
+                    args.dicts, dictdir, 'intervals_to_transcript.pickle'
+                ), 'rb') as interval_stream:
+            interval_dict = pickle.load(interval_stream)
+        with open(os.path.join(
+                    args.dicts, dictdir, 'transcript_to_CDS.pickle'
+                ), 'rb') as cds_stream:
+            cds_dict = pickle.load(cds_stream)
         # Check affinity predictor
         tool_dict = {}
         if args.affinity_predictor is not None:
