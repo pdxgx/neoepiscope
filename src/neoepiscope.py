@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 """
-nexepi
+neoepiscope
 
 Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
 """
-import bisect
 import argparse
 import bowtie_index
 import sys
-import math
 import string
 import copy
 import pickle
@@ -25,7 +23,6 @@ import warnings
 import exe_paths_mary as exe_paths
 from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
 from operator import itemgetter
-from sortedcontainers import SortedDict
 from intervaltree import Interval, IntervalTree
 #import Hapcut2interpreter as hap
 
