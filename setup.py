@@ -1,15 +1,15 @@
 from setuptools import setup
 
-setup(name='vickitrix',
-      version='0.1.5',
-      description='trade crypto on GDAX based on tweets',
-      url='http://github.com/nellore/vickitrix',
+setup(name='neoepiscope',
+      version='0.1.0',
+      description='comprehensive neoepitope prediction software',
+      url='http://github.com/ohsu-comp-bio/neoepiscope',
       download_url = 'https://github.com/nellore/vickitrix/tarball/0.1.5',
-      author='Abhi Nellore',
-      author_email='anellore@gmail.com',
+      author='Mary Wood, Julianne David, Austin Nguyen, Mihir Paralkar, Mayur Paralkar, Abhinav Nellore, Reid Thompson',
+      author_email='thompsre@ohsu.edu',
       license='MIT',
-      packages=['vickitrix'],
-      package_data={'vickitrix': ['*.py', './rules/*']},
+      packages=['neoepiscope'],
+      package_data={'neoepiscope': ['*.py']},
       zip_safe=True,
       install_requires=[
       		'twython', 'gdax', 'pycrypto'
