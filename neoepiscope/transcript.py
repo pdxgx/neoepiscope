@@ -43,8 +43,8 @@ def kmerize_peptide(peptide, min_size=8, max_size=11):
     """
     peptide_size = len(peptide)
     return [item for sublist in
-                [[peptide[i:i+size] for i in xrange(peptide_size - size + 1)]
-                    for size in xrange(min_size, max_size + 1)]
+                [[peptide[i:i+size] for i in range(peptide_size - size + 1)]
+                    for size in range(min_size, max_size + 1)]
             for item in sublist if 'X' not in item]
 
 # X below denotes a stop codon
@@ -88,12 +88,12 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
             return ''
     seq_size = len(seq)
     peptide = []
-    for i in xrange(0, seq_size - seq_size % 3, 3):
+    for i in range(0, seq_size - seq_size % 3, 3):
         codon = _codon_table[seq[i:i+3]]
         peptide.append(codon)
         if codon == 'X':
             break
-    # for j in xrange(i + 3, seq_size - seq_size % 3, 3):
+    # for j in range(i + 3, seq_size - seq_size % 3, 3):
         # peptide.append('X')
     return ''.join(peptide)
 
@@ -164,7 +164,7 @@ class Transcript(object):
         self.rev_strand = (True if last_strand == '-' else False)
         '''Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower).'''
-        # for i in xrange(1, len(self.intervals)):
+        # for i in range(1, len(self.intervals)):
         #    if self.intervals[i-1] <= self.intervals[i]:
         #        raise RuntimeError(
         #                ('CDS intervals list '
@@ -337,7 +337,7 @@ class Transcript(object):
                                   (sorted_deletion_intervals[0][1],
                                    sorted_deletion_intervals[0][2],
                                    sorted_deletion_intervals[0][3])]
-            for i in xrange(1, len(sorted_deletion_intervals)):
+            for i in range(1, len(sorted_deletion_intervals)):
                 if (sorted_deletion_intervals[i][0]
                     <= deletion_intervals[-1][0]):
                     deletion_intervals[-2] = min(deletion_intervals[-2],
@@ -359,7 +359,7 @@ class Transcript(object):
                                 sorted_deletion_intervals[i][2],
                                 sorted_deletion_intervals[i][3])]
                         )
-            for i in xrange(0, len(deletion_intervals), 2):
+            for i in range(0, len(deletion_intervals), 2):
                 start_index = bisect.bisect_left(intervals,
                                                     deletion_intervals[i][0])
                 end_index = bisect.bisect_left(intervals,
@@ -392,13 +392,13 @@ class Transcript(object):
                         end_pos = deletion_intervals[i+1]
                         relevant_deletion_intervals.extend(
                             [(intervals[i], 'R', tuple()) for i in
-                             xrange(start_index + 1, end_index)]
+                             range(start_index + 1, end_index)]
                         )
                     else:
                         end_pos = (intervals[end_index - 1], 'R', tuple())
                         relevant_deletion_intervals.extend(
                                 [(intervals[i], 'R', tuple()) for i in
-                                 xrange(start_index, end_index)]
+                                 range(start_index, end_index)]
                             )
                     relevant_deletion_intervals.append(end_pos)
         intervals = sorted([(interval, 'R', tuple()) for interval in 
@@ -427,7 +427,7 @@ class Transcript(object):
                     germ = [v for v in snvs if v[2] == 'G'][0]
                     edits[pos].remove(germ)
         # Remove empty intervals
-        intervals = [intervals[i] for i in xrange(len(intervals))
+        intervals = [intervals[i] for i in range(len(intervals))
                          if (i % 2
                              and intervals[i][0] != intervals[i-1][0]
                              or i % 2 == 0
@@ -438,7 +438,7 @@ class Transcript(object):
         deletion_data = []
         if intervals[0][1] != 'R':
             deletion_data.append(intervals[0][2])
-        for i in xrange(1, len(intervals)):
+        for i in range(1, len(intervals)):
             if intervals[i][1] == 'R':
                 adjusted_intervals.append(intervals[i])
             else:
@@ -507,7 +507,7 @@ class Transcript(object):
                               (self._start_codon + 2 - 
                                 self.intervals[self.start_codon_index - 1]) + 
                               sum([self.intervals[i+1] - self.intervals[i]
-                                for i in xrange(pos_index + 1, 
+                                for i in range(pos_index + 1, 
                                                 self.start_codon_index - 1, 
                                                 2)]))
                 return (seq_length - 1) % 3
@@ -523,7 +523,7 @@ class Transcript(object):
                               (self.intervals[self.start_codon_index] - 
                                 self._start_codon + 1) + 
                               sum([self.intervals[i+1] - self.intervals[i]
-                                for i in xrange(self.start_codon_index + 1,
+                                for i in range(self.start_codon_index + 1,
                                         pos_index - 1, 2)]))
                 return ((seq_length - 1) % 3)
 
@@ -548,7 +548,7 @@ class Transcript(object):
             if seq or mutation_class != 'R':
                 if isinstance(mutation_info, list):
                     seq_list.append((seq, mutation_class,
-                                 [mutation_info[i] for i in xrange(0, 
+                                 [mutation_info[i] for i in range(0, 
                                                         len(mutation_info))], 
                                  position))
                 else:
@@ -575,7 +575,7 @@ class Transcript(object):
         elif seq or mutation_class != 'R':
             if isinstance(mutation_info, list):
                 seq_list.append((seq, mutation_class,
-                                 [mutation_info[i] for i in xrange(0, 
+                                 [mutation_info[i] for i in range(0, 
                                                         len(mutation_info))], 
                                  position))
             else:
@@ -642,7 +642,7 @@ class Transcript(object):
                         del new_edits[intervals[i][0]]'''
                 i += 2
             seqs = []
-            for i in xrange(0, len(intervals), 2):
+            for i in range(0, len(intervals), 2):
                 seqs.append(
                         (self.bowtie_reference_index.get_stretch(
                                 self.chrom, intervals[i][0] + 1,
@@ -1220,7 +1220,7 @@ class Transcript(object):
                                          reverse_strand=False)
         if TAA_TGA_TAG == []:
             assert 'X' in protein
-            for i in xrange(coding_start, len(sequence), 3):
+            for i in range(coding_start, len(sequence), 3):
                 if sequence[i:i+3] in ['TAA', 'TGA', 'TAG']:
                     coding_stop = i+3
         if len(protein) > (coding_stop - coding_start) // 3:
