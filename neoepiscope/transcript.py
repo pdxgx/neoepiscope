@@ -8,7 +8,12 @@ import pickle
 from intervaltree import Interval, IntervalTree
 from operator import itemgetter
 
-revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
+from sys import version_info
+if version_info[0] < 3:
+    from string import maketrans
+    revcomp_translation_table = maketrans('ATCG', 'TAGC')
+else:
+    revcomp_translation_table = str.maketrans('ATCG', 'TAGC')
 
 def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     """ Same as bisect.bisect_left, but compares only index "getter"

@@ -4,6 +4,7 @@ neoepiscope
 
 Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
 """
+from __future__ import print_function
 import argparse
 import bowtie_index
 import sys
@@ -17,39 +18,14 @@ import re
 import collections
 import tempfile
 import subprocess
-import string
 import warnings
-#import exe_paths
-import exe_paths_mary as exe_paths
+import exe_paths
 from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
 from operator import itemgetter
 from intervaltree import Interval, IntervalTree
-#import Hapcut2interpreter as hap
-
-_revcomp_translation_table = string.maketrans('ATCG', 'TAGC')
-
-# X below denotes a stop codon
-_codon_table = {
-        'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
-        'TCT':'S', 'TCC':'S', 'TCA':'S', 'TCG':'S',
-        'TAT':'Y', 'TAC':'Y', 'TAA':'X', 'TAG':'X',
-        'TGT':'C', 'TGC':'C', 'TGA':'X', 'TGG':'W',
-        'CTT':'L', 'CTC':'L', 'CTA':'L', 'CTG':'L',
-        'CCT':'P', 'CCC':'P', 'CCA':'P', 'CCG':'P',
-        'CAT':'H', 'CAC':'H', 'CAA':'Q', 'CAG':'Q',
-        'CGT':'R', 'CGC':'R', 'CGA':'R', 'CGG':'R',
-        'ATT':'I', 'ATC':'I', 'ATA':'I', 'ATG':'M',
-        'ACT':'T', 'ACC':'T', 'ACA':'T', 'ACG':'T',
-        'AAT':'N', 'AAC':'N', 'AAA':'K', 'AAG':'K',
-        'AGT':'S', 'AGC':'S', 'AGA':'R', 'AGG':'R',
-        'GTT':'V', 'GTC':'V', 'GTA':'V', 'GTG':'V',
-        'GCT':'A', 'GCC':'A', 'GCA':'A', 'GCG':'A',
-        'GAT':'D', 'GAC':'D', 'GAA':'E', 'GAG':'E',
-        'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G'
-    }
-_complement_table = string.maketrans('ATCG', 'TAGC')
 
 _help_intro = '''neoepiscope searches for neoepitopes in seq data.'''
+
 def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
     return argparse.HelpFormatter(prog, max_help_position=40)
@@ -159,8 +135,8 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                     phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], tokens[6])
                                                 )
-                print >>output_stream, line,
-        print >>output_stream, '********'
+                print(line, file=output_stream)
+        print('********', file=output_stream)
         with open(vcf) as vcf_stream:
             first_char = '#'
             while first_char == '#':
@@ -178,18 +154,18 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                     if (tokens[3], allele) not in phased[
                                                 (tokens[0], pos)
                                             ]:
-                        print >>output_stream, 'BLOCK: unphased'
-                        print >>output_stream, ('{vcf_line}\t1\t0\t{chrom}\t'
-                                               '{pos}\t{ref}\t{alt}\t'
-                                               '{genotype}\tNA\tNA').format(
-                                                    vcf_line=counter,
-                                                    chrom=tokens[0],
-                                                    pos=pos,
-                                                    ref=tokens[3],
-                                                    alt=tokens[4],
-                                                    genotype=tokens[9]
-                                                )
-                        print >>output_stream, '********' 
+                        print('BLOCK: unphased', file=output_stream)
+                        print(('{vcf_line}\t1\t0\t{chrom}\t'
+                               '{pos}\t{ref}\t{alt}\t'
+                               '{genotype}\tNA\tNA').format(
+                                    vcf_line=counter,
+                                    chrom=tokens[0],
+                                    pos=pos,
+                                    ref=tokens[3],
+                                    alt=tokens[4],
+                                    genotype=tokens[9]
+                                ), file=output_stream)
+                        print('********', file=output_stream)
                 line = vcf_stream.readline().strip()
                 counter += 1
 
@@ -452,7 +428,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
                 if len(sequence) >= 9:
-                    print >>f, sequence
+                    print(sequence, file=f)
                 else:
                     na_count += 1
         if na_count > 0:
@@ -547,7 +523,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         files_to_remove.append(peptide_file)
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
-                print >>f, sequence
+                print(sequence, file=f)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCpan.out', 
                                     prefix=''.join([sample_id, 
