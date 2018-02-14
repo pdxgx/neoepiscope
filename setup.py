@@ -12,20 +12,23 @@ setup(name='neoepiscope',
       package_data={'neoepiscope': ['*.py']},
       zip_safe=True,
       install_requires=[
-      		'twython', 'gdax', 'pycrypto'
+      		'intervaltree'
       	],
       entry_points={
         'console_scripts': [
-            'vickitrix=vickitrix:go',
+            'neoepiscope=neoepiscope:main',
         ],},
-      keywords=['bitcoin', 'btc', 'ethereum', 'eth', 'twitter'],
+      keywords=['neoepitope', 'neoantigen', 'cancer', 'immunotherapy'],
       classifiers=[
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
-          'Intended Audience :: Developers',
+          'License :: OSI Approved :: MIT License',
           'Intended Audience :: Science/Research',
+          'Intended Audience :: Education',
           'Operating System :: MacOS',
           'Operating System :: Unix',
-          'Topic :: Utilities'
+          'Operating System :: Windows',
+          'Topic :: Scientific/Engineering :: Medical Science Apps.',
+          'Topic :: Scientific/Engineering :: Bio-Informatics'
         ]
     )
