@@ -70,7 +70,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
         for line in other_lines:
             f.write(line + '\n')
 
-def combinevcf(vcf1, vcf2, outfile='Combined.vcf'):
+def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     """ Combines VCFs
 
         No return value.
@@ -751,7 +751,7 @@ def test():
                                             )
                                     ), 'tests', 'Ychrom.testcombine.vcf'
                             )  
-            combinevcf(self.germline, self.varscan, self.outvcf)
+            combine_vcf(self.germline, self.varscan, self.outvcf)
         def test_merge(self):
             """Fails if VCFs were merged improperly"""
             self.assertTrue(filecmp.cmp(self.outvcf, self.precombined))
@@ -1097,7 +1097,7 @@ def main():
     elif args.subparser_name == 'swap':
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == 'merge':
-        combinevcf(args.germline, args.somatic, outfile=args.output)
+        combine_vcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == 'prep':
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
     elif args.subparser_name == 'call':
