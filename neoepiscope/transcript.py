@@ -1300,7 +1300,7 @@ if __name__ == '__main__':
                                         os.path.dirname(
                                                 os.path.realpath(__file__)
                                             )
-                                    ), 'test', 'Chr11.gtf'
+                                    ), 'tests', 'Chr11.gtf'
                             )
             self.cds = gtf_to_cds(self.gtf, 'NA', pickle_it=False)
             self.ref_prefix = os.path.join(
@@ -1308,7 +1308,7 @@ if __name__ == '__main__':
                                     os.path.dirname(
                                             os.path.realpath(__file__)
                                         )
-                                ), 'test', 'Chr11.ref'
+                                ), 'tests', 'Chr11.ref'
                         )
             self.reference_index = bowtie_index.BowtieIndexReference(
                                                         self.ref_prefix)
