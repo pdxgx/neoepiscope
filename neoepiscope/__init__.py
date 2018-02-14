@@ -20,7 +20,8 @@ import tempfile
 import subprocess
 import warnings
 import exe_paths
-from transcript import Transcript, gtf_to_cds, cds_to_tree, get_transcripts_from_tree
+from transcript import (Transcript, gtf_to_cds, cds_to_tree,
+                            get_transcripts_from_tree)
 from operator import itemgetter
 from intervaltree import Interval, IntervalTree
 
@@ -312,14 +313,14 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                         [[str(chrom), 'blah', seq_type, str(start), 
                           str(end), '.', strand] for (chrom, seq_type, 
                                                       start, end, strand) 
-                          in cds_dict[affected_transcript]], affected_transcript
-                        )
+                      in cds_dict[affected_transcript]], affected_transcript
+                    )
         transcriptB = Transcript(reference_index, 
                         [[str(chrom), 'blah', seq_type, str(start), 
                           str(end), '.', strand] for (chrom, seq_type, 
                                                       start, end, strand) 
-                          in cds_dict[affected_transcript]], affected_transcript
-                        )
+                      in cds_dict[affected_transcript]], affected_transcript
+                    )
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
         for ht in haplotypes:
@@ -332,7 +333,11 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                     mutation_class = 'S'
                 # Determine VAF if available
                 if VAF_pos is not None:
-                    VAF = float(mutation[6].strip('*').split(':')[VAF_pos].strip('%'))
+                    VAF = float(
+                            mutation[6].strip( 
+                                    '*').split(':'
+                                )[VAF_pos].strip('%')
+                        )
                 else:
                     VAF = None
                 # Determine which copies variant exists on & make edits
@@ -348,22 +353,23 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 vaf=VAF)
             # Extract neoepitopes
             A_peptides = transcriptA.neopeptides(
-                                        min_size=size_list[0], 
-                                        max_size=size_list[-1],
-                                        include_somatic=1,
-                                        include_germline=2, 
-                                        only_novel_upstream=only_novel_upstream,
-                                        only_downstream=only_downstream, 
-                                        only_reference=only_reference
-                                        )
+                                    min_size=size_list[0], 
+                                    max_size=size_list[-1],
+                                    include_somatic=1,
+                                    include_germline=2, 
+                                    only_novel_upstream=only_novel_upstream,
+                                    only_downstream=only_downstream, 
+                                    only_reference=only_reference
+                                )
             B_peptides = transcriptB.neopeptides(
-                                        min_size=size_list[0], 
-                                        max_size=size_list[-1],
-                                        include_somatic=1,
-                                        include_germline=2, 
-                                        only_novel_upstream=only_novel_upstream,
-                                        only_downstream=only_downstream, 
-                                        only_reference=only_reference)
+                                    min_size=size_list[0], 
+                                    max_size=size_list[-1],
+                                    include_somatic=1,
+                                    include_germline=2, 
+                                    only_novel_upstream=only_novel_upstream,
+                                    only_downstream=only_downstream, 
+                                    only_reference=only_reference
+                                )
             # Store neoepitopes and their metadata
             for pep in A_peptides:
                 for meta_data in A_peptides[pep]:
@@ -605,7 +611,9 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
             for i in range(0, len(neoepitopes.keys())):
                 meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
                 for j in range(0, len(meta_data)):
-                    neoepitopes[sorted(neoepitopes.keys())[i]][j] = meta_data[j] + binding_scores[i]
+                    neoepitopes[sorted(neoepitopes.keys())[i]][j] = (
+                                meta_data[j] + binding_scores[i]
+                            )
     return neoepitopes
 
 def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
@@ -881,11 +889,11 @@ def test():
                                                         [8,9,10,11])
             self.assertEqual(len(neoepitopes.keys()), 70)
             self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, '',
-                                                        'AAA', 'I', 0.1, 
-                                                        'ENST00000398531.2_2')])
+                                                    'AAA', 'I', 0.1, 
+                                                    'ENST00000398531.2_2')])
             self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229, 
-                                                        'A', 'C', 'V', 15.7, 
-                                                        'ENST00000398531.2_2')])
+                                                    'A', 'C', 'V', 15.7, 
+                                                    'ENST00000398531.2_2')])
             self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
             self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
     class TestBindingPrediction(unittest.TestCase):
@@ -902,9 +910,11 @@ def test():
                           'netMHCpan3': [exe_paths.netMHCpan3, 
                                          ['rank', 'affinity']]}
             self.alleles = ['HLA-A*02:01', 'HLA-B*07:02']
-            self.neoepitopesII = {'AHWTEARIMLDNINM': [('11', 71277056, '', 'AAA', 
+            self.neoepitopesII = {'AHWTEARIMLDNINM': [
+                                             ('11', 71277056, '', 'AAA', 
                                               'I', 0.1, 
-                                              'ENST00000398531.2_2')]}
+                                              'ENST00000398531.2_2')
+                                            ]}
             self.toolsII = {'netMHCIIpan3': [exe_paths.netMHCIIpan3, 
                                            ['rank', 'affinity']]}
             self.allelesII = ['HLA-DRB1*01:01']
@@ -916,31 +926,31 @@ def test():
                                                     self.toolsII, 
                                                     self.allelesII)
             self.assertEqual(new_neoepitopes['CGCSQKCN'], [('11', 71277056, 
-                                                            '', 'AAA', 
-                                                            'I', 0.1, 
-                                                            'ENST00000398531.2_2',
-                                                            '48126.8320', 
-                                                            '100.0000', 
-                                                            '47206.2734', 
-                                                            '96.4206', 
-                                                            '48380.5781', 
-                                                            '100.0000',
-                                                            '47300.3477',
-                                                            '97.0230'
-                                                            )])
+                                                        '', 'AAA', 
+                                                        'I', 0.1, 
+                                                        'ENST00000398531.2_2',
+                                                        '48126.8320', 
+                                                        '100.0000', 
+                                                        '47206.2734', 
+                                                        '96.4206', 
+                                                        '48380.5781', 
+                                                        '100.0000',
+                                                        '47300.3477',
+                                                        '97.0230'
+                                                    )])
             self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229, 
-                                                            'A', 'C', 'V', 
-                                                            15.7, 
-                                                            'ENST00000398531.2_2',
-                                                            '41484.8242', 
-                                                            '70.0000', 
-                                                            '38923.1328', 
-                                                            '66.8880',
-                                                            '22375.3965', 
-                                                            '18.0000',
-                                                            '29030.9199',
-                                                            '25.8751'
-                                                            )])
+                                                        'A', 'C', 'V', 
+                                                        15.7, 
+                                                        'ENST00000398531.2_2',
+                                                        '41484.8242', 
+                                                        '70.0000', 
+                                                        '38923.1328', 
+                                                        '66.8880',
+                                                        '22375.3965', 
+                                                        '18.0000',
+                                                        '29030.9199',
+                                                        '25.8751'
+                                                    )])
             self.assertEqual(new_neoepitopesII['AHWTEARIMLDNINM'], 
                              [('11', 71277056, '', 'AAA', 'I', 0.1, 
                                'ENST00000398531.2_2', '295.78', '49.00')])
@@ -1133,11 +1143,12 @@ def main():
                         for method in scoring:
                             if method not in acceptable_scoring:
                                 warnings.warn(' '.join([method, 
-                                            'not compatible with netMHCIIpan']),
-                                            Warning)
+                                        'not compatible with netMHCIIpan']),
+                                        Warning)
                                 scoring.remove(method)
                         if len(scoring) > 0:
-                            tool_dict['netMHCIIpan3'] = [program, sorted(scoring)]
+                            tool_dict['netMHCIIpan3'] = [program,
+                                                            sorted(scoring)]
                     elif 'netMHCIIpan3' in tool_dict:
                         raise RuntimeError('Conflicting or repetitive installs'
                                             'of netMHCIIpan given')
@@ -1185,7 +1196,8 @@ def main():
                                 name = 'netMHCpan4'
                             tool_dict[name] = [program, sorted(scoring)]
                     elif (('netMHCpan3' in tool_dict and version == '3') or 
-                                ('netMHCpan4' in tool_dict and version == '4')):
+                                ('netMHCpan4' in tool_dict
+                                    and version == '4')):
                         raise RuntimeError('Conflicting or repetitive installs'
                                             'of netMHCpan given')
                     else:
@@ -1200,9 +1212,8 @@ def main():
                                               'for binding predictions'])
                                     )
         if len(tool_dict.keys()) == 0:
-            warnings.warn(' '.join(['No binding prediction tools given,',
-                                    'will proceed without binding predictions']),
-                            Warning)
+            warnings.warn('No binding prediction tools given, '
+                          'will proceed without binding predictions', Warning)
         # Obtain VAF frequency VCF position
         VAF_pos = get_VAF_pos(args.vcf)
         # Obtain peptide sizes for kmerizing peptides
@@ -1235,8 +1246,8 @@ def main():
             only_downstream = False
             only_reference = True
         else:
-            raise RuntimeError('--upstream_atgs must be one of {"novel", "all", '
-                                '"none", "reference"}')
+            raise RuntimeError('--upstream_atgs must be one of '
+                               '{"novel", "all", "none", "reference"}')
         # Apply mutations to transcripts and get neoepitopes
         neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
                                                     VAF_pos, cds_dict,
@@ -1247,7 +1258,8 @@ def main():
                                                     size_list)
         full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
                                                  hla_alleles)
-        write_results(args.output_file, hla_alleles, full_neoepitopes, tool_dict)
+        write_results(args.output_file,
+                      hla_alleles, full_neoepitopes, tool_dict)
     else:
         raise RuntimeError(''.join([args.subparser_name, 
                             ' is not a valid software mode']))

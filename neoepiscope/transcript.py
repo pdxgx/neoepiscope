@@ -103,7 +103,7 @@ class Transcript(object):
 
     # Should we handle somatic deletions that overlap germline mutations?
     # I.E., should we break up a somatic deletion into two separate mutations
-    #       that surround the germline mutation? Or do we only call the somatic?
+    # that surround the germline mutation? Or do we only call the somatic?
 
     def __init__(self, bowtie_reference_index, CDS, ID):
         """ Initializes Transcript object.
@@ -241,32 +241,34 @@ class Transcript(object):
             else:
                 self.deletion_intervals.append(
                         (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            (self.chrom, pos, self.bowtie_reference_index.get_stretch(
+                            (self.chrom, pos,
+                                self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
                                 ), '', mutation_type, vaf))
                     )
         elif mutation_type == 'I': 
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                        (self.chrom, pos, '', seq, mutation_type, 
-                                         vaf)))
+                                    (self.chrom, pos, '', seq, mutation_type, 
+                                     vaf)))
         elif mutation_type == 'V':
             reference_seq = self.bowtie_reference_index.get_stretch(
                                             self.chrom, pos - 1, len(seq))
             other_snvs = [edit for edit in self.edits[pos - 1]]
             if mutation_class not in [snv[2] for snv in other_snvs]:
                 self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                            (self.chrom, pos, reference_seq, seq,
-                                             mutation_type, vaf)))
+                                        (self.chrom, pos, reference_seq, seq,
+                                         mutation_type, vaf)))
             else:
                 class_dict = {'S':'somatic', 'G':'germline'}
-                raise NotImplementedError(''.join(['2 SNVs of same class cannot ', 
-                                                    'be added at same position',
-                                                    ' - was mutation of ', 
-                                                    reference_seq, ' to ', seq, 
-                                                    ' at ', str(pos), ' not a ',
-                                                    class_dict[mutation_class], 
-                                                    ' mutation?']))
+                raise NotImplementedError(''.join([
+                                                '2 SNVs of same class cannot ', 
+                                                'be added at same position',
+                                                ' - was mutation of ', 
+                                                reference_seq, ' to ', seq, 
+                                                ' at ', str(pos), ' not a ',
+                                                class_dict[mutation_class], 
+                                                ' mutation?']))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
@@ -417,8 +419,8 @@ class Transcript(object):
                             # An insertion is valid before or after a block
                             edits[pos].append(edit)
             # If there is more than 1 SNV at the same position, one must be 
-            #   germline and the other somatic, as only 1 mutation per mutation 
-            #   class is allowed at the same position. Favor the somatic mutation.
+            # germline and the other somatic, as only 1 mutation per mutation 
+            # class is allowed at the same position. Favor somatic mutation.
             if pos in edits:
                 snvs = [v for v in edits[pos] if v[1] == 'V']
                 if len(snvs) > 1:
@@ -909,20 +911,20 @@ class Transcript(object):
                     ATG_limit -= 1
                 if ATG1 > 0 and ATG2 < 0:
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
-                        ATG1 >= coding_start and coding_start >= 0, True, False])
+                     ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 elif ATG1 < 0 and ATG2 > 0:
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
-                        ATG2 >= ref_start and ref_start >= 0, False, True])
+                     ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
                     ATGs.append([ATG1, ATG2, seq_previous,
-                        ATG2 >= ref_start and ref_start >= 0, False, False])
+                     ATG2 >= ref_start and ref_start >= 0, False, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
-                        ATG1 >= coding_start and coding_start >= 0, True, False])
+                     ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 else:
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
@@ -938,26 +940,45 @@ class Transcript(object):
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
-                if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
-                if ref_stop < 0 and seq[3]*strand + len(seq[0]) > stop*strand:
-                    coding_stop = counter + (stop - seq[3] + 2*self.rev_strand)*strand
-                    ref_stop = ref_counter + (stop - seq[3] + 2*self.rev_strand)*strand
+                if (ref_start < 0
+                    and seq[3] * strand + len(seq[0]) > start * strand):
+                    coding_start = counter + (
+                                start - seq[3] + 2*self.rev_strand
+                            ) * strand
+                    ref_start = ref_counter + (
+                                start - seq[3] + 2*self.rev_strand
+                            ) * strand
+                if (ref_stop < 0
+                    and seq[3]*strand + len(seq[0]) > stop * strand):
+                    coding_stop = counter + (
+                                stop - seq[3] + 2*self.rev_strand
+                            ) * strand
+                    ref_stop = ref_counter + (
+                                stop - seq[3] + 2 * self.rev_strand
+                            ) * strand
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][4] == 'D':
-                if ref_start < 0 and seq[3]*strand + len(seq[3][0][1]) > start*strand:
-                    coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
-                if ref_stop < 0 and seq[3]*strand + len(seq[0]) > stop*strand:
-                    coding_stop = counter + (stop - seq[3] + 2*self.rev_strand)*strand
-                    ref_stop = ref_counter + (stop - seq[3] + 2*self.rev_strand)*strand
+                if (ref_start < 0
+                    and seq[3]*strand + len(seq[3][0][1]) > start * strand):
+                    coding_start = counter + (
+                                start - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                    ref_start = ref_counter + (
+                                start - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                if (ref_stop < 0
+                    and seq[3]*strand + len(seq[0]) > stop * strand):
+                    coding_stop = counter + (
+                                stop - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                    ref_stop = ref_counter + (
+                                stop - seq[3] + 2 * self.rev_strand
+                            ) * strand
                     TAA_TGA_TAG = seq
-                ref_sequence
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
@@ -973,12 +994,22 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][4] == 'I':
-                if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
-                if ref_stop < 0 and seq[3]*strand + len(seq[0]) > stop*strand:
-                    coding_stop = counter + (stop - seq[3] + 2*self.rev_strand)*strand
-                    ref_stop = ref_counter + (stop - seq[3] + 2*self.rev_strand)*strand
+                if (ref_start < 0
+                    and seq[3] * strand + len(seq[0]) > start * strand):
+                    coding_start = counter + (
+                                start - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                    ref_start = ref_counter + (
+                                start - seq[3] + 2*self.rev_strand
+                            ) * strand
+                if (ref_stop < 0
+                    and seq[3] * strand + len(seq[0]) > stop * strand):
+                    coding_stop = counter + (
+                                stop - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                    ref_stop = ref_counter + (
+                                stop - seq[3] + 2*self.rev_strand
+                            ) * strand
                     TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
@@ -988,12 +1019,22 @@ class Transcript(object):
                     ref_counter += len(seq[0])
                 continue
             elif seq[2][0][4] == 'V':
-                if ref_start < 0 and seq[3]*strand + len(seq[0]) > start*strand:
-                    coding_start = counter + (start - seq[3] + 2*self.rev_strand)*strand
-                    ref_start = ref_counter + (start - seq[3] + 2*self.rev_strand)*strand
-                if ref_stop < 0 and seq[3]*strand + len(seq[0]) > stop*strand:
-                    coding_stop = counter + (stop - seq[3] + 2*self.rev_strand)*strand
-                    ref_stop = ref_counter + (stop - seq[3] + 2*self.rev_strand)*strand
+                if (ref_start < 0
+                    and seq[3]*strand + len(seq[0]) > start * strand):
+                    coding_start = counter + (
+                                start - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                    ref_start = ref_counter + (
+                                start - seq[3] + 2 * self.rev_strand
+                            ) * strand
+                if (ref_stop < 0
+                    and seq[3] * strand + len(seq[0]) > stop * strand):
+                    coding_stop = counter + (
+                                stop - seq[3] + 2*self.rev_strand
+                            ) * strand
+                    ref_stop = ref_counter + (
+                                stop - seq[3] + 2*self.rev_strand
+                            ) * strand
                     TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
@@ -1016,8 +1057,8 @@ class Transcript(object):
             return {}
         coordinates = []
         # Frame shifts: [genomic start coordinate, genomic end coordinate, CDS-
-        # level start coordinate, CDS-level end coordinate, mutation info associated 
-        # with frame shift]
+        # level start coordinate, CDS-level end coordinate, mutation info
+        # associated with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         reading_frame, start_codon = self._atg_choice(
@@ -1059,8 +1100,11 @@ class Transcript(object):
                     continue
                 elif seq[2][0][4] == 'I':
                     if counter + len(seq[0]) > coding_start:
-                        coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
-                    0, counter + len(seq[0]) - coding_start - 1, seq[2]])
+                        coordinates.append(
+                                [start, seq[3] + len(seq[0]) * strand - 1,
+                                 0, counter + len(seq[0]) - coding_start - 1,
+                                 seq[2]]
+                            )
                         compare_peptides_to_ref = True
                     counter += len(seq[0])
                     if ((seq[1] == 'G' and include_germline == 2) or 
@@ -1069,8 +1113,11 @@ class Transcript(object):
                     continue
                 elif seq[2][0][4] == 'V':
                     if counter + len(seq[0]) > coding_start:
-                        coordinates.append([start, seq[3] + len(seq[0])*strand - 1,
-                    0, counter + len(seq[0]) - coding_start - 1, seq[2]])
+                        coordinates.append(
+                                [start, seq[3] + len(seq[0]) * strand - 1,
+                                 0, counter + len(seq[0]) - coding_start - 1,
+                                 seq[2]]
+                            )
                     counter += len(seq[0])
                     ref_counter += len(seq[0])
                     continue
@@ -1093,7 +1140,9 @@ class Transcript(object):
                     # splicing variation (e.g. deletion of part of intron/exon)
                     if reading_frame == 0:
                         reading_frame = (read_frame1 - read_frame2) % 3
-                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1,seq[2]]
+                            )
                     elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
@@ -1104,8 +1153,12 @@ class Transcript(object):
                                 break
                         reading_frame = 0
                     else:
-                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
-                        reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1,seq[2]]
+                            )
+                        reading_frame = (
+                                reading_frame + read_frame1 - read_frame2
+                            ) % 3
 #                ref_counter += len(seq[2][0][2])
             # handle potential frame shifts from insertions
             elif seq[2][0][4] == 'I':
@@ -1115,7 +1168,9 @@ class Transcript(object):
                 if len(seq[0]) % 3:
                     if not reading_frame:
                         reading_frame = len(seq[0]) % 3
-                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1,seq[2]]
+                            )
                     elif not (reading_frame + len(seq[0])) % 3:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
@@ -1126,22 +1181,28 @@ class Transcript(object):
                                 break
                         reading_frame = 0
                     else:
-                        frame_shifts.append([seq[2][0][1], -1, counter, -1,seq[2]])
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1,seq[2]]
+                            )
                         reading_frame = (reading_frame + len(seq[0])) % 3
                 counter += len(seq[0])
             # handle a collection of one or more single nucleotide variants
             elif seq[2][0][4] == 'V':
                 # only document neopeptides corresponding to missense SNVs
-                A1 = 3*((counter - coding_start) // 3) + coding_start
-                B1 = 3*((counter+len(seq[0])-coding_start - 1) // 3) + coding_start + 3
-                A2 = 3*((ref_counter - ref_start) // 3) + ref_start
-                C = 3*((seq[3]-coding_start) // 3) + coding_start
+                A1 = 3 * ((counter - coding_start) // 3) + coding_start
+                B1 = 3 * (
+                        (counter+len(seq[0])-coding_start - 1) // 3
+                    ) + coding_start + 3
+                A2 = 3 * ((ref_counter - ref_start) // 3) + ref_start
+                C = 3 * ((seq[3]-coding_start) // 3) + coding_start
                 for i in range(0, B1-A1, 3):
                     A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
                     B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
                     if A != B:
-                        coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter+i*3, counter+i*3+2 - 1, seq[2]])
+                        coordinates.append(
+                                [seq[3], seq[3] + len(seq[0])*strand - 1,
+                                 counter+i*3, counter+i*3+2 - 1, seq[2]]
+                            )
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
@@ -1152,28 +1213,40 @@ class Transcript(object):
                     frame_shifts[i-1][3] = counter
                 else:
                     break
-        protein = seq_to_peptide(sequence[coding_start:], reverse_strand=False)
+        protein = seq_to_peptide(sequence[coding_start:],
+                                 reverse_strand=False)
         if compare_peptides_to_ref:
-            protein_ref = seq_to_peptide(ref_sequence[ref_start:], reverse_strand=False)
+            protein_ref = seq_to_peptide(ref_sequence[ref_start:],
+                                         reverse_strand=False)
         if TAA_TGA_TAG == []:
             assert 'X' in protein
             for i in xrange(coding_start, len(sequence), 3):
                 if sequence[i:i+3] in ['TAA', 'TGA', 'TAG']:
                     coding_stop = i+3
         if len(protein) > (coding_stop - coding_start) // 3:
-            frame_shifts.append([None, None, coding_stop, 3*len(protein)+coding_start, TAA_TGA_TAG])
+            frame_shifts.append(
+                    [None, None, coding_stop,
+                     3 * len(protein)+coding_start, TAA_TGA_TAG]
+                )
         peptide_seqs = collections.defaultdict(list)
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
             if compare_peptides_to_ref:
-                peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size)
+                peptides_ref = kmerize_peptide(protein_ref,
+                                               min_size=size, max_size=size)
             for coords in coordinates:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+                epitope_coords.append(
+                        [max(0, ((coords[2]-coding_start) // 3)- size + 1), 
+                         min(len(protein),
+                         ((coords[3] - coding_start) // 3)+size), coords[4]]
+                    )
             for coords in frame_shifts:
-                epitope_coords.append([max(0, ((coords[2]-coding_start) // 3)-size + 1), 
-                    min(len(protein), ((coords[3] - coding_start) // 3)+size), coords[4]])
+                epitope_coords.append(
+                        [max(0, ((coords[2]-coding_start) // 3)- size + 1), 
+                         min(len(protein),
+                         ((coords[3] - coding_start) // 3)+size), coords[4]]
+                    )
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
@@ -1217,8 +1290,9 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                     if transcript_type == 'protein_coding':
                         # Create new dictionary entry for new transcripts
                         cds_dict[transcript_id].append([tokens[0].replace(
-                                                                          'chr', 
-                                                                          ''),
+                                                                        'chr', 
+                                                                        ''
+                                                                    ),
                                                     tokens[2], int(tokens[3]), 
                                                     int(tokens[4]), tokens[6]])
     # Sort cds_dict coordinates (left -> right) for each transcript                                
@@ -1512,12 +1586,12 @@ if __name__ == '__main__':
             self.transcript.edit(3, 5246700, mutation_type='D')
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246698, 
-                                                                   5246701, 'S',
-                                                                   ('11', 
-                                                                    5246700, 
-                                                                    'TGA', '',
-                                                                    'D',
-                                                                    None))])
+                                                               5246701, 'S',
+                                                               ('11', 
+                                                                5246700, 
+                                                                'TGA', '',
+                                                                'D',
+                                                                None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
             self.assertEqual(seq[1], ('', 'S', [('11', 5246700, 'TGA', '', 'D', 
@@ -1530,16 +1604,16 @@ if __name__ == '__main__':
             self.transcript.edit(10, 5246950, mutation_type='D')
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [(5246948,
-                                                                   5246958, 'S',
-                                                                   ('11', 
-                                                                    5246950,
-                                                                    'CCAGGAGCTG',
-                                                                    '', 'D', 
-                                                                    None))])
+                                                               5246958, 'S',
+                                                               ('11', 
+                                                                5246950,
+                                                                'CCAGGAGCTG',
+                                                                '', 'D', 
+                                                                None))])
             seq = self.transcript.annotated_seq()
             self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', '', 
-                                                 'D', None)], 5246950))
+            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', 
+                                                 '', 'D', None)], 5246950))
             self.assertEqual(len(seq[0][0]), 365)
             self.assertEqual(len(seq[2][0]), 256)
         def test_spanning_deletion(self):
@@ -1719,8 +1793,8 @@ if __name__ == '__main__':
             self.assertEqual(sorted(rev_peptides)[0], 'AGCWWSTL')
             self.assertEqual(sorted(rev_peptides)[-1], 'WWSTLGPRGSL')
         def test_start_lost_and_new_inframe_start(self):
-            """Fails if peptides aren't returned from a new in frame start codon 
-                when the original is disrupted"""
+            """Fails if peptides aren't returned from a new in frame start 
+               codon when the original is disrupted"""
             self.fwd_transcript.edit('ATG', 450446, mutation_type='I')
             self.fwd_transcript.edit('T', 450456)
             peptides = self.fwd_transcript.neopeptides().keys()
