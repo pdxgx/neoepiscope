@@ -12,7 +12,7 @@ setup(name='neoepiscope',
       package_data={'neoepiscope': ['*.py']},
       zip_safe=True,
       install_requires=[
-      		'intervaltree'
+      		'intervaltree', 'mhcflurry'
       	],
       entry_points={
         'console_scripts': [
