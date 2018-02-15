@@ -4,7 +4,7 @@ setup(name='neoepiscope',
       version='0.1.0',
       description='comprehensive neoepitope prediction software',
       url='http://github.com/ohsu-comp-bio/neoepiscope',
-      download_url = 'https://github.com/nellore/vickitrix/tarball/0.1.5',
+      download_url = 'https://github.com/ohsu-comp-bio/neoepiscope/tarball/0.1.0',
       author='Mary Wood, Julianne David, Austin Nguyen, Mihir Paralkar, Mayur Paralkar, Abhinav Nellore, Reid Thompson',
       author_email='thompsre@ohsu.edu',
       license='MIT',
@@ -12,7 +12,7 @@ setup(name='neoepiscope',
       package_data={'neoepiscope': ['*.py']},
       zip_safe=True,
       install_requires=[
-      		'intervaltree'
+      		'intervaltree', 'mhcflurry'
       	],
       entry_points={
         'console_scripts': [
