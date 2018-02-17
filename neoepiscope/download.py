@@ -1,57 +1,126 @@
-class RailRnaInstaller(object):
-    """ Installs Rail-RNA and its assorted dependencies.
+from version import version_number
+import signal
+import shutil
+
+download = [
+        (['ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human'
+          '/release_27/gencode.v27.annotation.gtf.gz'],
+          'Gencode v27 annotation') # Add entries for Bowtie indexes
+    ]
+
+def remove_temporary_directories(temp_dir_paths):
+    """ Deletes temporary directory.
+
+        temp_dir_paths: iterable of paths of temporary directories
+
+        No return value.
+    """
+    for temp_dir_path in temp_dir_paths:
+        try:
+            shutil.rmtree(temp_dir_path,
+                            ignore_errors=True)
+        except Exception as e:
+            # Don't know what's up, but forge on
+            pass
+
+def sig_handler(signum, frame):
+    """ Helper function for register_cleanup that's called on signal. """
+    import sys
+    sys.exit(0)
+
+def register_cleanup(handler, *args, **kwargs):
+    """ Registers cleanup on normal and signal-induced program termination.
+
+        Executes previously registered handler as well as new handler.
+
+        handler: function to execute on program termination
+        args: named arguments of handler
+        kwargs includes keyword args of handler as well as: 
+            signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
+                signal.SIGHUP]
+
+        No return value.
+    """
+    if 'signals_to_handle' in kwargs:
+        signals_to_handle = kwargs['signals_to_handle']
+        del kwargs['signals_to_handle']
+    else:
+        signals_to_handle = [signal.SIGTERM, signal.SIGHUP]
+    from atexit import register
+    register(handler, *args, **kwargs)
+    old_handlers = [signal.signal(a_signal, sig_handler)
+                    for a_signal in signals_to_handle]
+    for i, old_handler in enumerate(old_handlers):
+        if (old_handler != signal.SIG_DFL) and (old_handler != sig_handler):
+            def new_handler(signum, frame):
+                try:
+                    sig_handler(signum, frame)
+                finally:
+                    old_handler(signum, frame)
+        else:
+            new_handler = sig_handler
+        signal.signal(signals_to_handle[i], new_handler)
+
+def print_to_screen(message, newline=True, carriage_return=False):
+    """ Prints message to stdout as well as stderr if stderr is redirected.
+
+        message: message to print
+        newline: True iff newline should be printed
+        carriage_return: True iff carriage return should be printed; also
+            clears line with ANSI escape code
+
+        No return value.
+    """
+    full_message = ('\x1b[K' + message + ('\r' if carriage_return else '')
+                        + ('\n' if newline else ''))
+    try:
+        sys.stderr.write(full_message)
+        if sys.stderr.isatty():
+            sys.stderr.flush()
+        else:
+            try:
+                # So the user sees it too
+                sys.stdout.write(full_message)
+                sys.stdout.flush()
+            except UnicodeEncodeError:
+                sys.stdout.write(
+                                unicodedata.normalize(
+                                        'NFKD', full_message
+                                    ).encode('ascii', 'ignore')
+                            )
+                sys.stdout.flush()
+    except UnicodeEncodeError:
+        sys.stderr.write(
+                        unicodedata.normalize(
+                                'NFKD', full_message
+                            ).encode('ascii', 'ignore')
+                    )
+        sys.stderr.flush()
+
+class NeoepiscopeDownloader(object):
+    """ Convenience class for downloading files so neoepiscope is ready to use.
 
         Init vars
         -------------
-        zip_name: path to (currently executing) zip containing Rail-RNA
         curl_exe: path to cURL executable; if None, use 'curl'
-        install_dir: path to install dir; if None, use home directory
-            + 'raildotbio' if installing for self and /usr/local/raildotbio if
-            installing for all users
-        no_dependencies: if True, install Rail-RNA and none of its dependencies
-        prep_dependencies: if True, only installs dependencies needed for
-            Rail-RNA's preprocess job flow; overrided by no_dependencies
+        download_dir: where to put files; if None, use home directory
+            + 'neoepiscope.data'
         yes: if True, answer yes to all questions automatically
-        add_symlinks: adds symlinks for all installed dependencies
-            to /usr/local/bin if installing for all users. Useful in elastic
-            mode so paths to installed dependencies need not be specified
+        print_log_on_error: print log on error
     """
 
-    def __init__(self, zip_name, curl_exe=None, install_dir=None,
-                    no_dependencies=False, prep_dependencies=False,
-                    yes=False, me=False, add_symlinks=False,
-                    print_log_on_error=False):
-        print_to_screen(u"""{0} Rail-RNA v{1} Installer""".format(
-                                        u'\u2200', version_number)
+    def __init__(self, curl_exe=None, download_dir=None,
+                    yes=False, print_log_on_error=False):
+        print_to_screen(u"""neoepiscope v{1} configuration""".format(
+                                        version_number)
                                     )
-        if sys.platform in ['linux', 'linux2']:
-            if os.path.isfile('/mnt/var/lib/info/instance.json'):
-                # Assume an EMR cluster and prepend S3 download URLs
-                self.depends = dependency_urls.ec2_dependencies
-            else:
-                self.depends = dependency_urls.linux_dependencies
-        elif sys.platform == 'darwin':
-            self.depends = dependency_urls.mac_dependencies
-        else:
-            print_to_screen(
-                    'Rail-RNA cannot be installed because it is not supported '
-                    'by your OS. Currently supported OSes are Mac OS X and '
-                    'Linux.'
-                )
-            sys.exit(1)
-        self.install_dir = install_dir
-        self.no_dependencies = no_dependencies
-        self.zip_name = os.path.abspath(zip_name)
+        self.download_dir = download_dir
         self.curl_exe = curl_exe
         log_dir = tempfile.mkdtemp()
-        self.log_file = os.path.join(log_dir, 'rail-rna_install.log')
+        self.log_file = os.path.join(log_dir, 'neoepiscope_config.err')
         self.log_stream = open(self.log_file, 'w')
         self.finished = False
         register_cleanup(remove_temporary_directories, [log_dir])
-        self.yes = yes or me
-        self.me = me
-        self.prep_dependencies = prep_dependencies
-        self.add_symlinks = add_symlinks
         self.print_log_on_error = print_log_on_error
 
     def __enter__(self):
@@ -64,17 +133,18 @@ class RailRnaInstaller(object):
     def _bail(self):
         """ Copy log to some temporary dir and GTFO. """
         new_log_file = os.path.join(tempfile.mkdtemp(),
-                                            'rail-rna_installer.log')
+                                            'neoepiscope_config.err')
         shutil.copyfile(self.log_file, new_log_file)
         if self.print_log_on_error:
-            print_to_screen('Installation log (also at %s):' % new_log_file)
+            print_to_screen('Log (also at %s):' % new_log_file)
             print_to_screen('===')
             with open(new_log_file, 'r') as log_fh:
                 for ln in log_fh:
                     print_to_screen(ln.rstrip())
             print_to_screen('===')
         else:
-            print_to_screen('Installation log may be found at %s.' % new_log_file)
+            print_to_screen('Installation log may be found at %s.'
+                            % new_log_file)
         sys.exit(1)
 
     def _yes_no_query(self, question, answer=None):
@@ -107,41 +177,6 @@ class RailRnaInstaller(object):
             except ValueError:
                 sys.stdout.write('Please enter \'y\' or \'n\'.\n')
 
-    def _add_symlink_to_exe(self, exe_path):
-        """ Adds symlinks to dependency executable; works only if sudo'd
-
-            exe_path: path to executable
-
-            No return value
-        """
-        self._print_to_screen_and_log(
-                    '[Installing] Creating symlinks to dependencies...',
-                    newline=False, carriage_return=True
-                )
-        symlink_command = ['ln', '-s', exe_path, '/usr/local/bin']
-        try:
-            subprocess.check_output(symlink_command, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            if 'file exists' in e.output.lower():
-                self._print_to_screen_and_log(
-                        ('[Warning] /usr/local/bin/%s already exists; '
-                         'skipping symlink creation.')
-                            % os.path.basename(exe_path),
-                        newline=True, carriage_return=False
-                    )
-                self._print_to_screen_and_log(
-                    '[Installing] Creating symlinks to dependencies...',
-                    newline=False, carriage_return=True
-                )
-            else:
-                print >>self.log_stream, e.output
-                self._print_to_screen_and_log(
-                            ('Error encountered symlinking; exit code was %d; '
-                             'command invoked was "%s".') %
-                                (e.returncode, ' '.join(symlink_command))
-                        )
-                self._bail()
-
     def _grab_and_explode(self, urls, name):
         """ Special method for grabbing and exploding a package, if necessary.
 
@@ -153,7 +188,7 @@ class RailRnaInstaller(object):
 
             No return value
         """
-        self._print_to_screen_and_log('[Installing] Downloading %s...' % name,
+        self._print_to_screen_and_log('[Configuring] Downloading %s...' % name,
                                         newline=False,
                                         carriage_return=True)
         url_deque = deque(urls)
@@ -163,9 +198,10 @@ class RailRnaInstaller(object):
             content disposition'''
             command = [self.curl_exe, '-L', '-O', url]
             filename = url.rpartition('/')[2]
-            print >>self.log_stream, 'Downloading {} from {}...'.format(
+            print >>self.log_stream, ('[Configuring] '
+                                      'Downloading {} from {}...'.format(
                                                                     name, url
-                                                                )
+                                                                ))
             try:
                 subprocess.check_output(command, stderr=self.log_stream)
             except subprocess.CalledProcessError as e:
@@ -181,7 +217,7 @@ class RailRnaInstaller(object):
                     self._bail()
                 else:
                     self._print_to_screen_and_log(
-                        '[Installing] Download failed; '
+                        '[Configuring] Download failed; '
                         'trying alternate URL for %s...' % name,
                         newline=False,
                         carriage_return=True
@@ -195,7 +231,7 @@ class RailRnaInstaller(object):
                     explode_command = ['tar', 'xvzf', filename]
                 elif url[-4:] == '.zip':
                     self._print_to_screen_and_log(
-                            '[Installing] Extracting %s...' % name,
+                            'Extracting %s...' % name,
                             newline=False,
                             carriage_return=True)
                     try:
@@ -220,7 +256,7 @@ class RailRnaInstaller(object):
                         os.remove(filename)
                 if explode_command is not None:
                     self._print_to_screen_and_log(
-                            '[Installing] Extracting %s...' % name,
+                            '[Configuring] Extracting %s...' % name,
                             newline=False,
                             carriage_return=True)
                     try:
@@ -237,7 +273,7 @@ class RailRnaInstaller(object):
                             self._bail()
                         else:
                             self._print_to_screen_and_log(
-                                '[Installing] Extraction failed; '
+                                '[Configuring] Extraction failed; '
                                 'trying alternate URL for %s...' % name,
                                 newline=False,
                                 carriage_return=True
@@ -259,12 +295,12 @@ class RailRnaInstaller(object):
             return 'None'
         return "'%s'" % path
 
-    def install(self):
-        """ Installs Rail-RNA and all its dependencies. """
+    def configure(self):
+        """ Downloads neoepiscope dependencies. """
         if not self.no_dependencies and self.curl_exe is None:
             self.curl_exe = which('curl')
             if self.curl_exe is None:
-                print_to_screen('Rail-RNA\'s installer requires Curl if '
+                print_to_screen('Configuring neoepiscope requires Curl if '
                                 'dependencies are to be installed. '
                                 'Download it at '
                                 'http://curl.haxx.se/download.html and use '
@@ -272,34 +308,17 @@ class RailRnaInstaller(object):
                                 'disable installing dependencies with '
                                 '--no-dependencies.')
                 sys.exit(1)
-        if self._yes_no_query(
-                'Rail-RNA can be installed for all users or just the '
-                'current user.\n    * Install for all users?',
-                answer=(None if not self.yes else (self.yes and not self.me))
-            ):
-            if os.getuid():
-                print_to_screen('Rerun with sudo privileges to install '
-                                'for all users.')
-                sys.exit(0)
-            install_dir = '/usr/local'
-            self.local = False
-        else:
-            install_dir = os.path.abspath(os.path.expanduser('~/'))
-            self.local = True
-        bin_dir = os.path.join(install_dir, 'bin')
-        rail_exe = os.path.join(bin_dir, 'rail-rna')
-        if self.install_dir is None:
-            self.final_install_dir = os.path.join(install_dir, 'raildotbio')
-        else:
-            # User specified an installation directory
-            self.final_install_dir = self.install_dir
-        # Install in a temporary directory first, then move to final dest
+        if self.download_dir is None:
+            self.download_dir = os.path.join(os.path.expanduser('~'),
+                                                'neoepiscope.data')
+        # Download to a temporary directory first, then move to final dest
         temp_install_dir = tempfile.mkdtemp()
         register_cleanup(remove_temporary_directories, [temp_install_dir])
+
         if os.path.exists(self.final_install_dir):
             if self._yes_no_query(
                     ('The installation path {dir} already exists.\n    '
-                    '* Overwrite {dir}?').format(dir=self.final_install_dir)
+                     '* Overwrite {dir}?').format(dir=self.final_install_dir)
                 ):
                 try:
                     shutil.rmtree(self.final_install_dir)
