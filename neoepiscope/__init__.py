@@ -422,7 +422,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0],
                                 str(len(peptides)), allele,
-                                'netmhciipan'])
+                                'netmhciipan', version])
         affinities = []
         # Write one peptide per line to a temporary file for 
         #   input if peptide length is at least 9
@@ -459,12 +459,12 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
             f.readline()
             for line in f:
                 # token 1 is peptide; token 4 is affinity; token[5] is rank
-                tokens = line.split('\t')
+                tokens = line.strip('\n').split('\t')
                 if sorted(scores) == ['affinity', 'rank']:
                     score_dict[tokens[1]] = (tokens[4], tokens[5])
                 elif sorted(scores) == ['affinity']:
                     score_dict[tokens[1]] = (tokens[4],)
-                elif (scores) == ['rank']:
+                elif sorted(scores) == ['rank']:
                     score_dict[tokens[1]] = (tokens[5],)
         # Produce list of scores for valid peptides
         # Invalid peptides receive "NA" score
@@ -476,6 +476,116 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                     nM = ('NA',)
                 else:
                     nM = ('NA', 'NA')
+            affinities.append(nM)
+        return affinities
+    finally:
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+def get_affinity_mhcflurry(peptides, allele, scores, version,
+                                            remove_files=True):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string)
+        scores: list of scoring methods
+        version: version of mhc-flurry
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities 
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(os.path.join(
+                            os.path.dirname(
+                                            os.path.realpath(__file__)
+                                ), 'availableAlleles.pickle'
+                        ), 'rb'
+                ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        if allele not in avail_alleles['mhcflurry']:
+            warnings.warn(' '.join([allele, 
+                                    'is not a valid allele for mhcflurry']),
+                          Warning)
+            score_form = tuple(['NA' for i in range(0, len(scores))])
+            return [score_form for i in range(0,len(peptides))]
+        # Establish return list and sample id
+        sample_id = '.'.join([peptides[0],
+                                str(len(peptides)), allele,
+                                'mhcflurry', version])
+        affinities = []
+        # Write one peptide per line to a temporary file for 
+        #   input if peptide length is at least 9
+        # Count instances of smaller peptides
+        na_count = 0
+        run_peps = []
+        for sequence in peptides:
+            if len(sequence) < 8 or len(sequence) > 15:
+                na_count += 1
+            else:
+                run_peps.append(sequence)
+        if na_count > 0:
+            warnings.warn(' '.join([str(na_count),
+                                    'peptides not compatible with',
+                                    'mhcflurry will not receive score']),
+                            Warning)
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(suffix='.mhcflurry.out', 
+                                    prefix='id.', text=True)[1]
+        files_to_remove.append(mhc_out)
+        # Run netMHCIIpan
+        command = ['mhcflurry-predict', '--alleles', allele, '--out', 
+                    mhc_out, '--peptides'] + run_peps
+        subprocess.check_call(command)
+        # Retrieve scores for valid peptides
+        score_dict = {}
+        with open(mhc_out, 'r') as f:
+            # Skip headers
+            f.readline()
+            for line in f:
+                # token 1 is peptide; token 4 is affinity; token[5] is rank
+                tokens = line.strip('\n').split(',')
+                if sorted(scores) == ['affinity', 'rank']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[5])
+                elif sorted(scores) == ['affinity', 'high', 'low', 'rank']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[3], 
+                                             tokens[5])
+                elif sorted(scores) == ['affinity', 'high', 'low']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[3])
+                elif sorted(scores) == ['affinity', 'high', 'rank']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[5])
+                elif sorted(scores) == ['affinity', 'low', 'rank']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[3], tokens[5])
+                elif sorted(scores) == ['high', 'low', 'rank']:
+                    score_dict[tokens[1]] = (tokens[4], tokens[3], tokens[3])
+                elif sorted(scores) == ['affinity', 'high']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[4])
+                elif sorted(scores) == ['affinity', 'low']:
+                    score_dict[tokens[1]] = (tokens[2], tokens[3])
+                elif sorted(scores) == ['high', 'low']:
+                    score_dict[tokens[1]] = (tokens[4], tokens[3])
+                elif sorted(scores) == ['high', 'rank']:
+                    score_dict[tokens[1]] = (tokens[4], tokens[5])
+                elif sorted(scores) == ['low', 'rank']:
+                    score_dict[tokens[1]] = (tokens[3], tokens[5])
+                elif sorted(scores) == ['affinity']:
+                    score_dict[tokens[1]] = (tokens[2],)
+                elif sorted(scores) == ['rank']:
+                    score_dict[tokens[1]] = (tokens[5],)
+                elif sorted(scores) == ['high']:
+                    score_dict[tokens[1]] = (tokens[4],)
+                elif sorted(scores) == ['low']:
+                    score_dict[tokens[1]] = (tokens[3],)
+        # Produce list of scores for valid peptides
+        # Invalid peptides receive "NA" score
+        for sequence in peptides:
+            if sequence in score_dict:
+                nM = score_dict[sequence]
+            else:
+                nM = tuple(['NA' for i in range(0, len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -519,7 +629,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                 return [('NA', 'NA') for i in range(0,len(peptides))]
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0], str(len(peptides)), 
-                                allele, 'netmhcpan'])
+                                allele, 'netmhcpan', version])
         affinities = []
         # Write one peptide per line to a temporary file for input
         peptide_file = tempfile.mkstemp(suffix='.peptides', 
@@ -587,6 +697,13 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
     """
     for allele in hla_alleles:
         for tool in sorted(tool_dict.keys()):
+            if tool == 'mhcflurry1':
+                binding_scores = get_affinity_mhcflurry(
+                                                sorted(neoepitopes.keys()), 
+                                                allele, tool_dict[tool][0], 
+                                                tool_dict[tool][1],
+                                                remove_files=True
+                                                )
             if tool == 'netMHCIIpan3':
                 binding_scores = get_affinity_netMHCIIpan(
                                                 sorted(neoepitopes.keys()), 
@@ -1080,7 +1197,8 @@ def main():
             default='8,11', help='kmer size for epitope calculation'
         )
     call_parser.add_argument('-p', '--affinity-predictor', type=str, 
-            nargs=3, required=False, action='append',
+            nargs=3, required=False, action='append', 
+            default='mhcflurry 1 affinity,rank',
             help='binding affinity prediction software,'
                 'associated version number, and scoring method(s) '
                 '(e.g. -p netMHCpan 4 rank,affinity); '
@@ -1127,7 +1245,28 @@ def main():
                 program = tool[0]
                 version = tool[1]
                 scoring = tool[2].split(',')
-                if 'netMHCIIpan' in program:
+                if 'mhcflurry' in program:
+                    if version == '1' and 'mhcflurry1' not in tool_dict:
+                        program = 'mhcflurry-predict'
+                        acceptable_scoring = ['rank', 'affinity', 
+                                                            'high', 'low']
+                        for method in scoring:
+                            if method not in acceptable_scoring:
+                                warnings.warn(' '.join([method, 
+                                        'not compatible with mhcflurry']),
+                                        Warning)
+                                scoring.remove(method)
+                        if len(scoring) > 0:
+                            tool_dict['mhcflurry1'] = [program,
+                                                            sorted(scoring)]
+                    elif 'mhcflurry1' in tool_dict:
+                        raise RuntimeError('Conflicting or repetitive installs'
+                                            'of mhcflurry given')
+                    else:
+                        raise NotImplementedError(
+                            ' '.join(['Neoepiscope does not support version', 
+                                      version, 'of mhcflurry']))      
+                elif 'netMHCIIpan' in program:
                     if version == '3' and 'netMHCIIpan3' not in tool_dict:
                         program = exe_paths.netMHCIIpan3
                         if program is None:
