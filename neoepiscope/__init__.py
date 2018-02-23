@@ -136,7 +136,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                     phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], tokens[6])
                                                 )
-                print(line, file=output_stream)
+                print(line.strip(), file=output_stream)
         print('********', file=output_stream)
         with open(vcf) as vcf_stream:
             first_char = '#'
