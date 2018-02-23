@@ -3,7 +3,6 @@ from __init__ import *
 if __name__ == '__main__':
 	import unittest
 	import filecmp
-	
 	class TestGTFprocessing(unittest.TestCase):
 		"""Tests proper creation of dictionaries store GTF data"""
 		def setUp(self):
@@ -43,7 +42,6 @@ if __name__ == '__main__':
 												'ENST00000381663.8_3_PAR_Y',
 												'ENST00000399012.6_3_PAR_Y']
 							)
-
 	class TestVCFmerging(unittest.TestCase):
 		"""Tests proper merging of somatic and germline VCFS"""
 		def setUp(self):
