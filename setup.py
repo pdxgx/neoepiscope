@@ -18,6 +18,8 @@ setup(name='neoepiscope',
         'console_scripts': [
             'neoepiscope=neoepiscope:main',
         ],},
+      test_suite='tests',
+      tests_require=['nose'],
       keywords=['neoepitope', 'neoantigen', 'cancer', 'immunotherapy'],
       classifiers=[
           'Programming Language :: Python :: 2',
