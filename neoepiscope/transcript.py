@@ -4,6 +4,7 @@ import copy
 import bisect
 import string
 import re
+import os
 import pickle
 from intervaltree import Interval, IntervalTree
 from operator import itemgetter
@@ -962,8 +963,9 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
             elif seq[2][0][4] == 'D':
+                print seq
                 if (ref_start < 0
-                    and seq[3]*strand + len(seq[3][0][1]) > start * strand):
+                    and seq[3]*strand + len(seq[2][0][2]) > start * strand):
                     coding_start = counter + (
                                 start - seq[3] + 2 * self.rev_strand
                             ) * strand
@@ -1289,10 +1291,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                 )
                     if transcript_type == 'protein_coding':
                         # Create new dictionary entry for new transcripts
-                        cds_dict[transcript_id].append([tokens[0].replace(
-                                                                        'chr', 
-                                                                        ''
-                                                                    ),
+                        cds_dict[transcript_id].append([tokens[0],
                                                     tokens[2], int(tokens[3]), 
                                                     int(tokens[4]), tokens[6]])
     # Sort cds_dict coordinates (left -> right) for each transcript                                

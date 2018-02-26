@@ -763,12 +763,13 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 mutation = neoepitopes[epitope][0]
                 if mutation[2] == '':
                     ref = "''"
+                    print (mutation)
                 else:
                     ref = mutation[2]
                 if mutation[3] == '':
                     alt = "''"
                 else:
-                    alt = mutation[2]
+                    alt = mutation[3]
                 out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
                             mutation[4], str(mutation[5]), mutation[6]]
                 for i in range(7,len(mutation)):
@@ -788,13 +789,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         alt = "''"
                     else:
                         alt = mut[3]
-                    if mut[4] == 'V':
-                        mut_type = 'SNV'
-                    elif mut[4] == 'I':
-                        mut_type = 'Insertion'
-                    elif mut[4] == 'D':
-                        mut_type = 'Deletion'
-                    mutation_dict[(mut[0], mut[1], ref, alt, mut_type)].append(
+                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4])].append(
                                                                 [str(mut[5]), 
                                                                  mut[6]]
                                                                  )
@@ -837,7 +832,7 @@ def main():
             help='input path to GTF file'
         )  
     index_parser.add_argument('-d', '--dicts', type=str, required=True,
-            help='output path to pickled CDS dictionary'
+            help='output path to pickled CDS dictionary directory'
         )
     # Swap parser options (swaps columns in somatic VCF)
     swap_parser.add_argument('-i', '--input', type=str, required=True,
@@ -874,7 +869,7 @@ def main():
             help='input path to VCF'
         )
     call_parser.add_argument('-d', '--dicts', type=str, required=True,
-            help='input path to pickled CDS dictionary'
+            help='input path to pickled CDS dictionary directory'
         )
     call_parser.add_argument('-c', '--merged-hapcut2-output', type=str,
             required=True,
@@ -885,7 +880,7 @@ def main():
         )
     call_parser.add_argument('-p', '--affinity-predictor', type=str, 
             nargs=3, required=False, action='append', 
-            default='mhcflurry 1 affinity,rank',
+            default=[['mhcflurry', '1', 'affinity,rank']],
             help='binding affinity prediction software,'
                 'associated version number, and scoring method(s) '
                 '(e.g. -p netMHCpan 4 rank,affinity); '
@@ -916,11 +911,11 @@ def main():
     elif args.subparser_name == 'call':
         # Load pickled dictionaries
         with open(os.path.join(
-                    args.dicts, dictdir, 'intervals_to_transcript.pickle'
+                    args.dicts, 'intervals_to_transcript.pickle'
                 ), 'rb') as interval_stream:
             interval_dict = pickle.load(interval_stream)
         with open(os.path.join(
-                    args.dicts, dictdir, 'transcript_to_CDS.pickle'
+                    args.dicts, 'transcript_to_CDS.pickle'
                 ), 'rb') as cds_stream:
             cds_dict = pickle.load(cds_stream)
         # Check affinity predictor
@@ -1053,7 +1048,7 @@ def main():
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
         # Establish handling of ATGs
-        if arg.upstream_atgs == 'novel':
+        if args.upstream_atgs == 'novel':
             only_novel_upstream = True
             only_downstream = False
             only_reference = False
@@ -1080,10 +1075,13 @@ def main():
                                                     only_reference,
                                                     reference_index,
                                                     size_list)
-        full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
-                                                 hla_alleles)
-        write_results(args.output_file,
-                      hla_alleles, full_neoepitopes, tool_dict)
+        if len(neoepitopes.keys()) > 0:
+            full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
+                                                     hla_alleles)
+            write_results(args.output_file,
+                        hla_alleles, full_neoepitopes, tool_dict)
+        else:
+            sys.exit('No neoepitopes found')
     else:
         raise RuntimeError(''.join([args.subparser_name, 
                             ' is not a valid software mode']))
