@@ -763,7 +763,6 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 mutation = neoepitopes[epitope][0]
                 if mutation[2] == '':
                     ref = "''"
-                    print (mutation)
                 else:
                     ref = mutation[2]
                 if mutation[3] == '':
