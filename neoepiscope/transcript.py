@@ -1,3 +1,4 @@
+from __future__ import print_function
 import bowtie_index
 import collections
 import copy
@@ -8,6 +9,7 @@ import os
 import pickle
 from intervaltree import Interval, IntervalTree
 from operator import itemgetter
+import sys
 
 from sys import version_info
 if version_info[0] < 3:
@@ -811,17 +813,16 @@ class Transcript(object):
         encountered_true_start = False
         atg_priority_list = []
         for atg in atgs:
-            if (not encountered_true_start and atg[3] and not atg[4] 
-                    and not atg[5]):
-                '''If the original start codon is maintained in the edited 
-                    transcript, immediately return it.'''
-                return 0, atg
-            elif (not encountered_true_start and atg[3] and not atg[4] 
-                    and atg[5]):
-                '''If the original start codon is missing in the edited
-                    transcript, maintain it to keep track of reading frame
-                    changes for new start'''
-                coding_ref_start = atg[0]
+            if not encountered_true_start and atg[3] and not atg[4]:
+                if not atg[5]:
+                    '''If the original start codon is maintained in the edited 
+                        transcript, immediately return it.'''
+                    return 0, atg
+                else:
+                    '''If the original start codon is missing in the edited
+                        transcript, maintain it to keep track of reading frame
+                        changes for new start'''
+                    coding_ref_start = atg[0]
             if atg[3]:
                 encountered_true_start = True
             if not only_reference:
@@ -843,6 +844,7 @@ class Transcript(object):
             atg_priority_list = sorted(atg_priority_list)
             start_codon = atg_priority_list[0]
         return (start_codon[0] - coding_ref_start) % 3, start_codon
+
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
         include_germline=2, only_novel_upstream=True, only_downstream=False, 
@@ -886,7 +888,8 @@ class Transcript(object):
         if start is None or stop is None:
             return {}
         # +1 is + strand, -1 is - strand
-        strand = 1 - self.rev_strand * 2
+        s
+
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
@@ -901,6 +904,7 @@ class Transcript(object):
         #compare_peptides_to_ref = False
         compare_peptides_to_ref = True
         annotated_seq.append([])
+        print('NEW TRANSCRIPT')
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
             ATG1 = sequence.find('ATG', ATG_counter1)
@@ -909,25 +913,43 @@ class Transcript(object):
             ATG_temp2 = ATG_counter2
             while (ATG1 > 0 or ATG2 > 0) and ATG_limit > 0:
                 if (coding_start > 0 and ATG1 > 0):
+                    print('marker1')
+                    print(coding_start)
                     ATG_limit -= 1
                 if ATG1 > 0 and ATG2 < 0:
+                    print('marker2')
+                    print(coding_start)
+                    print(ATG1)
+                    print(ATG_temp1)
+                    print(ATG2)
+                    print(ATG_temp2)
+                    print(seq_previous)
+                    print(ATGs)
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 elif ATG1 < 0 and ATG2 > 0:
+                    print('marker3')
+                    print(coding_start)
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                      ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
+                    print('marker4')
+                    print(coding_start)
                     ATGs.append([ATG1, ATG2, seq_previous,
                      ATG2 >= ref_start and ref_start >= 0, False, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
+                    print('marker5')
+                    print(coding_start)
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                 else:
+                    print('marker6')
+                    print(coding_start)
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                         ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
@@ -961,9 +983,10 @@ class Transcript(object):
                 ref_sequence += seq[0]
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
+                print('REFERENCE SEQUENCE')
+                print(coding_start)
                 continue
             elif seq[2][0][4] == 'D':
-                print seq
                 if (ref_start < 0
                     and seq[3]*strand + len(seq[2][0][2]) > start * strand):
                     coding_start = counter + (
@@ -998,6 +1021,7 @@ class Transcript(object):
             elif seq[2][0][4] == 'I':
                 if (ref_start < 0
                     and seq[3] * strand + len(seq[0]) > start * strand):
+                    print('GOT HERE!')
                     coding_start = counter + (
                                 start - seq[3] + 2 * self.rev_strand
                             ) * strand
@@ -1019,6 +1043,14 @@ class Transcript(object):
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
+                print('INSERTION')
+                print(ref_counter)
+                print(counter)
+                print(start)
+                print(seq[3])
+                print(ref_start)
+                print(coding_start)
+                print(strand)
                 continue
             elif seq[2][0][4] == 'V':
                 if (ref_start < 0
@@ -1228,7 +1260,7 @@ class Transcript(object):
         if len(protein) > (coding_stop - coding_start) // 3:
             frame_shifts.append(
                     [None, None, coding_stop,
-                     3 * len(protein)+coding_start, TAA_TGA_TAG]
+                     3 * len(protein)+coding_start, TAA_TGA_TAG[2]]
                 )
         peptide_seqs = collections.defaultdict(list)
         # get amino acid ranges for kmerization
