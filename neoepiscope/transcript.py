@@ -888,8 +888,7 @@ class Transcript(object):
         if start is None or stop is None:
             return {}
         # +1 is + strand, -1 is - strand
-        s
-
+        strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
         # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
@@ -1050,7 +1049,6 @@ class Transcript(object):
                 print(seq[3])
                 print(ref_start)
                 print(coding_start)
-                print(strand)
                 continue
             elif seq[2][0][4] == 'V':
                 if (ref_start < 0
