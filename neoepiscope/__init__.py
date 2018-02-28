@@ -752,7 +752,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     """
     with open(output_file, 'w') as o:
         headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt', 
-                   'Mutation_type', 'VAF', 'Transcript_ID']
+                   'Mutation_type', 'VAF', 'Warnings', 'Transcript_ID']
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
@@ -762,41 +762,51 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
                 if mutation[2] == '':
-                    ref = "''"
+                    ref = '*'
                 else:
                     ref = mutation[2]
                 if mutation[3] == '':
-                    alt = "''"
+                    alt = '*'
                 else:
                     alt = mutation[3]
+                if mutation[5] is None:
+                    VAF = 'NA'
+                else:
+                    VAF = str(mutation[5])
                 out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
-                            mutation[4], str(mutation[5]), mutation[6]]
+                            mutation[4], VAF, mutation[6],
+                            mutation[7]]
                 for i in range(7,len(mutation)):
                     out_line.append(str(mutation[i]))
                 o.write('\t'.join(out_line) + '\n')
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
-                for i in range(7, len(neoepitopes[epitope][0])):
+                for i in range(8, len(neoepitopes[epitope][0])):
                     ep_scores.append(neoepitopes[epitope][0][i])
                 for mut in neoepitopes[epitope]:
                     if mut[2] == '':
-                        ref = "''"
+                        ref = '*'
                     else:
                         ref = mut[2]
                     if mut[3] == '':
-                        alt = "''"
+                        alt = '*'
                     else:
                         alt = mut[3]
+                    if mut[5] is None:
+                        VAF = 'NA'
+                    else:
+                        VAF = str(mut[5])
                     mutation_dict[(mut[0], mut[1], ref, alt, mut[4])].append(
-                                                                [str(mut[5]), 
-                                                                 mut[6]]
+                                                                [VAF, mut[6],
+                                                                 mut[7]]
                                                                  )
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
                                 mut[4],
                                 ';'.join([x[0] for x in mutation_dict[mut]]),
-                                ';'.join([x[1] for x in mutation_dict[mut]])]
+                                ';'.join([x[1] for x in mutation_dict[mut]]),
+                                ';'.join([x[2] for x in mutation_dict[mut]])]
                     for score in ep_scores:
                         out_line.append(str(score))
                     o.write('\t'.join(out_line) + '\n')
@@ -1037,7 +1047,7 @@ def main():
         # Obtain peptide sizes for kmerizing peptides
         if ',' in args.kmer_size:
             size_list = args.kmer_size.split(',')
-            size_list.sort()
+            size_list.sort(reverse=True)
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
         hla_alleles = sorted(args.alleles.split(','))
