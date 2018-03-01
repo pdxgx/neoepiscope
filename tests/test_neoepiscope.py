@@ -2,16 +2,16 @@ from neoepiscope import *
 
 import unittest
 import filecmp
+import os 
+neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
 class TestGTFprocessing(unittest.TestCase):
 	"""Tests proper creation of dictionaries store GTF data"""
 	def setUp(self):
 		"""Sets up gtf file and creates dictionaries for tests"""
-		self.gtf = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.gtf'
+		self.base_dir = neoepiscope_dir
+		self.gtf = os.path.join(self.base_dir
+							, 'tests', 'Ychrom.gtf'
 						)
 		self.Ycds = gtf_to_cds(self.gtf, 'NA', pickle_it=False)
 		self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
@@ -45,33 +45,14 @@ class TestVCFmerging(unittest.TestCase):
 	"""Tests proper merging of somatic and germline VCFS"""
 	def setUp(self):
 		"""Sets up files to use for tests"""
-		self.varscan = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.varscan.vcf'
+		self.base_dir = neoepiscope_dir
+		self.varscan = os.path.join(self.base_dir, 'tests', 'Ychrom.varscan.vcf'
 						)                
-		self.germline = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.germline.vcf'
+		self.germline = os.path.join(self.base_dir, 'tests', 'Ychrom.germline.vcf'
 						)   
-		self.precombined = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.combined.vcf'
+		self.precombined = os.path.join(self.base_dir, 'tests', 'Ychrom.combined.vcf'
 						)  
-		self.outvcf = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.testcombine.vcf'
+		self.outvcf = os.path.join(self.base_dir, 'tests', 'Ychrom.testcombine.vcf'
 						)  
 		combine_vcf(self.germline, self.varscan, self.outvcf)
 	def test_merge(self):
@@ -84,33 +65,14 @@ class TestPrepHapCUT(unittest.TestCase):
 	"""Tests addition of unphased mutations to HapCUT2 output"""
 	def setUp(self):
 		"""Sets up hapcut and vcf files to use for tests"""
-		self.hapcut = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'test.hapcut.out'
+		self.base_dir = neoepiscope_dir
+		self.hapcut = os.path.join(self.base_dir, 'tests', 'test.hapcut.out'
 						)
-		self.vcf = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'test.vcf'
+		self.vcf = os.path.join(self.base_dir, 'tests', 'test.vcf'
 						)
-		self.complete_hapcut = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'complete_hapcut.out'
+		self.complete_hapcut = os.path.join(self.base_dir, 'tests', 'complete_hapcut.out'
 						)
-		self.test_hapcut = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'test_complete_hapcut.out'
+		self.test_hapcut = os.path.join(self.base_dir, 'tests', 'test_complete_hapcut.out'
 						)
 	def test_haplotype_prep(self):
 		"""Tests that output of haplotype prep is correct"""
@@ -124,19 +86,10 @@ class TestVAFpos(unittest.TestCase):
 	"""Tests fetching of VAF position from VCF file"""
 	def setUp(self):
 		"""Sets up vcf files to use for tests"""
-		self.varscan = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.varscan.vcf'
+		self.base_dir = neoepiscope_dir
+		self.varscan = os.path.join(self.base_dir, 'tests', 'Ychrom.varscan.vcf'
 						)
-		self.mutect = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Ychrom.mutect.vcf'
+		self.mutect = os.path.join(self.base_dir, 'tests', 'Ychrom.mutect.vcf'
 						)
 	def test_position(self):
 		"""Fails if incorrect positions are returned"""
@@ -146,31 +99,18 @@ class TestHaplotypeProcessing(unittest.TestCase):
 	"""Tests proper processing of HAPCUT2 files"""
 	def setUp(self):
 		"""Sets up input files and dictionaries to use for tests"""
+		self.base_dir = neoepiscope_dir
 		self.ref_prefix = os.path.join(
-					os.path.dirname(
-							os.path.dirname(
-									os.path.realpath(__file__)
-								)
-						), 'tests', 'Chr11.ref'
+					self.base_dir, 'tests', 'Chr11.ref'
 				)
 		self.reference_index = bowtie_index.BowtieIndexReference(
 														self.ref_prefix)
-		self.Chr11gtf = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Chr11.gtf'
+		self.Chr11gtf = os.path.join(self.base_dir, 'tests', 'Chr11.gtf'
 						)
 		self.Chr11cds = gtf_to_cds(self.Chr11gtf, 'NA', pickle_it=False)
 		self.Chr11tree = cds_to_tree(self.Chr11cds, 'NA',
 										pickle_it=False)
-		self.Chr11hapcut = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'Chr11.hapcut.out'
+		self.Chr11hapcut = os.path.join(self.base_dir, 'tests', 'Chr11.hapcut.out'
 						)
 	def test_hap_processing(self):
 		"""Fails if file is processed incorrectly"""
@@ -250,19 +190,10 @@ class TestOutput(unittest.TestCase):
 	"""Tests function to write output"""
 	def setUp(self):
 		"""Sets up paths and dictionaries"""
-		self.out_file = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'neoepiscope.out'
+		self.base_dir = neoepiscope_dir
+		self.out_file = os.path.join(self.base_dir, 'tests', 'neoepiscope.out'
 						)
-		self.correct_out = os.path.join(
-							os.path.dirname(
-									os.path.dirname(
-											os.path.realpath(__file__)
-										)
-								), 'tests', 'expected.neoepiscope.out'
+		self.correct_out = os.path.join(self.base_dir, 'tests', 'expected.neoepiscope.out'
 						)
 		self.tools = {'netMHCpan4': ['netMHCpan', ['rank', 'affinity']],
 					  'netMHCIIpan3': ['netMHCIIpan', ['rank']]}
