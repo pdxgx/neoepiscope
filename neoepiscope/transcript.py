@@ -1085,7 +1085,7 @@ class Transcript(object):
         if start_codon is None:
             return {}
         if reading_frame:
-            frame_shifts.append([start, -1, 0, -1, start_codon[2]])
+            frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
         annotated_seq.pop()
@@ -1396,37 +1396,32 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
 
 if __name__ == '__main__':
     import unittest
+    unittest.TestCase.maxDiff = None
     import os
     class TestTranscript(unittest.TestCase):
         """Tests transcript object construction"""
         def setUp(self):
             """Sets up gtf file and creates dictionaries for tests"""
             self.gtf = os.path.join(
-                                os.path.dirname(
-                                        os.path.dirname(
-                                                os.path.realpath(__file__)
-                                            )
-                                    ), 'tests', 'Chr11.gtf'
+                            os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 
+                            'tests', 'Chr11.gtf'
                             )
             self.cds = gtf_to_cds(self.gtf, 'NA', pickle_it=False)
             self.ref_prefix = os.path.join(
-                            os.path.dirname(
-                                    os.path.dirname(
-                                            os.path.realpath(__file__)
-                                        )
-                                ), 'tests', 'Chr11.ref'
+                           os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 
+                           'tests', 'Chr11.ref'
                         )
             self.reference_index = bowtie_index.BowtieIndexReference(
                                                         self.ref_prefix)
             self.transcript = Transcript(self.reference_index, 
-                                        [[str(chrom), 'blah', seq_type,
+                                        [[str(chrom).replace('chr', ''), 'blah', seq_type,
                                           str(start), str(end), '.', 
                                           strand] for (chrom, seq_type, start, 
                                                         end, strand) in 
                                           self.cds['ENST00000335295.4_1']],
                                           'ENST00000335295.4_1')
             self.fwd_transcript = Transcript(self.reference_index, 
-                                        [[str(chrom), 'blah', seq_type,
+                                        [[str(chrom).replace('chr', ''), 'blah', seq_type,
                                           str(start), str(end), '.', 
                                           strand] for (chrom, seq_type, start, 
                                                         end, strand) in 
@@ -1434,8 +1429,10 @@ if __name__ == '__main__':
                                           'ENST00000308020.5_1')
         def test_transcript_structure(self):
             """Fails if structure of unedited transcript is incorrect"""
-            self.assertEqual(len(self.transcript.annotated_seq()), 1)
-            self.assertEqual(len(self.transcript.annotated_seq()[0][0]), 628)
+            self.assertEqual(len(self.transcript.annotated_seq()), 3)
+            self.assertEqual(len(self.transcript.annotated_seq()[0][0]), 142)
+            self.assertEqual(len(self.transcript.annotated_seq()[1][0]), 223)
+            self.assertEqual(len(self.transcript.annotated_seq()[2][0]), 263)
             self.assertEqual(self.transcript.annotated_seq()[0][1], 'R')
             self.assertEqual(self.transcript.intervals, [5246692, 5246955, 
                                                          5247805, 5248028,
@@ -1447,6 +1444,7 @@ if __name__ == '__main__':
             self.assertTrue(self.transcript.rev_strand)
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals, [])
+            self.assertEqual(self.transcript.transcript_id, 'ENST00000335295.4_1')
         # Reading frame tests
         def test_rev_reading_frame(self):
             """Fails if incorrect reading frame is called in rev transcript"""
@@ -1496,7 +1494,9 @@ if __name__ == '__main__':
                                                  (5248028, 'R', ()), 
                                                  (5248158, 'R', ()), 
                                                  (5248300, 'R', ())])
-            self.assertEqual(len(self.transcript.annotated_seq()), 1)
+            self.assertEqual(len(self.transcript.annotated_seq()), 3)
+            self.assertEqual(len([x for x in self.transcript.annotated_seq() 
+                                            if x[1] != 'R']), 0)
         def test_relevant_edit(self):
             """Fails if edit is not made for position within exon"""
             self.transcript.edit('A', 5248299)
@@ -1514,9 +1514,11 @@ if __name__ == '__main__':
                                                  (5248028, 'R', ()), 
                                                  (5248158, 'R', ()), 
                                                  (5248300, 'R', ())])
-            self.assertEqual(len(self.transcript.annotated_seq()), 3)
+            self.assertEqual(len(self.transcript.annotated_seq()), 5)
             self.assertEqual(self.transcript.annotated_seq()[1][0], 'T')
             self.assertEqual(self.transcript.annotated_seq()[1][1], 'S')
+            self.assertEqual(len([x for x in self.transcript.annotated_seq() 
+                                            if x[1] != 'R']), 1)
         def test_reset_to_reference(self):
             """Fails if transcript is not reset to reference"""
             self.transcript.edit('A', 5248299)
@@ -1572,12 +1574,14 @@ if __name__ == '__main__':
                                                                     None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
+            self.assertEqual(len(seq), 5)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
             self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'A', 
                                                     'V', None)], 
                                         5248299))
-            self.assertEqual(len(seq[2][0]), 625)
+            self.assertEqual(len(seq[2][0]), 139)
+            self.assertEqual(len(seq[3][0]), 223)
+            self.assertEqual(len(seq[4][0]), 263)
         def test_inside_insertion(self):
             """Fails if indel within exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248165, mutation_type='I')
@@ -1587,12 +1591,15 @@ if __name__ == '__main__':
                                                                  'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
+            self.assertEqual(len(seq), 6)
             self.assertEqual(seq[1], ('Q', 'S', [('11', 5248165, '', 
                                                   'Q', 'I', None)], 
                                       5248165))
             self.assertEqual(len(seq[0][0]), 136)
-            self.assertEqual(len(seq[2][0]), 492)
+            self.assertEqual(len(seq[2][0]), 1)
+            self.assertEqual(len(seq[3][0]), 5)
+            self.assertEqual(len(seq[4][0]), 223)
+            self.assertEqual(len(seq[5][0]), 263)
         def test_adjacent_indel(self):
             """Fails if indel right before exon is inserted incorrectly"""
             self.transcript.edit('Q', 5248029, mutation_type='I')
@@ -1602,12 +1609,14 @@ if __name__ == '__main__':
                                                                 'I', None))])
             self.assertEqual(self.transcript.deletion_intervals, [])
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
+            self.assertEqual(len(seq), 5)
             self.assertEqual(seq[1], ('Q', 'S', [('11', 5248029, '', 'Q', 'I', 
                                                   None)], 
                                         5248029)) 
             self.assertEqual(len(seq[0][0]), 142)
-            self.assertEqual(len(seq[2][0]), 486)
+            self.assertEqual(len(seq[2][0]), 1)
+            self.assertEqual(len(seq[3][0]), 222)
+            self.assertEqual(len(seq[4][0]), 263)
         def test_inside_deletion(self):
             """Fails if deletion completely within an exon is made improperly"""
             self.transcript.edit(3, 5246700, mutation_type='D')
@@ -1620,12 +1629,14 @@ if __name__ == '__main__':
                                                                 'D',
                                                                 None))])
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [('11', 5246700, 'TGA', '', 'D', 
+            self.assertEqual(len(seq), 5)
+            self.assertEqual(seq[3], ('', 'S', [('11', 5246700, 'TGA', '', 'D', 
                                                 None)],
                                         5246700))
-            self.assertEqual(seq[2], ('TTGCAA', 'R', [()], 5246699))
-            self.assertEqual(len(seq[0][0]), 619)
+            self.assertEqual(seq[4], ('TTGCAA', 'R', [()], 5246699))
+            self.assertEqual(len(seq[0][0]), 142)
+            self.assertEqual(len(seq[1][0]), 223)
+            self.assertEqual(len(seq[2][0]), 254)
         def test_overlapping_deletion(self):
             """Fails if deletion overlapping a junction is incorrect"""
             self.transcript.edit(10, 5246950, mutation_type='D')
@@ -1638,22 +1649,24 @@ if __name__ == '__main__':
                                                                 '', 'D', 
                                                                 None))])
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
-            self.assertEqual(seq[1], ('', 'S', [('11', 5246950,'CCAGGAGCTG', 
+            self.assertEqual(len(seq), 4)
+            self.assertEqual(seq[2], ('', 'S', [('11', 5246950,'CCAGGAGCTG', 
                                                  '', 'D', None)], 5246950))
-            self.assertEqual(len(seq[0][0]), 365)
-            self.assertEqual(len(seq[2][0]), 256)
+            self.assertEqual(len(seq[0][0]), 142)
+            self.assertEqual(len(seq[1][0]), 223)
+            self.assertEqual(len(seq[3][0]), 256)
         def test_spanning_deletion(self):
             self.transcript.edit(137, 5248025, mutation_type='D')
             self.assertEqual(self.transcript.edits, {})
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 3)
+            self.assertEqual(len(seq), 4)
             self.assertEqual(len(seq[1][2][0][2]), 137)
             self.assertEqual(seq[1][0:2], ('', 'S'))
             self.assertEqual(len(seq[0][0]), 140)
-            self.assertEqual(len(seq[2][0]), 481)
+            self.assertEqual(len(seq[2][0]), 218)
+            self.assertEqual(len(seq[3][0]), 263)
         def test_compound_variants(self):
             """Fails if transcript with multiple variant types is incorrect"""
             self.transcript.edit(137, 5248025, mutation_type='D')
@@ -1671,7 +1684,7 @@ if __name__ == '__main__':
             self.assertEqual(self.transcript.deletion_intervals[0][0:3],
                                                     (5248023, 5248160, 'S'))
             seq = self.transcript.annotated_seq()
-            self.assertEqual(len(seq), 7)
+            self.assertEqual(len(seq), 9)
             self.assertEqual(seq[0], ('AC', 'R', [()], 5248301))
             self.assertEqual(seq[1], ('T', 'S', [('11', 5248299, 'T', 'A', 'V', 
                                                     None)], 
@@ -1680,8 +1693,11 @@ if __name__ == '__main__':
             self.assertEqual(seq[3], ('Q', 'S', [('11', 5248165, '', 'Q', 'I', 
                                                     None)], 
                                         5248165))
-            self.assertEqual(seq[4], ('GGGC', 'R', [()], 5248165))
-            self.assertEqual(len(seq[6][0]), 481)
+            self.assertEqual(seq[4], ('G', 'R', [()], 5248165))
+            self.assertEqual(seq[5], ('GGC', 'R', [()], 5248164))
+            self.assertEqual(len(seq[6][2][0][2]), 137)
+            self.assertEqual(len(seq[7][0]), 218)
+            self.assertEqual(len(seq[8][0]), 263)
         # Neopeptide tests
         def test_no_mutations_peptides(self):
             """Fails if peptides are returned for unmutated sequence"""
@@ -1846,10 +1862,14 @@ if __name__ == '__main__':
             """Fails if peptides are returned from a new start codon when the 
                 original is retained"""
             self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
-            peptides = self.fwd_transcript.neopeptides().keys()
+            peptides = self.fwd_transcript.neopeptides(
+                                only_downstream=True
+                                ).keys()
             self.assertEqual(peptides, [])
             self.transcript.edit('CAT', 5248280, mutation_type='I')
-            rev_peptides = self.transcript.neopeptides().keys()
+            rev_peptides = self.transcript.neopeptides(
+                                only_downstream=True
+                                ).keys()
             self.assertEqual(rev_peptides, [])
         def test_compound_indel_peptides(self):
             """Fails if incorrect peptides are returned with complementary

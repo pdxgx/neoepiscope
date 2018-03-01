@@ -406,12 +406,11 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                         as strings)
     """
     files_to_remove = []
+    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     try:
         # Check that allele is valid for method
-        with open(os.path.join(
-                            os.path.dirname(
-                                            os.path.realpath(__file__)
-                                ), 'availableAlleles.pickle'
+        with open(os.path.join(os.path.join(neoepiscope_dir, 'neoepiscope', 
+                                            'availableAlleles.pickle')
                         ), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
@@ -504,13 +503,11 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                         as strings)
     """
     files_to_remove = []
+    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     try:
         # Check that allele is valid for method
-        with open(os.path.join(
-                            os.path.dirname(
-                                            os.path.realpath(__file__)
-                                ), 'availableAlleles.pickle'
-                        ), 'rb'
+        with open(os.path.join(neoepiscope_dir, 'neoepiscope', 
+                               'availableAlleles.pickle'), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         if allele not in avail_alleles['mhcflurry']:
@@ -616,13 +613,11 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                         as strings)
     """
     files_to_remove = []
+    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     try:
         # Check that allele is valid for method
-        with open(os.path.join(
-                            os.path.dirname(
-                                            os.path.realpath(__file__)
-                                ), 'availableAlleles.pickle'
-                        ), 'rb'
+        with open(os.path.join(neoepiscope_dir, 'neoepiscope', 
+                                'availableAlleles.pickle'), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         allele = allele.replace('*', '')
