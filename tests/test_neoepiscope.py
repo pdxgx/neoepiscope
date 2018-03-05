@@ -4,8 +4,6 @@ import unittest
 import filecmp
 import os 
 neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-print(__file__)
-print(neoepiscope_dir)
 
 class TestGTFprocessing(unittest.TestCase):
 	"""Tests proper creation of dictionaries store GTF data"""

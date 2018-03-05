@@ -1393,3 +1393,189 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
         if cd.data not in transcript_ids:
             transcript_ids.append(cd.data)
     return transcript_ids
+
+def process_haplotypes(hapcut_output, interval_dict):
+    """ Stores all haplotypes relevant to different transcripts as a dictionary
+
+        hapcut_output: output from HAPCUT2, adjusted to include unphased 
+                        mutations as their own haplotypes (performed in 
+                        software's prep mode)
+        interval_dict: dictionary linking genomic intervals to transcripts
+
+        Return value: dictinoary linking haplotypes to transcripts
+    """
+    affected_transcripts = collections.defaultdict(list)
+    with open(hapcut_output, 'r') as f:
+        block_transcripts = collections.defaultdict(list)
+        for line in f:
+            if line.startswith('BLOCK'):
+                # Skip block header lines
+                continue
+            elif line[0] == '*':
+                # Process all transcripts for the block
+                for transcript_ID in block_transcripts:
+                    block_transcripts[transcript_ID].sort(key=itemgetter(1))
+                    haplotype = []
+                    for mut in block_transcripts[transcript_ID]:
+                        haplotype.append(mut)
+                    affected_transcripts[transcript_ID].append(haplotype)
+                # Reset transcript dictionary
+                block_transcripts = collections.defaultdict(list)
+            else:
+                # Add mutation to transcript dictionary for the block
+                tokens = line.strip("\n").split()
+                if len(tokens[5]) == len(tokens[6]):
+                    mutation_type = 'V'
+                    pos = int(tokens[4])
+                    ref = tokens[5]
+                    alt = tokens[6]
+                    mut_size = len(tokens[5])
+                    end = pos + mut_size
+                elif len(tokens[5]) > len(tokens[6]):
+                    mutation_type = 'D'
+                    deletion_size = len(tokens[5]) - len(tokens[6])
+                    pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
+                    ref = tokens[5]
+                    alt = deletion_size
+                    end = pos + deletion_size
+                elif len(tokens[5]) < len(tokens[6]):
+                    mutation_type = 'I'
+                    insertion_size = len(tokens[6]) - len(tokens[5])
+                    pos = int(tokens[4])
+                    ref = tokens[5]
+                    alt = tokens[6][len(ref):]
+                    end = pos + 1
+                overlapping_transcripts = get_transcripts_from_tree(tokens[3], 
+                                                                pos, 
+                                                                end,
+                                                                interval_dict)
+                # For each overlapping transcript, add mutation entry
+                # Contains chromosome, position, reference, alternate, allele
+                #   A, allele B, genotype line from VCF
+                for transcript in overlapping_transcripts:
+                    block_transcripts[transcript].append([tokens[3], pos, 
+                                                          ref, alt, 
+                                                          tokens[1], tokens[2], 
+                                                          tokens[7], 
+                                                          mutation_type])
+    return affected_transcripts
+
+def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
+                                  only_novel_upstream, only_downstream, 
+                                  only_reference, reference_index, size_list,
+                                  include_germline=2, include_somatic=1):
+    """ For transcripts that are affected by a mutation, mutations are applied
+        and neoepitopes resulting from mutations are called
+        
+        relevant_transcripts: dictionary linking haplotypes to transcripts;
+            output from process_haplotypes()
+        VAF_pos: position of VAF in VCF mutation data from HapCUT2
+        cds_dict: dictionary linking transcript IDs, to lists of
+            relevant CDS/stop codon data; output from gtf_to_cds()
+        only_novel_upstream: whether to start translation from novel upstream
+            start codons (boolean)
+        only_downstream: whether to start translation from only downstream of
+            a disrupted canonical start codon (boolean)
+        only_reference: whether to start translation only from the canonical
+            start codon for a transcript
+        reference_index: BowtieIndexReference object for retrieving
+            reference genome sequence
+        size_list: list of peptide sizes for neoepitope enumeration
+        include_germline: 0 = do not include germline mutations,
+                1 = exclude germline mutations from reference comparison,
+                2 = include germline mutations in both annotated sequence and
+                reference comparison
+        include_somatic: 0 = do not include somatic mutations,
+                1 = exclude somatic mutations from reference comparison,
+                2 = include somatic mutations in both annotated sequence and
+                reference comparison
+
+        return value: dictionary linking neoepitopes to their associated 
+            metadata
+
+        """
+    neoepitopes = collections.defaultdict(list)
+    for affected_transcript in relevant_transcripts:
+        # Create transcript object
+        transcriptA = Transcript(reference_index, 
+                        [[str(chrom), 'blah', seq_type, str(start), 
+                          str(end), '.', strand] for (chrom, seq_type, 
+                                                      start, end, strand) 
+                      in cds_dict[affected_transcript]], affected_transcript
+                    )
+        transcriptB = Transcript(reference_index, 
+                        [[str(chrom), 'blah', seq_type, str(start), 
+                          str(end), '.', strand] for (chrom, seq_type, 
+                                                      start, end, strand) 
+                      in cds_dict[affected_transcript]], affected_transcript
+                    )
+        # Iterate over haplotypes associated with this transcript
+        haplotypes = relevant_transcripts[affected_transcript]
+        for ht in haplotypes:
+            somatic_in_haplotype = False
+            # Make edits for each mutation
+            for mutation in ht:
+                # Determine if mutation is somatic or germline
+                if mutation[6][-1] == '*':
+                    mutation_class = 'G'
+                else:
+                    mutation_class = 'S'
+                    somatic_in_haplotype = True
+                # Determine VAF if available
+                if VAF_pos is not None:
+                    VAF = float(
+                            mutation[6].strip( 
+                                    '*').split(':'
+                                )[VAF_pos].strip('%')
+                        )
+                else:
+                    VAF = None
+                # Determine which copies variant exists on & make edits
+                if mutation[4] == '1':
+                    transcriptA.edit(mutation[3], mutation[1], 
+                                mutation_type=mutation[7], 
+                                mutation_class=mutation_class,
+                                vaf=VAF)
+                if mutation[5] == '1':
+                    transcriptB.edit(mutation[3], mutation[1], 
+                                mutation_type=mutation[7], 
+                                mutation_class=mutation_class,
+                                vaf=VAF)
+            if somatic_in_haplotype:
+                # Extract neoepitopes
+                A_peptides = transcriptA.neopeptides(
+                                    min_size=size_list[0], 
+                                    max_size=size_list[-1],
+                                    include_somatic=include_somatic,
+                                    include_germline=include_germline, 
+                                    only_novel_upstream=only_novel_upstream,
+                                    only_downstream=only_downstream, 
+                                    only_reference=only_reference
+                                    )
+                B_peptides = transcriptB.neopeptides(
+                                    min_size=size_list[0], 
+                                    max_size=size_list[-1],
+                                    include_somatic=include_somatic,
+                                    include_germline=include_germline, 
+                                    only_novel_upstream=only_novel_upstream,
+                                    only_downstream=only_downstream, 
+                                    only_reference=only_reference
+                                    )
+                # Store neoepitopes and their metadata
+                for pep in A_peptides:
+                    for meta_data in A_peptides[pep]:
+                        adj_meta_data = meta_data + (
+                                            transcriptA.transcript_id,
+                                            )
+                        if adj_meta_data not in neoepitopes[pep]:
+                            neoepitopes[pep].append(adj_meta_data)
+                for pep in B_peptides:
+                    for meta_data in B_peptides[pep]:
+                        adj_meta_data = meta_data + (
+                                            transcriptB.transcript_id,
+                                            )
+                        if adj_meta_data not in neoepitopes[pep]:
+                            neoepitopes[pep].append(adj_meta_data)
+            transcriptA.reset(reference=True)
+            transcriptB.reset(reference=True)
+    return neoepitopes
