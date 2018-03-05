@@ -220,4 +220,6 @@ class TestOutput(unittest.TestCase):
 	def tearDown(self):
 		"""Removes test file"""
 		os.remove(self.out_file)
-unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
