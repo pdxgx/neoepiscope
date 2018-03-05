@@ -3,7 +3,9 @@ from neoepiscope import *
 import unittest
 import filecmp
 import os 
-neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
+print(__file__)
+print(neoepiscope_dir)
 
 class TestGTFprocessing(unittest.TestCase):
 	"""Tests proper creation of dictionaries store GTF data"""
@@ -21,16 +23,16 @@ class TestGTFprocessing(unittest.TestCase):
 	def test_CDS_tree(self):
 		"""Fails if dictionary was built incorrectly"""
 		self.assertEqual(len(self.Ytree.keys()), 1)
-		self.assertEqual(len(self.Ytree['Y']), 2174)
+		self.assertEqual(len(self.Ytree['chrY']), 2174)
 	def test_transcript_extraction(self):
 		"""Fails if incorrect transcripts are pulled"""
 		self.assertEqual(len(get_transcripts_from_tree(
-														'Y', 150860, 
+														'chrY', 150860, 
 														150861,
 														self.Ytree)), 
 														3
 														)
-		self.coordinate_search = list(self.Ytree['Y'].search(150860,
+		self.coordinate_search = list(self.Ytree['chrY'].search(150860,
 															 150861))
 		self.transcripts = []
 		for interval in self.coordinate_search:
@@ -108,6 +110,9 @@ class TestHaplotypeProcessing(unittest.TestCase):
 		self.Chr11gtf = os.path.join(self.base_dir, 'tests', 'Chr11.gtf'
 						)
 		self.Chr11cds = gtf_to_cds(self.Chr11gtf, 'NA', pickle_it=False)
+		for transcript in self.Chr11cds:
+			for cds_block in self.Chr11cds[transcript]:
+				cds_block[0] = cds_block[0].replace('chr', '')
 		self.Chr11tree = cds_to_tree(self.Chr11cds, 'NA',
 										pickle_it=False)
 		self.Chr11hapcut = os.path.join(self.base_dir, 'tests', 'Chr11.hapcut.out'
@@ -143,10 +148,10 @@ class TestHaplotypeProcessing(unittest.TestCase):
 													[8,9,10,11])
 		self.assertEqual(len(neoepitopes.keys()), 70)
 		self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, '',
-												'AAA', 'I', 0.1, 
+												'AAA', 'I', 0.1, 'NA', 
 												'ENST00000398531.2_2')])
 		self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229, 
-												'A', 'C', 'V', 15.7, 
+												'A', 'C', 'V', 15.7, 'NA',
 												'ENST00000398531.2_2')])
 		self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
 		self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
@@ -170,19 +175,19 @@ class TestBindingPrediction(unittest.TestCase):
 													'', 'AAA', 
 													'I', 0.1, 
 													'ENST00000398531.2_2',
-													'31216.539180760206', 
-													'98.32912499999998', 
-													'34006.993380658656', 
-													'80.02275'
+													'25689.70544109427', 
+													'95.52587499999998', 
+													'28365.719606393825', 
+													'90.61212500000003'
 												)])
 		self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229, 
 													'A', 'C', 'V', 
 													15.7, 
 													'ENST00000398531.2_2',
-													'15595.009921030196', 
-													'26.75187499999999', 
-													'29813.963222395083', 
-													'46.76187499999999'
+													'18671.533820398825', 
+													'42.33412499999999', 
+													'26484.921629273078', 
+													'68.11900000000003'
 												)])
 		self.assertEqual(11, len(new_neoepitopes['PVCCPCKI'][0]))
 		self.assertEqual(11, len(new_neoepitopes['CGCSQKCN'][0]))

@@ -406,7 +406,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                         as strings)
     """
     files_to_remove = []
-    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
     try:
         # Check that allele is valid for method
         with open(os.path.join(os.path.join(neoepiscope_dir, 'neoepiscope', 
@@ -503,7 +503,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                         as strings)
     """
     files_to_remove = []
-    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
     try:
         # Check that allele is valid for method
         with open(os.path.join(neoepiscope_dir, 'neoepiscope', 
@@ -613,7 +613,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                         as strings)
     """
     files_to_remove = []
-    neoepiscope_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
     try:
         # Check that allele is valid for method
         with open(os.path.join(neoepiscope_dir, 'neoepiscope', 
@@ -799,9 +799,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
                                 mut[4],
-                                ';'.join([x[0] for x in mutation_dict[mut]]),
-                                ';'.join([x[1] for x in mutation_dict[mut]]),
-                                ';'.join([x[2] for x in mutation_dict[mut]])]
+                                ';'.join([str(x[0]) for x in mutation_dict[mut]]),
+                                ';'.join([str(x[1]) for x in mutation_dict[mut]]),
+                                ';'.join([str(x[2]) for x in mutation_dict[mut]])]
                     for score in ep_scores:
                         out_line.append(str(score))
                     o.write('\t'.join(out_line) + '\n')
