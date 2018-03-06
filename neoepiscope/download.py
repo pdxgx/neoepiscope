@@ -1,12 +1,33 @@
 from version import version_number
+from file_processing import which
 import signal
 import shutil
+import dependency_urls
+import tempfile
 
-download = [
-        (['ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human'
-          '/release_27/gencode.v27.annotation.gtf.gz'],
-          'Gencode v27 annotation') # Add entries for Bowtie indexes
-    ]
+download = {
+            'Gencode v27 annotation': [
+                            'ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human'
+                            '/release_27/gencode.v27.annotation.gtf.gz'
+                            ],
+            'Gencode v19 annotation': [
+                            'ftp://ftp.ebi.ac.uk/pub/databases/gencode/'
+                            'Gencode_human/release_19/'
+                            'gencode.v19.annotation.gtf.gz'
+                            ],
+            'Bowtie NCBI GRCh38 index': [
+                            'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
+                            'GRCh38_no_alt.zip'
+                            ],
+            'Bowtie UCSC hg19 index': [
+                            'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
+                            'hg19.ebwt.zip'
+                            ],
+            'HapCUT2': [
+                            'https://github.com/vibansal/HapCUT2/archive/'
+                            'cf8ce6d70be9412e96a8a9364cb1aa4556db4c92.zip'
+                            ]
+            }
 
 def remove_temporary_directories(temp_dir_paths):
     """ Deletes temporary directory.
@@ -114,7 +135,7 @@ class NeoepiscopeDownloader(object):
         print_to_screen(u"""neoepiscope v{1} configuration""".format(
                                         version_number)
                                     )
-        self.download_dir = download_dir
+        self.download_dir = '~/neoepiscope.data'
         self.curl_exe = curl_exe
         log_dir = tempfile.mkdtemp()
         self.log_file = os.path.join(log_dir, 'neoepiscope_config.err')
@@ -176,6 +197,26 @@ class NeoepiscopeDownloader(object):
                     sys.exit(0)
             except ValueError:
                 sys.stdout.write('Please enter \'y\' or \'n\'.\n')
+
+    def _request_path(self, request, software_name):
+        """ Gets a path from a user to an installed software
+
+            request: string with request to be printed to console
+
+            Return value: string with response to request
+        """
+        while True:
+            sys.stdout.write('%s: ' % question)
+            try:
+                path = which(raw_input())
+                if path is not None:
+                    return path
+                else:
+                    raise ValueError(''.join(['Not a valid install of ',
+                                                software_name]))
+            except KeyboardInterrupt:
+                sys.stdout.write('\n')
+                sys.exit(0)
 
     def _grab_and_explode(self, urls, name):
         """ Special method for grabbing and exploding a package, if necessary.
@@ -311,6 +352,20 @@ class NeoepiscopeDownloader(object):
         if self.download_dir is None:
             self.download_dir = os.path.join(os.path.expanduser('~'),
                                                 'neoepiscope.data')
+        if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
+            self._grab_and_explode(download['Gencode v27 annotation'], 
+                                   'Gencode v27 annotation')
+        if self._yes_no_query('Download Gencode v19 gtf annotation file?'):
+            self._grab_and_explode(download['Gencode v19 annotation'], 
+                                   'Gencode v19 annotation')
+        if self._yes_no_query('Download Bowtie NCBI GRCh38 index?'):
+            self._grab_and_explode(download['Bowtie NCBI GRCh38 index'], 
+                                   'Bowtie NCBI GRCh38 index')
+        if self._yes_no_query('Download Bowtie UCSC hg19 index?'):
+            self._grab_and_explode(download['Bowtie UCSC hg19 index'], 
+                                   'Bowtie UCSC hg19 index')
+        self._grab_and_explode(download['HapCUT2'], 
+                                   'HapCUT2')
         # Download to a temporary directory first, then move to final dest
         temp_install_dir = tempfile.mkdtemp()
         register_cleanup(remove_temporary_directories, [temp_install_dir])
@@ -335,7 +390,7 @@ class NeoepiscopeDownloader(object):
                         '--install-dir.'
                     )
                 sys.exit(0)
-        self._print_to_screen_and_log('[Installing] Extracting Rail-RNA...',
+        self._print_to_screen_and_log('[Installing] Extracting neoepiscope...',
                                         newline=False,
                                         carriage_return=True)
         try:
@@ -352,180 +407,92 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.final_install_dir)
             pass
         with cd(temp_install_dir):
-            with zipfile.ZipFile(self.zip_name) as zip_object:
-                zip_object.extractall('./rail-rna')
-            if not self.no_dependencies:
-                self._grab_and_explode(self.depends['pypy'], 'PyPy')
-                self._grab_and_explode(self.depends['sra_tools'], 'SRA Tools')
-                if not self.prep_dependencies:
-                    self._grab_and_explode(self.depends['bowtie1'], 'Bowtie 1')
-                    self._grab_and_explode(self.depends['bowtie2'], 'Bowtie 2')
-                    self._grab_and_explode(self.depends['bedgraphtobigwig'],
-                                            'BedGraphToBigWig')
-                    self._grab_and_explode(self.depends['samtools'],
-                                                                'SAMTools')
-            if not self.prep_dependencies and not self.no_dependencies:
-                # Have to make SAMTools (annoying; maybe change this)
-                samtools_dir = os.path.join(temp_install_dir,
-                        self.depends['samtools'][0].rpartition('/')[2][:-8]
-                    )
-                with cd(samtools_dir):
-                    '''Make sure unistd.h is #included cram_io.c ... it's some
-                    bug in some SAMTools that prevents compilation on
-                    langmead-fs1, which may be a general problem with
-                    portability. See https://github.com/samtools/htslib/commit/
-                    0ec5202de5691b27917ce828a9d24c9c729a9b81'''
-                    cram_io_file = os.path.join(glob.glob('./htslib-*')[0],
-                                                    'cram', 'cram_io.c')
-                    with open(cram_io_file) as cram_io_stream:
-                        all_cram_io = cram_io_stream.read()
-                    if '<unistd.h>' not in all_cram_io:
-                        with open(cram_io_file, 'w') as cram_io_out_stream:
-                            cram_io_out_stream.write(all_cram_io.replace(
-                                    '#include <string.h>',
-                                    '#include <string.h>\n#include <unistd.h>'
-                                ))
-                    makefile = 'Makefile'
-                    with open(makefile) as makefile_stream:
-                        all_makefile = makefile_stream.read()
-                    with open(makefile, 'w') as makefile_stream:
-                        makefile_stream.write(
-                            all_makefile.replace(
-                                    '-D_CURSES_LIB=1', '-D_CURSES_LIB=0'
-                                ).replace('LIBCURSES=','#LIBCURSES=')
+            # Have to make SAMTools (annoying; maybe change this)
+            hapcut2_dir = os.path.join(temp_install_dir,
+                    download['HapCUT2'][0].split('/')[4]
+                )
+            with cd(samtools_dir):
+                # Make on all but one cylinder
+                thread_count = max(1, multiprocessing.cpu_count() - 1)
+                hapcut2_command = ['make', '-j%d' % thread_count]
+                self._print_to_screen_and_log(
+                            '[Installing] Making HapCUT2...',
+                            newline=False,
+                            carriage_return=True
                         )
-                    # Make on all but one cylinder
-                    thread_count = max(1, multiprocessing.cpu_count() - 1)
-                    samtools_command = ['make', '-j%d' % thread_count]
+                try:
+                    subprocess.check_output(hapcut2_command,
+                                                stderr=self.log_stream)
+                except subprocess.CalledProcessError as e:
                     self._print_to_screen_and_log(
-                                '[Installing] Making SAMTools...',
-                                newline=False,
-                                carriage_return=True
-                            )
-                    try:
-                        subprocess.check_output(samtools_command,
-                                                    stderr=self.log_stream)
-                    except subprocess.CalledProcessError as e:
-                        self._print_to_screen_and_log(
-                                ('Error encountered making SAMTools; exit '
-                                 'code was %d; command invoked was "%s".') %
-                                    (e.returncode, ' '.join(samtools_command))
-                            )
-                        self._bail()
-                samtools = os.path.join(self.final_install_dir,
-                        self.depends['samtools'][0].rpartition('/')[2][:-8],
-                        'samtools')
+                            ('Error encountered making HapCUT2; exit '
+                             'code was %d; command invoked was "%s".') %
+                                (e.returncode, ' '.join(hapcut2_command))
+                        )
+                    self._bail()
+            hapcut2 = os.path.join(self.final_install_dir,
+                                   download['HapCUT2'][0].split('/')[4],
+                                   'HAPCUT2')
+            hapcut2_hairs = os.path.join(self.final_install_dir,
+                                        download['HapCUT2'][0].split('/')[4],
+                                        'extractHAIRS')
 
-                def get_immediate_subdirectories(dr):
-                    return [name for name in os.listdir(dr)
-                            if os.path.isdir(os.path.join(dr, name))]
-
-                bowtie1_toks = self.depends['bowtie1'][0].rpartition(
-                            '/'
-                        )[2].split('-')
-                for i in [2, 3, 4]:
-                    bowtie1_base = '-'.join(bowtie1_toks[:i])
-                    if bowtie1_base.endswith('.zip'):
-                        bowtie1_base = bowtie1_base[:-4]
-                    bowtie1_tmp = os.path.join(bowtie1_base, 'bowtie')
-                    if os.path.exists(bowtie1_tmp):
-                        break
-                bowtie1_build_tmp = os.path.join(bowtie1_base, 'bowtie-build')
-
-                if not os.path.exists(bowtie1_tmp) or not os.path.exists(bowtie1_build_tmp):
-                    raise RuntimeError('Exploding bowtie package failed to '
-                                       'create appropriately named directory: '
-                                       + get_immediate_subdirectories('.'))
-
-                bowtie1 = os.path.join(self.final_install_dir,
-                                       bowtie1_base, 'bowtie')
-                bowtie1_build = os.path.join(self.final_install_dir,
-                                             bowtie1_base, 'bowtie-build')
-
-                bowtie2_toks = self.depends['bowtie2'][0].rpartition(
-                            '/'
-                        )[2].split('-')
-                for i in [2, 3, 4]:
-                    bowtie2_base = '-'.join(bowtie2_toks[:i])
-                    if bowtie2_base.endswith('.zip'):
-                        bowtie2_base = bowtie2_base[:-4]
-                    bowtie2_tmp = os.path.join(bowtie2_base, 'bowtie2')
-                    if os.path.exists(bowtie2_tmp):
-                        break
-                bowtie2_build_tmp = os.path.join(bowtie2_base, 'bowtie2-build')
-
-                if not os.path.exists(bowtie2_tmp) or not os.path.exists(bowtie2_build_tmp):
-                    raise RuntimeError('Exploding bowtie2 package failed to '
-                                       'create appropriately named directory: '
-                                       + get_immediate_subdirectories('.'))
-
-                bowtie2 = os.path.join(self.final_install_dir,
-                                       bowtie2_base, 'bowtie2')
-                bowtie2_build = os.path.join(self.final_install_dir,
-                                             bowtie2_base, 'bowtie2-build')
-
-                bedgraphtobigwig = os.path.join(
-                                                self.final_install_dir,
-                                                'bedGraphToBigWig'
-                                            )
+            if self._yes_no_query('Do you have an install of netMHCIIpan '
+                                  'version 3 that you would like to use for '
+                                  'binding score predictions with neoepiscope?'
+                                  ):
+                netMHCIIpan3 = self._request_path('Please enter the path to'
+                                                  ' your netMHCIIpan v3 '
+                                                  'executable', 
+                                                  'netMHCIIpan v3')
             else:
-                bowtie1 = bowtie1_build = bowtie2 = bowtie2_build \
-                    = bedgraphtobigwig = samtools = 'None'
-            if self.no_dependencies:
-                pypy = 'None'
-                fastq_dump = 'None'
-                vdb_config = 'None'
+                netMHCIIpan3 = 'None'
+
+            if self._yes_no_query('Do you have an install of netMHCpan '
+                                  'version 3 that you would like to use for '
+                                  'binding score predictions with neoepiscope?'
+                                  ):
+                netMHCpan3 = self._request_path('Please enter the path to'
+                                                  ' your netMHCpan v3 '
+                                                  'executable', 'netMHCpan v3')
             else:
-                pypy = os.path.join(self.final_install_dir,
-                        self.depends['pypy'][0].rpartition(
-                                '/'
-                            )[2][:-8], 'bin', 'pypy'
-                    )
-                fastq_dump = os.path.join(self.final_install_dir,
-                                self.depends['sra_tools'][0].rpartition(
-                                '/'
-                            )[2][:-7], 'bin', 'fastq-dump'
-                    )
-                vdb_config = os.path.join(self.final_install_dir,
-                                self.depends['sra_tools'][0].rpartition(
-                                '/'
-                            )[2][:-7], 'bin', 'vdb-config'
-                    )
+                netMHCpan3 = 'None'
+
+            if self._yes_no_query('Do you have an install of netMHCpan '
+                                  'version 4 that you would like to use for '
+                                  'binding score predictions with neoepiscope?'
+                                  ):
+                netMHCpan4 = self._request_path('Please enter the path to'
+                                                  ' your netMHCpan v4 '
+                                                  'executable', 'netMHCpan v4')
+            else:
+                netMHCIIpan3 = 'None'
+    
             # Write paths to exe_paths
             with open(
-                            os.path.join(temp_install_dir, 'rail-rna',
+                            os.path.join(temp_install_dir, 'neoepiscope',
                                             'exe_paths.py'), 'w'
                         ) as exe_paths_stream:
                 print >>exe_paths_stream, (
 """\"""
 exe_paths.py
-Part of Rail-RNA
+Part of neoepiscope
 
-Defines default paths of Rail-RNA's executable dependencies. Set a given
+Defines default paths of neoepiscope's executable dependencies. Set a given
 variable equal to None if the default path should be in PATH.
 \"""
 
-pypy = {pypy}
-aws = None
-curl = None
-sort = None
-bowtie1 = {bowtie1}
-bowtie1_build = {bowtie1_build}
-bowtie2 = {bowtie2}
-bowtie2_build = {bowtie2_build}
-samtools = {samtools}
-bedgraphtobigwig = {bedgraphtobigwig}
-fastq_dump = {fastq_dump}
-vdb_config = {vdb_config}
+hapcut2_hairs = {hapcut2_hairs}
+hapcut2 = {hapcut2}
+netMHCIIpan3 = {netMHCIIpan3}
+netMHCpan3 = {netMHCpan3}
+netMHCpan4 = {netMHCpan4}
 """
-                ).format(pypy=self._quote(pypy), bowtie1=self._quote(bowtie1),
-                            bowtie1_build=self._quote(bowtie1_build),
-                            bowtie2=self._quote(bowtie2),
-                            bowtie2_build=self._quote(bowtie2_build),
-                            samtools=self._quote(samtools),
-                            bedgraphtobigwig=self._quote(bedgraphtobigwig),
-                            fastq_dump=self._quote(fastq_dump),
-                            vdb_config=self._quote(vdb_config))
+                ).format(hapcut2_hairs=self._quote(hapcut2_hairs), 
+                            hapcut2=self._quote(hapcu2),
+                            netMHCIIpan3=self._quote(netMHCIIpan3),
+                            netMHCpan3=self._quote(netMHCpan3),
+                            netMHCpan4=self._quote(netMHCpan4))
         # Move to final directory
         try:
             shutil.move(temp_install_dir, self.final_install_dir)
@@ -551,10 +518,10 @@ vdb_config = {vdb_config}
                                             )
                 self._bail()
         install_dir_replacement = os.path.join(
-                                self.final_install_dir, 'rail-rna'
+                                self.final_install_dir, 'neoepiscope'
                             )
-        with open(rail_exe, 'w') as rail_exe_stream:
-            print >>rail_exe_stream, (
+        with open(neoepiscope_exe, 'w') as neoepiscope_exe_stream:
+            print >>neoepiscope_exe_stream, (
 """#!/usr/bin/env bash
 
 {python_executable} {install_dir} $@
@@ -562,27 +529,27 @@ vdb_config = {vdb_config}
                 ).format(python_executable=sys.executable,
                             install_dir=install_dir_replacement)
         if self.local:
-            '''Have to add Rail to PATH. Do this in bashrc and bash_profile
+            '''Have to add neoepiscope to PATH. Do this in bashrc and bash_profile
             contingent on whether it's present already because of
             inconsistent behavior across Mac OS and Linux distros.'''
             to_print = (
 """
-## Rail-RNA additions
+## neoepiscope additions
 if [ -d "{bin_dir}" ] && [[ ":$PATH:" != *":{bin_dir}:"* ]]; then
     PATH="${{PATH:+"$PATH:"}}{bin_dir}"
 fi
-export RAILDOTBIO={install_dir}
-## End Rail-RNA additions
+export neoepiscope={install_dir}
+## End neoepiscope additions
 """
                 ).format(bin_dir=bin_dir,
                             install_dir=install_dir_replacement)
         else:
-            # Just define raildotbio directory
+            # Just define neoepiscope directory
             to_print = (
 """
-## Rail-RNA addition
-export RAILDOTBIO={install_dir}
-## End Rail-RNA addition
+## neoepiscope addition
+export neoepiscope={install_dir}
+## End neoepiscope additions
 """
                 ).format(bin_dir=bin_dir,
                             install_dir=install_dir_replacement)
@@ -617,7 +584,7 @@ export RAILDOTBIO={install_dir}
         if print_to_bash_profile:
             with open(bash_profile, 'a') as bash_profile_stream:
                 print >>bash_profile_stream, to_print
-        # Set 755 permissions across Rail's dirs and 644 across files
+        # Set 755 permissions across neoepiscope's dirs and 644 across files
         dir_command = ['find', self.final_install_dir, '-type', 'd',
                             '-exec', 'chmod', '755', '{}', ';']
         file_command = ['find', self.final_install_dir, '-type', 'f',
@@ -645,106 +612,6 @@ export RAILDOTBIO={install_dir}
                     )
             self._bail()
         # Go back and set 755 permissions for executables
-        os.chmod(rail_exe, 0755)
-        if not self.no_dependencies:
-            os.chmod(pypy, 0755)
-            os.chmod(fastq_dump, 0755)
-            os.chmod(vdb_config, 0755)
-            if not self.prep_dependencies:
-                for program in [bowtie1, bowtie1_build, bowtie2, bowtie2_build,
-                                samtools, bedgraphtobigwig]:
-                    os.chmod(program, 0755)
-                    # Also for misc. Bowtie executables
-                    for program in glob.glob(
-                            os.path.join(os.path.dirname(bowtie1), 'bowtie-*')
-                        ):
-                        os.chmod(program, 0755)
-                    for program in glob.glob(
-                            os.path.join(os.path.dirname(bowtie2), 'bowtie2-*')
-                        ):
-                        os.chmod(program, 0755)
-            if self.add_symlinks:
-                # Write appropriate symlinks
-                self._add_symlink_to_exe(pypy)
-                self._add_symlink_to_exe(fastq_dump)
-                self._add_symlink_to_exe(vdb_config)
-                if not self.prep_dependencies:
-                    for program in [bowtie1, bowtie1_build, bowtie2,
-                                    bowtie2_build, samtools, bedgraphtobigwig]:
-                        self._add_symlink_to_exe(program)
-        self._print_to_screen_and_log('Installed Rail-RNA.')
-        # ipyparallel much?
-        try:
-            import ipyparallel
-        except ImportError:
-            # Guess not
-            if self._yes_no_query(
-                    'IPython Parallel is not installed but required for '
-                    'Rail-RNA to work in its "parallel" mode.\n'
-                    '    * Install IPython Parallel now?'
-                ):
-                temp_ipython_install_dir = tempfile.mkdtemp()
-                register_cleanup(remove_temporary_directories,
-                                    [temp_ipython_install_dir])
-                with cd(temp_ipython_install_dir):
-                    self._grab_and_explode(
-                        self.depends['ipython'], 'IPython Parallel')
-                    setup_dir = os.path.dirname(find('setup.py', './'))
-                    with cd(setup_dir):
-                        ipython_command = [
-                                    sys.executable, 'setup.py', 'install',
-                                ]
-                        if self.local:
-                            ipython_command.append('--user')
-                        try:
-                            subprocess.check_output(ipython_command,
-                                                        stderr=self.log_stream)
-                        except subprocess.CalledProcessError as e:
-                            self._print_to_screen_and_log(
-                                ('Error encountered installing IPython '
-                                 'Parallel; exit code was %d; command '
-                                 'invoked was "%s".') %
-                                    (e.returncode, ' '.join(ipython_command))
-                            )
-                            self._bail()
-        install_aws = (not self.no_dependencies and not which('aws'))
-        self.installed_aws = False
-        if install_aws and self._yes_no_query(
-                'AWS CLI is not installed but required for Rail-RNA to work '
-                'in its "elastic" mode, on Amazon Elastic MapReduce.\n'
-                '    * Install AWS CLI now?'
-            ):
-            temp_aws_install_dir = tempfile.mkdtemp()
-            register_cleanup(remove_temporary_directories,
-                                [temp_aws_install_dir])
-            with cd(temp_aws_install_dir):
-                self._grab_and_explode(self.depends['aws_cli'], 'AWS CLI')
-                os.chmod('./awscli-bundle/install', 0755)
-                if self.local:
-                    # Local install
-                    aws_command = ['./awscli-bundle/install', '-b',
-                                    os.path.join(bin_dir, 'aws'),
-                                   '-i', os.path.abspath(
-                                        os.path.expanduser('~/.local/lib/aws')
-                                    )]
-                else:
-                    # All users
-                    aws_command = ['./awscli-bundle/install',
-                                    '-i', '/usr/local/aws',
-                                    '-b', '/usr/local/bin/aws']
-                try:
-                    subprocess.check_output(aws_command,
-                                                stderr=self.log_stream)
-                except (OSError, subprocess.CalledProcessError) as e:
-                    self._print_to_screen_and_log(
-                            ('Error encountered installing AWS CLI; exit '
-                             'code was %d; command invoked was "%s".') %
-                                (e.returncode, ' '.join(aws_command))
-                        )
-                    self._bail()
-            self.installed_aws = True
-        elif install_aws:
-            print_to_screen('Visit http://docs.aws.amazon.com/cli/latest/'
-                            'userguide/installing.html to install the '
-                            'AWS CLI later.')
+        os.chmod(neoepiscope_exe, 0755)
+        self._print_to_screen_and_log('Installed neoepiscope')
         self.finished = True
