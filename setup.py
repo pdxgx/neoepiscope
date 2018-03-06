@@ -46,7 +46,7 @@ setup(name='neoepiscope',
       author_email='thompsre@ohsu.edu',
       license='MIT',
       packages=['neoepiscope'],
-      package_data={'neoepiscope': ['*.py']},
+      package_data={'neoepiscope': ['*.py', '*.pickle']},
       zip_safe=True,
       install_requires=[
       		'intervaltree', 'mhcflurry'
