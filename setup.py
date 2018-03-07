@@ -33,9 +33,34 @@ class DownloadDependencies(Command):
         pass
     def finalize_options(self):
         pass
+    def get_dir(self):
+        import os
+        import sys
+        sys.stdout.write('Please enter the path to the directory to which '
+                         'you would like your data downloaded:')
+        try:
+            path = raw_input()
+            if os.path.isdir(path):
+                return path
+            elif os.path.isdir(os.path.dirname(path)):
+                try:
+                    os.makedirs(path)
+                    return path
+                except OSError:
+                    return None
+            else:
+                return None
+        except KeyboardInterrupt:
+            sys.stdout.write('\n')
+            sys.exit(0)
     def run(self):
         import subprocess
+        from neoepiscope import download
+        print('Downloading mhcflurry data...')
         subprocess.call(['mhcflurry-downloads', 'fetch'])
+        download_dir = self.get_dir()
+        downloader = download.NeoepiscopeDownloader(download_dir=download_dir)
+        downloader.configure()
 
 setup(name='neoepiscope',
       version='0.1.0',
