@@ -135,7 +135,7 @@ class NeoepiscopeDownloader(object):
         print_to_screen(u"""neoepiscope v{1} configuration""".format(
                                         version_number)
                                     )
-        self.download_dir = '~/neoepiscope.data'
+        self.download_dir = download_dir
         self.curl_exe = curl_exe
         log_dir = tempfile.mkdtemp()
         self.log_file = os.path.join(log_dir, 'neoepiscope_config.err')
@@ -253,7 +253,7 @@ class NeoepiscopeDownloader(object):
                                 (url, e.returncode, ' '.join(command))
                         )
                     self._print_to_screen_and_log(
-                            'Make sure web access is available.'
+                            'Make sure web is accessible.'
                         )
                     self._bail()
                 else:
@@ -407,11 +407,11 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.final_install_dir)
             pass
         with cd(temp_install_dir):
-            # Have to make SAMTools (annoying; maybe change this)
+            # Have to make HapCUT2
             hapcut2_dir = os.path.join(temp_install_dir,
                     download['HapCUT2'][0].split('/')[4]
                 )
-            with cd(samtools_dir):
+            with cd(hapcut2_dir):
                 # Make on all but one cylinder
                 thread_count = max(1, multiprocessing.cpu_count() - 1)
                 hapcut2_command = ['make', '-j%d' % thread_count]
@@ -441,8 +441,8 @@ class NeoepiscopeDownloader(object):
                                   'version 3 that you would like to use for '
                                   'binding score predictions with neoepiscope?'
                                   ):
-                netMHCIIpan3 = self._request_path('Please enter the path to'
-                                                  ' your netMHCIIpan v3 '
+                netMHCIIpan3 = self._request_path('Please enter the path to '
+                                                  'your netMHCIIpan v3 '
                                                   'executable', 
                                                   'netMHCIIpan v3')
             else:
@@ -452,9 +452,9 @@ class NeoepiscopeDownloader(object):
                                   'version 3 that you would like to use for '
                                   'binding score predictions with neoepiscope?'
                                   ):
-                netMHCpan3 = self._request_path('Please enter the path to'
-                                                  ' your netMHCpan v3 '
-                                                  'executable', 'netMHCpan v3')
+                netMHCpan3 = self._request_path('Please enter the path to '
+                                                'your netMHCpan v3 '
+                                                'executable', 'netMHCpan v3')
             else:
                 netMHCpan3 = 'None'
 
@@ -547,7 +547,7 @@ export neoepiscope={install_dir}
             # Just define neoepiscope directory
             to_print = (
 """
-## neoepiscope addition
+## neoepiscope additions
 export neoepiscope={install_dir}
 ## End neoepiscope additions
 """
@@ -613,5 +613,5 @@ export neoepiscope={install_dir}
             self._bail()
         # Go back and set 755 permissions for executables
         os.chmod(neoepiscope_exe, 0755)
-        self._print_to_screen_and_log('Installed neoepiscope')
+        self._print_to_screen_and_log('Configured neoepiscope')
         self.finished = True
