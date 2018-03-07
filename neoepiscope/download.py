@@ -463,8 +463,8 @@ class NeoepiscopeDownloader(object):
                                   'binding score predictions with neoepiscope?'
                                   ):
                 netMHCpan4 = self._request_path('Please enter the path to'
-                                                  ' your netMHCpan v4 '
-                                                  'executable', 'netMHCpan v4')
+                                                'your netMHCpan v4 '
+                                                'executable', 'netMHCpan v4')
             else:
                 netMHCIIpan3 = 'None'
     
@@ -489,7 +489,7 @@ netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
 """
                 ).format(hapcut2_hairs=self._quote(hapcut2_hairs), 
-                            hapcut2=self._quote(hapcu2),
+                            hapcut2=self._quote(hapcut2),
                             netMHCIIpan3=self._quote(netMHCIIpan3),
                             netMHCpan3=self._quote(netMHCpan3),
                             netMHCpan4=self._quote(netMHCpan4))
@@ -517,101 +517,5 @@ netMHCpan4 = {netMHCpan4}
                                                 )
                                             )
                 self._bail()
-        install_dir_replacement = os.path.join(
-                                self.final_install_dir, 'neoepiscope'
-                            )
-        with open(neoepiscope_exe, 'w') as neoepiscope_exe_stream:
-            print >>neoepiscope_exe_stream, (
-"""#!/usr/bin/env bash
-
-{python_executable} {install_dir} $@
-"""
-                ).format(python_executable=sys.executable,
-                            install_dir=install_dir_replacement)
-        if self.local:
-            '''Have to add neoepiscope to PATH. Do this in bashrc and bash_profile
-            contingent on whether it's present already because of
-            inconsistent behavior across Mac OS and Linux distros.'''
-            to_print = (
-"""
-## neoepiscope additions
-if [ -d "{bin_dir}" ] && [[ ":$PATH:" != *":{bin_dir}:"* ]]; then
-    PATH="${{PATH:+"$PATH:"}}{bin_dir}"
-fi
-export neoepiscope={install_dir}
-## End neoepiscope additions
-"""
-                ).format(bin_dir=bin_dir,
-                            install_dir=install_dir_replacement)
-        else:
-            # Just define neoepiscope directory
-            to_print = (
-"""
-## neoepiscope additions
-export neoepiscope={install_dir}
-## End neoepiscope additions
-"""
-                ).format(bin_dir=bin_dir,
-                            install_dir=install_dir_replacement)
-        import mmap
-        bashrc = os.path.expanduser('~/.bashrc')
-        bash_profile = os.path.expanduser('~/.bash_profile')
-        try:
-            with open(bashrc) as bashrc_stream:
-                mmapped = mmap.mmap(bashrc_stream.fileno(), 0, 
-                                        access=mmap.ACCESS_READ)
-                if mmapped.find(to_print) == -1:
-                    print_to_bashrc = True
-                else:
-                    print_to_bashrc = False
-        except (IOError, ValueError):
-            # No file
-            print_to_bashrc = True
-        try:
-            with open(bash_profile) as bash_profile_stream:
-                mmapped = mmap.mmap(bash_profile_stream.fileno(), 0, 
-                                        access=mmap.ACCESS_READ)
-                if mmapped.find(to_print) == -1:
-                    print_to_bash_profile = True
-                else:
-                    print_to_bash_profile = False
-        except (IOError, ValueError):
-            # No file
-            print_to_bash_profile = True
-        if print_to_bashrc:
-            with open(bashrc, 'a') as bashrc_stream:
-                print >>bashrc_stream, to_print
-        if print_to_bash_profile:
-            with open(bash_profile, 'a') as bash_profile_stream:
-                print >>bash_profile_stream, to_print
-        # Set 755 permissions across neoepiscope's dirs and 644 across files
-        dir_command = ['find', self.final_install_dir, '-type', 'd',
-                            '-exec', 'chmod', '755', '{}', ';']
-        file_command = ['find', self.final_install_dir, '-type', 'f',
-                            '-exec', 'chmod', '644', '{}', ';']
-        try:
-            subprocess.check_output(dir_command,
-                                        stderr=self.log_stream)
-        except subprocess.CalledProcessError as e:
-            self._print_to_screen_and_log(
-                        ('Error encountered changing directory '
-                         'permissions; exit code was %d; command invoked '
-                         'was "%s".') %
-                            (e.returncode, ' '.join(dir_command))
-                    )
-            self._bail()
-        try:
-            subprocess.check_output(file_command,
-                                        stderr=self.log_stream)
-        except subprocess.CalledProcessError as e:
-            self._print_to_screen_and_log(
-                        ('Error encountered changing file '
-                         'permissions; exit code was %d; command invoked '
-                         'was "%s".') %
-                            (e.returncode, ' '.join(file_command))
-                    )
-            self._bail()
-        # Go back and set 755 permissions for executables
-        os.chmod(neoepiscope_exe, 0755)
         self._print_to_screen_and_log('Configured neoepiscope')
         self.finished = True
