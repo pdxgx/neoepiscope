@@ -1,3 +1,4 @@
+from __future__ import print_function
 from version import version_number
 from file_processing import which
 import signal
@@ -6,30 +7,33 @@ import tempfile
 import sys
 import os
 import subprocess
+from transcript import gtf_to_cds
+from transcript import cds_to_tree
+from distutils.core import Command
 
 download = {
             'Gencode v27 annotation': [
                             'ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human'
                             '/release_27/gencode.v27.annotation.gtf.gz'
-                            ],
+                        ],
             'Gencode v19 annotation': [
                             'ftp://ftp.ebi.ac.uk/pub/databases/gencode/'
                             'Gencode_human/release_19/'
                             'gencode.v19.annotation.gtf.gz'
-                            ],
+                        ],
             'Bowtie NCBI GRCh38 index': [
                             'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
                             'GRCh38_no_alt.zip'
-                            ],
+                        ],
             'Bowtie UCSC hg19 index': [
                             'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
                             'hg19.ebwt.zip'
-                            ],
+                        ],
             'HapCUT2': [
                             'https://github.com/vibansal/HapCUT2/archive/'
                             'cf8ce6d70be9412e96a8a9364cb1aa4556db4c92.zip'
-                            ]
-            }
+                        ]
+        }
 
 def is_exe(fpath):
     """ Tests whether a file is executable.
@@ -142,7 +146,7 @@ class NeoepiscopeDownloader(object):
     def __init__(self, curl_exe=None, download_dir=None,
                     yes=False, print_log_on_error=False,
                     version_number=version_number):
-        print_to_screen("""neoepiscope v{0} configuration""".format(
+        print_to_screen("""Configuring neoepiscope v{0} ...""".format(
                                         version_number)
                                     )
         self.download_dir = download_dir
@@ -158,8 +162,15 @@ class NeoepiscopeDownloader(object):
     def __enter__(self):
         return self
 
+    user_options = []
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
     def _print_to_screen_and_log(self, message, **kwargs):
-        print >>self.log_stream, message
+        print(message, file=self.log_stream)
         print_to_screen(message, **kwargs)
 
     def _bail(self):
@@ -191,16 +202,16 @@ class NeoepiscopeDownloader(object):
         from distutils.util import strtobool
         if answer is None:
             if self.yes:
-                print '%s [y/n]: y' % question
+                print('\x1b[K%s [y/n]: y' % question)
                 return True
         elif answer:
-            print '%s [y/n]: y' % question
+            print('\x1b[K%s [y/n]: y' % question)
             return True
         else:
-            print '%s [y/n]: n' % question
+            print('\x1b[K%s [y/n]: n' % question)
             return False
         while True:
-            sys.stdout.write('%s [y/n]: ' % question)
+            sys.stdout.write('\x1b[K%s [y/n]: ' % question)
             try:
                 try:
                     return strtobool(raw_input().lower())
@@ -210,22 +221,27 @@ class NeoepiscopeDownloader(object):
             except ValueError:
                 sys.stdout.write('Please enter \'y\' or \'n\'.\n')
 
-    def _request_path(self, request, software_name):
+    def _request_path(self, request, program='', use_which=True):
         """ Gets a path from a user to an installed software
 
             request: string with request to be printed to console
+            use_which: whether to use the which function to verify a path
 
             Return value: string with response to request
         """
+        if use_which:
+            which_function = lambda x: which(x)
+        else:
+            which_function = lambda x: x
         while True:
             sys.stdout.write('%s: ' % question)
             try:
-                path = which(raw_input())
+                path = which_function(raw_input())
                 if path is not None:
                     return path
                 else:
                     raise ValueError(''.join(['Not a valid install of ',
-                                                software_name]))
+                                                program]))
             except KeyboardInterrupt:
                 sys.stdout.write('\n')
                 sys.exit(0)
@@ -252,7 +268,7 @@ class NeoepiscopeDownloader(object):
                         return candidate
         return None
 
-    def _grab_and_explode(self, urls, name):
+    def _grab_and_explode(self, urls, name, explode=True):
         """ Special method for grabbing and exploding a package, if necessary.
 
             Does not verify URLs since these are preverified. Package is
@@ -260,6 +276,7 @@ class NeoepiscopeDownloader(object):
 
             url: list of urls to grab
             name: name of download
+            explode: True iff downloaded file should be decompressed
 
             No return value
         """
@@ -270,13 +287,11 @@ class NeoepiscopeDownloader(object):
         url_deque = deque(urls)
         while url_deque:
             url = url_deque.popleft()
-            print(url)
             '''Follow redirects (-L), write to file (-O), respect
             content disposition'''
             command = [self.curl_exe, '-L', '-O', url]
             filename = url.rpartition('/')[2]
-            print >>self.log_stream, ('[Configuring] '
-                                      'Downloading {} from {}...'.format(
+            print('[Configuring] Downloading {} from {}...'.format(
                                                                     name, url
                                                                 ))
             try:
@@ -300,45 +315,45 @@ class NeoepiscopeDownloader(object):
                         carriage_return=True
                     )
             else:
-                # Explode
-                explode_command = None
-                if url[-8:] == '.tar.bz2':
-                    explode_command = ['tar', 'xvjf', filename]
-                elif url[-7:] == '.tar.gz' or url[-4:] == '.tgz':
-                    explode_command = ['tar', 'xvzf', filename]
-                elif url[-3:] == '.gz':
-                    explode_command = ['gunzip', filename]
-                elif url[-4:] == '.zip':
-                    explode_command = ['unzip', filename]
-                if explode_command is not None:
-                    self._print_to_screen_and_log(
-                            '[Configuring] Extracting %s...' % name,
-                            newline=False,
-                            carriage_return=True)
-                    try:
-                        subprocess.check_output(explode_command)
-                    except subprocess.CalledProcessError as e:
-                        if not url_deque:
-                            self._print_to_screen_and_log(
-                                ('Error encountered exploding file %s; exit '
-                                 'code was %d; command invoked was "%s".') %
-                                (filename, e.returncode,
-                                    ' '.join(explode_command))
-                            )
-                            self._bail()
-                        else:
-                            self._print_to_screen_and_log(
-                                '[Configuring] Extraction failed; '
-                                'trying alternate URL for %s...' % name,
+                if explode:
+                    explode_command = None
+                    if url[-8:] == '.tar.bz2':
+                        explode_command = ['tar', 'xvjf', filename]
+                    elif url[-7:] == '.tar.gz' or url[-4:] == '.tgz':
+                        explode_command = ['tar', 'xvzf', filename]
+                    elif url[-3:] == '.gz':
+                        explode_command = ['gunzip', filename]
+                    elif url[-4:] == '.zip':
+                        explode_command = ['unzip', filename]
+                    if explode_command is not None:
+                        self._print_to_screen_and_log(
+                                '[Configuring] Extracting %s...' % name,
                                 newline=False,
-                                carriage_return=True
-                            )
-                            continue
-                    finally:
+                                carriage_return=True)
                         try:
-                            os.remove(filename)
-                        except OSError:
-                            break
+                            subprocess.check_output(explode_command)
+                        except subprocess.CalledProcessError as e:
+                            if not url_deque:
+                                self._print_to_screen_and_log(
+                                    ('Error encountered exploding file %s; exit '
+                                     'code was %d; command invoked was "%s".') %
+                                    (filename, e.returncode,
+                                        ' '.join(explode_command))
+                                )
+                                self._bail()
+                            else:
+                                self._print_to_screen_and_log(
+                                    '[Configuring] Extraction failed; '
+                                    'trying alternate URL for %s...' % name,
+                                    newline=False,
+                                    carriage_return=True
+                                )
+                                continue
+                        finally:
+                            try:
+                                os.remove(filename)
+                            except OSError:
+                                break
                 break
 
     def _quote(self, path=None):
@@ -353,7 +368,7 @@ class NeoepiscopeDownloader(object):
             return 'None'
         return "'%s'" % path
 
-    def configure(self):
+    def run(self):
         """ Downloads neoepiscope dependencies. """
         import multiprocessing
         if self.curl_exe is None:
@@ -369,9 +384,20 @@ class NeoepiscopeDownloader(object):
                 sys.exit(1)
             else:
                 self.curl_exe = self.curl_exe.replace(' --help', '')
+        self._print_to_screen_and_log(
+                '[Configuring] Downloading mhcflurry data...'
+            )
+        subprocess.call(['mhcflurry-downloads', 'fetch'])
         if self.download_dir is None:
             self.download_dir = os.path.join(os.path.expanduser('~'),
                                                 'neoepiscope.data')
+            if not self._yes_no_query('Install neoepiscope data in {}?'.format(
+                        self.download_dir
+                    )
+                ):
+                self.download_dir = self._request_path(
+                        'Please enter a directory for storing neoepiscope data'
+                    )
         # Download to a temporary directory first, then move to final dest
         temp_install_dir = tempfile.mkdtemp()
         register_cleanup(remove_temporary_directories, [temp_install_dir])
@@ -400,7 +426,7 @@ class NeoepiscopeDownloader(object):
             self._print_to_screen_and_log(
                             ('Problem encountered trying to create '
                              'directory %s for installation. May need '
-                             'sudo permissions.') % self.final_install_dir
+                             'sudo permissions.') % self.download_dir
                         )
             self._bail()
         else:
@@ -408,13 +434,56 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        print(os.getcwd())
         if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v27 annotation'], 
-                                   'Gencode v27 annotation')
+                                   'Gencode v27 annotation', explode=False)
+            gencode_v27 = os.path.join(temp_install_dir,
+                                        'gencode_v27')
+            gencode_v27_gtf = os.path.join(temp_install_dir,
+                                            os.path.basename(
+                                    download['Gencode v27 annotation'][0]
+                                ))
+            try:
+                os.makedirs(gencode_v27)
+            except OSError as e:
+                self._print_to_screen_and_log(
+                                ('Problem encountered trying to create '
+                                 'directory %s for installation. May need '
+                                 'sudo permissions.') % self.gencode_v27
+                            )
+                self._bail()
+            self._print_to_screen_and_log(
+                    '[Configuring] Indexing Gencode v27...'
+                )
+            cds_dict = gtf_to_cds(gencode_v27_gtf, gencode_v27)
+            cds_to_tree(cds_dict, gencode_v27)
+        else:
+            gencode_v27 = None
         if self._yes_no_query('Download Gencode v19 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v19 annotation'], 
-                                   'Gencode v19 annotation')
+                                   'Gencode v19 annotation', explode=False)
+            gencode_v19 = os.path.join(temp_install_dir,
+                                        'gencode_v19')
+            gencode_v19_gtf = os.path.join(temp_install_dir,
+                                            os.path.basename(
+                                        download['Gencode v19 annotation'][0]
+                                    ))
+            try:
+                os.makedirs(gencode_v19)
+            except OSError as e:
+                self._print_to_screen_and_log(
+                                ('Problem encountered trying to create '
+                                 'directory %s for installation. May need '
+                                 'sudo permissions.') % self.gencode_v19
+                            )
+                self._bail()
+            self._print_to_screen_and_log(
+                    '[Configuring] Indexing Gencode v19...'
+                )
+            cds_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19)
+            cds_to_tree(cds_dict, gencode_v19)
+        else:
+            gencode_v19 = None
         if self._yes_no_query('Download Bowtie NCBI GRCh38 index?'):
             self._grab_and_explode(download['Bowtie NCBI GRCh38 index'], 
                                    'Bowtie NCBI GRCh38 index')
@@ -424,7 +493,8 @@ class NeoepiscopeDownloader(object):
         self._grab_and_explode(download['HapCUT2'], 
                                'HapCUT2')
         # Have to make HapCUT2
-        hapcut_id = '-'.join(['HapCUT2', download['HapCUT2'][0].rpartition('/')[2][:-4]])
+        hapcut_id = '-'.join(['HapCUT2',
+                              download['HapCUT2'][0].rpartition('/')[2][:-4]])
         hapcut2_dir = os.path.join(temp_install_dir, hapcut_id)
         os.chdir(hapcut2_dir)
         # Make on all but one cylinder
@@ -447,46 +517,29 @@ class NeoepiscopeDownloader(object):
         hapcut2 = os.path.join(self.download_dir, hapcut_id, 'HAPCUT2')
         hapcut2_hairs = os.path.join(self.download_dir, hapcut_id,
                                     'extractHAIRS')
-
-        if self._yes_no_query('Do you have an install of netMHCIIpan '
-                              'version 3 that you would like to use for '
-                              'binding score predictions with neoepiscope?'
-                              ):
-            netMHCIIpan3 = self._request_path('Please enter the path to '
-                                              'your netMHCIIpan v3 '
-                                              'executable', 
-                                              'netMHCIIpan v3')
-        else:
-            netMHCIIpan3 = 'None'
-
-        if self._yes_no_query('Do you have an install of netMHCpan '
-                              'version 3 that you would like to use for '
-                              'binding score predictions with neoepiscope?'
-                              ):
-            netMHCpan3 = self._request_path('Please enter the path to '
-                                            'your netMHCpan v3 '
-                                            'executable', 'netMHCpan v3')
-        else:
-            netMHCpan3 = 'None'
-
-        if self._yes_no_query('Do you have an install of netMHCpan '
-                              'version 4 that you would like to use for '
-                              'binding score predictions with neoepiscope?'
-                              ):
-            netMHCpan4 = self._request_path('Please enter the path to'
-                                            'your netMHCpan v4 '
-                                            'executable', 'netMHCpan v4')
-        else:
-            netMHCIIpan3 = 'None'
-
+        programs = []
+        for program in ['netMHCIIpan3', 'netMHCpan3', 'netMHCpan4']:
+            if self._yes_no_query(
+                            ('Do you have an install of {} '
+                             'you would like to use for '
+                             'binding score predictions with '
+                             'neoepiscope?').format(program)
+                        ):
+                programs.append(
+                        self._request_path(
+                                'Please enter the path to '
+                                'your {} executable'.format(program), program
+                            )
+                    )
+            else:
+                programs.append('None')
         # Write paths to exe_paths
         with open(
-                        os.path.join(temp_install_dir, 'neoepiscope',
-                                        'exe_paths.py'), 'w'
-                    ) as exe_paths_stream:
-            print >>exe_paths_stream, (
+                os.path.join(temp_install_dir, 'neoepiscope', 'paths.py'), 'w'
+            ) as paths_stream:
+            print((
 """\"""
-exe_paths.py
+paths.py
 Part of neoepiscope
 
 Defines default paths of neoepiscope's executable dependencies. Set a given
@@ -498,12 +551,21 @@ hapcut2 = {hapcut2}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
+gencode_v27 = {gencode_v27}
+gencode_v19 = {gencode_v19}
 """
                 ).format(hapcut2_hairs=self._quote(hapcut2_hairs), 
-                            hapcut2=self._quote(hapcut2),
-                            netMHCIIpan3=self._quote(netMHCIIpan3),
-                            netMHCpan3=self._quote(netMHCpan3),
-                            netMHCpan4=self._quote(netMHCpan4))
+                         hapcut2=self._quote(hapcut2),
+                         netMHCIIpan3=self._quote(program[0]),
+                         netMHCpan3=self._quote(program[1]),
+                         netMHCpan4=self._quote(program[2]),
+                         gencode_v27=('None'
+                                      if gencode_v27 is None
+                                      else gencode_v27),
+                         gencode_v19=('None'
+                                      if gencode_v19 is None
+                                      else gencode_v19)),
+                         file=paths_stream)
         # Move to final directory
         try:
             shutil.move(temp_install_dir, self.download_dir)
@@ -516,5 +578,5 @@ netMHCpan4 = {netMHCpan4}
                                                 self.download_dir
                                             ))
             self._bail()
-        self._print_to_screen_and_log('Configured neoepiscope')
+        self._print_to_screen_and_log('Configured neoepiscope.')
         self.finished = True
