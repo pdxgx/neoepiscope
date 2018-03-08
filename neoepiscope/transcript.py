@@ -11,6 +11,7 @@ from intervaltree import Interval, IntervalTree
 from operator import itemgetter
 import sys
 import warnings
+import contextlib
 
 from sys import version_info
 if version_info[0] < 3:
@@ -18,6 +19,78 @@ if version_info[0] < 3:
     revcomp_translation_table = maketrans('ATCG', 'TAGC')
 else:
     revcomp_translation_table = str.maketrans('ATCG', 'TAGC')
+
+@contextlib.contextmanager
+def xopen(gzipped, *args):
+    """ Passes args on to the appropriate opener, gzip or regular.
+
+        In compressed mode, functionality almost mimics gzip.open,
+        but uses gzip at command line.
+
+        As of PyPy 2.5, gzip.py appears to leak memory when writing to
+        a file object created with gzip.open().
+
+        gzipped: True iff gzip.open() should be used to open rather than
+            open(); False iff open() should be used; None if input should be
+            read and guessed; '-' if writing to stdout
+        *args: unnamed arguments to pass
+
+        Yield value: file object
+    """
+    import sys
+    if gzipped == '-':
+        fh = sys.stdout
+    else:
+        if not args:
+            raise IOError('Must provide filename')
+        import gzip
+        if gzipped is None:
+            with open(args[0], 'rb') as binary_input_stream:
+                # Check for magic number
+                if binary_input_stream.read(2) == '\x1f\x8b':
+                    gzipped = True
+                else:
+                    gzipped = False
+        if gzipped:
+            try:
+                mode = args[1]
+            except IndexError:
+                mode = 'rb'
+            if 'r' in mode:
+                # Be forgiving of gzips that end unexpectedly
+                old_read_eof = gzip.GzipFile._read_eof
+                gzip.GzipFile._read_eof = lambda *args, **kwargs: None
+                fh = gzip.open(*args)
+            elif 'w' in mode or 'a' in mode:
+                try:
+                    compresslevel = int(args[2])
+                except IndexError:
+                    compresslevel = 9
+                if 'w' in mode:
+                    output_stream = open(args[0], 'wb')
+                else:
+                    output_stream = open(args[0], 'ab')
+                gzip_process = subprocess.Popen(['gzip',
+                                                    '-%d' % compresslevel],
+                                                    bufsize=-1,
+                                                    stdin=subprocess.PIPE,
+                                                    stdout=output_stream)
+                fh = gzip_process.stdin
+            else:
+                raise IOError('Mode ' + mode + ' not supported')
+        else:
+            fh = open(*args)
+    try:
+        yield fh
+    finally:
+        if fh is not sys.stdout:
+            fh.close()
+        if 'gzip_process' in locals():
+            gzip_process.wait()
+        if 'output_stream' in locals():
+            output_stream.close()
+        if 'old_read_eof' in locals():
+            gzip.GzipFile._read_eof = old_read_eof
 
 def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     """ Same as bisect.bisect_left, but compares only index "getter"
@@ -1303,7 +1376,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """
     cds_dict = collections.defaultdict(list)
     # Parse GTF to obtain CDS/stop codon info
-    with open(gtf_file, 'r') as f:
+    with xopen(None, gtf_file) as f:
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
