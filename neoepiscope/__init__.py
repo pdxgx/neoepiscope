@@ -26,8 +26,8 @@ from transcript import (Transcript, gtf_to_cds, cds_to_tree,
 from binding_scores import (gather_binding_scores, get_affinity_mhcflurry, 
                             get_affinity_netMHCpan, get_affinity_netMHCIIpan)
 from file_processing import (adjust_tumor_column, combine_vcf, 
-                                prep_hapcut_output, which, get_VAF_pos,
-                                write_results)
+                             prep_hapcut_output, which, get_VAF_pos,
+                             write_results)
 from operator import itemgetter
 from intervaltree import Interval, IntervalTree
 

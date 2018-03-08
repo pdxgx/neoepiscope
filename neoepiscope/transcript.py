@@ -1242,7 +1242,7 @@ class Transcript(object):
                 warnings.warn(''.join(['Stop codon not detected prior',
                                         ' to end of transcript ',
                                         self.transcript_id, '; this',
-                                        'transcript may undergo',
+                                        ' transcript may undergo ',
                                         'degradation']), 
                                   Warning)
                 coding_stop = len(sequence) - len(sequence) % 3
@@ -1542,6 +1542,8 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 mutation_class=mutation_class,
                                 vaf=VAF)
             if somatic_in_haplotype:
+                print(affected_transcript)
+                print(relevant_transcripts[affected_transcript])
                 # Extract neoepitopes
                 A_peptides = transcriptA.neopeptides(
                                     min_size=size_list[0], 
