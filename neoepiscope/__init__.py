@@ -119,7 +119,7 @@ def main():
             help='binding affinity prediction software,'
                 'associated version number, and scoring method(s) '
                 '(e.g. -p netMHCpan 4 rank,affinity); '
-                'for multiple softwares, repeat the argument;'
+                'for multiple programs, repeat the argument; '
                 'see documentation for details'
         )
     call_parser.add_argument('-a', '--alleles', type=str, required=True,

@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 from distutils.core import Command
+from neoepiscope.download import NeoepiscopeDownloader
 
 # Borrowed (with revisions) from https://stackoverflow.com/questions/17001010/
 # how-to-run-unittest-discover-from-python-setup-py-test/21726329#21726329
@@ -28,39 +29,17 @@ class DiscoverTest(Command):
         test_runner.run(test_suite)
 
 class DownloadDependencies(Command):
+    # Wrapper to accommodate old-style class Command
     user_options = []
     def initialize_options(self):
         pass
+    
     def finalize_options(self):
         pass
-    def get_dir(self):
-        import os
-        import sys
-        sys.stdout.write('Please enter the path to the directory to which '
-                         'you would like your data downloaded:')
-        try:
-            path = raw_input()
-            if os.path.isdir(path):
-                return path
-            elif os.path.isdir(os.path.dirname(path)):
-                try:
-                    os.makedirs(path)
-                    return path
-                except OSError:
-                    return None
-            else:
-                return None
-        except KeyboardInterrupt:
-            sys.stdout.write('\n')
-            sys.exit(0)
+
     def run(self):
-        import subprocess
-        from neoepiscope import download
-        print('Downloading mhcflurry data...')
-        subprocess.call(['mhcflurry-downloads', 'fetch'])
-        download_dir = self.get_dir()
-        downloader = download.NeoepiscopeDownloader(download_dir=download_dir)
-        downloader.configure()
+        downloader = NeoepiscopeDownloader()
+        downloader.run()
 
 setup(name='neoepiscope',
       version='0.1.0',
