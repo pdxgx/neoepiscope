@@ -261,6 +261,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[1][0]), 223)
         self.assertEqual(len(seq[3][0]), 256)
     def test_spanning_deletion(self):
+        """Fails if deletion spanning two exons is incorrect"""
         self.transcript.edit(137, 5248025, mutation_type='D')
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(self.transcript.deletion_intervals[0][0:3],
@@ -272,6 +273,11 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[0][0]), 140)
         self.assertEqual(len(seq[2][0]), 218)
         self.assertEqual(len(seq[3][0]), 263)
+    def test_deletion_over_transcript_start(self):
+        """Fails if deletion spanning start of transcript is incorrect"""
+        self.transcript.edit(5, 5246692, mutation_type='D')
+        seq = self.transcript.annotated_seq()
+        self.assertEqual(len(annotated_seq), 3)
     def test_compound_variants(self):
         """Fails if transcript with multiple variant types is incorrect"""
         self.transcript.edit(137, 5248025, mutation_type='D')

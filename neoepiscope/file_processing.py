@@ -39,9 +39,9 @@ def adjust_tumor_column(in_vcf, out_vcf):
     # Write new vcf
     with open(out_vcf, 'w') as f:
         for line in header_lines:
-            f.write(line + '\n')
+            print(line + '\n', file=f)
         for line in other_lines:
-            f.write(line + '\n')
+            print(line + '\n', file=f)
 
 def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     """ Combines VCFs
@@ -53,9 +53,9 @@ def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     header = open(vcf2 + '.header', 'w+');
     for lines in vcffile:
         if (lines[0] != '#'):
-            temp.write(lines)
+            print(lines, file=temp)
         else:
-            header.write(lines)
+            print(lines, file=header)
     vcffile.close()
     temp.close()
     header.close()
@@ -63,7 +63,7 @@ def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     temp = open(vcf2 + '.germlinetemp', 'w+');
     for lines in vcffile:
         if (lines[0] != '#'):
-            temp.write(lines)
+            print(lines, file=temp)
     vcffile.close()
     temp.close()    
     markgermline = ''.join(['''awk '{print $0"*"}' ''', vcf2, 
@@ -105,10 +105,39 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
             for line in hapcut2_stream:
                 if line[0] != '*' and not line.startswith('BLOCK'):
                     tokens = line.strip().split('\t')
-                    phased[(tokens[3], int(tokens[4]))].add(
+                    if ',' in tokens[6]:
+                        alt_alleles = tokens[6].split(',')
+                        try:
+                            assert len(alt_alleles) == 2
+                        except AssertionError:
+                            warnings.warn('Neoepiscope does not support ',
+                                          'triallellic phasing; of ',
+                                          'alternate alleles ', tokens[6],
+                                          ' at contig ', tokens[3], 
+                                          ' position ', tokens[4], ', only ',
+                                          'the top two will be included.')
+                        for i in (int(tokens[1]) - 1, int(tokens[2]) - 1):
+                            allele = alt_alleles[i]
+                            phased[(tokens[3], int(tokens[4]))].add(
+                                                    (tokens[5], allele)
+                                                )
+                        print('\t'.join([tokens[0], '1', '0', tokens[3],
+                                         tokens[4], tokens[5], 
+                                         alt_alleles[int(tokens[1]) - 1],
+                                         tokens[7], tokens[8], tokens[9],
+                                         tokens[10]]), file=output_stream)
+                        print('\t'.join([tokens[0], '0', '1', tokens[3],
+                                         tokens[4], tokens[5], 
+                                         alt_alleles[int(tokens[2]) - 1],
+                                         tokens[7], tokens[8], tokens[9],
+                                         tokens[10]]), file=output_stream)
+                    else:
+                        phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], tokens[6])
                                                 )
-                print(line.strip(), file=output_stream)
+                        print(line.strip(), file=output_stream)
+                else:
+                    print(line.strip(), file=output_stream)
         print('********', file=output_stream)
         with open(vcf) as vcf_stream:
             first_char = '#'
@@ -135,7 +164,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                     chrom=tokens[0],
                                     pos=pos,
                                     ref=tokens[3],
-                                    alt=tokens[4],
+                                    alt=allele,
                                     genotype=tokens[9]
                                 ), file=output_stream)
                         print('********', file=output_stream)
@@ -204,7 +233,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
                     headers.append('_'.join([tool, allele, score_method]))
-        o.write('\t'.join(headers) + '\n')
+        print('\t'.join(headers) + '\n', file=o)
         for epitope in sorted(neoepitopes.keys()):
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
@@ -225,7 +254,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                             mutation[7]]
                 for i in range(7,len(mutation)):
                     out_line.append(str(mutation[i]))
-                o.write('\t'.join(out_line) + '\n')
+                print('\t'.join(out_line) + '\n', file=o)
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
@@ -244,6 +273,8 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         VAF = 'NA'
                     else:
                         VAF = str(mut[5])
+                    #print(epitope)
+                    #print(neoepitopes[epitope])
                     mutation_dict[(mut[0], mut[1], ref, alt, mut[4])].append(
                                                                 [VAF, mut[6],
                                                                  mut[7]]
@@ -262,4 +293,4 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                                         )]
                     for score in ep_scores:
                         out_line.append(str(score))
-                    o.write('\t'.join(out_line) + '\n')
+                    print('\t'.join(out_line) + '\n', file=o)

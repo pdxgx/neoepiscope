@@ -28,10 +28,6 @@ download = {
             'Bowtie UCSC hg19 index': [
                             'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
                             'hg19.ebwt.zip'
-                        ],
-            'HapCUT2': [
-                            'https://github.com/vibansal/HapCUT2/archive/'
-                            'cf8ce6d70be9412e96a8a9364cb1aa4556db4c92.zip'
                         ]
         }
 
@@ -234,7 +230,7 @@ class NeoepiscopeDownloader(object):
         else:
             which_function = lambda x: x
         while True:
-            sys.stdout.write('%s: ' % question)
+            sys.stdout.write('%s: ' % request)
             try:
                 path = which_function(raw_input())
                 if path is not None:
@@ -490,85 +486,107 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query('Download Bowtie UCSC hg19 index?'):
             self._grab_and_explode(download['Bowtie UCSC hg19 index'], 
                                    'Bowtie UCSC hg19 index')
-        self._grab_and_explode(download['HapCUT2'], 
-                               'HapCUT2')
-        # Have to make HapCUT2
-        hapcut_id = '-'.join(['HapCUT2',
-                              download['HapCUT2'][0].rpartition('/')[2][:-4]])
-        hapcut2_dir = os.path.join(temp_install_dir, hapcut_id)
-        os.chdir(hapcut2_dir)
-        # Make on all but one cylinder
-        #thread_count = max(1, multiprocessing.cpu_count() - 1)
-        hapcut2_command = ['make']#, '-j%d' % thread_count]
-        self._print_to_screen_and_log(
-                    '[Installing] Making HapCUT2...',
-                    newline=False,
-                    carriage_return=True
-                )
-        try:
-            subprocess.check_output(hapcut2_command)
-        except subprocess.CalledProcessError as e:
-            self._print_to_screen_and_log(
-                    ('Error encountered making HapCUT2; exit '
-                     'code was %d; command invoked was "%s".') %
-                        (e.returncode, ' '.join(hapcut2_command))
-                )
-            self._bail()
-        hapcut2 = os.path.join(self.download_dir, hapcut_id, 'HAPCUT2')
-        hapcut2_hairs = os.path.join(self.download_dir, hapcut_id,
-                                    'extractHAIRS')
         programs = []
-        for program in ['netMHCIIpan3', 'netMHCpan3', 'netMHCpan4']:
+        for program in ['netMHCIIpan v3', 'netMHCpan v3', 'netMHCpan v4']:
             if self._yes_no_query(
                             ('Do you have an install of {} '
                              'you would like to use for '
                              'binding score predictions with '
                              'neoepiscope?').format(program)
                         ):
-                programs.append(
-                        self._request_path(
+                exe = self._request_path(
                                 'Please enter the path to '
                                 'your {} executable'.format(program), program
                             )
-                    )
+                if is_exe(exe):
+                    programs.append(exe)
+                else:
+                    self._print_to_screen_and_log(
+                                ('The path to %s is not an executable. Please '
+                                 'verify that this is the correct path.') % program
+                            )
+                    self._bail()
             else:
-                programs.append('None')
+                programs.append(None)
+        if self._yes_no_query('Do you have an install of HapCUT2 '
+                             'you would like to integrate with neoepiscope?'
+                            ):
+            hapcut_build_dir = self._request_path(
+                                'Please enter the path to '
+                                'your HapCUT2 build directory', 
+                                use_which=False)
+            if (is_exe(os.path.join(hapcut_build_dir, 'extractHAIRS')) and 
+                    is_exe(os.path.join(hapcut_build_dir, 'HAPCUT2'))):
+                programs.append(os.path.join(hapcut_build_dir, 'extractHAIRS'))
+                programs.append(os.path.join(hapcut_build_dir, 'HAPCUT2'))
+            else:
+                self._print_to_screen_and_log(
+                                 'This build directory does not contain the '
+                                 'relevant HapCUT2 script - please check '
+                                 'that you have entered the correct path.'
+                            )
+                self._bail()
+        else:
+            for i in range(0,2):
+                programs.append(None)
         # Write paths to exe_paths
         with open(
-                os.path.join(temp_install_dir, 'neoepiscope', 'paths.py'), 'w'
+                os.path.join(temp_install_dir, 'paths.py'), 'w'
             ) as paths_stream:
             print((
 """\"""
 paths.py
 Part of neoepiscope
-
-Defines default paths of neoepiscope's executable dependencies. Set a given
-variable equal to None if the default path should be in PATH.
+Defines default paths of neoepiscope's dependencies
+None indicates the user didn't install the tool or data
 \"""
 
-hapcut2_hairs = {hapcut2_hairs}
-hapcut2 = {hapcut2}
+gencode_v27 = {gencode_v27}
+gencode_v19 = {gencode_v19}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
-gencode_v27 = {gencode_v27}
-gencode_v19 = {gencode_v19}
+hapcut2_hairs = {hapcut2_hairs}
+hapcut2 = {hapcut2}
 """
-                ).format(hapcut2_hairs=self._quote(hapcut2_hairs), 
-                         hapcut2=self._quote(hapcut2),
-                         netMHCIIpan3=self._quote(program[0]),
-                         netMHCpan3=self._quote(program[1]),
-                         netMHCpan4=self._quote(program[2]),
-                         gencode_v27=('None'
+                ).format(gencode_v27=('None'
                                       if gencode_v27 is None
-                                      else gencode_v27),
+                                      else self._quote(gencode_v27)),
                          gencode_v19=('None'
                                       if gencode_v19 is None
-                                      else gencode_v19)),
+                                      else self._quote(gencode_v19)),
+                         netMHCIIpan3=('None' if programs[0] is None 
+                                        else self._quote(programs[0])),
+                         netMHCpan3=('None' if programs[1] is None 
+                                        else self._quote(programs[0])),
+                         netMHCpan4=('None' if programs[2] is None 
+                                        else self._quote(programs[0])),
+                         hapcut2_hairs=('None' if programs[3] is None 
+                                        else self._quote(programs[0])), 
+                         hapcut2=('None' if programs[4] is None 
+                                        else self._quote(programs[0]))), 
                          file=paths_stream)
         # Move to final directory
         try:
             shutil.move(temp_install_dir, self.download_dir)
+            if os.path.isfile(os.path.join(sys.prefix, 'lib', 
+                                     ''.join(['python', 
+                                     str(sys.version_info.major), '.',
+                                     str(sys.version_info.minor)]),
+                                      'site-packages', 'neoepiscope',
+                                      'paths.py')):
+                os.remove(os.path.join(sys.prefix, 'lib', 
+                                     ''.join(['python', 
+                                     str(sys.version_info.major), '.',
+                                     str(sys.version_info.minor)]),
+                                      'site-packages', 'neoepiscope',
+                                      'paths.py'))
+            shutil.move(os.path.join(self.download_dir, 'paths.py'), 
+                        os.path.join(sys.prefix, 'lib', 
+                                     ''.join(['python', 
+                                     str(sys.version_info.major), '.',
+                                     str(sys.version_info.minor)]),
+                                      'site-packages', 'neoepiscope'))
         except Exception as e:
             self._print_to_screen_and_log(('Problem "%s" encountered moving '
                                            'temporary installation directory '

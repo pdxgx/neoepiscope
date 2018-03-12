@@ -35,9 +35,9 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                                     'is not a valid allele for netMHCIIpan']),
                           Warning)
             if len(scores) == 1:
-                return [('NA',) for i in range(0,len(peptides))]
+                return [(peptides[i], 'NA',) for i in range(0,len(peptides))]
             else:
-                return [('NA', 'NA') for i in range(0,len(peptides))]
+                return [(peptides[i], 'NA', 'NA') for i in range(0,len(peptides))]
         allele = allele.replace('*', '_').replace(':', '')
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0],
@@ -90,12 +90,12 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
         # Invalid peptides receive "NA" score
         for sequence in peptides:
             if sequence in score_dict:
-                nM = score_dict[sequence]
+                nM = (sequence,) + score_dict[sequence]
             else:
                 if len(scores) == 1:
-                    nM = ('NA',)
+                    nM = (sequence, 'NA',)
                 else:
-                    nM = ('NA', 'NA')
+                    nM = (sequence, 'NA', 'NA')
             affinities.append(nM)
         return affinities
     finally:
@@ -128,7 +128,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                                     'is not a valid allele for mhcflurry']),
                           Warning)
             score_form = tuple(['NA' for i in range(0, len(scores))])
-            return [score_form for i in range(0,len(peptides))]
+            return [(peptides[i],) + score_form for i in range(0,len(peptides))]
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0],
                                 str(len(peptides)), allele,
@@ -137,13 +137,17 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
         # Write one peptide per line to a temporary file for 
         #   input if peptide length is at least 9
         # Count instances of smaller peptides
+        # Establish temporary file to hold output
+        peptide_file = tempfile.mkstemp(suffix='.csv', 
+                                    prefix='id.', text=True)[1]
         na_count = 0
-        run_peps = []
-        for sequence in peptides:
-            if len(sequence) < 8 or len(sequence) > 15:
-                na_count += 1
-            else:
-                run_peps.append(sequence)
+        with open(peptide_file, 'w') as f:
+            f.write('allele,peptide\n')
+            for sequence in peptides:
+                if len(sequence) < 8 or len(sequence) > 15:
+                    na_count += 1
+                else:
+                    print(''.join([allele, ',', sequence, '\n']), file=f)
         if na_count > 0:
             warnings.warn(' '.join([str(na_count),
                                     'peptides not compatible with',
@@ -154,9 +158,8 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                                     prefix='id.', text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
-        command = ['mhcflurry-predict', '--alleles', allele, '--out', 
-                    mhc_out, '--peptides'] + run_peps
-        subprocess.check_call(command)
+        command = ['mhcflurry-predict', '--out', mhc_out, peptide_file]
+        subprocess.call(command)
         # Retrieve scores for valid peptides
         score_dict = {}
         with open(mhc_out, 'r') as f:
@@ -200,9 +203,9 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
         # Invalid peptides receive "NA" score
         for sequence in peptides:
             if sequence in score_dict:
-                nM = score_dict[sequence]
+                nM = (sequence,) + score_dict[sequence]
             else:
-                nM = tuple(['NA' for i in range(0, len(scores))])
+                nM = (sequence,) + tuple(['NA' for i in range(0, len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -238,9 +241,9 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                                     'is not a valid allele for netMHCpan']),
                             Warning)
             if len(scores) == 1:
-                return [('NA',) for i in range(0,len(peptides))]
+                return [(peptides[i], 'NA',) for i in range(0,len(peptides))]
             else:
-                return [('NA', 'NA') for i in range(0,len(peptides))]
+                return [(peptides[i], 'NA', 'NA') for i in range(0,len(peptides))]
         # Establish return list and sample id
         sample_id = '.'.join([peptides[0], str(len(peptides)), 
                                 allele, 'netmhcpan', version])
@@ -272,25 +275,25 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         with open(mhc_out, 'r') as f:
             f.readline()
             f.readline()
-            for line in f:
-                tokens = line.strip('\n').split('\t')
+            for i in range(0, len(peptides)):
+                tokens = f.readline().strip('\n').split('\t')
                 # for v3, tokens[5] is affinity, tokens[6] is rank
                 # for v4, tokens[6] is affinty, tokens[7] is rank
                 if sorted(scores) == ['affinity', 'rank']:
                     if version == '3':
-                        nM = (tokens[5], tokens[6])
+                        nM = (peptides[i], tokens[5], tokens[6])
                     elif version == '4':
-                        nM = (tokens[6], tokens[7])
+                        nM = (peptides[i], tokens[6], tokens[7])
                 elif sorted(scores) == ['affinity']:
                     if version == '3':
-                        nM = (tokens[5], )
+                        nM = (peptides[i], tokens[5], )
                     elif version == '4':
-                        nM = (tokens[6], )
+                        nM = (peptides[i], tokens[6], )
                 elif sorted(scores) == ['rank']:
                     if version == '3':
-                        nM = (tokens[6], )
+                        nM = (peptides[i], tokens[6], )
                     elif version == '4':
-                        nM = (tokens[7], )
+                        nM = (peptides[i], tokens[7], )
                 affinities.append(nM)
         return affinities
     finally:
@@ -313,36 +316,36 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
         for tool in sorted(tool_dict.keys()):
             if tool == 'mhcflurry1':
                 binding_scores = get_affinity_mhcflurry(
-                                                sorted(neoepitopes.keys()), 
+                                                neoepitopes.keys(), 
                                                 allele, tool_dict[tool][1],
                                                 '1',
                                                 remove_files=True
                                                 )
             if tool == 'netMHCIIpan3':
                 binding_scores = get_affinity_netMHCIIpan(
-                                                sorted(neoepitopes.keys()), 
+                                                neoepitopes.keys(), 
                                                 allele, tool_dict[tool][0], 
                                                 tool_dict[tool][1],
                                                 remove_files=True
                                                 )
             elif tool == 'netMHCpan3':
                 binding_scores = get_affinity_netMHCpan(
-                                                sorted(neoepitopes.keys()), 
+                                                neoepitopes.keys(), 
                                                 allele, tool_dict[tool][0], 
                                                 '3', tool_dict[tool][1],
                                                 remove_files=True
                                                 )
             elif tool == 'netMHCpan4':
                 binding_scores = get_affinity_netMHCpan(
-                                                sorted(neoepitopes.keys()), 
+                                                neoepitopes.keys(), 
                                                 allele, tool_dict[tool][0], 
                                                 '4', tool_dict[tool][1],
                                                 remove_files=True
                                                 )
-            for i in range(0, len(neoepitopes.keys())):
-                meta_data = neoepitopes[sorted(neoepitopes.keys())[i]]
-                for j in range(0, len(meta_data)):
-                    neoepitopes[sorted(neoepitopes.keys())[i]][j] = (
-                                meta_data[j] + binding_scores[i]
+            for score in binding_scores:
+                meta_data = neoepitopes[score[0]]
+                for i in range(0, len(meta_data)):
+                    neoepitopes[score[0]][i] = (
+                                meta_data[i] + score[1:]
                             )
     return neoepitopes
