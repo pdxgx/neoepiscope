@@ -453,9 +453,24 @@ class Transcript(object):
                     relevant_deletion_intervals.extend(
                                 deletion_intervals[i:i+2]
                             )
+                elif start_index == 0:
+                    relevant_deletion_intervals.append((intervals[0], 'R', tuple()))
+                    if end_index % 2:
+                        end_pos = deletion_intervals[i+1]
+                        relevant_deletion_intervals.extend(
+                                [(intervals[i], 'R', tuple()) for i in
+                                 range(start_index + 1, end_index)]
+                        )
+                    else:
+                        end_pos = (intervals[end_index - 1], 'R', tuple())
+                        relevant_deletion_intervals.extend(
+                                [(intervals[i], 'R', tuple()) for i in
+                                 range(start_index, end_index)]
+                            )
+                    relevant_deletion_intervals.append(end_pos)
                 else:
                     assert end_index > start_index
-                    if (start_index % 2 or 
+                    if (start_index % 2 or
                         deletion_intervals[i][0] == intervals[start_index]):
                         pos = deletion_intervals[i]
                     else:
@@ -468,8 +483,8 @@ class Transcript(object):
                     if end_index % 2:
                         end_pos = deletion_intervals[i+1]
                         relevant_deletion_intervals.extend(
-                            [(intervals[i], 'R', tuple()) for i in
-                             range(start_index + 1, end_index)]
+                                [(intervals[i], 'R', tuple()) for i in
+                                 range(start_index + 1, end_index)]
                         )
                     else:
                         end_pos = (intervals[end_index - 1], 'R', tuple())
@@ -994,30 +1009,48 @@ class Transcript(object):
             ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_temp1 = ATG_counter1
             ATG_temp2 = ATG_counter2
-            while (ATG1 > 0 or ATG2 > 0) and ATG_limit > 0:
+            while (ATG1 >= 0 or ATG2 >= 0) and ATG_limit > 0:
                 if seq_previous[3]*strand > start*strand:
                     ATG_limit -= 1
-                if ATG1 > 0 and ATG2 < 0:
+                if ATG1 >= 0 and ATG2 < 0:
+                    # New sequence contains start codon while reference doesn't
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                elif ATG1 < 0 and ATG2 > 0:
+                    if self.transcript_id == 'ENST00000375940.8':
+                        print('case1')
+                        print(ATGs)
+                elif ATG1 < 0 and ATG2 >= 0:
+                    # Reference contains start codon but new sequence doesn't
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                      ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    if self.transcript_id == 'ENST00000375940.8':
+                        print('case2')
+                        print(ATGs)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
+                    # Reference and new sequence contain start in same place
                     ATGs.append([ATG1, ATG2, seq_previous,
                      ATG2 >= ref_start and ref_start >= 0, False, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    if self.transcript_id == 'ENST00000375940.8':
+                        print('case3')
+                        print(ATGs)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                    if self.transcript_id == 'ENST00000375940.8':
+                        print('case4')
+                        print(ATGs)
                 else:
                     ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
                         ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                    if self.transcript_id == 'ENST00000375940.8':
+                        print('case5')
+                        print(ATGs)
                 ATG1 = sequence.find('ATG', ATG_counter1)
                 ATG2 = ref_sequence.find('ATG', ATG_counter2)
             ATG_counter1 = max(0, len(sequence)-2)
@@ -1158,6 +1191,8 @@ class Transcript(object):
         if start_codon is None:
             return {}
         if reading_frame:
+            if self.transcript_id == 'ENST00000375940.8':
+                print(start_codon)
             frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])
         new_start = start_codon[1]
         coding_start = start_codon[0]
@@ -1327,6 +1362,9 @@ class Transcript(object):
                      3 * len(protein)+coding_start, TAA_TGA_TAG[2]]
                 )
         peptide_seqs = collections.defaultdict(list)
+        if self.transcript_id == 'ENST00000375940.8':
+            print(coordinates)
+            print(frame_shifts)
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -1348,6 +1386,9 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
+                #if self.transcript_id == 'ENST00000375940.8':
+                    #print(peptides)
+                    #print(coords[2])
                 if compare_peptides_to_ref:
                     peptides = list(set(peptides).difference(peptides_ref))
                 for pep in peptides:
@@ -1615,8 +1656,6 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 mutation_class=mutation_class,
                                 vaf=VAF)
             if somatic_in_haplotype:
-                print(affected_transcript)
-                print(relevant_transcripts[affected_transcript])
                 # Extract neoepitopes
                 A_peptides = transcriptA.neopeptides(
                                     min_size=size_list[0], 
