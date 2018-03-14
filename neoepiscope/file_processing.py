@@ -273,8 +273,6 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         VAF = 'NA'
                     else:
                         VAF = str(mut[5])
-                    #print(epitope)
-                    #print(neoepitopes[epitope])
                     mutation_dict[(mut[0], mut[1], ref, alt, mut[4])].append(
                                                                 [VAF, mut[6],
                                                                  mut[7]]

@@ -23,18 +23,14 @@ else:
 @contextlib.contextmanager
 def xopen(gzipped, *args):
     """ Passes args on to the appropriate opener, gzip or regular.
-
         In compressed mode, functionality almost mimics gzip.open,
         but uses gzip at command line.
-
         As of PyPy 2.5, gzip.py appears to leak memory when writing to
         a file object created with gzip.open().
-
         gzipped: True iff gzip.open() should be used to open rather than
             open(); False iff open() should be used; None if input should be
             read and guessed; '-' if writing to stdout
         *args: unnamed arguments to pass
-
         Yield value: file object
     """
     import sys
@@ -94,7 +90,6 @@ def xopen(gzipped, *args):
 
 def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     """ Same as bisect.bisect_left, but compares only index "getter"
-
         See bisect_left source for more info.
     """
 
@@ -110,11 +105,9 @@ def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
 
 def kmerize_peptide(peptide, min_size=8, max_size=11):
     """ Obtains subsequences of a peptide.
-
         normal_peptide: normal peptide seq
         min_size: minimum subsequence size
         max_size: maximum subsequence size
-
         Return value: list of all possible subsequences of size between
             min_size and max_size
     """
@@ -146,13 +139,10 @@ _codon_table = {
 
 def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     """ Translates nucleotide sequence into peptide sequence.
-
         All codons including and after stop codon are recorded as X's.
-
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
         require_ATG: True iff search for start codon (ATG)
-
         Return value: peptide string
     """
     if reverse_strand:
@@ -782,7 +772,7 @@ class Transcript(object):
                             self._seq_append(final_seq, seqs[(i-1)//2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(),
-                                        seqs[(i-1)//2][1][0], merge=False)
+                                        seqs[(i-1)//2][1][0] + last_index, merge=False)
                         # If no edits, snv is reference and no insertion
                         try:
                             snv = (seqs[(i-1)//2][0][last_index + fill], 'R', 
@@ -892,7 +882,6 @@ class Transcript(object):
     def _atg_choice(self, atgs, only_novel_upstream=True,
                     only_downstream=False, only_reference=False):
         """ Chooses best start codon from a list of start codons.
-
             atgs: list of lists, each representing a start codon, of the form
                 [pos in sequence or -1 if absent, pos in reference seq or -1 if
                  absent, mutation information,
@@ -908,11 +897,11 @@ class Transcript(object):
                 only_novel_upstream.
             only_reference: True if and only if only the original start codon
                 is allowed; overrides only_downstream and only_novel_upstream
-
             Return value: tuple (reading_frame, chosen atg from atgs)
         """
         encountered_true_start = False
         atg_priority_list = []
+        start_disrupting_muts = []
         for atg in atgs:
             if not encountered_true_start and atg[3] and not atg[4]:
                 if not atg[5] and atg_priority_list == []:
@@ -924,6 +913,8 @@ class Transcript(object):
                         transcript, maintain it to keep track of reading frame
                         changes for new start'''
                     coding_ref_start = atg[0]
+                    if atg[5]:
+                        start_disrupting_muts.append(atg[2])
             if atg[3]:
                 encountered_true_start = True
             if not only_reference:
@@ -943,6 +934,8 @@ class Transcript(object):
         else:
             # The start codon is the first of the valid start codons
             start_codon = atg_priority_list[0]
+            if start_codon[2] == [()]:
+                start_codon[2] = start_disrupting_muts
         return (start_codon[0] - coding_ref_start) % 3, start_codon
 
 
@@ -951,7 +944,6 @@ class Transcript(object):
         only_reference=False):
         """ Retrieves dict of predicted peptide fragments from transcript that 
             arise from one or more variants. 
-
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
             include_somatic: 0 = do not include somatic mutations,
@@ -962,7 +954,6 @@ class Transcript(object):
                 1 = exclude germline mutations from reference comparison,
                 2 = include germline mutations in both annotated sequence and
                 reference comparison
-
             Return value: dict of peptides of desired length(s) [KEYS] with 
                 values equivalent to a list of causal variants [VALUES].
         """
@@ -1005,59 +996,134 @@ class Transcript(object):
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
-            ATG1 = sequence.find('ATG', ATG_counter1)
-            ATG2 = ref_sequence.find('ATG', ATG_counter2)
+            ATG1 = sequence.find('ATG', max(0, ATG_counter1-2))
+            ATG2 = ref_sequence.find('ATG', max(0, ATG_counter2-2))
             ATG_temp1 = ATG_counter1
             ATG_temp2 = ATG_counter2
             while (ATG1 >= 0 or ATG2 >= 0) and ATG_limit > 0:
-                if seq_previous[3]*strand > start*strand:
+                if seq_previous[-1][3]*strand > start*strand:
                     ATG_limit -= 1
                 if ATG1 >= 0 and ATG2 < 0:
                     # New sequence contains start codon while reference doesn't
-                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
+                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                        relevant_seq = seq_previous[-1]
+                    else:
+                        found_all_variants = False
+                        if seq_previous[-1][2] != [()]:
+                            relevant_seq = [seq_previous[-1]]
+                        else:
+                            relevant_seq = []
+                        i = -2
+                        while not found_all_variants and i > -1*len(seq_previous):
+                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                                            and seq_previous[i][2] != [()]):
+                                relevant_seq.append(seq_previous[i])
+                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                found_all_variants = True
+                            i -= 1
+                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                    if self.transcript_id == 'ENST00000375940.8':
-                        print('case1')
-                        print(ATGs)
+                    ATG1 = sequence.find('ATG', ATG_counter1)
                 elif ATG1 < 0 and ATG2 >= 0:
                     # Reference contains start codon but new sequence doesn't
-                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
+                    if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                        relevant_seq = seq_previous[-1]
+                    else:
+                        found_all_variants = False
+                        if seq_previous[-1][2] != [()]:
+                            relevant_seq = [seq_previous[-1]]
+                        else:
+                            relevant_seq = []
+                        i = -2
+                        while not found_all_variants and i > -1*len(seq_previous):
+                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2 
+                                            and seq_previous[i][2] != [()]):
+                                relevant_seq.append(seq_previous[i])
+                            if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                                found_all_variants = True
+                            i -= 1
+                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
                      ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    if self.transcript_id == 'ENST00000375940.8':
-                        print('case2')
-                        print(ATGs)
+                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
                     # Reference and new sequence contain start in same place
-                    ATGs.append([ATG1, ATG2, seq_previous,
+                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                        relevant_seq = seq_previous[-1]
+                    else:
+                        found_all_variants = False
+                        relevant_seq = []
+                        i = -1
+                        while not found_all_variants and i > -1*len(seq_previous):
+                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                                            and seq_previous[i][2] != [()]):
+                                relevant_seq.append(seq_previous[i])
+                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                found_all_variants = True
+                            i -= 1
+                        if relevant_seq == []:
+                            relevant_seq = seq_previous[-1]
+                    ATGs.append([ATG1, ATG2, relevant_seq,
                      ATG2 >= ref_start and ref_start >= 0, False, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    if self.transcript_id == 'ENST00000375940.8':
-                        print('case3')
-                        print(ATGs)
+                    ATG1 = sequence.find('ATG', ATG_counter1)
+                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
                 elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
-                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, seq_previous,
+                    # Start codon happens in new sequence before ref sequence
+                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                        relevant_seq = seq_previous[-1]
+                    else:
+                        found_all_variants = False
+                        if seq_previous[-1][2] != [()]:
+                            relevant_seq = [seq_previous[-1]]
+                        else:
+                            relevant_seq = []
+                        i = -2
+                        while not found_all_variants and i > -1*len(seq_previous):
+                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                                            and seq_previous[i][2] != [()]):
+                                relevant_seq.append(seq_previous[i])
+                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                found_all_variants = True
+                            i -= 1
+                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
                      ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                    if self.transcript_id == 'ENST00000375940.8':
-                        print('case4')
-                        print(ATGs)
+                    ATG1 = sequence.find('ATG', ATG_counter1)
                 else:
-                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, seq_previous,
+                    # Start codon happens in ref sequence before new sequence
+                    if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                        relevant_seq = seq_previous[-1]
+                    else:
+                        found_all_variants = False
+                        if seq_previous[-1][2] != [()]:
+                            relevant_seq = [seq_previous[-1]]
+                        else:
+                            relevant_seq = []
+                        i = -2
+                        while not found_all_variants and i > -1*len(seq_previous):
+                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2 
+                                            and seq_previous[i][2] != [()]):
+                                relevant_seq.append(seq_previous[i])
+                            if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                                found_all_variants = True
+                            i -= 1
+                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
                         ATG2 >= ref_start and ref_start >= 0, False, True])
                     ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    if self.transcript_id == 'ENST00000375940.8':
-                        print('case5')
-                        print(ATGs)
-                ATG1 = sequence.find('ATG', ATG_counter1)
-                ATG2 = ref_sequence.find('ATG', ATG_counter2)
-            ATG_counter1 = max(0, len(sequence)-2)
-            ATG_counter2 = max(0, len(ref_sequence)-2)
+                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
+            ATG_counter1 = len(sequence)
+            ATG_counter2 = len(ref_sequence)
             if seq == []:
                 break
-            seq_previous = seq
+            seq_previous.append(seq)
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs 
             if seq[1] == 'R':
@@ -1103,16 +1169,18 @@ class Transcript(object):
                 if ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
                     ref_sequence += seq[0]
+                    ref_counter += len(seq[0])
                 else:
                     if self.rev_strand:
                         for i in seq[2]:
                             ref_sequence += i[2][::-1].translate(
                                                     revcomp_translation_table
                                                 )
+                            ref_counter += len(i[2])
                     else:
                         for i in seq[2]:
                             ref_sequence += i[2]
-                ref_counter += len(seq[0])
+                            ref_counter += len(i[2])
                 continue
             elif seq[2][0][4] == 'I':
                 if (ref_start < 0
@@ -1191,9 +1259,14 @@ class Transcript(object):
         if start_codon is None:
             return {}
         if reading_frame:
-            if self.transcript_id == 'ENST00000375940.8':
-                print(start_codon)
-            frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])
+            if type(start_codon[2]) == tuple:
+                frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])
+            else:
+                metadata = []
+                for mutation in start_codon[2]:
+                    for metadata_set in mutation[2]:
+                        metadata.append(metadata_set)
+                frame_shifts.append([start, -1, 0, -1, metadata])
         new_start = start_codon[1]
         coding_start = start_codon[0]
         annotated_seq.pop()
@@ -1362,9 +1435,6 @@ class Transcript(object):
                      3 * len(protein)+coding_start, TAA_TGA_TAG[2]]
                 )
         peptide_seqs = collections.defaultdict(list)
-        if self.transcript_id == 'ENST00000375940.8':
-            print(coordinates)
-            print(frame_shifts)
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -1386,9 +1456,6 @@ class Transcript(object):
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
                     min_size=size, max_size=size)
-                #if self.transcript_id == 'ENST00000375940.8':
-                    #print(peptides)
-                    #print(coords[2])
                 if compare_peptides_to_ref:
                     peptides = list(set(peptides).difference(peptides_ref))
                 for pep in peptides:
@@ -1404,15 +1471,12 @@ class Transcript(object):
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
-
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
             Data: [chromosome, start, stop, +/- strand]
         Writes cds_dict as a pickled dictionary
-
         gtf_file: input gtf file to process
         dictdir: path to directory to store pickled dicts
-
         Return value: dictionary
     """
     cds_dict = collections.defaultdict(list)
@@ -1452,15 +1516,12 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
 
 def cds_to_tree(cds_dict, dictdir, pickle_it=True):
     """ Creates searchable tree of chromosome intervals from CDS dictionary
-
         Each chromosome is stored in the dictionary as an interval tree object
             Intervals are added for each CDS, with the associated transcript ID
             Assumes transcript is all on one chromosome - does not work for
                 gene fusions
         Writes the searchable tree as a pickled dictionary
-
         cds_dict: CDS dictionary produced by gtf_to_cds()
-
         Return value: searchable tree
     """
     searchable_tree = {}
@@ -1510,12 +1571,10 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
 
 def process_haplotypes(hapcut_output, interval_dict):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
-
         hapcut_output: output from HAPCUT2, adjusted to include unphased 
                         mutations as their own haplotypes (performed in 
                         software's prep mode)
         interval_dict: dictionary linking genomic intervals to transcripts
-
         Return value: dictinoary linking haplotypes to transcripts
     """
     affected_transcripts = collections.defaultdict(list)
@@ -1603,10 +1662,8 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                 1 = exclude somatic mutations from reference comparison,
                 2 = include somatic mutations in both annotated sequence and
                 reference comparison
-
         return value: dictionary linking neoepitopes to their associated 
             metadata
-
         """
     neoepitopes = collections.defaultdict(list)
     for affected_transcript in relevant_transcripts:

@@ -277,7 +277,7 @@ class TestTranscript(unittest.TestCase):
         """Fails if deletion spanning start of transcript is incorrect"""
         self.transcript.edit(5, 5246692, mutation_type='D')
         seq = self.transcript.annotated_seq()
-        self.assertEqual(len(annotated_seq), 3)
+        self.assertEqual(len(seq), 4)
     def test_compound_variants(self):
         """Fails if transcript with multiple variant types is incorrect"""
         self.transcript.edit(137, 5248025, mutation_type='D')
