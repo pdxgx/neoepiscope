@@ -29,8 +29,11 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         # Homogenize format
-        allele = allele.replace('HLA-', '')
-        if allele not in avail_alleles['netMHCIIpan']:
+        if 'DRB' in alelle:
+            allele = allele.replace('HLA-', '').replace(':', '').replace('*', '_')
+        elif 'DP' in allele or 'DQ' in allele:
+            allele.replace(':', '')
+        if allele not in avail_alleles[''.join(['netMHCIIpan', str(version)])]:
             warnings.warn(' '.join([allele, 
                                     'is not a valid allele for netMHCIIpan']),
                           Warning)
@@ -159,7 +162,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         command = ['mhcflurry-predict', '--out', mhc_out, peptide_file]
-        subprocess.call(command)
+        subprocess.check_call(command)
         # Retrieve scores for valid peptides
         score_dict = {}
         with open(mhc_out, 'r') as f:
@@ -236,7 +239,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         allele = allele.replace('*', '')
-        if allele not in avail_alleles['netMHCpan']:
+        if allele not in avail_alleles[''.join(['netMHCpan', str(version)])]:
             warnings.warn(' '.join([allele, 
                                     'is not a valid allele for netMHCpan']),
                             Warning)
