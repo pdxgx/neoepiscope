@@ -433,7 +433,7 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v27 annotation'], 
                                    'Gencode v27 annotation', explode=False)
-            gencode_v27 = os.path.join(temp_install_dir,
+            gencode_v27 = os.path.join(self.download_dir,
                                         'gencode_v27')
             gencode_v27_gtf = os.path.join(temp_install_dir,
                                             os.path.basename(
@@ -458,7 +458,7 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query('Download Gencode v19 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v19 annotation'], 
                                    'Gencode v19 annotation', explode=False)
-            gencode_v19 = os.path.join(temp_install_dir,
+            gencode_v19 = os.path.join(self.download_dir,
                                         'gencode_v19')
             gencode_v19_gtf = os.path.join(temp_install_dir,
                                             os.path.basename(
@@ -483,9 +483,18 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query('Download Bowtie NCBI GRCh38 index?'):
             self._grab_and_explode(download['Bowtie NCBI GRCh38 index'], 
                                    'Bowtie NCBI GRCh38 index')
+            bowtie_grch38 = os.path.join(
+                            self.download_dir,
+                            'GCA_000001405.15_GRCh38_no_alt_analysis_set'
+                            )
+        else:
+            bowtie_grch38 = None
         if self._yes_no_query('Download Bowtie UCSC hg19 index?'):
             self._grab_and_explode(download['Bowtie UCSC hg19 index'], 
                                    'Bowtie UCSC hg19 index')
+            bowtie_hg19 = os.path.join(self.download_dir, 'hg19')
+        else:
+            bowtie_hg19 = None
         programs = []
         for program in ['netMHCIIpan v3', 'netMHCpan v3', 'netMHCpan v4']:
             if self._yes_no_query(
@@ -543,6 +552,8 @@ None indicates the user didn't install the tool or data
 
 gencode_v27 = {gencode_v27}
 gencode_v19 = {gencode_v19}
+bowtie_grch38 = {bowtie_grch38}
+bowtie_hg19 = {bowtie_hg19}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
@@ -555,6 +566,12 @@ hapcut2 = {hapcut2}
                          gencode_v19=('None'
                                       if gencode_v19 is None
                                       else self._quote(gencode_v19)),
+                         bowtie_grch38=('None'
+                                      if bowtie_grch38 is None
+                                      else self._quote(bowtie_grch38)),
+                         bowtie_hg19=('None'
+                                      if bowtie_hg19 is None
+                                      else self._quote(bowtie_hg19)),
                          netMHCIIpan3=('None' if programs[0] is None 
                                         else self._quote(programs[0])),
                          netMHCpan3=('None' if programs[1] is None 
