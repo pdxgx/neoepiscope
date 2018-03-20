@@ -391,6 +391,15 @@ class Transcript(object):
         assert len(intervals) % 2 == 0
         # Include only relevant deletion intervals
         relevant_deletion_intervals, edits = [], collections.defaultdict(list)
+        for i in range(0, len(self.deletion_intervals)):
+            if (self.deletion_intervals[i][0] <= self.intervals[0] 
+                    and self.deletion_intervals[i][1] >= self.intervals[-1]):
+                return {}, [(self.intervals[0], 'R', ()), 
+                            (self.intervals[0], 
+                             self.deletion_intervals[i][2], 
+                             self.deletion_intervals[i][3]),
+                            (self.intervals[-1], 'R', ()),
+                            (self.intervals[-1], 'R', ())]
         sorted_deletion_intervals = [
                 interval for interval in self.deletion_intervals
                 if (interval[2] == 'S' and include_somatic or
@@ -1290,9 +1299,17 @@ class Transcript(object):
                 continue
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
-            if counter < coding_start:
+            if counter < coding_start + 2:
+                ### Update coordinates for things overlap start, but not frameshifts!!
+                ######
+                ###
+                if len(seq[0]) + counter < coding_start:
+                    counter += len(seq[0])
+                    continue
                 if seq[2][0][4] == 'D':
-#                    ref_counter += len(seq[2][0][2])
+                    ref_counter += len(seq[2][0][2])
+                    coordinates.append([start, seq[3] + len(seq[0])*strand -1,
+                                        counter, counter + len(seq[0]) - 1, seq[2]])
                     continue
                 elif seq[2][0][4] == 'I':
                     if counter + len(seq[0]) > coding_start:
@@ -1361,7 +1378,7 @@ class Transcript(object):
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) - 1, seq[2]])
                 compare_peptides_to_ref = True
-                if len(seq[0]) % 3:
+                if len(seq[0]) % 3 and counter:
                     if not reading_frame:
                         reading_frame = len(seq[0]) % 3
                         frame_shifts.append(
@@ -1466,6 +1483,7 @@ class Transcript(object):
                                                             transcript_warnings
                                                         ),)
                         peptide_seqs[pep].append(mutation_data)
+                    peptide_seqs[pep] = list(set(peptide_seqs[pep]))
         # return list of unique neoepitope sequences
         return peptide_seqs
 

@@ -32,6 +32,13 @@ class TestTranscript(unittest.TestCase):
                                                     end, strand) in 
                                       self.cds['ENST00000308020.5_1']],
                                       'ENST00000308020.5_1')
+        self.all_coding_transcript = Transcript(self.reference_index, 
+                                    [[str(chrom).replace('chr', ''), 'blah', seq_type,
+                                      str(start), str(end), '.', 
+                                      strand] for (chrom, seq_type, start, 
+                                                    end, strand) in 
+                                      self.cds['ENST00000317078.1_1']],
+                                      'ENST00000317078.1_1')
     def test_transcript_structure(self):
         """Fails if structure of unedited transcript is incorrect"""
         self.assertEqual(len(self.transcript.annotated_seq()), 3)
@@ -278,6 +285,20 @@ class TestTranscript(unittest.TestCase):
         self.transcript.edit(5, 5246692, mutation_type='D')
         seq = self.transcript.annotated_seq()
         self.assertEqual(len(seq), 4)
+        self.assertEqual(seq[-1][0], '')
+        self.assertEqual(len(seq[-2][0]), 260)
+        self.fwd_transcript.edit(10, 450275, mutation_type='D')
+        seq2 = self.fwd_transcript.annotated_seq()
+        self.assertEqual(len(seq2), 13)
+        self.assertEqual(seq2[0][0], '')
+        self.assertEqual(len(seq2[1][0]), 353)
+    def test_deletion_of_transcript(self):
+        """Fails if deletion of entire transcript is incorrect"""
+        self.transcript.edit(1700, 5246690, mutation_type='D')
+        seq = self.transcript.annotated_seq()
+        self.assertEqual(len(seq), 1)
+        self.assertEqual(seq[0][0], '')
+        self.assertEqual(len(seq[0][2][0][2]), 1700)
     def test_compound_variants(self):
         """Fails if transcript with multiple variant types is incorrect"""
         self.transcript.edit(137, 5248025, mutation_type='D')
@@ -316,7 +337,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(peptides, [])
         rev_peptides = self.transcript.neopeptides().keys()
         self.assertEqual(rev_peptides, [])
-    def test_noncoding_mutation_peptdies(self):
+    def test_noncoding_mutation_peptides(self):
         """Fails if peptides are returned for mutation in noncoding 
             sequence"""
         self.fwd_transcript.edit('G', 450286)
@@ -434,6 +455,18 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(rev_peptides), 84)
         self.assertEqual(sorted(rev_peptides)[0], 'AHKYHYAR')
         self.assertEqual(sorted(rev_peptides)[-1], 'YHYARFLAVQF')
+    def test_split_start(self):
+        """Fails if split start codon is handled improperly"""
+        self.fwd_transcript.edit('AT', 450419, mutation_type='I')
+        peptides = self.fwd_transcript.neopeptides().keys()
+        self.assertEqual(len(peptides), 278)
+        self.assertEqual(sorted(peptides)[0], 'AAAAPSPR')
+        self.assertEqual(sorted(peptides)[-1], 'WRSRLTGRLPA')
+        self.transcript.edit('T', 5248290, mutation_type='I')
+        rev_peptides = self.transcript.neopeptides().keys()
+        self.assertEqual(len(rev_peptides), 42)
+        self.assertEqual(sorted(rev_peptides)[0], 'ATSNRHHG')
+        self.assertEqual(sorted(rev_peptides)[-1], 'TSNRHHGASDS')
     def test_start_lost_peptides(self):
         """Fails if mutation altering start codon does not return peptides
            from a new start codon"""
@@ -495,6 +528,12 @@ class TestTranscript(unittest.TestCase):
         self.transcript.edit('AAAA', 5247933, mutation_type='I')
         rev_peptides = self.transcript.neopeptides().keys()
         self.assertEqual(len(rev_peptides), 50)
+    def test_all_coding_tx(self):
+        """Fails if transcript that is all coding sequence is 
+            handled improperly"""
+        self.all_coding_transcript.edit('C', 5810036)
+        peptides = self.all_coding_transcript.neopeptides().keys()
+        self.assertEqual(len(peptides), 16)
     def test_germline_vs_somatic(self):
         """"Fails if incorrect peptides are returned for different
             germline/somatic mutation inclusion decisions"""

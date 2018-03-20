@@ -53,9 +53,9 @@ def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     header = open(vcf2 + '.header', 'w+');
     for lines in vcffile:
         if (lines[0] != '#'):
-            print(lines, file=temp)
+            print(lines.strip(), file=temp)
         else:
-            print(lines, file=header)
+            print(lines.strip(), file=header)
     vcffile.close()
     temp.close()
     header.close()
@@ -63,7 +63,7 @@ def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     temp = open(vcf2 + '.germlinetemp', 'w+');
     for lines in vcffile:
         if (lines[0] != '#'):
-            print(lines, file=temp)
+            print(lines.strip(), file=temp)
     vcffile.close()
     temp.close()    
     markgermline = ''.join(['''awk '{print $0"*"}' ''', vcf2, 
@@ -233,7 +233,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
                     headers.append('_'.join([tool, allele, score_method]))
-        print('\t'.join(headers) + '\n', file=o)
+        print('\t'.join(headers), file=o)
         for epitope in sorted(neoepitopes.keys()):
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
@@ -254,7 +254,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                             mutation[7]]
                 for i in range(7,len(mutation)):
                     out_line.append(str(mutation[i]))
-                print('\t'.join(out_line) + '\n', file=o)
+                print('\t'.join(out_line), file=o)
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
@@ -291,4 +291,4 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                                         )]
                     for score in ep_scores:
                         out_line.append(str(score))
-                    print('\t'.join(out_line) + '\n', file=o)
+                    print('\t'.join(out_line), file=o)

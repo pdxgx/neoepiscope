@@ -19,7 +19,7 @@ import collections
 import tempfile
 import subprocess
 import warnings
-import exe_paths
+import paths
 from transcript import (Transcript, gtf_to_cds, cds_to_tree,
                         get_transcripts_from_tree, process_haplotypes,
                         get_peptides_from_transcripts)
@@ -97,13 +97,13 @@ def main():
             help='path to output file to be input to call mode'
         )
     # Call parser options (calls neoepitopes)
-    call_parser.add_argument('-x', '--bowtie-index', type=str, required=True,
+    call_parser.add_argument('-x', '--bowtie-index', type=str, required=False,
             help='path to Bowtie index basename'
         )
     call_parser.add_argument('-v', '--vcf', type=str, required=True,
             help='input path to VCF'
         )
-    call_parser.add_argument('-d', '--dicts', type=str, required=True,
+    call_parser.add_argument('-d', '--dicts', type=str, required=False,
             help='input path to pickled CDS dictionary directory'
         )
     call_parser.add_argument('-c', '--merged-hapcut2-output', type=str,
@@ -141,6 +141,10 @@ def main():
             default='include', help='how to handle somatic mutations in '
             'neoepitope enumeration; documentation online for more information'
         )
+    call_parser.add_argument('-b', '--build', type=str, required=False,
+            help='which default genome build to use (hg19 or GRCh38); '
+            'must have used download.py script to install these'
+        )
     args = parser.parse_args()
     if args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -152,15 +156,45 @@ def main():
     elif args.subparser_name == 'prep':
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
     elif args.subparser_name == 'call':
-        # Load pickled dictionaries
-        with open(os.path.join(
-                    args.dicts, 'intervals_to_transcript.pickle'
-                ), 'rb') as interval_stream:
-            interval_dict = pickle.load(interval_stream)
-        with open(os.path.join(
-                    args.dicts, 'transcript_to_CDS.pickle'
-                ), 'rb') as cds_stream:
-            cds_dict = pickle.load(cds_stream)
+        # Load pickled dictionaries and prepare bowtie index
+        if args.build is not None:
+            if args.build == 'GRCh38':
+                with open(os.path.join(
+                            paths.gencode_v27, 'intervals_to_transcript.pickle'
+                        ), 'rb') as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(os.path.join(
+                            paths.gencode_v27, 'transcript_to_CDS.pickle'
+                        ), 'rb') as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
+            elif args.build == 'hg19':
+                with open(os.path.join(
+                            paths.gencode_v19, 'intervals_to_transcript.pickle'
+                        ), 'rb') as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(os.path.join(
+                            paths.gencode_v19, 'transcript_to_CDS.pickle'
+                        ), 'rb') as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
+            else:
+                raise RuntimeError(''.join([args.build, 
+                                            ' is not an available genome  build']))
+        else:
+            if args.bowtie_index is not None and args.dicts is not None:
+                with open(os.path.join(
+                            args.dicts, 'intervals_to_transcript.pickle'
+                        ), 'rb') as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(os.path.join(
+                            args.dicts, 'transcript_to_CDS.pickle'
+                        ), 'rb') as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
+            else:
+                raise RuntimeError('User must specify either --build OR '
+                                    ' --bowtie_index and --dicts options')
         # Check affinity predictor
         tool_dict = {}
         if args.affinity_predictor is not None:
@@ -285,8 +319,6 @@ def main():
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
         hla_alleles = sorted(args.alleles.split(','))
-        # For retrieving genome sequence
-        reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
