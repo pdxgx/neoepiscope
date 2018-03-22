@@ -888,8 +888,8 @@ class Transcript(object):
             'yet fully supported.'
         )
 
-    def _atg_choice(self, atgs, only_novel_upstream=True,
-                    only_downstream=False, only_reference=False):
+    def _atg_choice(self, atgs, only_novel_upstream=False,
+                    only_downstream=True, only_reference=False):
         """ Chooses best start codon from a list of start codons.
             atgs: list of lists, each representing a start codon, of the form
                 [pos in sequence or -1 if absent, pos in reference seq or -1 if
@@ -911,12 +911,13 @@ class Transcript(object):
         encountered_true_start = False
         atg_priority_list = []
         start_disrupting_muts = []
+        start_warnings = []
         for atg in atgs:
             if not encountered_true_start and atg[3] and not atg[4]:
                 if not atg[5] and atg_priority_list == []:
                     '''If the original start codon is maintained in the edited 
                         transcript, immediately return it.'''
-                    return 0, atg
+                    return 0, atg, []
                 else:
                     '''If the original start codon is missing in the edited
                         transcript, maintain it to keep track of reading frame
@@ -924,6 +925,7 @@ class Transcript(object):
                     coding_ref_start = atg[0]
                     if atg[5]:
                         start_disrupting_muts.append(atg[2])
+                        start_warnings.append('reference_start_codon_disrupted')
             if atg[3]:
                 encountered_true_start = True
             if not only_reference:
@@ -939,13 +941,29 @@ class Transcript(object):
                     atg_priority_list.append(atg)
         if atg_priority_list == []:
             # No valid ATGs
-            return None, None
+            return None, None, start_warnings
         else:
             # The start codon is the first of the valid start codons
             start_codon = atg_priority_list[0]
             if start_codon[2] == [()]:
                 start_codon[2] = start_disrupting_muts
-        return (start_codon[0] - coding_ref_start) % 3, start_codon
+            distance = start_codon[0] - coding_ref_start
+            if start_codon[3]:
+                direction = 'downstream'
+            else:
+                direction = 'upstream'
+            if start_codon[4]:
+                novelty = 'novel'
+            else:
+                novelty = 'preexisting'
+            warnings.warn(' '.join(['Using', novelty, direction, 
+                                        'start codon', str(distance), 
+                                        'bp from reference start codon for',
+                                        self.transcript_id]))
+            start_warnings.append('_'.join([novelty, direction, 'start',
+                                            'codon', str(distance), 'bp', 'from'
+                                            'reference', 'start', 'codon']))
+        return (start_codon[0] - coding_ref_start) % 3, start_codon, start_warnings
 
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
@@ -989,7 +1007,7 @@ class Transcript(object):
         # +1 is + strand, -1 is - strand
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
-        # ATGs structure is: [pos in sequence (-1 if absent, pos in ref seq 
+        # ATGs structure is: [pos in sequence (-1 if absent), pos in ref seq 
         # (-1 if absent), mutation information, is downstream of start codon?, 
         # is ATG new in annotated seq?, is ATG missing in annotated seq?]
         ATGs, TAA_TGA_TAG = [], []
@@ -1259,14 +1277,19 @@ class Transcript(object):
         # associated with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
-        reading_frame, start_codon = self._atg_choice(
+        reading_frame, start_codon, start_warnings = self._atg_choice(
                                     ATGs, 
                                     only_novel_upstream=only_novel_upstream,
                                     only_downstream=only_downstream, 
                                     only_reference=only_reference
                                 )
         if start_codon is None:
+            warnings.warning(''.join(['Start codon disrupted for transcript ',
+                                        self.transcript_id,
+                                        '; no valid peptides']))
             return {}
+        if len(start_warnings) > 0:
+            transcript_warnings.append(';'.join(start_warnings))
         if reading_frame:
             if type(start_codon[2]) == tuple:
                 frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])

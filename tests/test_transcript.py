@@ -18,7 +18,8 @@ class TestTranscript(unittest.TestCase):
                     )
         self.reference_index = bowtie_index.BowtieIndexReference(
                                                     self.ref_prefix)
-        # HBB-201: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
+        ## All following transcripts from GRCh37 genome build ##
+        # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
         self.transcript = Transcript(self.reference_index, 
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.', 
@@ -26,7 +27,7 @@ class TestTranscript(unittest.TestCase):
                                                     end, strand) in 
                                       self.cds['ENST00000335295.4_1']],
                                       'ENST00000335295.4_1')
-        # PTDSS2-201: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
+        # PTDSS2-001: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
         self.fwd_transcript = Transcript(self.reference_index, 
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.', 
@@ -34,7 +35,7 @@ class TestTranscript(unittest.TestCase):
                                                     end, strand) in 
                                       self.cds['ENST00000308020.5_1']],
                                       'ENST00000308020.5_1')
-        # OR52N1-201: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
+        # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
         self.all_coding_transcript = Transcript(self.reference_index, 
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.', 
@@ -42,22 +43,23 @@ class TestTranscript(unittest.TestCase):
                                                     end, strand) in 
                                       self.cds['ENST00000317078.1_1']],
                                       'ENST00000317078.1_1')
-        # ADM-203: 867bp transcript w/ 5 exons (3/5 coding) --> 185aa peptide
+        # CAPRIN1-001: 4108bp transcript w/ 19 exons (18/19 coding) --> 709aa peptide
         self.partial_coding_transcript = Transcript(self.reference_index, 
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.', 
                                       strand] for (chrom, seq_type, start, 
                                                     end, strand) in 
-                                      self.cds['ENST00000525063.2_1']],
-                                      'ENST00000525063.2_1')
-        # PRAL-201: 3,286bp transcript w/ 1 exon (non-coding) --> lncRNA
+                                      self.cds['ENST00000341394.8_1']],
+                                      'ENST00000341394.8_1')
+        # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(self.reference_index, 
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.', 
                                       strand] for (chrom, seq_type, start, 
                                                     end, strand) in 
-                                      self.cds['ENST00000624952.1_1']],
-                                      'ENST00000624952.1_1')
+                                      [['chr11', 'exon', 65190245, 65190854, '+'], 
+                                       ['chr11', 'exon', 65191098, 65192298, '+']]],
+                                      'ENST00000499732.2_1')
     def test_transcript_structure(self):
         """Fails if structure of unedited transcript is incorrect"""
         self.assertEqual(len(self.transcript.annotated_seq()), 3)
@@ -93,9 +95,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.transcript.reading_frame(5246848), 0)
         self.assertEqual(self.transcript.reading_frame(5247859), 1)
         self.assertEqual(self.transcript.reading_frame(5248014), 2)
-        # *****
-        # In a non-coding transcript
-        # self.assertEqual(self.non_coding_transcript.reading_frame(XX), XX)
     def test_fwd_reading_frame(self):
         """Fails if incorrect reading frame is called in fwd transcript"""
         # Before and after exons
@@ -112,12 +111,20 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.fwd_transcript.reading_frame(487029), 0)
         self.assertEqual(self.fwd_transcript.reading_frame(460270), 1)
         self.assertEqual(self.fwd_transcript.reading_frame(460259), 2)
-        # *****
+        # In non-coding transcript
+        self.assertIsNone(self.non_coding_transcript.reading_frame(65190449))
         # In a transcript with one or more non-coding exons
-        # self.assertEqual(self.partial_coding_transcript.reading_frame(XX), XX)
+        self.assertIsNone(
+                        self.partial_coding_transcript.reading_frame(34073265)
+                        )
+        self.assertEqual(
+                        self.partial_coding_transcript.reading_frame(34073973), 
+                        2
+                        )
     # Transcript sequence editing tests
     def test_irrelevant_edit(self):
-        """Fails if edit is made for non-coding exon position"""
+        """Fails if edit is made for intronic position"""
+        # In transcript with all coding exons
         self.transcript.edit('A', 5248155)
         relevant_edits = self.transcript.expressed_edits()
         self.assertEqual(self.transcript.edits[5248154], [('A', 'V', 'S', 
@@ -134,11 +141,31 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(self.transcript.annotated_seq()), 3)
         self.assertEqual(len([x for x in self.transcript.annotated_seq() 
                                         if x[1] != 'R']), 0)
-        # *****
-        # In a transcript with one or more non-coding exons
-        # In a non-coding transcript
+        # In a transcript with no coding exons
+        self.non_coding_transcript.edit('A', 65190856)
+        relevant_edits = self.non_coding_transcript.expressed_edits()
+        self.assertEqual(
+                         self.non_coding_transcript.edits[65190855], 
+                         [('A', 'V', 'S', 
+                          ('11', 65190856, 'T', 'A', 'V', None))]
+                        )
+        self.assertEqual(relevant_edits[0], {})
+        self.assertEqual(relevant_edits[1], [(65190243, 'R', ()), 
+                                             (65190853, 'R', ()), 
+                                             (65191096, 'R', ()), 
+                                             (65192297, 'R', ())])
+        # In a coding transcript with a noncoding exon
+        self.partial_coding_transcript.edit('T', 34073965)
+        relevant_edits = self.partial_coding_transcript.expressed_edits()
+        self.assertEqual(
+                    self.partial_coding_transcript.edits[34073964],
+                    [('T', 'V', 'S', ('11', 34073965, 'A', 'T', 'V', None))]
+                    )
+        self.assertEqual(relevant_edits[0], {})
+        self.assertEqual(len(relevant_edits[1]), 38)
     def test_relevant_edit(self):
         """Fails if edit is not made for position within exon"""
+        # In transcript with all coding exons
         self.transcript.edit('A', 5248299)
         relevant_edits = self.transcript.expressed_edits()
         self.assertEqual(self.transcript.edits[5248298], [('A', 'V', 'S',
@@ -159,8 +186,18 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.transcript.annotated_seq()[1][1], 'S')
         self.assertEqual(len([x for x in self.transcript.annotated_seq() 
                                         if x[1] != 'R']), 1)
-        # *****
-        # In a transcript with one or more non-coding exons
+        # In a transcript with no coding exons
+        self.non_coding_transcript.edit('A', 65190277)
+        relevant_edits = self.non_coding_transcript.expressed_edits()
+        self.assertEqual(relevant_edits[0], 
+                         {65190276: [('A', 'V', 'S', ('11', 65190277, 'C', 
+                                                      'A', 'V', None))]})
+        # In a coding transcript with a noncoding exon
+        self.partial_coding_transcript.edit('A', 34073237)
+        relevant_edits = self.partial_coding_transcript.expressed_edits()
+        self.assertEqual(relevant_edits[0], 
+                         {34073236: [('A', 'V', 'S', ('11', 34073237, 'C', 
+                                                      'A', 'V', None))]})
     def test_reset_to_reference(self):
         """Fails if transcript is not reset to reference"""
         self.transcript.edit('A', 5248299)
@@ -242,7 +279,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[3][0]), 5)
         self.assertEqual(len(seq[4][0]), 223)
         self.assertEqual(len(seq[5][0]), 263)
-        # maybe test w/ partial-coding transcript?
     def test_adjacent_indel(self):
         """Fails if exon-adjacent indel is inserted incorrectly"""
         self.transcript.edit('Q', 5248029, mutation_type='I')
@@ -260,8 +296,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[2][0]), 1)
         self.assertEqual(len(seq[3][0]), 222)
         self.assertEqual(len(seq[4][0]), 263)
-        # *****
-        # In a transcript with one or more non-coding exons
     def test_inside_deletion(self):
         """Fails if deletion completely within an exon is made improperly"""
         self.transcript.edit(3, 5246700, mutation_type='D')
@@ -302,6 +336,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[3][0]), 256)
     def test_spanning_deletion(self):
         """Fails if deletion spanning two or more exons is incorrect"""
+        # Spanning 2 exons
         self.transcript.edit(137, 5248025, mutation_type='D')
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(self.transcript.deletion_intervals[0][0:3],
@@ -313,7 +348,13 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq[0][0]), 140)
         self.assertEqual(len(seq[2][0]), 218)
         self.assertEqual(len(seq[3][0]), 263)
-        # need to test a deletion that spans more than two exons
+        # Spanning more than 2 exons
+        self.partial_coding_transcript.edit(23935, 34074178, mutation_type='D')
+        seq = self.partial_coding_transcript.annotated_seq()
+        self.assertEqual(len(seq), 17)
+        self.assertEqual(len(seq[2][2][0][2]), 23935)
+        self.assertEqual(len(seq[1][0]), 210)
+        self.assertEqual(len(seq[3][0]), 77)
     def test_deletion_over_transcript_start(self):
         """Fails if deletion spanning start of transcript is incorrect"""
         self.transcript.edit(5, 5246692, mutation_type='D')
@@ -489,9 +530,12 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(rev_peptides), 84)
         self.assertEqual(sorted(rev_peptides)[0], 'AHKYHYAR')
         self.assertEqual(sorted(rev_peptides)[-1], 'YHYARFLAVQF')
-        # *** test in partial coding transcript?
-        # also make sure non-sense transcript (i.e. no stop detected) returns
-        # peptides with the warning for potential nonsense mediated decay
+        # Check warnings for transcript with stop codon removed
+        self.all_coding_transcript.edit('T', 5809086)
+        peptides = self.all_coding_transcript.neopeptides()
+        for pep in peptides:
+            for mutation_data in peptides[pep]:
+                self.assertEqual(mutation_data[6], 'nonstop')
     def test_split_start(self):
         """Fails if split start codon is handled improperly"""
         self.fwd_transcript.edit('AT', 450419, mutation_type='I')
@@ -504,7 +548,11 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(rev_peptides), 42)
         self.assertEqual(sorted(rev_peptides)[0], 'ATSNRHHG')
         self.assertEqual(sorted(rev_peptides)[-1], 'TSNRHHGASDS')
-        ## *** test in partial coding transcript?
+        self.partial_coding_transcript.edit('A', 34073379)
+        partial_peptides = self.partial_coding_transcript.neopeptides().keys()
+        self.assertEqual(len(partial_peptides), 122)
+        self.assertEqual(sorted(partial_peptides)[0], 'AHDALGHQ')
+        self.assertEqual(sorted(partial_peptides)[-1], 'VVRTATAVGFL')
     def test_start_lost_peptides(self):
         """Fails if mutation altering start codon does not return peptides
            from a new start codon"""
@@ -517,36 +565,47 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(rev_peptides), 122)
         self.assertEqual(sorted(rev_peptides)[0], 'AGCWWSTL')
         self.assertEqual(sorted(rev_peptides)[-1], 'WWSTLGPRGSL')
-        # *** test in partial coding transcript?
+        self.partial_coding_transcript.edit('T', 34073968)
+        partial_peptides = self.partial_coding_transcript.neopeptides().keys()
+        self.assertEqual(partial_peptides, [])
+        # Next start is in the same reading frame
+        self.all_coding_transcript.edit('T', 5810046)
+        all_peptides = self.all_coding_transcript.neopeptides().keys()
+        self.assertEqual(all_peptides, [])
+        # From next start, peptide is only 4 aa
     def test_start_lost_and_new_inframe_start(self):
         """Fails if peptides aren't returned from a new in frame start 
            codon when the original is disrupted"""
         self.fwd_transcript.edit('ATG', 450446, mutation_type='I')
         self.fwd_transcript.edit('T', 450456)
-        peptides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True).keys()
         self.assertEqual(len(peptides), 20)
-        ### ***** Got to fix this one below (has it been fixed???)
         self.transcript.edit('CAT', 5248263, mutation_type='I')
         self.transcript.edit('G', 5248251)
-        rev_peptides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True).keys()
         self.assertEqual(len(rev_peptides), 24)
-        # *** test in partial coding transcript?
+        self.partial_coding_transcript.edit('T', 34073968)
+        self.partial_coding_transcript.edit('ATG', 34073397, mutation_type='I')
+        partial_peptides = self.partial_coding_transcript.neopeptides(only_novel_upstream=True).keys()
+        self.assertEqual(len(partial_peptides), 36)
     def test_start_lost_and_new_out_of_frame_start(self):
         """Fails if peptides aren't returned from a new out of frame start 
             codon when the original is disrupted"""
         self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
         self.fwd_transcript.edit('T', 450456)
-        peptides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True).keys()
         self.assertEqual(len(peptides), 98)
         self.transcript.edit('CAT', 5248280, mutation_type='I')
         self.transcript.edit('G', 5248251)
-        rev_peptides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True).keys()
         self.assertEqual(len(rev_peptides), 22)
-        # *** test in partial coding transcript?
-        ## test in all-coding transcript??
+        self.partial_coding_transcript.edit('T', 34073968)
+        self.partial_coding_transcript.edit('ATG', 34073396, mutation_type='I')
+        partial_peptides = self.partial_coding_transcript.neopeptides(only_novel_upstream=True).keys()
+        self.assertEqual(len(partial_peptides), 102)
     def test_skipping_new_start(self):
-        """Fails if peptides are returned from a new start codon when the 
-            original is retained"""
+        """Fails if peptides are returned from a new upstream start codon 
+            when the original is retained"""
         self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
         peptides = self.fwd_transcript.neopeptides(
                             only_downstream=True
@@ -557,8 +616,14 @@ class TestTranscript(unittest.TestCase):
                             only_downstream=True
                             ).keys()
         self.assertEqual(rev_peptides, [])
-        ## *** test in partial coding transcript?
-        ## test in a non-coding transcript??
+        self.partial_coding_transcript.edit('ATG', 34073397, mutation_type='I')
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+                                                    only_downstream=True
+                                                    ).keys()
+        self.assertEqual(partial_peptides, [])
+        self.non_coding_transcript.edit('ATG', 65190565, mutation_type='I')
+        noncoding_peptides = self.non_coding_transcript.neopeptides()
+        self.assertEqual(noncoding_peptides, {})
     def test_compound_indel_peptides(self):
         """Fails if incorrect peptides are returned with complementary
             indels are introduced (i.e. frameshift then return to frame)"""
@@ -577,7 +642,7 @@ class TestTranscript(unittest.TestCase):
             handled improperly"""
         self.all_coding_transcript.edit('C', 5810036)
         peptides = self.all_coding_transcript.neopeptides().keys()
-        self.assertEqual(len(peptides), 16)
+        self.assertEqual(len(peptides), 16) 
     def test_germline_vs_somatic(self):
         """"Fails if incorrect peptides are returned for different
             germline/somatic mutation inclusion decisions"""
@@ -592,10 +657,9 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(self.fwd_transcript.neopeptides(
                                         include_somatic=0,
                                         include_germline=2).keys()), 0)
-        ##### ****** test case when somatic=1 and germline=0
-#        self.assertEqual(len(self.fwd_transcript.neopeptides(
-#                                        include_somatic=1,
-#                                        include_germline=0).keys()), XXX)
+        self.assertEqual(len(self.fwd_transcript.neopeptides(
+                                        include_somatic=1,
+                                        include_germline=0).keys()), 38)
         self.assertEqual(len(self.fwd_transcript.neopeptides(
                                         include_somatic=1,
                                         include_germline=1).keys()), 38)
@@ -622,10 +686,9 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(self.transcript.neopeptides(
                                         include_somatic=0,
                                         include_germline=2).keys()), 0)
-        # need to test cases when somatic=1 and germline=0
-#        self.assertEqual(len(self.transcript.neopeptides(
-#                                        include_somatic=1,
-#                                        include_germline=0).keys()), XXX)
+        self.assertEqual(len(self.transcript.neopeptides(
+                                        include_somatic=1,
+                                        include_germline=0).keys()), 38)
         self.assertEqual(len(self.transcript.neopeptides(
                                         include_somatic=1,
                                         include_germline=1).keys()), 38)
@@ -653,7 +716,7 @@ class TestTranscript(unittest.TestCase):
         self.fwd_transcript.edit('C', 490588, mutation_type='V')
         self.fwd_transcript.edit('A', 490593, 
             mutation_type='V', mutation_class='G')  
-        self.fwd_transcript.edit("GAGGAGGAGGAG",450536,mutation_type="I")
+        self.fwd_transcript.edit('GAGGAGGAGGAG',450536,mutation_type='I')
         self.fwd_transcript.save()
         self.fwd_transcript.edit('T', 450457, mutation_type='D')
         self.fwd_transcript.reset()                                 
