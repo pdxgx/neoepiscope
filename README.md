@@ -1,17 +1,17 @@
 neoepiscope
 -----
-Neoepiscope is an neoepitope-prediction software for use in cancer immunotherapy research. Neoscan works with both missense and indel mutations, phasing somatic and germlines from the same haplotype together for more comphrensive neoepitope prediction.
+`neoepiscope` is software for predicting neoepitopes from DNA sequencing (DNA-seq) data. Where most neoepitope prediction software confines attention to neoepitopes arising from at most one somatic mutation, often just an SNV, `neoepiscope` uses assembled haplotype output of [HapCUT2](https://github.com/vibansal/HapCUT2) to also enumerate neoepitopes arising from more than one somatic mutation. `neoepiscope` also takes into account frameshifting from indels and permits personalizing the reference transcriptome using germline variants.
 
 License
 -----
-[MIT](http://choosealicense.com/licenses/mit/) License
-
-
+`neoepiscope` is licensed under the [MIT](http://choosealicense.com/licenses/mit/) license. See `LICENSE`[LICENSE] for more details.
 
 Installing Neoepiscope
 -----
 
+First clone this repo to `/path/to/neoepiscope/repo`; then run
 
+```pip install /path/to/neoepiscope/repo```.
 
 Using Neoepiscope
 -----
