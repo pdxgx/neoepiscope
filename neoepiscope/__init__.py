@@ -158,7 +158,8 @@ def main():
     elif args.subparser_name == 'call':
         # Load pickled dictionaries and prepare bowtie index
         if args.build is not None:
-            if args.build == 'GRCh38':
+            if (args.build == 'GRCh38' and paths.gencode_v27 is not None 
+                            and paths.bowtie_grch38 is not None):
                 with open(os.path.join(
                             paths.gencode_v27, 'intervals_to_transcript.pickle'
                         ), 'rb') as interval_stream:
@@ -168,7 +169,8 @@ def main():
                         ), 'rb') as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
-            elif args.build == 'hg19':
+            elif (args.build == 'hg19' and paths.gencode_v19 is not None 
+                            and paths.bowtie_hg19 is not None):
                 with open(os.path.join(
                             paths.gencode_v19, 'intervals_to_transcript.pickle'
                         ), 'rb') as interval_stream:
@@ -180,7 +182,7 @@ def main():
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
             else:
                 raise RuntimeError(''.join([args.build, 
-                                            ' is not an available genome  build']))
+                                            ' is not an available genome build']))
         else:
             if args.bowtie_index is not None and args.dicts is not None:
                 with open(os.path.join(
