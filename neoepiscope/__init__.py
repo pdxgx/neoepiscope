@@ -130,7 +130,7 @@ def main():
             help='path to output file'
         )
     call_parser.add_argument('-u', '--upstream_atgs', type=str, required=False,
-            default='novel', help='how to handle upstream start codons, see '
+            default='none', help='how to handle upstream start codons, see '
             'documentation online for more information'
         )
     call_parser.add_argument('-g', '--germline', type=str, required=False,
@@ -325,17 +325,17 @@ def main():
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
         # Establish handling of ATGs
-        if args.upstream_atgs == 'novel':
+        if args.upstream_atgs == 'none':
+            only_novel_upstream = False
+            only_downstream = True
+            only_reference = False
+        elif args.upstream_atgs == 'novel':
             only_novel_upstream = True
             only_downstream = False
             only_reference = False
         elif args.upstream_atgs == 'all':
             only_novel_upstream = False
             only_downstream = False
-            only_reference = False
-        elif args.upstream_atgs == 'none':
-            only_novel_upstream = False
-            only_downstream = True
             only_reference = False
         elif args.upstream_atgs == 'reference':
             only_novel_upstream = False
