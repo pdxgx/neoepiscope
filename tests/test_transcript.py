@@ -367,6 +367,20 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq2), 13)
         self.assertEqual(seq2[0][0], '')
         self.assertEqual(len(seq2[1][0]), 353)
+    def test_adjacent_deletions(self):
+        """Fails if adjacent deletions are handled incorrectly"""
+        self.fwd_transcript.edit(5, 450286, mutation_type='D', mutation_class='G')
+        self.fwd_transcript.edit(5, 450291, mutation_type='D')
+        seq = self.fwd_transcript.annotated_seq()
+        self.assertEqual(len(seq), 15)
+        self.assertEqual(seq[1][1], 'G')
+        self.assertEqual(seq[2][1], 'S')
+        self.transcript.edit(5, 5248292, mutation_type='D', mutation_class='G')
+        self.transcript.edit(5, 5248287, mutation_type='D')
+        seq2 = self.transcript.annotated_seq()
+        self.assertEqual(len(seq2), 6)
+        self.assertEqual(seq[1][1], 'G')
+        self.assertEqual(seq[2][1], 'S')
     def test_deletion_of_transcript(self):
         """Fails if deletion of entire transcript is incorrect"""
         self.transcript.edit(1700, 5246690, mutation_type='D')
@@ -539,17 +553,23 @@ class TestTranscript(unittest.TestCase):
     def test_split_start(self):
         """Fails if split start codon is handled improperly"""
         self.fwd_transcript.edit('AT', 450419, mutation_type='I')
-        peptides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(
+                                            only_novel_upstream=True,
+                                            only_downstream=False).keys()
         self.assertEqual(len(peptides), 278)
         self.assertEqual(sorted(peptides)[0], 'AAAAPSPR')
         self.assertEqual(sorted(peptides)[-1], 'WRSRLTGRLPA')
         self.transcript.edit('T', 5248290, mutation_type='I')
-        rev_peptides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(
+                                            only_novel_upstream=True,
+                                            only_downstream=False).keys()
         self.assertEqual(len(rev_peptides), 42)
         self.assertEqual(sorted(rev_peptides)[0], 'ATSNRHHG')
         self.assertEqual(sorted(rev_peptides)[-1], 'TSNRHHGASDS')
         self.partial_coding_transcript.edit('A', 34073379)
-        partial_peptides = self.partial_coding_transcript.neopeptides().keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+                                            only_novel_upstream=True,
+                                            only_downstream=False).keys()
         self.assertEqual(len(partial_peptides), 122)
         self.assertEqual(sorted(partial_peptides)[0], 'AHDALGHQ')
         self.assertEqual(sorted(partial_peptides)[-1], 'VVRTATAVGFL')
@@ -578,30 +598,38 @@ class TestTranscript(unittest.TestCase):
            codon when the original is disrupted"""
         self.fwd_transcript.edit('ATG', 450446, mutation_type='I')
         self.fwd_transcript.edit('T', 450456)
-        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True).keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True,
+                                                   only_downstream=False).keys()
         self.assertEqual(len(peptides), 20)
         self.transcript.edit('CAT', 5248263, mutation_type='I')
         self.transcript.edit('G', 5248251)
-        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True).keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True,
+                                                   only_downstream=False).keys()
         self.assertEqual(len(rev_peptides), 24)
         self.partial_coding_transcript.edit('T', 34073968)
         self.partial_coding_transcript.edit('ATG', 34073397, mutation_type='I')
-        partial_peptides = self.partial_coding_transcript.neopeptides(only_novel_upstream=True).keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+                                                only_novel_upstream=True,
+                                                only_downstream=False).keys()
         self.assertEqual(len(partial_peptides), 36)
     def test_start_lost_and_new_out_of_frame_start(self):
         """Fails if peptides aren't returned from a new out of frame start 
             codon when the original is disrupted"""
         self.fwd_transcript.edit('ATG', 450445, mutation_type='I')
         self.fwd_transcript.edit('T', 450456)
-        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True).keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True,
+                                                   only_downstream=False).keys()
         self.assertEqual(len(peptides), 98)
         self.transcript.edit('CAT', 5248280, mutation_type='I')
         self.transcript.edit('G', 5248251)
-        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True).keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True,
+                                                   only_downstream=False).keys()
         self.assertEqual(len(rev_peptides), 22)
         self.partial_coding_transcript.edit('T', 34073968)
         self.partial_coding_transcript.edit('ATG', 34073396, mutation_type='I')
-        partial_peptides = self.partial_coding_transcript.neopeptides(only_novel_upstream=True).keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+                                                only_novel_upstream=True,
+                                                only_downstream=False).keys()
         self.assertEqual(len(partial_peptides), 102)
     def test_skipping_new_start(self):
         """Fails if peptides are returned from a new upstream start codon 
@@ -707,6 +735,7 @@ class TestTranscript(unittest.TestCase):
     def test_compound_all(self):
         """Fails if incorrect peptides are returned when multiple
             germline/somatic mutations are introduced"""
+        # Forward transcript
         self.fwd_transcript.edit('AAA', 490579, 
             mutation_type='I', mutation_class='G')
         self.fwd_transcript.edit('C', 490580, mutation_type='V')
@@ -747,8 +776,23 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(sorted(rev_peptides)[13], 'DEVGGALG')
         self.assertEqual(sorted(rev_peptides)[-13], 'VNVDEVGGALG')
         self.assertEqual(sorted(rev_peptides)[0], 'AAYQKMVA')
-        # test in partial-coding transcript as well??
-        # test in all/only coding transcript as well
+        # Partially coding transcript
+        self.partial_coding_transcript.edit('AAA', 34073967, 
+                                    mutation_type='I', mutation_class='G')
+        self.partial_coding_transcript.edit(1, 34073973, mutation_type='D')
+        self.partial_coding_transcript.edit('T', 34073988, mutation_type='I')
+        self.partial_coding_transcript.edit(9, 34074019, 
+                                    mutation_type='D', mutation_class='G')
+        partial_peptides = self.partial_coding_transcript.neopeptides().keys()
+        self.assertEqual(len(partial_peptides), 28)
+        # All coding transcript
+        self.all_coding_transcript.edit('AAA', 5810046, 
+                                    mutation_type='I', mutation_class='G')
+        self.all_coding_transcript.edit(1, 5810032, mutation_type='D')
+        self.all_coding_transcript.edit('T', 5810012, mutation_type='I')
+        all_peptides = self.all_coding_transcript.neopeptides()
+        self.assertEqual(all_peptides, {'MSFLKAPA': [('11', 5810032, 'A', 
+                                                      '', 'D', None, 'NA')]})
 
 if __name__ == '__main__':
     unittest.main()

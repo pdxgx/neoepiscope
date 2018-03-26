@@ -13,10 +13,20 @@ First clone this repo to `/path/to/neoepiscope/repo`; then run
 
 ```pip install /path/to/neoepiscope/repo```.
 
+To download compatible reference annotation files (hg19 and/or GRCh38) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. From within `/path/to/neoepiscope/repo` run
+
+```python setup.py download```
+
+and respond to the prompts as relevant for your needs.
+
+To make sure that the software is running properly, test it by running
+
+```python setup.py test```
+
 Using Neoepiscope
 -----
 
-Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
+If you aren't using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
 
 ```neoepiscope index -g <GTF> -d <DIRECTORY TO HOLD PICKLED DICTIONARIES>```
 
