@@ -539,26 +539,6 @@ class Transcript(object):
                 else:
                     adjusted_intervals.append((intervals[i][0], 'R', 
                                             tuple(), None))
-                # Adjust mutation class to reflect hybrid mutation if needed
-                if (intervals[i][1] != intervals[i-1][1] and i % 2 and 
-                        intervals[i][1] != 'R' and intervals[i-1][1] != 'R'):
-                    mutation_class = ''.join([intervals[i-1][1], 
-                                                intervals[i][1]])
-                else:
-                    mutation_class = intervals[i-1][1]
-                # Adjust mutation data to reflect hybrid mutation if needed
-                if (intervals[i-1][2] != intervals[i][2] and 
-                                intervals[i][2] not in deletion_data and
-                                intervals[i-1] != 'R'):
-                    mutation_data = []
-                    mutation_data.append(intervals[i-1][2])
-                    mutation_data.append(intervals[i][2])
-                else:
-                    mutation_data = intervals[i-1][2]
-                # Update previous interval
-                adjusted_intervals[i-1] = (adjusted_intervals[i-1][0],
-                                                mutation_class,
-                                                mutation_data)
         return (edits, adjusted_intervals)
 
     def save(self):
@@ -906,7 +886,8 @@ class Transcript(object):
                 only_novel_upstream.
             only_reference: True if and only if only the original start codon
                 is allowed; overrides only_downstream and only_novel_upstream
-            Return value: tuple (reading_frame, chosen atg from atgs)
+            Return value: tuple (reading_frame, chosen atg from atgs, 
+                                reference atg, warnings about start codon choice)
         """
         encountered_true_start = False
         atg_priority_list = []
@@ -917,12 +898,12 @@ class Transcript(object):
                 if not atg[5] and atg_priority_list == []:
                     '''If the original start codon is maintained in the edited 
                         transcript, immediately return it.'''
-                    return 0, atg, []
+                    return 0, atg, atg, []
                 else:
                     '''If the original start codon is missing in the edited
                         transcript, maintain it to keep track of reading frame
                         changes for new start'''
-                    coding_ref_start = atg[0]
+                    coding_ref_start = atg
                     if atg[5]:
                         start_disrupting_muts.append(atg[2])
                         start_warnings.append('reference_start_codon_disrupted')
@@ -947,7 +928,7 @@ class Transcript(object):
             start_codon = atg_priority_list[0]
             if start_codon[2] == [()]:
                 start_codon[2] = start_disrupting_muts
-            distance = start_codon[0] - coding_ref_start
+            distance = start_codon[0] - coding_ref_start[0]
             if start_codon[3]:
                 direction = 'downstream'
             else:
@@ -963,11 +944,11 @@ class Transcript(object):
             start_warnings.append('_'.join([novelty, direction, 'start',
                                             'codon', str(distance), 'bp', 'from'
                                             'reference', 'start', 'codon']))
-        return (start_codon[0] - coding_ref_start) % 3, start_codon, start_warnings
+        return (start_codon[0] - coding_ref_start[0]) % 3, start_codon, coding_ref_start, start_warnings
 
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
-        include_germline=2, only_novel_upstream=True, only_downstream=False, 
+        include_germline=2, only_novel_upstream=False, only_downstream=True, 
         only_reference=False):
         """ Retrieves dict of predicted peptide fragments from transcript that 
             arise from one or more variants. 
@@ -1267,7 +1248,7 @@ class Transcript(object):
                         for i in seq[2]:
                             ref_sequence += i[2]
                 ref_counter += len(seq[0])
-                continue
+                continue            
         # find location of start codon in annotated_seq v. reference
         if not ATGs:
             return {}
@@ -1277,7 +1258,7 @@ class Transcript(object):
         # associated with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
-        reading_frame, start_codon, start_warnings = self._atg_choice(
+        reading_frame, start_codon, ref_atg, start_warnings = self._atg_choice(
                                     ATGs, 
                                     only_novel_upstream=only_novel_upstream,
                                     only_downstream=only_downstream, 
@@ -1323,9 +1304,6 @@ class Transcript(object):
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
             if counter < coding_start + 2:
-                ### Update coordinates for things overlap start, but not frameshifts!!
-                ######
-                ###
                 if len(seq[0]) + counter < coding_start:
                     counter += len(seq[0])
                     continue
@@ -1449,10 +1427,10 @@ class Transcript(object):
                     frame_shifts[i-1][3] = counter
                 else:
                     break
-        protein = seq_to_peptide(sequence[coding_start:],
+        protein = seq_to_peptide(sequence[start_codon[0]:],
                                  reverse_strand=False)
         if compare_peptides_to_ref:
-            protein_ref = seq_to_peptide(ref_sequence[ref_start:],
+            protein_ref = seq_to_peptide(ref_sequence[ref_atg[1]:],
                                          reverse_strand=False)
         if TAA_TGA_TAG == []:
             if 'X' in protein:
