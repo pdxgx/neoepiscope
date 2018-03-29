@@ -296,24 +296,37 @@ class Transcript(object):
                                     pos + deletion_size + 1  - pos - 1
                                 )
                 if seq == ref_deletion:
-                    self.deletion_intervals.append(
-                            (pos - 2, pos + deletion_size - 2, mutation_class, 
+                    del_interval = (pos - 2, pos + deletion_size - 2, mutation_class, 
                                 (self.chrom, pos, seq, '', mutation_type, vaf))
-                        )
                 else:
                     raise RuntimeError(''.join(['Deletion of ', seq, 
                                                 ' at position ', str(pos), 
                                                 ' on contig ', self.chrom, 
                                                 ' is incompatible with reference']))
             else:
-                self.deletion_intervals.append(
-                        (pos - 2, pos + deletion_size - 2, mutation_class, 
-                            (self.chrom, pos,
+                del_interval = (pos - 2, pos + deletion_size - 2, mutation_class, 
+                                (self.chrom, pos,
                                 self.bowtie_reference_index.get_stretch(
                                     self.chrom, pos - 1, 
                                     pos + deletion_size + 1  - pos - 1
                                 ), '', mutation_type, vaf))
-                    )
+            for interval in self.deletion_intervals:
+                if del_interval[2] == interval[2]:
+                    if ((del_interval[0] >= interval[0] 
+                                and del_interval[0] <= interval[1]) 
+                        or (del_interval[1] >= interval[0] 
+                                and del_interval[1] <= interval[1])):
+                        class_dict = {'S':'somatic', 'G':'germline'}
+                        raise NotImplementedError(''.join([
+                                            '2 deletions of same class cannot', 
+                                            ' overlap - was deletion of ',
+                                            del_interval[3][2], ' at ',
+                                            str(pos), ' or deletion of ',
+                                            interval[3][2], ' at ', 
+                                            str(interval[0]+2), ' not a ', 
+                                            class_dict[mutation_class], 
+                                            ' mutation?']))
+            self.deletion_intervals.append(del_interval)
         elif mutation_type == 'I': 
             self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
                                     (self.chrom, pos, '', seq, mutation_type, 
@@ -681,16 +694,20 @@ class Transcript(object):
             Return value: list of tuples (sequence, mutation class,
                 mutation information, position),
                 where sequence is a segment of sequence of the (possibly)
-                mutated transcript, mutation class is one of {'G', 'S', 'R'},
-                where 'G' denotes germline, 'S' denotes somatic, and 'R'
-                denotes reference sequence, mutation information is the
-                tuple (1-based position of {first base of deletion,
-                base before insertion, SNV},
-                {deleted sequence, inserted sequence, reference base},
+                mutated transcript, mutation class is one of {'G', 'S', 'H', 'R'},
+                where 'G' denotes germline, 'S' denotes somatic, 'H' denotes hybrid 
+                of somatic and germline, and 'R' denotes reference sequence, 
+                mutation information is a list of tuple(s) (chromosome, 
+                1-based position of {first base of deletion, base before 
+                insertion, SNV}, reference sequence, variant sequence,
                 {'D', 'I', 'V'}, VAF) , and position is the 1-based position
-                of the first base of sequence.
+                of the first base of sequence. For hybrid, the tuple structure
+                of mutation information is nested inside of a list: [[ALT], [REF]],
+                where ALT and REF are structured as [chromosome, adj. position, 
+                adj. deletion, mutation information] for the alternate and
+                reference sequences, respectively.
         """
-        if end < start: return ''
+        if end < start: return []
         # Use 0-based coordinates internally
         if start is None:
             start = self.intervals[0] + 2
