@@ -369,7 +369,8 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq2[1][0]), 353)
     def test_adjacent_deletions(self):
         """Fails if adjacent deletions are handled incorrectly"""
-        self.fwd_transcript.edit(5, 450286, mutation_type='D', mutation_class='G')
+        self.fwd_transcript.edit(5, 450286, mutation_type='D', 
+                                  mutation_class='G')
         self.fwd_transcript.edit(5, 450291, mutation_type='D')
         seq = self.fwd_transcript.annotated_seq()
         self.assertEqual(len(seq), 15)
@@ -381,6 +382,49 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(seq2), 6)
         self.assertEqual(seq[1][1], 'G')
         self.assertEqual(seq[2][1], 'S')
+    def test_hybrid_deletions(self):
+        """Fails if overlapping germline and somatic deletions are hybridized 
+            incorrectly"""
+        # Forward transcript
+        self.fwd_transcript.edit(5, 450550, mutation_type='D')
+        self.fwd_transcript.edit(5, 450552, mutation_type='D', 
+                                  mutation_class='G')
+        seq = self.fwd_transcript.annotated_seq()
+        self.assertEqual(seq[1][0], '')
+        self.assertEqual(seq[1][1], 'H')
+        self.assertEqual(seq[1][2][0], ['11', 450550, 'CGTCTGC', [('11', 
+                                                                   450550, 
+                                                                   'CGTCT', '', 
+                                                                   'D', None),
+                                                                  ('11', 
+                                                                   450552, 
+                                                                   'TCTGC', '', 
+                                                                   'D', 
+                                                                   None)]])
+        self.assertEqual(seq[1][2][1], ['11', 450552, 'TCTGC', [('11', 450552, 
+                                                                 'TCTGC', '', 
+                                                                 'D', None)]])
+        # Reverse transcript
+        self.transcript.edit(5, 5248211, mutation_type='D', mutation_class='G')
+        self.transcript.edit(5, 5248208, mutation_type='D')
+        seq2 = self.transcript.annotated_seq()
+        self.assertEqual(seq2[1][0], '')
+        self.assertEqual(seq2[1][1], 'H')
+        self.assertEqual(seq2[1][2][0], ['11', 5248208, 'AGGGCAGT', [('11', 
+                                                                      5248211, 
+                                                                      'GCAGT', 
+                                                                      '', 'D', 
+                                                                      None), 
+                                                                     ('11', 
+                                                                      5248208, 
+                                                                      'AGGGC', 
+                                                                      '', 'D', 
+                                                                      None)]])
+        self.assertEqual(seq2[1][2][1], ['11', 5248211, 'GCAGT', [('11', 
+                                                                      5248211, 
+                                                                      'GCAGT', 
+                                                                      '', 'D', 
+                                                                      None)]])
     def test_deletion_of_transcript(self):
         """Fails if deletion of entire transcript is incorrect"""
         self.transcript.edit(1700, 5246690, mutation_type='D')
