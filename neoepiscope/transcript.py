@@ -809,7 +809,7 @@ class Transcript(object):
                 of the first base of sequence. For hybrid, the tuple structure
                 of mutation information is nested inside of a list: [[ALT], [REF]],
                 where ALT and REF are structured as [chromosome, adj. position, 
-                adj. deletion, mutation information] for the alternate and
+                adj. deletion, allele seq, [mutation information]] for the alternate and
                 reference sequences, respectively.
         """
         if end < start: return []
@@ -1261,7 +1261,7 @@ class Transcript(object):
                                 found_all_variants = True
                             i -= 1
                     ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
-                     ATG1 >= coding_start and coding_start >= 0, True, False])
+                        ATG1 >= coding_start and coding_start >= 0, True, False])
                     ATG_counter1 = max(ATG_counter1, ATG1 + 1)
                     ATG1 = sequence.find('ATG', ATG_counter1)
                 else:
@@ -1316,6 +1316,36 @@ class Transcript(object):
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
+            elif seq[1] == 'H':
+            	if (coding_start < 0
+            		and seq[2][0][1]*strand + len(seq[2][0][2]) > start * strand):
+                    coding_start = counter + (
+                            start - seq[2][0][1] + 2 * self.rev_strand
+                        ) * strand
+            	if (ref_start < 0
+            		and seq[2][1][1]*strand + len(seq[2][1][2]) > start * strand):
+                    ref_start = ref_counter + (
+                            start - seq[2][1][1] + 2 * self.rev_strand
+                        ) * strand
+                if (ref_stop < 0
+                    and seq[2][1][1]*strand + len(seq[2][1][2]) > stop * strand):
+                    coding_stop = counter + (
+                                stop - seq[2][0][1] + 2 * self.rev_strand
+                            ) * strand
+                    ref_stop = ref_counter + (
+                                stop - seq[2][1][1] + 2 * self.rev_strand
+                            ) * strand
+                    TAA_TGA_TAG = seq            	
+                sequence += seq[2][0][3]
+            	counter += len(seq[2][0][3])
+                if self.rev_strand:
+                    ref_sequence += seq[2][1][3][::-1].translate(
+                                                    revcomp_translation_table
+                                                )
+                else:
+                	ref_sequence += seq[2][1][3]
+            	ref_counter += len(seq[2][1][3])
+            	continue
             elif seq[2][0][4] == 'D':
                 if (ref_start < 0
                     and seq[3]*strand + len(seq[2][0][2]) > start * strand):
@@ -1334,11 +1364,11 @@ class Transcript(object):
                                 stop - seq[3] + 2 * self.rev_strand
                             ) * strand
                     TAA_TGA_TAG = seq
-                if ((seq[1] == 'G' and include_germline == 2) or 
+                if not ((seq[1] == 'G' and include_germline == 2) or 
                     (seq[1] == 'S' and include_somatic == 2)):                  
-                    ref_sequence += seq[0]
-                    ref_counter += len(seq[0])
-                else:
+#                    ref_sequence += seq[0]
+#                    ref_counter += len(seq[0])
+#                else:
                     if self.rev_strand:
                         for i in seq[2]:
                             ref_sequence += i[2][::-1].translate(
@@ -1464,6 +1494,16 @@ class Transcript(object):
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
             if counter < coding_start + 2:
+                # deal with start site???? in alt v. ref?
+                if seq[1] == 'H':
+                    counter += len(seq[2][0][3])
+                    ref_counter += len(seq[2][1][3])
+#                    if counter + len(seq[0]) > coding_start:
+
+#                        compare_peptides_to_ref = True
+                    coordinates.append([start, seq[2][0][1] + len(seq[2][0][3])*strand -1,
+                                        counter, counter + len(seq[2][0][3]) - 1, seq[2][0][4]])
+                    continue
                 if len(seq[0]) + counter < coding_start:
                     counter += len(seq[0])
                     continue
@@ -1500,7 +1540,42 @@ class Transcript(object):
                     break                        
             # log variants
             # handle potential frame shifts from indels
-            if seq[2][0][4] == 'D':
+            if seq[1] == 'H':
+                print("hybrid deletion interval -- here 3")
+                coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
+                                counter, counter + len(seq[0]) -1 , seq[2]])
+                compare_peptides_to_ref = True
+                read_frame1 = self.reading_frame(seq[3] + len(seq[2][1][2]))
+                read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
+                if read_frame1 is None or read_frame2 is None:
+                    # these cases NOT addressed at present 
+                    # (e.g. deletion involves all or part of intron)
+                    break
+                if read_frame1 != read_frame2:
+                    # splicing variation (e.g. deletion of part of intron/exon)
+                    if reading_frame == 0:
+                        reading_frame = (read_frame1 - read_frame2) % 3
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1, list(set(seq[2][0][3]+seq[2][1][3]))]
+                            )
+                    elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
+                        # close out all frame_shifts ending in -1
+                        for i in range(len(frame_shifts), 0, -1):
+                            if frame_shifts[i-1][1] < 0:
+                                frame_shifts[i-1][1] = seq[3] + len(seq[2][0][2])
+                                frame_shifts[i-1][3] = counter + len(seq[2][0][2])
+                            else:
+                                break
+                        reading_frame = 0
+                    else:
+                        frame_shifts.append(
+                                [seq[2][0][1], -1, counter, -1, list(set(seq[2][0][3]+seq[2][1][3]))]
+                            )
+                        reading_frame = (
+                                reading_frame + read_frame1 - read_frame2
+                            ) % 3
+                continue
+            elif seq[2][0][4] == 'D':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
                                 counter, counter + len(seq[0]) -1 , seq[2]])
                 compare_peptides_to_ref = True
