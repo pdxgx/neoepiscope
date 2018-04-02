@@ -507,6 +507,28 @@ class Transcript(object):
                     relevant_deletion_intervals.append(end_pos)
         intervals = sorted([(interval, 'R', tuple()) for interval in 
                             intervals] + relevant_deletion_intervals)
+        # Remove empty intervals
+        intervals = [intervals[i] for i in range(len(intervals))
+                         if (i % 2
+                             and intervals[i][0] != intervals[i-1][0]
+                             or i % 2 == 0
+                             and intervals[i+1][0] != intervals[i][0])]
+        # Only associate one end of a deletion interval with deletion
+        #   to prevent including it multiple times
+        adjusted_intervals = [intervals[0]]
+        deletion_data = []
+        if intervals[0][1] != 'R':
+            deletion_data.append(intervals[0][2])
+        for i in range(1, len(intervals)):
+            if intervals[i][1] == 'R':
+                adjusted_intervals.append(intervals[i])
+            else:
+                if intervals[i][2] not in deletion_data:
+                    adjusted_intervals.append(intervals[i])
+                    deletion_data.append(intervals[i][2])
+                else:
+                    adjusted_intervals.append((intervals[i][0], 'R', 
+                                            tuple(), None))
         edits = collections.defaultdict(list)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
@@ -530,28 +552,6 @@ class Transcript(object):
                 if len(snvs) > 1:
                     germ = [v for v in snvs if v[2] == 'G'][0]
                     edits[pos].remove(germ)
-        # Remove empty intervals
-        intervals = [intervals[i] for i in range(len(intervals))
-                         if (i % 2
-                             and intervals[i][0] != intervals[i-1][0]
-                             or i % 2 == 0
-                             and intervals[i+1][0] != intervals[i][0])]
-        # Only associate one end of a deletion interval with deletion
-        #   to prevent including it multiple times
-        adjusted_intervals = [intervals[0]]
-        deletion_data = []
-        if intervals[0][1] != 'R':
-            deletion_data.append(intervals[0][2])
-        for i in range(1, len(intervals)):
-            if intervals[i][1] == 'R':
-                adjusted_intervals.append(intervals[i])
-            else:
-                if intervals[i][2] not in deletion_data:
-                    adjusted_intervals.append(intervals[i])
-                    deletion_data.append(intervals[i][2])
-                else:
-                    adjusted_intervals.append((intervals[i][0], 'R', 
-                                            tuple(), None))
         return (edits, adjusted_intervals)
 
     def save(self):
