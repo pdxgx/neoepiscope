@@ -1560,12 +1560,12 @@ class Transcript(object):
                                 counter, counter + len(seq[0]) -1, 
                                 seq[2][0][4]])
                 compare_peptides_to_ref = True
-                read_frame1 = self.reading_frame(seq[2][1][1] + len(seq[2][1][2]))
+                read_frame1 = self.reading_frame(seq[2][1][1] + len(seq[2][1][3]))
                 if read_frame1 is None:
                     # this case NOT addressed at present 
                     # (e.g. deletion involves all or part of intron)
                     break
-                read_frame2 = (read_frame1 + len(seq[2][0][3])) % 3
+                read_frame2 = self.reading_frame(seq[2][0][1] + len(seq[2][0][3]))
                 if read_frame1 != read_frame2:
                     # splicing variation (e.g. deletion of part of intron/exon)
                     if reading_frame == 0:
