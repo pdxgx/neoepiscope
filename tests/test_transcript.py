@@ -392,7 +392,7 @@ class TestTranscript(unittest.TestCase):
         seq = self.fwd_transcript.annotated_seq()
         self.assertEqual(seq[1][0], '')
         self.assertEqual(seq[1][1], 'H')
-        self.assertEqual(seq[1][2][0], ['11', 450550, 'CGTCTGC', [('11', 
+        self.assertEqual(seq[1][2][0], ['11', 450550, 'CGTCTGC', '', [('11', 
                                                                    450550, 
                                                                    'CGTCT', '', 
                                                                    'D', None),
@@ -401,16 +401,18 @@ class TestTranscript(unittest.TestCase):
                                                                    'TCTGC', '', 
                                                                    'D', 
                                                                    None)]])
-        self.assertEqual(seq[1][2][1], ['11', 450552, 'TCTGC', [('11', 450552, 
-                                                                 'TCTGC', '', 
-                                                                 'D', None)]])
+        self.assertEqual(seq[1][2][1], ['11', 450552, 'TCTGC', 'CG', [('11', 
+                                                                       450552, 
+                                                                       'TCTGC', 
+                                                                       '', 'D', 
+                                                                       None)]])
         # Reverse transcript
         self.transcript.edit(5, 5248211, mutation_type='D', mutation_class='G')
         self.transcript.edit(5, 5248208, mutation_type='D')
         seq2 = self.transcript.annotated_seq()
         self.assertEqual(seq2[1][0], '')
         self.assertEqual(seq2[1][1], 'H')
-        self.assertEqual(seq2[1][2][0], ['11', 5248208, 'AGGGCAGT', [('11', 
+        self.assertEqual(seq2[1][2][0], ['11', 5248208, 'AGGGCAGT', '', [('11', 
                                                                       5248211, 
                                                                       'GCAGT', 
                                                                       '', 'D', 
@@ -420,7 +422,7 @@ class TestTranscript(unittest.TestCase):
                                                                       'AGGGC', 
                                                                       '', 'D', 
                                                                       None)]])
-        self.assertEqual(seq2[1][2][1], ['11', 5248211, 'GCAGT', [('11', 
+        self.assertEqual(seq2[1][2][1], ['11', 5248211, 'GCAGT', 'AGG', [('11', 
                                                                       5248211, 
                                                                       'GCAGT', 
                                                                       '', 'D', 
@@ -715,6 +717,21 @@ class TestTranscript(unittest.TestCase):
         self.all_coding_transcript.edit('C', 5810036)
         peptides = self.all_coding_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 16) 
+    def test_hybrid_deletion_peptides(self):
+        """Fails if peptides from hybrid deletion are returned incorrectly"""
+        # Forward transcript
+        self.fwd_transcript.edit(5, 450550, mutation_type='D')
+        self.fwd_transcript.edit(5, 450552, mutation_type='D', 
+                                  mutation_class='G')
+        peptides = self.fwd_transcript.neopeptides().keys()
+        self.assertEqual(len(peptides), 124)
+        self.assertEqual(sorted(peptides)[0], 'AAAAPSPR')
+        self.assertEqual(sorted(peptides)[-1], 'TTTAPTPSSGE')
+        # Reverse transcript
+        self.transcript.edit(5, 5248211, mutation_type='D', mutation_class='G')
+        self.transcript.edit(5, 5248208, mutation_type='D')
+        rev_peptides = self.transcript.neopeptides().keys()
+        self.assertEqual(len(rev_peptides), 28)
     def test_germline_vs_somatic(self):
         """"Fails if incorrect peptides are returned for different
             germline/somatic mutation inclusion decisions"""

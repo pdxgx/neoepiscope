@@ -714,17 +714,19 @@ class Transcript(object):
             prev_chrom, prev_pos = prev_seq[2][0][0], prev_seq[3]
             prev_del_seq = ''.join([x[2] for x in prev_seq[2]])
             prev_mut_info = prev_seq[2]
-            alt = [prev_chrom, prev_pos, prev_del_seq, prev_mut_info]
+            alt = [prev_chrom, prev_pos, prev_del_seq, '', prev_mut_info]
             if ((prev_seq[1] == 'G' and include_germline == 2) 
                         or (prev_seq[1] == 'S' and include_somatic == 2)):
                 
-                ref = [self.chrom, prev_pos, prev_del_seq, prev_mut_info]
+                ref = [self.chrom, prev_pos, prev_del_seq, '', prev_mut_info]
             else:
-                ref = [self.chrom, new_seq[3], '', []]
+                ref = [self.chrom, new_seq[3], '', prev_del_seq, []]
         adj_alt_seq = copy.copy(alt[2])
-        adj_alt_mut_info = copy.copy(alt[3])
+        adj_alt_allele = copy.copy(alt[3])
+        adj_alt_mut_info = copy.copy(alt[4])
         adj_ref_seq = copy.copy(ref[2])
-        adj_ref_mut_info = copy.copy(ref[3])
+        adj_ref_allele = copy.copy(ref[3])
+        adj_ref_mut_info = copy.copy(ref[4])
         if self.rev_strand:
             for mut in new_seq[2]:
                 adj_index = max(i for i in range(len(mut[2])+1) 
@@ -744,9 +746,7 @@ class Transcript(object):
                 adj_alt_seq =  added_seq + adj_alt_seq
                 adj_alt_mut_info.append(mut)
                 alt[1] = new_seq[3]
-                if ((new_seq[1] == 'G' and include_germline == 2) 
-                        or (new_seq[1] == 'S' and include_somatic == 2)):
-                    adj_index = max(i for i in range(len(mut[2])+1) 
+                adj_ref_index = max(i for i in range(len(mut[2])+1) 
                                     if adj_ref_seq[::-1].translate(
                                         revcomp_translation_table
                                         ).endswith(mut[2][::-1].translate(
@@ -754,14 +754,21 @@ class Transcript(object):
                                                     )[:i]
                                         )
                                     )
-                    added_seq = mut[2][::-1].translate(
+                added_ref_seq = mut[2][::-1].translate(
                                                 revcomp_translation_table
                                                 )[adj_index:][::-1].translate(
                                                     revcomp_translation_table
                                                     )
-                    adj_ref_seq =  added_seq + adj_ref_seq
+                if ((new_seq[1] == 'G' and include_germline == 2) 
+                        or (new_seq[1] == 'S' and include_somatic == 2)):
+                    adj_ref_seq =  added_ref_seq + adj_ref_seq
                     adj_ref_mut_info.append(mut)
                     ref[1] = new_seq[3]
+                    if adj_ref_seq != '':
+                        index = prev_seq[3] - new_seq[3]
+                        adj_ref_allele = adj_ref_allele[:index]
+                else:
+                    adj_ref_allele = added_ref_seq + adj_ref_allele
         else:
             for mut in new_seq[2]:
                 adj_alt_seq += mut[2][max(i for i in range(len(mut[2])+1) 
@@ -778,10 +785,21 @@ class Transcript(object):
                                                                 )
                                             ):]
                     adj_ref_mut_info.append(mut)
+                    if adj_ref_allele != '':
+                        index = new_seq[3] - prev_seq[3]
+                        adj_ref_allele = adj_ref_allele[:index]
+                else:
+                    adj_ref_allele += mut[2][max(i for i in range(len(mut[2])+1) 
+                                            if adj_ref_seq.endswith(
+                                                                mut[2][:i]
+                                                                )
+                                            ):]
         alt[2] = copy.copy(adj_alt_seq)
-        alt[3] = copy.copy(adj_alt_mut_info)
+        alt[3] = copy.copy(adj_alt_allele)
+        alt[4] = copy.copy(adj_alt_mut_info)
         ref[2] = copy.copy(adj_ref_seq)
-        ref[3] = copy.copy(adj_ref_mut_info)
+        ref[3] = copy.copy(adj_ref_allele)
+        ref[4] = copy.copy(adj_ref_mut_info)
         return ('', 'H', [alt, ref], alt[1])
 
     def annotated_seq(self, start=None, end=None, genome=True, 
@@ -1335,7 +1353,7 @@ class Transcript(object):
                     ref_stop = ref_counter + (
                                 stop - seq[2][1][1] + 2 * self.rev_strand
                             ) * strand
-                    TAA_TGA_TAG = seq            	
+                    TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
                 sequence += seq[2][0][3]
             	counter += len(seq[2][0][3])
                 if self.rev_strand:
@@ -1501,8 +1519,13 @@ class Transcript(object):
 #                    if counter + len(seq[0]) > coding_start:
 
 #                        compare_peptides_to_ref = True
-                    coordinates.append([start, seq[2][0][1] + len(seq[2][0][3])*strand -1,
-                                        counter, counter + len(seq[2][0][3]) - 1, seq[2][0][4]])
+                    coordinates.append([start, seq[2][0][1] + len(
+                                                                seq[2][0][3]
+                                                                )*strand -1,
+                                        counter, counter + len(
+                                                                seq[2][0][3]
+                                                                ) - 1, 
+                                        seq[2][0][4]])
                     continue
                 if len(seq[0]) + counter < coding_start:
                     counter += len(seq[0])
@@ -1510,7 +1533,8 @@ class Transcript(object):
                 if seq[2][0][4] == 'D':
                     ref_counter += len(seq[2][0][2])
                     coordinates.append([start, seq[3] + len(seq[0])*strand -1,
-                                        counter, counter + len(seq[0]) - 1, seq[2]])
+                                        counter, counter + len(seq[0]) - 1, 
+                                        seq[2]])
                     continue
                 elif seq[2][0][4] == 'I':
                     if counter + len(seq[0]) > coding_start:
@@ -1541,9 +1565,9 @@ class Transcript(object):
             # log variants
             # handle potential frame shifts from indels
             if seq[1] == 'H':
-                print("hybrid deletion interval -- here 3")
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) -1 , seq[2]])
+                                counter, counter + len(seq[0]) -1, 
+                                seq[2][0][4]])
                 compare_peptides_to_ref = True
                 read_frame1 = self.reading_frame(seq[3] + len(seq[2][1][2]))
                 read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
@@ -1556,20 +1580,24 @@ class Transcript(object):
                     if reading_frame == 0:
                         reading_frame = (read_frame1 - read_frame2) % 3
                         frame_shifts.append(
-                                [seq[2][0][1], -1, counter, -1, list(set(seq[2][0][3]+seq[2][1][3]))]
+                                [seq[2][0][1], -1, counter, -1, list(
+                                            set(seq[2][0][4]+seq[2][1][4]))]
                             )
                     elif (reading_frame + read_frame1 - read_frame2) % 3 == 0:
                         # close out all frame_shifts ending in -1
                         for i in range(len(frame_shifts), 0, -1):
                             if frame_shifts[i-1][1] < 0:
-                                frame_shifts[i-1][1] = seq[3] + len(seq[2][0][2])
-                                frame_shifts[i-1][3] = counter + len(seq[2][0][2])
+                                frame_shifts[i-1][1] = seq[3] + len(
+                                                                seq[2][0][2])
+                                frame_shifts[i-1][3] = counter + len(
+                                                                seq[2][0][2])
                             else:
                                 break
                         reading_frame = 0
                     else:
                         frame_shifts.append(
-                                [seq[2][0][1], -1, counter, -1, list(set(seq[2][0][3]+seq[2][1][3]))]
+                                [seq[2][0][1], -1, counter, -1, list(
+                                            set(seq[2][0][4]+seq[2][1][4]))]
                             )
                         reading_frame = (
                                 reading_frame + read_frame1 - read_frame2
@@ -1688,6 +1716,10 @@ class Transcript(object):
                      3 * len(protein)+coding_start, TAA_TGA_TAG[2]]
                 )
         peptide_seqs = collections.defaultdict(list)
+        if transcript_warnings == []:
+            transcript_warnings = ('NA',)
+        else:
+            transcript_warnings = (';'.join(transcript_warnings),)
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
@@ -1712,9 +1744,13 @@ class Transcript(object):
                 if compare_peptides_to_ref:
                     peptides = list(set(peptides).difference(peptides_ref))
                 for pep in peptides:
-                    for mutation_data in coords[2]:
-                        if transcript_warnings == []:
-                            transcript_warnings.append('NA')
+                    if len(coords[2]) == 2 and type(coords[2][0]) == list:
+                        # Dealing with peptide resulting from hybrid interval
+                        data_set = coords[2][0][4]
+                    else:
+                        # Dealing with regular peptide
+                        data_set = coords[2]
+                    for mutation_data in data_set:
                         mutation_data = mutation_data + (';'.join(
                                                             transcript_warnings
                                                         ),)
