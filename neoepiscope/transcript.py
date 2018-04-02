@@ -1512,8 +1512,11 @@ class Transcript(object):
             # skip sequence fragments that occur prior to start codon 
             # handle cases where variant involves start codon
             if counter < coding_start + 2:
-                # deal with start site???? in alt v. ref?
                 if seq[1] == 'H':
+                    if len(seq[2][0][3]) + counter >= coding_start:
+                        compare_peptides_to_ref = True
+                        coordinates.append([start, seq[2][0][1] + len(seq[2][0][3])*strand -1,
+                                        counter, counter + len(seq[2][0][3]) - 1, seq[2][0][4]])
                     counter += len(seq[2][0][3])
                     ref_counter += len(seq[2][1][3])
 #                    if counter + len(seq[0]) > coding_start:
@@ -1530,14 +1533,17 @@ class Transcript(object):
                 if len(seq[0]) + counter < coding_start:
                     counter += len(seq[0])
                     continue
-                if seq[2][0][4] == 'D':
+#                if len(seq[0]) + counter < coding_start:
+#                    counter += len(seq[0])
+#                    continue
+                elif seq[2][0][4] == 'D':
                     ref_counter += len(seq[2][0][2])
                     coordinates.append([start, seq[3] + len(seq[0])*strand -1,
                                         counter, counter + len(seq[0]) - 1, 
                                         seq[2]])
                     continue
                 elif seq[2][0][4] == 'I':
-                    if counter + len(seq[0]) > coding_start:
+                    if counter + len(seq[0]) >= coding_start:
                         coordinates.append(
                                 [start, seq[3] + len(seq[0]) * strand - 1,
                                  0, counter + len(seq[0]) - coding_start - 1,
@@ -1550,7 +1556,7 @@ class Transcript(object):
                         ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][4] == 'V':
-                    if counter + len(seq[0]) > coding_start:
+                    if counter + len(seq[0]) >= coding_start:
                         coordinates.append(
                                 [start, seq[3] + len(seq[0]) * strand - 1,
                                  0, counter + len(seq[0]) - coding_start - 1,
@@ -1569,8 +1575,8 @@ class Transcript(object):
                                 counter, counter + len(seq[0]) -1, 
                                 seq[2][0][4]])
                 compare_peptides_to_ref = True
-                read_frame1 = self.reading_frame(seq[3] + len(seq[2][1][2]))
-                read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
+                read_frame1 = self.reading_frame(seq[2][1][1] + len(seq[2][1][3]))
+                read_frame2 = self.reading_frame(seq[2][0][1] + len(seq[2][0][3]))
                 if read_frame1 is None or read_frame2 is None:
                     # these cases NOT addressed at present 
                     # (e.g. deletion involves all or part of intron)
