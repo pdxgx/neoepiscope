@@ -245,12 +245,12 @@ class Transcript(object):
         # Need to sort to bisect_left properly when editing!
         self.intervals.sort()
         if self._start_codon:
-            self.start_codon_index = bisect.bisect_left(self.intervals, 
+            self.start_codon_index = bisect.bisect_left(self.intervals,
                                                         self._start_codon)
         else:
             self.start_codon_index = None
         if self.stop_codon:
-            self.stop_codon_index = bisect.bisect_left(self.intervals, 
+            self.stop_codon_index = bisect.bisect_left(self.intervals,
                                                         self._stop_codon)
         else:
             self.stop_codon_index = None
@@ -259,7 +259,7 @@ class Transcript(object):
     def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
             reference: if False, tries to reset to last save point, and if that
-                doesn't exist, resets to reference. If True, resets to 
+                doesn't exist, resets to reference. If True, resets to
                 reference.
             No return value.
         """
@@ -271,13 +271,13 @@ class Transcript(object):
             self.deletion_intervals = copy.copy(self.last_deletion_intervals)
 
     def edit(self, seq, pos, mutation_type='V', mutation_class='S', vaf=None):
-        """ Adds an edit to the transcript. 
+        """ Adds an edit to the transcript.
             seq: sequence to add or delete from reference; for deletions, all
-                that matters is this sequence has the same length as the 
+                that matters is this sequence has the same length as the
                 sequence to delete. Also for deletions, seq can be an integer
                 specifying how many bases to delete.
-            pos: 1-based coordinate. For insertions, this is the coordinate 
-                directly before the inserted sequence. For deletions, this 
+            pos: 1-based coordinate. For insertions, this is the coordinate
+                directly before the inserted sequence. For deletions, this
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
@@ -292,67 +292,67 @@ class Transcript(object):
             except ValueError:
                 deletion_size = len(seq)
                 ref_deletion = self.bowtie_reference_index.get_stretch(
-                                    self.chrom, pos - 1, 
+                                    self.chrom, pos - 1,
                                     pos + deletion_size + 1  - pos - 1
                                 )
                 if seq == ref_deletion:
-                    del_interval = (pos - 2, pos + deletion_size - 2, mutation_class, 
+                    del_interval = (pos - 2, pos + deletion_size - 2, mutation_class,
                                 (self.chrom, pos, seq, '', mutation_type, vaf))
                 else:
-                    raise RuntimeError(''.join(['Deletion of ', seq, 
-                                                ' at position ', str(pos), 
-                                                ' on contig ', self.chrom, 
+                    raise RuntimeError(''.join(['Deletion of ', seq,
+                                                ' at position ', str(pos),
+                                                ' on contig ', self.chrom,
                                                 ' is incompatible with reference']))
             else:
-                del_interval = (pos - 2, pos + deletion_size - 2, mutation_class, 
+                del_interval = (pos - 2, pos + deletion_size - 2, mutation_class,
                                 (self.chrom, pos,
                                 self.bowtie_reference_index.get_stretch(
-                                    self.chrom, pos - 1, 
+                                    self.chrom, pos - 1,
                                     pos + deletion_size + 1  - pos - 1
                                 ), '', mutation_type, vaf))
             for interval in self.deletion_intervals:
                 if del_interval[2] == interval[2]:
-                    if ((del_interval[0] >= interval[0] 
-                                and del_interval[0] <= interval[1]) 
-                        or (del_interval[1] >= interval[0] 
+                    if ((del_interval[0] >= interval[0]
+                                and del_interval[0] <= interval[1])
+                        or (del_interval[1] >= interval[0]
                                 and del_interval[1] <= interval[1])):
                         class_dict = {'S':'somatic', 'G':'germline'}
                         raise NotImplementedError(''.join([
-                                            '2 deletions of same class cannot', 
+                                            '2 deletions of same class cannot',
                                             ' overlap - was deletion of ',
                                             del_interval[3][2], ' at ',
                                             str(pos), ' or deletion of ',
-                                            interval[3][2], ' at ', 
-                                            str(interval[0]+2), ' not a ', 
-                                            class_dict[mutation_class], 
+                                            interval[3][2], ' at ',
+                                            str(interval[0]+2), ' not a ',
+                                            class_dict[mutation_class],
                                             ' mutation?']))
             self.deletion_intervals.append(del_interval)
-        elif mutation_type == 'I': 
-            self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
-                                    (self.chrom, pos, '', seq, mutation_type, 
+        elif mutation_type == 'I':
+            self.edits[pos - 1].append((seq, mutation_type, mutation_class,
+                                    (self.chrom, pos, '', seq, mutation_type,
                                      vaf)))
         elif mutation_type == 'V':
             reference_seq = self.bowtie_reference_index.get_stretch(
                                             self.chrom, pos - 1, len(seq))
             other_snvs = [edit for edit in self.edits[pos - 1]]
             if mutation_class not in [snv[2] for snv in other_snvs]:
-                self.edits[pos - 1].append((seq, mutation_type, mutation_class, 
+                self.edits[pos - 1].append((seq, mutation_type, mutation_class,
                                         (self.chrom, pos, reference_seq, seq,
                                          mutation_type, vaf)))
             else:
                 class_dict = {'S':'somatic', 'G':'germline'}
                 raise NotImplementedError(''.join([
-                                                '2 SNVs of same class cannot ', 
+                                                '2 SNVs of same class cannot ',
                                                 'be added at same position',
-                                                ' - was mutation of ', 
-                                                reference_seq, ' to ', seq, 
+                                                ' - was mutation of ',
+                                                reference_seq, ' to ', seq,
                                                 ' at ', str(pos), ' not a ',
-                                                class_dict[mutation_class], 
+                                                class_dict[mutation_class],
                                                 ' mutation?']))
         else:
             raise NotImplementedError('Mutation type not yet implemented')
 
-    def expressed_edits(self, start=None, end=None, genome=True, 
+    def expressed_edits(self, start=None, end=None, genome=True,
                                 include_somatic=1, include_germline=2):
         """ Gets expressed set of edits and transcript intervals.
             start: start position (1-indexed, inclusive); None means start of
@@ -365,10 +365,10 @@ class Transcript(object):
             Return value: tuple (defaultdict
                                  mapping edits to lists of
                                  (seq, mutation_type, mutation_class)
-                                 tuples, interval list; this is a list of 
+                                 tuples, interval list; this is a list of
                                  tuples (bound, {'R', 'G', or 'S'}), which
                                  says whether the bound is due to CDS bound
-                                 ("R"), a germline deletion ("G"), or a 
+                                 ("R"), a germline deletion ("G"), or a
                                  somatic deletion ("S"))
         """
         if not genome:
@@ -405,11 +405,11 @@ class Transcript(object):
         # Include only relevant deletion intervals
         relevant_deletion_intervals, edits = [], collections.defaultdict(list)
         for i in range(0, len(self.deletion_intervals)):
-            if (self.deletion_intervals[i][0] <= self.intervals[0] 
+            if (self.deletion_intervals[i][0] <= self.intervals[0]
                     and self.deletion_intervals[i][1] >= self.intervals[-1]):
-                return {}, [(self.intervals[0], 'R', ()), 
-                            (self.intervals[0], 
-                             self.deletion_intervals[i][2], 
+                return {}, [(self.intervals[0], 'R', ()),
+                            (self.intervals[0],
+                             self.deletion_intervals[i][2],
                              self.deletion_intervals[i][3]),
                             (self.intervals[-1], 'R', ()),
                             (self.intervals[-1], 'R', ())]
@@ -421,7 +421,7 @@ class Transcript(object):
         if sorted_deletion_intervals:
             sorted_deletion_intervals.sort(key=itemgetter(0, 1))
             deletion_intervals = [(sorted_deletion_intervals[0][0],
-                                   sorted_deletion_intervals[0][2], 
+                                   sorted_deletion_intervals[0][2],
                                    sorted_deletion_intervals[0][3]),
                                   (sorted_deletion_intervals[0][1],
                                    sorted_deletion_intervals[0][2],
@@ -442,7 +442,7 @@ class Transcript(object):
                 else:
                     deletion_intervals.extend(
                             [(sorted_deletion_intervals[i][0],
-                                sorted_deletion_intervals[i][2], 
+                                sorted_deletion_intervals[i][2],
                                 sorted_deletion_intervals[i][3]),
                              (sorted_deletion_intervals[i][1],
                                 sorted_deletion_intervals[i][2],
@@ -460,7 +460,7 @@ class Transcript(object):
                                 deletion_intervals[i:i+2]
                             )
                     # else deletion is entirely outside CDS within start/end
-                elif (start_index == (end_index - 1) and 
+                elif (start_index == (end_index - 1) and
                         deletion_intervals[i][0] == intervals[start_index]):
                     relevant_deletion_intervals.extend(
                                 deletion_intervals[i:i+2]
@@ -505,7 +505,7 @@ class Transcript(object):
                                  range(start_index, end_index)]
                             )
                     relevant_deletion_intervals.append(end_pos)
-        intervals = sorted([(interval, 'R', tuple()) for interval in 
+        intervals = sorted([(interval, 'R', tuple()) for interval in
                             intervals] + relevant_deletion_intervals)
         # Remove empty intervals
         intervals = [intervals[i] for i in range(len(intervals))
@@ -527,7 +527,7 @@ class Transcript(object):
                     adjusted_intervals.append(intervals[i])
                     deletion_data.append(intervals[i][2])
                 else:
-                    adjusted_intervals.append((intervals[i][0], 'R', 
+                    adjusted_intervals.append((intervals[i][0], 'R',
                                             tuple(), None))
         edits = collections.defaultdict(list)
         for pos in self.edits:
@@ -544,8 +544,8 @@ class Transcript(object):
                         if start_index % 2 or pos == intervals[start_index][0]:
                             # An insertion is valid before or after a block
                             edits[pos].append(edit)
-            # If there is more than 1 SNV at the same position, one must be 
-            # germline and the other somatic, as only 1 mutation per mutation 
+            # If there is more than 1 SNV at the same position, one must be
+            # germline and the other somatic, as only 1 mutation per mutation
             # class is allowed at the same position. Favor somatic mutation.
             if pos in edits:
                 snvs = [v for v in edits[pos] if v[1] == 'V']
@@ -556,7 +556,7 @@ class Transcript(object):
 
     def save(self):
         """ Creates save point for edits.
-            
+
             No return value.
         """
         self.last_edits = copy.copy(self.edits)
@@ -564,7 +564,7 @@ class Transcript(object):
 
     def reading_frame(self, pos):
         """ Retrieves reading frame (0, 1, or 2) at given coordinate.
-            
+
             NOTE: must be updated to include chromosome to accommodate fusions
             pos: 1-based position at which reading frame is desired
             Return value: reading frame; 0 means first base of codon, 1 means
@@ -573,7 +573,7 @@ class Transcript(object):
         """
         pos -= 1
         pos_index = bisect.bisect_left(self.intervals, pos)
-        if (not (pos_index % 2) or not self.start_codon_index or 
+        if (not (pos_index % 2) or not self.start_codon_index or
             not self.stop_codon_index):
             # We're outside exon sequence
             return None
@@ -587,12 +587,12 @@ class Transcript(object):
             else:
                 if pos > self._start_codon or pos < self._stop_codon:
                     return None
-                seq_length = ((self.intervals[pos_index] - pos + 1) + 
-                              (self._start_codon + 2 - 
-                                self.intervals[self.start_codon_index - 1]) + 
+                seq_length = ((self.intervals[pos_index] - pos + 1) +
+                              (self._start_codon + 2 -
+                                self.intervals[self.start_codon_index - 1]) +
                               sum([self.intervals[i+1] - self.intervals[i]
-                                for i in range(pos_index + 1, 
-                                                self.start_codon_index - 1, 
+                                for i in range(pos_index + 1,
+                                                self.start_codon_index - 1,
                                                 2)]))
                 return (seq_length - 1) % 3
         else:
@@ -603,9 +603,9 @@ class Transcript(object):
             else:
                 if pos < self._start_codon or pos > self._stop_codon:
                     return None
-                seq_length = ((pos - self.intervals[pos_index - 1]) + 
-                              (self.intervals[self.start_codon_index] - 
-                                self._start_codon + 1) + 
+                seq_length = ((pos - self.intervals[pos_index - 1]) +
+                              (self.intervals[self.start_codon_index] -
+                                self._start_codon + 1) +
                               sum([self.intervals[i+1] - self.intervals[i]
                                 for i in range(self.start_codon_index + 1,
                                         pos_index - 1, 2)]))
@@ -619,7 +619,7 @@ class Transcript(object):
                 somatic edit). Empty sequence means there was a deletion.
             seq: seq to add
             mutation_class: S for somatic, G for germline, R for reference
-            mutation_info: tuple containing (1 based mutation position from 
+            mutation_info: tuple containing (1 based mutation position from
                 vcf, mutation sequence, mutation type, and VAF)
             position: 1-based genomic position of first base added
             No return value; seq_list is merely updated.
@@ -628,12 +628,12 @@ class Transcript(object):
             if seq or mutation_class != 'R':
                 if isinstance(mutation_info, list):
                     seq_list.append((seq, mutation_class,
-                                 [mutation_info[i] for i in range(0, 
-                                                        len(mutation_info))], 
+                                 [mutation_info[i] for i in range(0,
+                                                        len(mutation_info))],
                                  position))
                 else:
                     seq_list.append((seq, mutation_class,
-                                 [mutation_info], 
+                                 [mutation_info],
                                  position))
             return
         try:
@@ -644,12 +644,12 @@ class Transcript(object):
             if seq or mutation_class != 'R':
                 if isinstance(mutation_info, list):
                     seq_list.append((seq, mutation_class,
-                                 [mutation_info[i] for i in range(0, 
-                                                        len(mutation_info))], 
+                                 [mutation_info[i] for i in range(0,
+                                                        len(mutation_info))],
                                  position))
                 else:
                     seq_list.append((seq, mutation_class,
-                                 [mutation_info], 
+                                 [mutation_info],
                                  position))
             return
         if condition:
@@ -658,35 +658,35 @@ class Transcript(object):
             else:
                 adjusted_position = seq_list[-1][3]
             if isinstance(mutation_info, list):
-                adjusted_mutation_info = (seq_list[-1][2] + 
-                                        [x for x in mutation_info 
+                adjusted_mutation_info = (seq_list[-1][2] +
+                                        [x for x in mutation_info
                                         if x not in seq_list[-1][2]])
             elif mutation_info not in seq_list[-1][2]:
                 adjusted_mutation_info = seq_list[-1][2] + [mutation_info]
             else:
                 adjusted_mutation_info = seq_list[-1][2]
             seq_list[-1] = (seq_list[-1][0] + seq, mutation_class,
-                            adjusted_mutation_info, 
+                            adjusted_mutation_info,
                             adjusted_position)
         elif seq or mutation_class != 'R':
             if isinstance(mutation_info, list):
                 seq_list.append((seq, mutation_class,
-                                 [mutation_info[i] for i in range(0, 
-                                                        len(mutation_info))], 
+                                 [mutation_info[i] for i in range(0,
+                                                        len(mutation_info))],
                                  position))
             else:
                 seq_list.append((seq, mutation_class,
-                                 [mutation_info], 
+                                 [mutation_info],
                                  position))
 
-    def hybridize_seq(self, prev_seq, new_seq, include_somatic=1, 
+    def hybridize_seq(self, prev_seq, new_seq, include_somatic=1,
                         include_germline=2):
-        """Hybridizes overlapping germline and somatic deletions for 
+        """Hybridizes overlapping germline and somatic deletions for
             annotated_seq()
 
             prev_seq: the previous deletion
             new_seq: the new deletion which overlaps with prev_seq
-            reverse_strand: boolean (whether or 
+            reverse_strand: boolean (whether or
                             not transcript is reverse strand)
             include_somatic: 0 = do not include somatic mutations,
                 1 = exclude somatic mutations from reference comparison,
@@ -697,27 +697,27 @@ class Transcript(object):
                 2 = include germline mutations in both annotated sequence and
                 reference comparison
 
-            Return value: hybridized sequence - tuple of ('', 'H', 
-                mutation_information, position) where 'H' denotes a hybrid of 
-                somatic and germline deletions, mutation_information is a list 
-                of [ALT, REF], where ALT and REF are lists of [(chr, adj_pos, 
-                adj_seq [meta information])] for the alternate and reference 
-                sequences, respectively, and position is the 1-based genomic 
+            Return value: hybridized sequence - tuple of ('', 'H',
+                mutation_information, position) where 'H' denotes a hybrid of
+                somatic and germline deletions, mutation_information is a list
+                of [ALT, REF], where ALT and REF are lists of [(chr, adj_pos,
+                adj_seq [meta information])] for the alternate and reference
+                sequences, respectively, and position is the 1-based genomic
                 position of the beginning of the hybrid deletion
         """
         if type(prev_seq[2][0]) == list:
             # Combining a third or subsequent deletion with 2 or more previous
             alt, ref = prev_seq[2][0], prev_seq[2][1]
-        else: 
+        else:
             # Creating new hybrid deletion
             assert sorted([prev_seq[1], new_seq[1]]) == ['G', 'S']
             prev_chrom, prev_pos = prev_seq[2][0][0], prev_seq[3]
             prev_del_seq = ''.join([x[2] for x in prev_seq[2]])
             prev_mut_info = prev_seq[2]
             alt = [prev_chrom, prev_pos, prev_del_seq, '', prev_mut_info]
-            if ((prev_seq[1] == 'G' and include_germline == 2) 
+            if ((prev_seq[1] == 'G' and include_germline == 2)
                         or (prev_seq[1] == 'S' and include_somatic == 2)):
-                
+
                 ref = [self.chrom, prev_pos, prev_del_seq, '', prev_mut_info]
             else:
                 ref = [self.chrom, new_seq[3], '', prev_del_seq, []]
@@ -729,7 +729,7 @@ class Transcript(object):
         adj_ref_mut_info = copy.copy(ref[4])
         if self.rev_strand:
             for mut in new_seq[2]:
-                adj_index = max(i for i in range(len(mut[2])+1) 
+                adj_index = max(i for i in range(len(mut[2])+1)
                                 if adj_alt_seq[::-1].translate(
                                                     revcomp_translation_table
                                                     ).endswith(
@@ -746,7 +746,7 @@ class Transcript(object):
                 adj_alt_seq =  added_seq + adj_alt_seq
                 adj_alt_mut_info.append(mut)
                 alt[1] = new_seq[3]
-                adj_ref_index = max(i for i in range(len(mut[2])+1) 
+                adj_ref_index = max(i for i in range(len(mut[2])+1)
                                     if adj_ref_seq[::-1].translate(
                                         revcomp_translation_table
                                         ).endswith(mut[2][::-1].translate(
@@ -759,7 +759,7 @@ class Transcript(object):
                                                 )[adj_index:][::-1].translate(
                                                     revcomp_translation_table
                                                     )
-                if ((new_seq[1] == 'G' and include_germline == 2) 
+                if ((new_seq[1] == 'G' and include_germline == 2)
                         or (new_seq[1] == 'S' and include_somatic == 2)):
                     adj_ref_seq =  added_ref_seq + adj_ref_seq
                     adj_ref_mut_info.append(mut)
@@ -771,15 +771,15 @@ class Transcript(object):
                     adj_ref_allele = added_ref_seq + adj_ref_allele
         else:
             for mut in new_seq[2]:
-                adj_alt_seq += mut[2][max(i for i in range(len(mut[2])+1) 
+                adj_alt_seq += mut[2][max(i for i in range(len(mut[2])+1)
                                           if adj_alt_seq.endswith(
                                                                 mut[2][:i]
                                                                 )
                                           ):]
                 adj_alt_mut_info.append(mut)
-                if ((new_seq[1] == 'G' and include_germline == 2) 
+                if ((new_seq[1] == 'G' and include_germline == 2)
                     or (new_seq[1] == 'S' and include_somatic == 2)):
-                    adj_ref_seq += mut[2][max(i for i in range(len(mut[2])+1) 
+                    adj_ref_seq += mut[2][max(i for i in range(len(mut[2])+1)
                                             if adj_ref_seq.endswith(
                                                                 mut[2][:i]
                                                                 )
@@ -789,7 +789,7 @@ class Transcript(object):
                         index = new_seq[3] - prev_seq[3]
                         adj_ref_allele = adj_ref_allele[:index]
                 else:
-                    adj_ref_allele += mut[2][max(i for i in range(len(mut[2])+1) 
+                    adj_ref_allele += mut[2][max(i for i in range(len(mut[2])+1)
                                             if adj_ref_seq.endswith(
                                                                 mut[2][:i]
                                                                 )
@@ -802,7 +802,7 @@ class Transcript(object):
         ref[4] = copy.copy(adj_ref_mut_info)
         return ('', 'H', [alt, ref], alt[1])
 
-    def annotated_seq(self, start=None, end=None, genome=True, 
+    def annotated_seq(self, start=None, end=None, genome=True,
                                 include_somatic=1, include_germline=2):
         """ Retrieves transcript sequence between start and end coordinates.
             Includes info on whether edits are somatic or germline and whether
@@ -818,15 +818,15 @@ class Transcript(object):
                 mutation information, position),
                 where sequence is a segment of sequence of the (possibly)
                 mutated transcript, mutation class is one of {'G', 'S', 'H', 'R'},
-                where 'G' denotes germline, 'S' denotes somatic, 'H' denotes hybrid 
-                of somatic and germline, and 'R' denotes reference sequence, 
-                mutation information is a list of tuple(s) (chromosome, 
-                1-based position of {first base of deletion, base before 
+                where 'G' denotes germline, 'S' denotes somatic, 'H' denotes hybrid
+                of somatic and germline, and 'R' denotes reference sequence,
+                mutation information is a list of tuple(s) (chromosome,
+                1-based position of {first base of deletion, base before
                 insertion, SNV}, reference sequence, variant sequence,
                 {'D', 'I', 'V'}, VAF) , and position is the 1-based position
                 of the first base of sequence. For hybrid, the tuple structure
                 of mutation information is nested inside of a list: [[ALT], [REF]],
-                where ALT and REF are structured as [chromosome, adj. position, 
+                where ALT and REF are structured as [chromosome, adj. position,
                 adj. deletion, allele seq, [mutation information]] for the alternate and
                 reference sequences, respectively.
         """
@@ -838,8 +838,8 @@ class Transcript(object):
             end = self.intervals[-1] + 1
         if genome:
             # Capture only sequence between start and end
-            edits, intervals = self.expressed_edits(start, end, genome=True, 
-                                            include_somatic=include_somatic, 
+            edits, intervals = self.expressed_edits(start, end, genome=True,
+                                            include_somatic=include_somatic,
                                             include_germline=include_germline)
             '''Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
@@ -857,7 +857,7 @@ class Transcript(object):
                     but no more
                     if i do the above,
                     else:
-                        intervals = [(-1, 'R', [], []), 
+                        intervals = [(-1, 'R', [], []),
                                      (-1, 'R', [], [])] + intervals
                         # Have to add 2 because we modified intervals above
                         i += 2
@@ -870,7 +870,7 @@ class Transcript(object):
                         (self.bowtie_reference_index.get_stretch(
                                 self.chrom, intervals[i][0] + 1,
                                 intervals[i + 1][0] -
-                                intervals[i][0]), 
+                                intervals[i][0]),
                         (intervals[i][0] + 2, intervals[i+1][0] + 1)
                             )
                     )
@@ -884,7 +884,7 @@ class Transcript(object):
                         fill = pos_to_add - last_pos
                         if intervals[i-1][1] != 'R':
                             if isinstance(intervals[i-1][2], list):
-                                genomic_position = min([x[1] for x 
+                                genomic_position = min([x[1] for x
                                                         in intervals[i-1][2]])
                             else:
                                 genomic_position = intervals[i-1][2][1]
@@ -894,19 +894,19 @@ class Transcript(object):
                         if self.rev_strand:
                             self._seq_append(final_seq, seqs[(i-1)//2][0][
                                             last_index:last_index + fill
-                                        ], 'R', tuple(), 
+                                        ], 'R', tuple(),
                                         seqs[(i-1)//2][1][0]
-                                            + last_index + fill - 1, 
+                                            + last_index + fill - 1,
                                             merge=False)
                         else:
                             self._seq_append(final_seq, seqs[(i-1)//2][0][
                                             last_index:last_index + fill
                                         ], 'R', tuple(),
-                                        seqs[(i-1)//2][1][0] + last_index, 
+                                        seqs[(i-1)//2][1][0] + last_index,
                                         merge=False)
                         # If no edits, snv is reference and no insertion
                         try:
-                            snv = (seqs[(i-1)//2][0][last_index + fill], 'R', 
+                            snv = (seqs[(i-1)//2][0][last_index + fill], 'R',
                                     tuple(), seqs[(i-1)//2][1][0] + fill)
                         except IndexError:
                             '''Should happen only for insertions at beginning
@@ -918,7 +918,7 @@ class Transcript(object):
                                         seqs[(i-1)//2][1][0] + fill)
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == 'V':
-                                snv = (edit[0], edit[2], edit[3], 
+                                snv = (edit[0], edit[2], edit[3],
                                         edit[3][1])
                             else:
                                 assert edit[1] == 'I'
@@ -930,12 +930,12 @@ class Transcript(object):
                         last_pos += fill + 1
                     if intervals[i-1][1] != 'R':
                         if isinstance(intervals[i-1][2], list):
-                            genomic_position = min([x[1] for x 
+                            genomic_position = min([x[1] for x
                                                         in intervals[i-1][2]])
                         else:
                             genomic_position = intervals[i-1][2][1]
-                        self._seq_append(final_seq, '', intervals[i-1][1], 
-                                         intervals[i-1][2], 
+                        self._seq_append(final_seq, '', intervals[i-1][1],
+                                         intervals[i-1][2],
                                          genomic_position, merge=False)
                     ref_to_add = seqs[(i-1)//2][0][last_index:]
                     if ref_to_add:
@@ -946,51 +946,51 @@ class Transcript(object):
                             )
                         else:
                             self._seq_append(
-                                final_seq, ref_to_add, 'R', tuple(), 
+                                final_seq, ref_to_add, 'R', tuple(),
                                 seqs[(i-1)//2][1][0] + last_index, merge=False
                             )
                     if intervals[i][1] != 'R':
                         if isinstance(intervals[i][2], list):
-                            genomic_position = min([x[1] for x 
+                            genomic_position = min([x[1] for x
                                                         in intervals[i][2]])
                         else:
                             genomic_position = intervals[i][2][1]
-                        self._seq_append(final_seq, '', intervals[i][1], 
-                                            intervals[i][2], 
+                        self._seq_append(final_seq, '', intervals[i][1],
+                                            intervals[i][2],
                                             genomic_position, merge=False)
                     i += 2
                     try:
                         while pos > intervals[i][0]:
                             if intervals[i-1][1] != 'R':
                                 if isinstance(intervals[i-1][2], list):
-                                    genomic_position = min([x[1] for x 
+                                    genomic_position = min([x[1] for x
                                                         in intervals[i-1][2]])
                                 else:
                                     genomic_position = intervals[i-1][2][1]
                                 self._seq_append(
-                                        final_seq, '', intervals[i-1][1], 
-                                        intervals[i-1][2], 
+                                        final_seq, '', intervals[i-1][1],
+                                        intervals[i-1][2],
                                         genomic_position, merge=False
                                     )
                             if self.rev_strand:
-                                self._seq_append(final_seq, seqs[(i-1)//2][0], 
-                                                    'R', tuple(), 
-                                                    seqs[(i-1)//2][1][1], 
+                                self._seq_append(final_seq, seqs[(i-1)//2][0],
+                                                    'R', tuple(),
+                                                    seqs[(i-1)//2][1][1],
                                                     merge=False)
                             else:
-                                self._seq_append(final_seq, seqs[(i-1)//2][0], 
-                                                    'R', tuple(), 
-                                                    seqs[(i-1)//2][1][0], 
+                                self._seq_append(final_seq, seqs[(i-1)//2][0],
+                                                    'R', tuple(),
+                                                    seqs[(i-1)//2][1][0],
                                                     merge=False)
                             if intervals[i][1] != 'R':
                                 if isinstance(intervals[i][2], list):
-                                    genomic_position = min([x[1] for x 
+                                    genomic_position = min([x[1] for x
                                                         in intervals[i][2]])
                                 else:
                                     genomic_position = intervals[i][2][1]
                                 self._seq_append(
-                                        final_seq, '', intervals[i][1], 
-                                        intervals[i][2], 
+                                        final_seq, '', intervals[i][1],
+                                        intervals[i][2],
                                         genomic_position, merge=False
                                     )
                             i += 2
@@ -1004,33 +1004,33 @@ class Transcript(object):
             if self.rev_strand:
                 final_seq = ([(seq[::-1].translate(revcomp_translation_table),
                             mutation_class, orig_seq, position)
-                            for seq, mutation_class, orig_seq, position in 
+                            for seq, mutation_class, orig_seq, position in
                             final_seq][::-1])
             adj_seq = [final_seq[0]]
             strand = 1 if not self.rev_strand else 0
             for i in range(1, len(final_seq)):
                 if adj_seq[-1][0] == '' and final_seq[i][0] == '':
-                    if (len(adj_seq[-1][2]) == 2 
+                    if (len(adj_seq[-1][2]) == 2
                             and type(adj_seq[-1][2][0]) == list):
-                        prev_pos = (adj_seq[-1][3] + 
+                        prev_pos = (adj_seq[-1][3] +
                                     len(adj_seq[-1][2][0][2]) - 1)
                     else:
-                        prev_pos = (adj_seq[-1][3] 
-                                    + strand*sum([len(x[2]) 
-                                                            for x in 
-                                                            adj_seq[-1][2]]) 
+                        prev_pos = (adj_seq[-1][3]
+                                    + strand*sum([len(x[2])
+                                                            for x in
+                                                            adj_seq[-1][2]])
                                     - 1*strand)
                     if ((self.rev_strand and (final_seq[i][3] + sum(
-                                                                [len(x[2]) 
-                                                                for x in 
+                                                                [len(x[2])
+                                                                for x in
                                                                 final_seq[i][2]]
                                                                 ) - 1
-                                            )  >= prev_pos) 
-                        or (not self.rev_strand 
+                                            )  >= prev_pos)
+                        or (not self.rev_strand
                             and final_seq[i][3] <= prev_pos)):
                         adj_seq[-1] = self.hybridize_seq(
                                         adj_seq[-1], final_seq[i],
-                                        include_somatic=include_somatic, 
+                                        include_somatic=include_somatic,
                                         include_germline=include_germline
                                         )
                     else:
@@ -1049,7 +1049,7 @@ class Transcript(object):
             atgs: list of lists, each representing a start codon, of the form
                 [pos in sequence or -1 if absent, pos in reference seq or -1 if
                  absent, mutation information,
-                 True iff downstream of or at start codon, 
+                 True iff downstream of or at start codon,
                  True iff ATG de novo,
                  True iff ATG absent in annotated seq]
             only_novel_upstream: True if and only if only novel start codons
@@ -1057,11 +1057,11 @@ class Transcript(object):
                 in 5'UTR are to be considered; otherwise, all upstream ATGs
                 are considered.
             only_downstream: True if and only if only downstream alternative
-                start codons are to be considered; overrides 
+                start codons are to be considered; overrides
                 only_novel_upstream.
             only_reference: True if and only if only the original start codon
                 is allowed; overrides only_downstream and only_novel_upstream
-            Return value: tuple (reading_frame, chosen atg from atgs, 
+            Return value: tuple (reading_frame, chosen atg from atgs,
                             reference atg, warnings about start codon choice)
         """
         encountered_true_start = False
@@ -1071,7 +1071,7 @@ class Transcript(object):
         for atg in atgs:
             if not encountered_true_start and atg[3] and not atg[4]:
                 if not atg[5] and atg_priority_list == []:
-                    '''If the original start codon is maintained in the edited 
+                    '''If the original start codon is maintained in the edited
                         transcript, immediately return it.'''
                     return 0, atg, atg, []
                 else:
@@ -1086,7 +1086,7 @@ class Transcript(object):
             if atg[3]:
                 encountered_true_start = True
             if not only_reference:
-                '''If not true start codon and accepting non-reference starts, 
+                '''If not true start codon and accepting non-reference starts,
                     assess the start codon option'''
                 if only_downstream:
                     if atg[3] and not atg[5]:
@@ -1113,23 +1113,23 @@ class Transcript(object):
                 novelty = 'novel'
             else:
                 novelty = 'preexisting'
-            warnings.warn(' '.join(['Using', novelty, direction, 
-                                        'start codon', str(distance), 
+            warnings.warn(' '.join(['Using', novelty, direction,
+                                        'start codon', str(distance),
                                         'bp from reference start codon for',
                                         self.transcript_id]))
             start_warnings.append('_'.join([novelty, direction, 'start',
-                                            'codon', str(distance), 'bp', 
-                                            'from', 'reference', 'start', 
+                                            'codon', str(distance), 'bp',
+                                            'from', 'reference', 'start',
                                             'codon']))
-        return ((start_codon[0] - coding_ref_start[0]) % 3, start_codon, 
+        return ((start_codon[0] - coding_ref_start[0]) % 3, start_codon,
             coding_ref_start, start_warnings)
 
 
-    def neopeptides(self, min_size=8, max_size=11, include_somatic=1, 
-        include_germline=2, only_novel_upstream=False, only_downstream=True, 
+    def neopeptides(self, min_size=8, max_size=11, include_somatic=1,
+        include_germline=2, only_novel_upstream=False, only_downstream=True,
         only_reference=False):
-        """ Retrieves dict of predicted peptide fragments from transcript that 
-            arise from one or more variants. 
+        """ Retrieves dict of predicted peptide fragments from transcript that
+            arise from one or more variants.
             min_size: minimum subpeptide length (specified as # of amino acids)
             max_size: maximum subpeptide length (specified as # of amino acids)
             include_somatic: 0 = do not include somatic mutations,
@@ -1140,7 +1140,7 @@ class Transcript(object):
                 1 = exclude germline mutations from reference comparison,
                 2 = include germline mutations in both annotated sequence and
                 reference comparison
-            Return value: dict of peptides of desired length(s) [KEYS] with 
+            Return value: dict of peptides of desired length(s) [KEYS] with
                 values equivalent to a list of causal variants [VALUES].
         """
         # if no edits to process, then skip all next steps and return {}
@@ -1155,7 +1155,7 @@ class Transcript(object):
         if max_size < min_size:
             max_size = min_size
         annotated_seq = self.annotated_seq(
-                            include_somatic=include_somatic, 
+                            include_somatic=include_somatic,
                             include_germline=include_germline
                         )
         sequence, ref_sequence = '', '' # hold flattened nucleotide sequence
@@ -1166,8 +1166,8 @@ class Transcript(object):
         # +1 is + strand, -1 is - strand
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
-        # ATGs structure is: [pos in sequence (-1 if absent), pos in ref seq 
-        # (-1 if absent), mutation information, is downstream of start codon?, 
+        # ATGs structure is: [pos in sequence (-1 if absent), pos in ref seq
+        # (-1 if absent), mutation information, is downstream of start codon?,
         # is ATG new in annotated seq?, is ATG missing in annotated seq?]
         ATGs, TAA_TGA_TAG = [], []
         ATG_counter1, ATG_counter2 = 0, 0
@@ -1202,7 +1202,7 @@ class Transcript(object):
                         i = -2
                         while not found_all_variants and i > -1*len(seq_previous):
                             prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                            if ((len(sequence) - len(prev_seq)) >= ATG1
                                             and seq_previous[i][2] != [()]):
                                 relevant_seq.append(seq_previous[i])
                             if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
@@ -1225,7 +1225,7 @@ class Transcript(object):
                         i = -2
                         while not found_all_variants and i > -1*len(seq_previous):
                             prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2 
+                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2
                                             and seq_previous[i][2] != [()]):
                                 relevant_seq.append(seq_previous[i])
                             if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
@@ -1245,7 +1245,7 @@ class Transcript(object):
                         i = -1
                         while not found_all_variants and i > -1*len(seq_previous):
                             prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                            if ((len(sequence) - len(prev_seq)) >= ATG1
                                             and seq_previous[i][2] != [()]):
                                 relevant_seq.append(seq_previous[i])
                             if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
@@ -1272,7 +1272,7 @@ class Transcript(object):
                         i = -2
                         while not found_all_variants and i > -1*len(seq_previous):
                             prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1 
+                            if ((len(sequence) - len(prev_seq)) >= ATG1
                                             and seq_previous[i][2] != [()]):
                                 relevant_seq.append(seq_previous[i])
                             if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
@@ -1295,7 +1295,7 @@ class Transcript(object):
                         i = -2
                         while not found_all_variants and i > -1*len(seq_previous):
                             prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2 
+                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2
                                             and seq_previous[i][2] != [()]):
                                 relevant_seq.append(seq_previous[i])
                             if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
@@ -1311,7 +1311,7 @@ class Transcript(object):
                 break
             seq_previous.append(seq)
             # find transcript-relative coordinates of start codons
-            # flatten strings from annotated and reference seqs 
+            # flatten strings from annotated and reference seqs
             if seq[1] == 'R':
                 if (ref_start < 0
                     and seq[3] * strand + len(seq[0]) > start * strand):
@@ -1335,13 +1335,13 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
             elif seq[1] == 'H':
-            	if (coding_start < 0
-            		and seq[2][0][1]*strand + len(seq[2][0][2]) > start * strand):
+                if (coding_start < 0
+                        and seq[2][0][1]*strand + len(seq[2][0][2]) > start * strand):
                     coding_start = counter + (
-                            start - seq[2][0][1] + 2 * self.rev_strand
+                        start - seq[2][0][1] + 2 * self.rev_strand
                         ) * strand
-            	if (ref_start < 0
-            		and seq[2][1][1]*strand + len(seq[2][1][2]) > start * strand):
+                if (ref_start < 0
+                        and seq[2][1][1]*strand + len(seq[2][1][2]) > start * strand):
                     ref_start = ref_counter + (
                             start - seq[2][1][1] + 2 * self.rev_strand
                         ) * strand
@@ -1355,15 +1355,15 @@ class Transcript(object):
                             ) * strand
                     TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
                 sequence += seq[2][0][3]
-            	counter += len(seq[2][0][3])
+                counter += len(seq[2][0][3])
                 if self.rev_strand:
                     ref_sequence += seq[2][1][3][::-1].translate(
                                                     revcomp_translation_table
                                                 )
                 else:
-                	ref_sequence += seq[2][1][3]
-            	ref_counter += len(seq[2][1][3])
-            	continue
+                    ref_sequence += seq[2][1][3]
+                ref_counter += len(seq[2][1][3])
+                continue
             elif seq[2][0][4] == 'D':
                 if (ref_start < 0
                     and seq[3]*strand + len(seq[2][0][2]) > start * strand):
@@ -1382,8 +1382,8 @@ class Transcript(object):
                                 stop - seq[3] + 2 * self.rev_strand
                             ) * strand
                     TAA_TGA_TAG = seq
-                if not ((seq[1] == 'G' and include_germline == 2) or 
-                    (seq[1] == 'S' and include_somatic == 2)):                  
+                if not ((seq[1] == 'G' and include_germline == 2) or
+                    (seq[1] == 'S' and include_somatic == 2)):
 #                    ref_sequence += seq[0]
 #                    ref_counter += len(seq[0])
 #                else:
@@ -1418,8 +1418,8 @@ class Transcript(object):
                     TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
-                if ((seq[1] == 'G' and include_germline == 2) or 
-                    (seq[1] == 'S' and include_somatic == 2)):                  
+                if ((seq[1] == 'G' and include_germline == 2) or
+                    (seq[1] == 'S' and include_somatic == 2)):
                     ref_sequence += seq[0]
                     ref_counter += len(seq[0])
                 continue
@@ -1443,8 +1443,8 @@ class Transcript(object):
                     TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
-                if ((seq[1] == 'G' and include_germline == 2) or 
-                    (seq[1] == 'S' and include_somatic == 2)):                  
+                if ((seq[1] == 'G' and include_germline == 2) or
+                    (seq[1] == 'S' and include_somatic == 2)):
                     ref_sequence += seq[0]
                 else:
                     if self.rev_strand:
@@ -1456,7 +1456,7 @@ class Transcript(object):
                         for i in seq[2]:
                             ref_sequence += i[2]
                 ref_counter += len(seq[0])
-                continue            
+                continue
         # find location of start codon in annotated_seq v. reference
         if not ATGs:
             return {}
@@ -1467,9 +1467,9 @@ class Transcript(object):
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
         reading_frame, start_codon, ref_atg, start_warnings = self._atg_choice(
-                                    ATGs, 
+                                    ATGs,
                                     only_novel_upstream=only_novel_upstream,
-                                    only_downstream=only_downstream, 
+                                    only_downstream=only_downstream,
                                     only_reference=only_reference
                                 )
         if start_codon is None:
@@ -1492,7 +1492,7 @@ class Transcript(object):
         coding_start = start_codon[0]
         annotated_seq.pop()
         for seq in annotated_seq:
-            # skip sequence fragments that are not to be reported 
+            # skip sequence fragments that are not to be reported
             if seq[1] == 'R':
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
@@ -1509,7 +1509,7 @@ class Transcript(object):
 #                elif seq[2][0][4] == 'D':
 #                    continue
                 continue
-            # skip sequence fragments that occur prior to start codon 
+            # skip sequence fragments that occur prior to start codon
             # handle cases where variant involves start codon
             if counter < coding_start + 2:
                 if seq[1] == 'H':
@@ -1536,7 +1536,7 @@ class Transcript(object):
                             )
                         compare_peptides_to_ref = True
                     counter += len(seq[0])
-                    if ((seq[1] == 'G' and include_germline == 2) or 
+                    if ((seq[1] == 'G' and include_germline == 2) or
                                 (seq[1] == 'S' and include_somatic == 2)):
                         ref_counter += len(seq[0])
                     continue
@@ -1552,17 +1552,17 @@ class Transcript(object):
                     continue
                 else:
                     # other variant types not handled at this time
-                    break                        
+                    break
             # log variants
             # handle potential frame shifts from indels
             if seq[1] == 'H':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) -1, 
+                                counter, counter + len(seq[0]) -1,
                                 seq[2][0][4]])
                 compare_peptides_to_ref = True
                 read_frame2 = self.reading_frame(seq[2][0][1] + len(seq[2][0][3]))
                 if read_frame2 is None:
-                    # this case NOT addressed at present 
+                    # this case NOT addressed at present
                     # (e.g. deletion involves all or part of intron)
                     break
                 read_frame1 = (read_frame2 + len(seq[2][1][3])) % 3
@@ -1599,7 +1599,7 @@ class Transcript(object):
                 read_frame1 = self.reading_frame(seq[3])
                 read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
                 if read_frame1 is None or read_frame2 is None:
-                    # these cases NOT addressed at present 
+                    # these cases NOT addressed at present
                     # (e.g. deletion involves all or part of intron)
                     break
                 if read_frame1 != read_frame2:
@@ -1694,7 +1694,7 @@ class Transcript(object):
                                         ' to end of transcript ',
                                         self.transcript_id, '; this',
                                         ' transcript may undergo ',
-                                        'degradation']), 
+                                        'degradation']),
                                   Warning)
                 coding_stop = len(sequence) - len(sequence) % 3
                 transcript_warnings.append('nonstop')
@@ -1717,18 +1717,18 @@ class Transcript(object):
                                                min_size=size, max_size=size)
             for coords in coordinates:
                 epitope_coords.append(
-                        [max(0, ((coords[2]-coding_start) // 3)- size + 1), 
+                        [max(0, ((coords[2]-coding_start) // 3)- size + 1),
                          min(len(protein),
                          ((coords[3] - coding_start) // 3)+size), coords[4]]
                     )
             for coords in frame_shifts:
                 epitope_coords.append(
-                        [max(0, ((coords[2]-coding_start) // 3)- size + 1), 
+                        [max(0, ((coords[2]-coding_start) // 3)- size + 1),
                          min(len(protein),
                          ((coords[3] - coding_start) // 3)+size), coords[4]]
                     )
             for coords in epitope_coords:
-                peptides = kmerize_peptide(protein[coords[0]:coords[1]], 
+                peptides = kmerize_peptide(protein[coords[0]:coords[1]],
                     min_size=size, max_size=size)
                 if compare_peptides_to_ref:
                     peptides = list(set(peptides).difference(peptides_ref))
@@ -1764,28 +1764,28 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if (tokens[2] in ['exon', 'start_codon', 'stop_codon'] and 
-                    'protein_coding' in line): 
+                if (tokens[2] in ['exon', 'start_codon', 'stop_codon'] and
+                    'protein_coding' in line):
                     transcript_id = re.sub(
-                                r'.*transcript_id \"([A-Z0-9._]+)\"[;].*', 
+                                r'.*transcript_id \"([A-Z0-9._]+)\"[;].*',
                                 r'\1', tokens[8]
                                 )
                     transcript_type = re.sub(
-                                r'.*transcript_type \"([a-z_]+)\"[;].*', 
+                                r'.*transcript_type \"([a-z_]+)\"[;].*',
                                 r'\1', tokens[8]
                                 )
                     if transcript_type == 'protein_coding':
                         # Create new dictionary entry for new transcripts
                         cds_dict[transcript_id].append([tokens[0],
-                                                    tokens[2], int(tokens[3]), 
+                                                    tokens[2], int(tokens[3]),
                                                     int(tokens[4]), tokens[6]])
-    # Sort cds_dict coordinates (left -> right) for each transcript                                
+    # Sort cds_dict coordinates (left -> right) for each transcript
     for transcript_id in cds_dict.keys():
-            cds_dict[transcript_id].sort(key=lambda x: x[0])
-            seq_types = [x[1] for x in cds_dict[transcript_id]]
-            if 'start_codon' not in seq_types or 'stop_codon' not in seq_types:
+        cds_dict[transcript_id].sort(key=lambda x: x[0])
+        seq_types = [x[1] for x in cds_dict[transcript_id]]
+        if 'start_codon' not in seq_types or 'stop_codon' not in seq_types:
                 # Remove incompletely annotated transcript
-                del cds_dict[transcript_id]
+            del cds_dict[transcript_id]
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = os.path.join(dictdir, 'transcript_to_CDS.pickle')
@@ -1829,13 +1829,13 @@ def cds_to_tree(cds_dict, dictdir, pickle_it=True):
 
 def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     """ Uses cds tree to btain transcript IDs from genomic coordinates
-            
+
         chrom: (String) Specify chrom to use for transcript search.
         start: (Int) Specify start position to use for transcript search.
         stop: (Int) Specify ending position to use for transcript search
         cds_tree: (Dict) dictionary of IntervalTree() objects containing
             transcript IDs as function of exon coords indexed by chr/contig ID.
-            
+
         Return value: (set) a set of matching unique transcript IDs.
     """
     transcript_ids = []
@@ -1850,8 +1850,8 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
 
 def process_haplotypes(hapcut_output, interval_dict):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
-        hapcut_output: output from HAPCUT2, adjusted to include unphased 
-                        mutations as their own haplotypes (performed in 
+        hapcut_output: output from HAPCUT2, adjusted to include unphased
+                        mutations as their own haplotypes (performed in
                         software's prep mode)
         interval_dict: dictionary linking genomic intervals to transcripts
         Return value: dictinoary linking haplotypes to transcripts
@@ -1897,28 +1897,28 @@ def process_haplotypes(hapcut_output, interval_dict):
                     ref = tokens[5]
                     alt = tokens[6][len(ref):]
                     end = pos + 1
-                overlapping_transcripts = get_transcripts_from_tree(tokens[3], 
-                                                                pos, 
+                overlapping_transcripts = get_transcripts_from_tree(tokens[3],
+                                                                pos,
                                                                 end,
                                                                 interval_dict)
                 # For each overlapping transcript, add mutation entry
                 # Contains chromosome, position, reference, alternate, allele
                 #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
-                    block_transcripts[transcript].append([tokens[3], pos, 
-                                                          ref, alt, 
-                                                          tokens[1], tokens[2], 
-                                                          tokens[7], 
+                    block_transcripts[transcript].append([tokens[3], pos,
+                                                          ref, alt,
+                                                          tokens[1], tokens[2],
+                                                          tokens[7],
                                                           mutation_type])
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
-                                  only_novel_upstream, only_downstream, 
+                                  only_novel_upstream, only_downstream,
                                   only_reference, reference_index, size_list,
                                   include_germline=2, include_somatic=1):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
-        
+
         relevant_transcripts: dictionary linking haplotypes to transcripts;
             output from process_haplotypes()
         VAF_pos: position of VAF in VCF mutation data from HapCUT2
@@ -1941,22 +1941,22 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                 1 = exclude somatic mutations from reference comparison,
                 2 = include somatic mutations in both annotated sequence and
                 reference comparison
-        return value: dictionary linking neoepitopes to their associated 
+        return value: dictionary linking neoepitopes to their associated
             metadata
         """
     neoepitopes = collections.defaultdict(list)
     for affected_transcript in relevant_transcripts:
         # Create transcript object
-        transcriptA = Transcript(reference_index, 
-                        [[str(chrom), 'blah', seq_type, str(start), 
-                          str(end), '.', strand] for (chrom, seq_type, 
-                                                      start, end, strand) 
+        transcriptA = Transcript(reference_index,
+                        [[str(chrom), 'blah', seq_type, str(start),
+                          str(end), '.', strand] for (chrom, seq_type,
+                                                      start, end, strand)
                       in cds_dict[affected_transcript]], affected_transcript
                     )
-        transcriptB = Transcript(reference_index, 
-                        [[str(chrom), 'blah', seq_type, str(start), 
-                          str(end), '.', strand] for (chrom, seq_type, 
-                                                      start, end, strand) 
+        transcriptB = Transcript(reference_index,
+                        [[str(chrom), 'blah', seq_type, str(start),
+                          str(end), '.', strand] for (chrom, seq_type,
+                                                      start, end, strand)
                       in cds_dict[affected_transcript]], affected_transcript
                     )
         # Iterate over haplotypes associated with this transcript
@@ -1974,7 +1974,7 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                 # Determine VAF if available
                 if VAF_pos is not None:
                     VAF = float(
-                            mutation[6].strip( 
+                            mutation[6].strip(
                                     '*').split(':'
                                 )[VAF_pos].strip('%')
                         )
@@ -1982,33 +1982,33 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                     VAF = None
                 # Determine which copies variant exists on & make edits
                 if mutation[4] == '1':
-                    transcriptA.edit(mutation[3], mutation[1], 
-                                mutation_type=mutation[7], 
+                    transcriptA.edit(mutation[3], mutation[1],
+                                mutation_type=mutation[7],
                                 mutation_class=mutation_class,
                                 vaf=VAF)
                 if mutation[5] == '1':
-                    transcriptB.edit(mutation[3], mutation[1], 
-                                mutation_type=mutation[7], 
+                    transcriptB.edit(mutation[3], mutation[1],
+                                mutation_type=mutation[7],
                                 mutation_class=mutation_class,
                                 vaf=VAF)
             if somatic_in_haplotype:
                 # Extract neoepitopes
                 A_peptides = transcriptA.neopeptides(
-                                    min_size=size_list[0], 
+                                    min_size=size_list[0],
                                     max_size=size_list[-1],
                                     include_somatic=include_somatic,
-                                    include_germline=include_germline, 
+                                    include_germline=include_germline,
                                     only_novel_upstream=only_novel_upstream,
-                                    only_downstream=only_downstream, 
+                                    only_downstream=only_downstream,
                                     only_reference=only_reference
                                     )
                 B_peptides = transcriptB.neopeptides(
-                                    min_size=size_list[0], 
+                                    min_size=size_list[0],
                                     max_size=size_list[-1],
                                     include_somatic=include_somatic,
-                                    include_germline=include_germline, 
+                                    include_germline=include_germline,
                                     only_novel_upstream=only_novel_upstream,
-                                    only_downstream=only_downstream, 
+                                    only_downstream=only_downstream,
                                     only_reference=only_reference
                                     )
                 # Store neoepitopes and their metadata
