@@ -33,7 +33,7 @@ class DownloadDependencies(Command):
     user_options = []
     def initialize_options(self):
         pass
-    
+
     def finalize_options(self):
         pass
 
@@ -53,8 +53,8 @@ setup(name='neoepiscope',
       package_data={'neoepiscope': ['*.py', '*.pickle']},
       zip_safe=True,
       install_requires=[
-      		'intervaltree', 'mhcflurry'
-      	],
+                'intervaltree', 'mhcflurry'
+        ],
       entry_points={
         'console_scripts': [
             'neoepiscope=neoepiscope:main',

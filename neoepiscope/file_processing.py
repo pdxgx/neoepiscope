@@ -6,7 +6,7 @@ import collections
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
 
-        HAPCUT2 only takes data from the first VCF sample column, so if the 
+        HAPCUT2 only takes data from the first VCF sample column, so if the
             tumor sample data is in the second VCF sample column, it must be
             swapped prior to optional germline merging or running HAPCUT2
 
@@ -27,13 +27,13 @@ def adjust_tumor_column(in_vcf, out_vcf):
             else:
                 tokens = line.strip('\n').split('\t')
                 if line[0] == '#':
-                    warnings.warn(''.join(['Reading ', tokens[9], 
+                    warnings.warn(''.join(['Reading ', tokens[9],
                                            'as normal tissue and ', tokens[10],
-                                           'as tumor tissue']), 
+                                           'as tumor tissue']),
                                   Warning)
-                new_line = '\t'.join([tokens[0], tokens[1], tokens[2], 
-                                        tokens[3], tokens[4], tokens[5], 
-                                        tokens[6], tokens[7], tokens[8], 
+                new_line = '\t'.join([tokens[0], tokens[1], tokens[2],
+                                        tokens[3], tokens[4], tokens[5],
+                                        tokens[6], tokens[7], tokens[8],
                                         tokens[10], tokens[9]])
                 other_lines.append(new_line)
     # Write new vcf
@@ -65,35 +65,35 @@ def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
         if (lines[0] != '#'):
             print(lines.strip(), file=temp)
     vcffile.close()
-    temp.close()    
-    markgermline = ''.join(['''awk '{print $0"*"}' ''', vcf2, 
+    temp.close()
+    markgermline = ''.join(['''awk '{print $0"*"}' ''', vcf2,
                             ".germlinetemp > ", vcf2, '.germline'])
-    marktumor    = ''.join(['''awk '{print $0}' ''', vcf2, 
+    marktumor    = ''.join(['''awk '{print $0}' ''', vcf2,
                             '.tumortemp > ', vcf2, '.tumor'])
     subprocess.call(markgermline, shell=True)
     subprocess.call(marktumor, shell=True)
-    command = ''.join(['cat ', vcf2, '.germline ', vcf2, '.tumor > ', 
+    command = ''.join(['cat ', vcf2, '.germline ', vcf2, '.tumor > ',
                         vcf2, '.combine1'])
     subprocess.call(command, shell=True)
-    command2 = ''.join(['sort -k1,1 -k2,2n ', vcf2, '.combine1 > ', 
+    command2 = ''.join(['sort -k1,1 -k2,2n ', vcf2, '.combine1 > ',
                         vcf2, '.sorted'])
     subprocess.call(command2, shell=True)
-    command3 = ''.join(['cat ', vcf2, '.header ', vcf2, '.sorted > ', 
+    command3 = ''.join(['cat ', vcf2, '.header ', vcf2, '.sorted > ',
                         vcf2, '.combine2'])
     subprocess.call(command3, shell=True)
-    cut = ''.join(['cut -f1,2,3,4,5,6,7,8,9,10 ', vcf2, 
+    cut = ''.join(['cut -f1,2,3,4,5,6,7,8,9,10 ', vcf2,
                     '.combine2 > ', outfile])
     subprocess.call(cut, shell=True)
-    for file in ['.tumortemp', '.germlinetemp', '.combine1', '.combine2', 
+    for file in ['.tumortemp', '.germlinetemp', '.combine1', '.combine2',
                     '.sorted', '.tumor', '.germline', '.header']:
         cleanup = ''.join(['rm ', vcf2, file])
         subprocess.call(cleanup, shell=True)
 
 def prep_hapcut_output(output, hapcut2_output, vcf):
     """ Adds unphased mutations to HapCUT2 output as their own haplotypes
-        
+
         output: path to output file to write adjusted haplotypes
-        hapcut2_output: path to original output from HapCUT2 with only 
+        hapcut2_output: path to original output from HapCUT2 with only
             phased mutations
         vcf: path to vcf used to generate original HapCUT2 output
 
@@ -113,7 +113,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                             warnings.warn('Neoepiscope does not support ',
                                           'triallellic phasing; of ',
                                           'alternate alleles ', tokens[6],
-                                          ' at contig ', tokens[3], 
+                                          ' at contig ', tokens[3],
                                           ' position ', tokens[4], ', only ',
                                           'the top two will be included.')
                         for i in (int(tokens[1]) - 1, int(tokens[2]) - 1):
@@ -122,12 +122,12 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                                     (tokens[5], allele)
                                                 )
                         print('\t'.join([tokens[0], '1', '0', tokens[3],
-                                         tokens[4], tokens[5], 
+                                         tokens[4], tokens[5],
                                          alt_alleles[int(tokens[1]) - 1],
                                          tokens[7], tokens[8], tokens[9],
                                          tokens[10]]), file=output_stream)
                         print('\t'.join([tokens[0], '0', '1', tokens[3],
-                                         tokens[4], tokens[5], 
+                                         tokens[4], tokens[5],
                                          alt_alleles[int(tokens[2]) - 1],
                                          tokens[7], tokens[8], tokens[9],
                                          tokens[10]]), file=output_stream)
@@ -191,7 +191,7 @@ def get_VAF_pos(VCF):
 
         VCF: path to input VCF
 
-        Return value: None if VCF does not contain VAF, 
+        Return value: None if VCF does not contain VAF,
                         otherwise position of VAF
     """
     VAF_check = False
@@ -218,16 +218,16 @@ def get_VAF_pos(VCF):
 
 def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     """ Writes predicted neoepitopes out to file
-        
+
         output_file: path to output file
         hla_alleles: list of HLA alleles used for binding predictions
         neoepitopes: dictionary linking neoepitopes to their metadata
         tool_dict: dictionary storing prediction tool data
 
-        Return value: None.   
+        Return value: None.
     """
     with open(output_file, 'w') as o:
-        headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt', 
+        headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt',
                    'Mutation_type', 'VAF', 'Warnings', 'Transcript_ID']
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):

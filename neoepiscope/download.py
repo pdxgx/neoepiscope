@@ -65,7 +65,7 @@ def register_cleanup(handler, *args, **kwargs):
 
         handler: function to execute on program termination
         args: named arguments of handler
-        kwargs includes keyword args of handler as well as: 
+        kwargs includes keyword args of handler as well as:
             signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
                 signal.SIGHUP]
 
@@ -431,7 +431,7 @@ class NeoepiscopeDownloader(object):
             pass
         os.chdir(temp_install_dir)
         if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
-            self._grab_and_explode(download['Gencode v27 annotation'], 
+            self._grab_and_explode(download['Gencode v27 annotation'],
                                    'Gencode v27 annotation', explode=False)
             gencode_v27 = os.path.join(self.download_dir,
                                         'gencode_v27')
@@ -456,7 +456,7 @@ class NeoepiscopeDownloader(object):
         else:
             gencode_v27 = None
         if self._yes_no_query('Download Gencode v19 gtf annotation file?'):
-            self._grab_and_explode(download['Gencode v19 annotation'], 
+            self._grab_and_explode(download['Gencode v19 annotation'],
                                    'Gencode v19 annotation', explode=False)
             gencode_v19 = os.path.join(self.download_dir,
                                         'gencode_v19')
@@ -481,7 +481,7 @@ class NeoepiscopeDownloader(object):
         else:
             gencode_v19 = None
         if self._yes_no_query('Download Bowtie NCBI GRCh38 index?'):
-            self._grab_and_explode(download['Bowtie NCBI GRCh38 index'], 
+            self._grab_and_explode(download['Bowtie NCBI GRCh38 index'],
                                    'Bowtie NCBI GRCh38 index')
             bowtie_grch38 = os.path.join(
                             self.download_dir,
@@ -490,7 +490,7 @@ class NeoepiscopeDownloader(object):
         else:
             bowtie_grch38 = None
         if self._yes_no_query('Download Bowtie UCSC hg19 index?'):
-            self._grab_and_explode(download['Bowtie UCSC hg19 index'], 
+            self._grab_and_explode(download['Bowtie UCSC hg19 index'],
                                    'Bowtie UCSC hg19 index')
             bowtie_hg19 = os.path.join(self.download_dir, 'hg19')
         else:
@@ -522,9 +522,9 @@ class NeoepiscopeDownloader(object):
                             ):
             hapcut_build_dir = self._request_path(
                                 'Please enter the path to '
-                                'your HapCUT2 build directory', 
+                                'your HapCUT2 build directory',
                                 use_which=False)
-            if (is_exe(os.path.join(hapcut_build_dir, 'extractHAIRS')) and 
+            if (is_exe(os.path.join(hapcut_build_dir, 'extractHAIRS')) and
                     is_exe(os.path.join(hapcut_build_dir, 'HAPCUT2'))):
                 programs.append(os.path.join(hapcut_build_dir, 'extractHAIRS'))
                 programs.append(os.path.join(hapcut_build_dir, 'HAPCUT2'))
@@ -572,35 +572,35 @@ hapcut2 = {hapcut2}
                          bowtie_hg19=('None'
                                       if bowtie_hg19 is None
                                       else self._quote(bowtie_hg19)),
-                         netMHCIIpan3=('None' if programs[0] is None 
+                         netMHCIIpan3=('None' if programs[0] is None
                                         else self._quote(programs[0])),
-                         netMHCpan3=('None' if programs[1] is None 
+                         netMHCpan3=('None' if programs[1] is None
                                         else self._quote(programs[0])),
-                         netMHCpan4=('None' if programs[2] is None 
+                         netMHCpan4=('None' if programs[2] is None
                                         else self._quote(programs[0])),
-                         hapcut2_hairs=('None' if programs[3] is None 
-                                        else self._quote(programs[0])), 
-                         hapcut2=('None' if programs[4] is None 
-                                        else self._quote(programs[0]))), 
+                         hapcut2_hairs=('None' if programs[3] is None
+                                        else self._quote(programs[0])),
+                         hapcut2=('None' if programs[4] is None
+                                        else self._quote(programs[0]))),
                          file=paths_stream)
         # Move to final directory
         try:
             shutil.move(temp_install_dir, self.download_dir)
-            if os.path.isfile(os.path.join(sys.prefix, 'lib', 
-                                     ''.join(['python', 
+            if os.path.isfile(os.path.join(sys.prefix, 'lib',
+                                     ''.join(['python',
                                      str(sys.version_info.major), '.',
                                      str(sys.version_info.minor)]),
                                       'site-packages', 'neoepiscope',
                                       'paths.py')):
-                os.remove(os.path.join(sys.prefix, 'lib', 
-                                     ''.join(['python', 
+                os.remove(os.path.join(sys.prefix, 'lib',
+                                     ''.join(['python',
                                      str(sys.version_info.major), '.',
                                      str(sys.version_info.minor)]),
                                       'site-packages', 'neoepiscope',
                                       'paths.py'))
-            shutil.move(os.path.join(self.download_dir, 'paths.py'), 
-                        os.path.join(sys.prefix, 'lib', 
-                                     ''.join(['python', 
+            shutil.move(os.path.join(self.download_dir, 'paths.py'),
+                        os.path.join(sys.prefix, 'lib',
+                                     ''.join(['python',
                                      str(sys.version_info.major), '.',
                                      str(sys.version_info.minor)]),
                                       'site-packages', 'neoepiscope'))
