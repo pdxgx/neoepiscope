@@ -392,7 +392,8 @@ class NeoepiscopeDownloader(object):
                     )
                 ):
                 self.download_dir = self._request_path(
-                        'Please enter a directory for storing neoepiscope data'
+                        'Please enter a directory for storing neoepiscope data',
+                        use_which=False
                     )
         # Download to a temporary directory first, then move to final dest
         temp_install_dir = tempfile.mkdtemp()
