@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 from distutils.core import Command
-from neoepiscope.download import NeoepiscopeDownloader
 
 # Borrowed (with revisions) from https://stackoverflow.com/questions/17001010/
 # how-to-run-unittest-discover-from-python-setup-py-test/21726329#21726329
@@ -38,6 +37,7 @@ class DownloadDependencies(Command):
         pass
 
     def run(self):
+        from neoepiscope.download import NeoepiscopeDownloader
         downloader = NeoepiscopeDownloader()
         downloader.run()
 
