@@ -28,8 +28,8 @@ def adjust_tumor_column(in_vcf, out_vcf):
                 tokens = line.strip('\n').split('\t')
                 if line[0] == '#':
                     warnings.warn(''.join(['Reading ', tokens[9],
-                                           'as normal tissue and ', tokens[10],
-                                           'as tumor tissue']),
+                                           ' as normal tissue and ', tokens[10],
+                                           ' as tumor tissue']),
                                   Warning)
                 new_line = '\t'.join([tokens[0], tokens[1], tokens[2],
                                         tokens[3], tokens[4], tokens[5],
@@ -39,9 +39,9 @@ def adjust_tumor_column(in_vcf, out_vcf):
     # Write new vcf
     with open(out_vcf, 'w') as f:
         for line in header_lines:
-            print(line + '\n', file=f)
+            print(line, file=f)
         for line in other_lines:
-            print(line + '\n', file=f)
+            print(line, file=f)
 
 def combine_vcf(vcf1, vcf2, outfile='Combined.vcf'):
     """ Combines VCFs
