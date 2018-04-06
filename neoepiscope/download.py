@@ -23,11 +23,13 @@ download = {
                         ],
             'Bowtie NCBI GRCh38 index': [
                             'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
-                            'GRCh38_no_alt.zip'
+                            'GRCh38_no_alt.zip',
+                            'http://verve.webfactional.com/GRCh38_no_alt.zip'
                         ],
             'Bowtie UCSC hg19 index': [
                             'ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/'
-                            'hg19.ebwt.zip'
+                            'hg19.ebwt.zip',
+                            'http://verve.webfactional.com/hg19.ebwt.zip'
                         ]
         }
 
