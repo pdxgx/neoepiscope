@@ -619,6 +619,6 @@ hapcut2 = {hapcut2}
                                                 temp_install_dir,
                                                 self.download_dir
                                             ))
-            self._bail()
+            raise
         self._print_to_screen_and_log('Configured neoepiscope.')
         self.finished = True
