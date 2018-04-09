@@ -105,7 +105,9 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
             for line in hapcut2_stream:
                 if line[0] != '*' and not line.startswith('BLOCK'):
                     tokens = line.strip().split('\t')
-                    if ',' in tokens[6]:
+                    if tokens[1] == '-' or tokens[2] == '-':
+                        continue
+                    elif ',' in tokens[6]:
                         alt_alleles = tokens[6].split(',')
                         try:
                             assert len(alt_alleles) == 2
