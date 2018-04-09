@@ -1992,7 +1992,10 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                         else:
                             VAF = None
                     else:
-                        VAF = float(VAF_entry.strip('%'))
+                        if VAF_entry.strip('%') != '.':
+                            VAF = float(VAF_entry.strip('%'))
+                        else:
+                            VAF = None
                 else:
                     VAF = None
                 # Determine which copies variant exists on & make edits
