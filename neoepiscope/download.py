@@ -421,19 +421,19 @@ class NeoepiscopeDownloader(object):
                         'Specify a different download directory'
                     )
                 sys.exit(0)
-        try:
-            os.makedirs(self.download_dir)
-        except OSError as e:
-            self._print_to_screen_and_log(
-                            ('Problem encountered trying to create '
-                             'directory %s for installation. May need '
-                             'sudo permissions.') % self.download_dir
-                        )
-            self._bail()
-        else:
-            # So it's possible to move temp installation dir there
-            os.rmdir(self.download_dir)
-            pass
+        # try:
+        #     os.makedirs(self.download_dir)
+        # except OSError as e:
+        #     self._print_to_screen_and_log(
+        #                     ('Problem encountered trying to create '
+        #                      'directory %s for installation. May need '
+        #                      'sudo permissions.') % self.download_dir
+        #                 )
+        #     self._bail()
+        # else:
+        #     # So it's possible to move temp installation dir there
+        #     os.rmdir(self.download_dir)
+        #     pass
         os.chdir(temp_install_dir)
         if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v27 annotation'],
@@ -590,6 +590,7 @@ hapcut2 = {hapcut2}
                          file=paths_stream)
         # Move to final directory
         try:
+            shutil.rmtree(self.download_dir)
             shutil.copytree(temp_install_dir, self.download_dir)
             shutil.rmtree(temp_install_dir)
             if os.path.isfile(os.path.join(sys.prefix, 'lib',
