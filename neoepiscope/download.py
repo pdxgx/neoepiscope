@@ -590,7 +590,8 @@ hapcut2 = {hapcut2}
                          file=paths_stream)
         # Move to final directory
         try:
-            shutil.move(temp_install_dir, self.download_dir)
+            shutil.copy2(temp_install_dir, self.download_dir)
+            shutil.rmtree(temp_install_dir)
             if os.path.isfile(os.path.join(sys.prefix, 'lib',
                                      ''.join(['python',
                                      str(sys.version_info.major), '.',
@@ -603,12 +604,13 @@ hapcut2 = {hapcut2}
                                      str(sys.version_info.minor)]),
                                       'site-packages', 'neoepiscope',
                                       'paths.py'))
-            shutil.move(os.path.join(self.download_dir, 'paths.py'),
+            shutil.copy2(os.path.join(self.download_dir, 'paths.py'),
                         os.path.join(sys.prefix, 'lib',
                                      ''.join(['python',
                                      str(sys.version_info.major), '.',
                                      str(sys.version_info.minor)]),
                                       'site-packages', 'neoepiscope'))
+            os.remove(os.path.join(self.download_dir, 'paths.py'))
         except Exception as e:
             self._print_to_screen_and_log(('Problem "%s" encountered moving '
                                            'temporary installation directory '
