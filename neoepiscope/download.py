@@ -584,13 +584,13 @@ hapcut2 = {hapcut2}
                          netMHCIIpan3=('None' if programs[0] is None
                                         else self._quote(programs[0])),
                          netMHCpan3=('None' if programs[1] is None
-                                        else self._quote(programs[0])),
+                                        else self._quote(programs[1])),
                          netMHCpan4=('None' if programs[2] is None
-                                        else self._quote(programs[0])),
+                                        else self._quote(programs[2])),
                          hapcut2_hairs=('None' if programs[3] is None
-                                        else self._quote(programs[0])),
+                                        else self._quote(programs[3])),
                          hapcut2=('None' if programs[4] is None
-                                        else self._quote(programs[0]))),
+                                        else self._quote(programs[4]))),
                          file=paths_stream)
         # Move to final directory
         try:
