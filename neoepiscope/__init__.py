@@ -229,7 +229,7 @@ def main():
                                       version, 'of mhcflurry']))      
                 elif 'netMHCIIpan' in program:
                     if version == '3' and 'netMHCIIpan3' not in tool_dict:
-                        program = exe_paths.netMHCIIpan3
+                        program = paths.netMHCIIpan3
                         if program is None:
                             program = which('netMHCIIpan3')
                         else:
@@ -262,7 +262,7 @@ def main():
                                     ('netMHCpan4' not in tool_dict and 
                                         version == '4')):
                         if version == '3':
-                            program = exe_paths.netMHCpan3
+                            program = paths.netMHCpan3
                             if program is None:
                                 program = which('netMHCpan3')
                             else:
