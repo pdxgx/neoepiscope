@@ -1856,6 +1856,11 @@ def process_haplotypes(hapcut_output, interval_dict):
         interval_dict: dictionary linking genomic intervals to transcripts
         Return value: dictinoary linking haplotypes to transcripts
     """
+    chr_in_intervals = False
+    for contig in interval_dict.keys():
+        if 'chr' in contig:
+            chr_in_intervals = True
+            continue
     affected_transcripts = collections.defaultdict(list)
     with open(hapcut_output, 'r') as f:
         block_transcripts = collections.defaultdict(list)
@@ -1876,6 +1881,10 @@ def process_haplotypes(hapcut_output, interval_dict):
             else:
                 # Add mutation to transcript dictionary for the block
                 tokens = line.strip("\n").split()
+                contig = tokens[3]
+                if (chr_in_intervals and 'chr' not in contig 
+                        and ''.join(['chr', contig]) in interval_dict.keys()):
+                    contig = 'chr' + contig
                 if len(tokens[5]) == len(tokens[6]):
                     mutation_type = 'V'
                     pos = int(tokens[4])
@@ -1897,7 +1906,7 @@ def process_haplotypes(hapcut_output, interval_dict):
                     ref = tokens[5]
                     alt = tokens[6][len(ref):]
                     end = pos + 1
-                overlapping_transcripts = get_transcripts_from_tree(tokens[3],
+                overlapping_transcripts = get_transcripts_from_tree(contig,
                                                                 pos,
                                                                 end,
                                                                 interval_dict)
@@ -1905,7 +1914,7 @@ def process_haplotypes(hapcut_output, interval_dict):
                 # Contains chromosome, position, reference, alternate, allele
                 #   A, allele B, genotype line from VCF
                 for transcript in overlapping_transcripts:
-                    block_transcripts[transcript].append([tokens[3], pos,
+                    block_transcripts[transcript].append([contig, pos,
                                                           ref, alt,
                                                           tokens[1], tokens[2],
                                                           tokens[7],
