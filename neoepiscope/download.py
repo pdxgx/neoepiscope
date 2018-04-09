@@ -393,7 +393,7 @@ class NeoepiscopeDownloader(object):
                         self.download_dir
                     )
                 ):
-                self.download_dir = os.path.absolutepath(os.path.expanduser(
+                self.download_dir = os.path.abspath(os.path.expanduser(
                                     self._request_path(
                                         'Please enter a directory for storing '
                                         'neoepiscope data',
