@@ -590,7 +590,7 @@ hapcut2 = {hapcut2}
                          file=paths_stream)
         # Move to final directory
         try:
-            shutil.copy2(temp_install_dir, self.download_dir)
+            shutil.copytree(temp_install_dir, self.download_dir)
             shutil.rmtree(temp_install_dir)
             if os.path.isfile(os.path.join(sys.prefix, 'lib',
                                      ''.join(['python',
