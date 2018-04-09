@@ -218,6 +218,8 @@ def main():
                         if len(scoring) > 0:
                             tool_dict['mhcflurry1'] = [program,
                                                             sorted(scoring)]
+                    elif 'mhcflurry1' in tool_dict and version == '1':
+                        continue
                     elif 'mhcflurry1' in tool_dict:
                         raise RuntimeError('Conflicting or repetitive installs'
                                             'of mhcflurry given')
