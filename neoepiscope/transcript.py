@@ -1982,11 +1982,14 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                     somatic_in_haplotype = True
                 # Determine VAF if available
                 if VAF_pos is not None:
-                    VAF = float(
-                            mutation[6].strip(
+                    VAF_entry = mutation[6].strip(
                                     '*').split(':'
-                                )[VAF_pos].strip('%')
-                        )
+                                )[VAF_pos]
+                    if ',' in VAF_entry:
+                        VAF_entry = VAF_entry.split(',')
+                        VAF = sum([float(x.strip('%')) for x in VAF_entry])/len(VAF_entry)
+                    else:
+                        VAF = float(VAF_entry.strip('%'))
                 else:
                     VAF = None
                 # Determine which copies variant exists on & make edits
