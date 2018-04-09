@@ -1986,8 +1986,11 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                     '*').split(':'
                                 )[VAF_pos]
                     if ',' in VAF_entry:
-                        VAF_entry = VAF_entry.split(',')
-                        VAF = sum([float(x.strip('%')) for x in VAF_entry])/len(VAF_entry)
+                        VAF_entry = [x for x in VAF_entry.split(',') if x != '.']
+                        if len(VAF_entry) > 0:
+                            VAF = sum([float(x.strip('%')) for x in VAF_entry])/len(VAF_entry)
+                        else:
+                            VAF = None
                     else:
                         VAF = float(VAF_entry.strip('%'))
                 else:
