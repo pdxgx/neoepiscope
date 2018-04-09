@@ -438,6 +438,8 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query('Download Gencode v27 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v27 annotation'],
                                    'Gencode v27 annotation', explode=False)
+            gencode_v27_temp = os.path.join(temp_install_dir,
+                                        'gencode_v27')
             gencode_v27 = os.path.join(self.download_dir,
                                         'gencode_v27')
             gencode_v27_gtf = os.path.join(temp_install_dir,
@@ -445,24 +447,26 @@ class NeoepiscopeDownloader(object):
                                     download['Gencode v27 annotation'][0]
                                 ))
             try:
-                os.makedirs(gencode_v27)
+                os.makedirs(gencode_v27_temp)
             except OSError as e:
                 self._print_to_screen_and_log(
                                 ('Problem encountered trying to create '
                                  'directory %s for installation. May need '
-                                 'sudo permissions.') % self.gencode_v27
+                                 'sudo permissions.') % gencode_v27_temp
                             )
                 self._bail()
             self._print_to_screen_and_log(
                     '[Configuring] Indexing Gencode v27...'
                 )
-            cds_dict = gtf_to_cds(gencode_v27_gtf, gencode_v27)
-            cds_to_tree(cds_dict, gencode_v27)
+            cds_dict = gtf_to_cds(gencode_v27_gtf, gencode_v27_temp)
+            cds_to_tree(cds_dict, gencode_v27_temp)
         else:
             gencode_v27 = None
         if self._yes_no_query('Download Gencode v19 gtf annotation file?'):
             self._grab_and_explode(download['Gencode v19 annotation'],
                                    'Gencode v19 annotation', explode=False)
+            gencode_v19_temp = os.path.join(temp_install_dir,
+                                            'gencode_v19')
             gencode_v19 = os.path.join(self.download_dir,
                                         'gencode_v19')
             gencode_v19_gtf = os.path.join(temp_install_dir,
@@ -470,19 +474,19 @@ class NeoepiscopeDownloader(object):
                                         download['Gencode v19 annotation'][0]
                                     ))
             try:
-                os.makedirs(gencode_v19)
+                os.makedirs(gencode_v19_temp)
             except OSError as e:
                 self._print_to_screen_and_log(
                                 ('Problem encountered trying to create '
                                  'directory %s for installation. May need '
-                                 'sudo permissions.') % self.gencode_v19
+                                 'sudo permissions.') % gencode_v19_temp
                             )
                 self._bail()
             self._print_to_screen_and_log(
                     '[Configuring] Indexing Gencode v19...'
                 )
-            cds_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19)
-            cds_to_tree(cds_dict, gencode_v19)
+            cds_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
+            cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None
         if self._yes_no_query('Download Bowtie NCBI GRCh38 index?'):
