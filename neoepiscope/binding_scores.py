@@ -29,7 +29,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         # Homogenize format
-        if 'DRB' in alelle:
+        if 'DRB' in allele:
             allele = allele.replace('HLA-', '').replace(':', '').replace('*', '_')
         elif 'DP' in allele or 'DQ' in allele:
             allele.replace(':', '')
