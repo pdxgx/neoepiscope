@@ -274,7 +274,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                     '-xlsfile', mhc_out, peptide_file])
         elif version == '4':
             subprocess.check_call(
-                [netmhcpan, '-BA', '1', '-a', allele, '-inptype', '1', '-p', '-xls',
+                [netmhcpan, '-BA', '-a', allele, '-inptype', '1', '-p', '-xls',
                     '-xlsfile', mhc_out, peptide_file])
         with open(mhc_out, 'r') as f:
             f.readline()
