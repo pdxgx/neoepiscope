@@ -329,6 +329,7 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                 binding_scores = get_affinity_netMHCIIpan(
                                                 neoepitopes.keys(),
                                                 allele, tool_dict[tool][0],
+                                                '3',
                                                 tool_dict[tool][1],
                                                 remove_files=True
                                                 )
