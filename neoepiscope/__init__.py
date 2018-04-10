@@ -200,6 +200,8 @@ def main():
         # Check affinity predictor
         tool_dict = {}
         if args.affinity_predictor is not None:
+            if len(args.affinity_predictor > 1):
+                args.affinity_predictor.remove(['mhcflurry', '1', 'affinity,rank'])
             for tool in args.affinity_predictor:
                 program = tool[0]
                 version = tool[1]
@@ -218,8 +220,6 @@ def main():
                         if len(scoring) > 0:
                             tool_dict['mhcflurry1'] = [program,
                                                             sorted(scoring)]
-                    elif 'mhcflurry1' in tool_dict and version == '1':
-                        continue
                     elif 'mhcflurry1' in tool_dict:
                         raise RuntimeError('Conflicting or repetitive installs'
                                             'of mhcflurry given')
@@ -268,6 +268,7 @@ def main():
                             else:
                                 program = which(program)
                         elif version == '4':
+                            program = paths.netMHCpan4
                             if program is None:
                                 program = which('netMHCpan4')
                             else:
