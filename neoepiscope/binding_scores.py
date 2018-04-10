@@ -7,13 +7,14 @@ import subprocess
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, scores,
-                                            remove_files=True):
+def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
+                                    scores, remove_files=True):
     """ Obtains binding affinities from list of peptides
 
         peptides: peptides of interest (list of strings)
         allele: Allele to use for binding affinity (string)
         netmhciipan: path to netMHCIIpan executable
+        version: version of netMHCIIpan
         scores: list of scoring methods
         remove_files: option to remove intermediate files
 
