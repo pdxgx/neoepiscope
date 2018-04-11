@@ -280,11 +280,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                                                                 )
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
-                                mut[4],
+                                mut[4],mut[5], 
                                 ';'.join(
                                         [str(x[0]) for x in mutation_dict[mut]]
                                         ),
-                                mut[5],
                                 ';'.join(
                                         [str(x[1]) for x in mutation_dict[mut]]
                                         )]

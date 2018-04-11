@@ -202,18 +202,18 @@ class TestOutput(unittest.TestCase):
                                   'netMHCIIpan3': ['netMHCIIpan', ['rank']]}
         self.HLA_alleles = ['HLA*A01:01', 'HLA*A02:01']
         self.neoepitopes = {'CGCSQKCN': [('11', 71277056, '',
-                                                                          'AAA', 'I', 0.1,
+                                                                          'AAA', 'I', 0.1, 'NA',
                                                                           'ENST00000398531.2_2',
                                                                           5, 10000.0, 1, 5, 150, 4),
                                                                          ('4', 300000, 'A',
-                                                                          'T', 'V', 10.2,
+                                                                          'T', 'V', 10.2, 'NA',
                                                                           'ENST00000398554.1_1',
                                                                           0.5, 100, 0.5, 3, 150, 4)],
                                                 'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
-                                                                          15.7, 'ENST00000398531.2_2',
+                                                                          15.7, 'NA',' ENST00000398531.2_2',
                                                                           10, 50.57, 1.2, 3, 10.1, 7),
                                                                          ('11', 71277229, 'A', 'C', 'V',
-                                                                          20.3, 'ENST00000398200.3_1',
+                                                                          20.3, 'NA', 'ENST00000398200.3_1',
                                                                           10, 50.57, 1.2, 3, 10.1, 7)]}
     def testwrite(self):
         """Tests that output file is written correctly"""
