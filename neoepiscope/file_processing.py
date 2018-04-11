@@ -275,21 +275,18 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         VAF = 'NA'
                     else:
                         VAF = str(mut[5])
-                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4])].append(
-                                                                [VAF, mut[6],
-                                                                 mut[7]]
-                                                                 )
+                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4], VAF)].append(
+                                                                [mut[6],mut[7]]
+                                                                )
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
                                 mut[4],
                                 ';'.join(
                                         [str(x[0]) for x in mutation_dict[mut]]
                                         ),
+                                mut[5],
                                 ';'.join(
                                         [str(x[1]) for x in mutation_dict[mut]]
-                                        ),
-                                ';'.join(
-                                        [str(x[2]) for x in mutation_dict[mut]]
                                         )]
                     for score in ep_scores:
                         out_line.append(str(score))
