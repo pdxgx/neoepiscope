@@ -1080,7 +1080,10 @@ class Transcript(object):
                         changes for new start'''
                     coding_ref_start = atg
                     if atg[5]:
-                        start_disrupting_muts.append(atg[2])
+                        for seq in atg[2]:
+                            for x in seq[2]:
+                                start_disrupting_muts.append(x)
+                        #start_disrupting_muts.extend([x for x in atg[2]])
                         start_warnings.append('reference_start_codon_'
                                                 'disrupted')
             if atg[3]:
@@ -1102,8 +1105,21 @@ class Transcript(object):
         else:
             # The start codon is the first of the valid start codons
             start_codon = atg_priority_list[0]
-            if start_codon[2] == [()]:
-                start_codon[2] = start_disrupting_muts
+            if type(start_codon[2]) == list:
+                for i in range(0, len(start_codon[2])):
+                    if start_codon[2][i][2] == [()]:
+                        start_codon[2][i] = (start_codon[2][i][0], 
+                                             start_codon[2][i][1],
+                                             start_disrupting_muts, 
+                                             start_codon[2][i][3])
+            else:
+                if start_codon[2][2] == [()]:
+                    start_codon[2] = [(start_codon[2][0], 
+                                             start_codon[2][1],
+                                             start_disrupting_muts, 
+                                             start_codon[2][3])]
+                else:
+                    start_codon[2] = [start_codon[2]]
             distance = start_codon[0] - coding_ref_start[0]
             if start_codon[3]:
                 direction = 'downstream'
@@ -1480,14 +1496,11 @@ class Transcript(object):
         if len(start_warnings) > 0:
             transcript_warnings.append(';'.join(start_warnings))
         if reading_frame:
-            if type(start_codon[2]) == tuple:
-                frame_shifts.append([start, -1, 0, -1, start_codon[2][2]])
-            else:
-                metadata = []
-                for mutation in start_codon[2]:
-                    for metadata_set in mutation[2]:
-                        metadata.append(metadata_set)
-                frame_shifts.append([start, -1, 0, -1, metadata])
+            metadata = []
+            for mutation in start_codon[2]:
+                for metadata_set in mutation[2]:
+                    metadata.append(metadata_set)
+            frame_shifts.append([start, -1, 0, -1, metadata])
         new_start = start_codon[1]
         coding_start = start_codon[0]
         annotated_seq.pop()
@@ -1740,9 +1753,7 @@ class Transcript(object):
                         # Dealing with regular peptide
                         data_set = coords[2]
                     for mutation_data in data_set:
-                        mutation_data = mutation_data + (';'.join(
-                                                            transcript_warnings
-                                                        ),)
+                        mutation_data = mutation_data + transcript_warnings
                         peptide_seqs[pep].append(mutation_data)
                     peptide_seqs[pep] = list(set(peptide_seqs[pep]))
         # return list of unique neoepitope sequences
