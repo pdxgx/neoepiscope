@@ -122,7 +122,7 @@ def main():
                  'for multiple programs, repeat the argument; '
                  'see documentation for details'
         )
-    call_parser.add_argument('-n', '--no-affinity', type=bool, required=False,
+    call_parser.add_argument('-n', '--no-affinity', required=False,
             action='store_true',
             help='do not run binding affinity predictions; overrides any '
                  'binding affinity prediction tools specified via '
