@@ -330,6 +330,7 @@ def main():
         if len(tool_dict.keys()) == 0:
             warnings.warn('No binding prediction tools specified; '
                           'will proceed without binding predictions', Warning)
+            hla_alleles = None
         else:
             if args.alleles:
                 hla_alleles = sorted(args.alleles.split(','))
@@ -404,8 +405,11 @@ def main():
                 full_neoepitopes = gather_binding_scores(neoepitopes, 
                                                          tool_dict, 
                                                          hla_alleles)
-            write_results(args.output_file,
-                        hla_alleles, full_neoepitopes, tool_dict)
+                write_results(args.output_file,
+                            hla_alleles, full_neoepitopes, tool_dict)
+            else:
+                write_results(args.output_file, hla_alleles, 
+                                neoepitopes, tool_dict)
         else:
             sys.exit('No neoepitopes found')
     else:
