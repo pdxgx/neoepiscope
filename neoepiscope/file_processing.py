@@ -231,11 +231,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     with open(output_file, 'w') as o:
         headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt',
                    'Mutation_type', 'VAF', 'Warnings', 'Transcript_ID']
-        if hla_alleles is not None:
-            for allele in hla_alleles:
-                for tool in sorted(tool_dict.keys()):
-                    for score_method in sorted(tool_dict[tool][1]):
-                        headers.append('_'.join([tool, allele, score_method]))
+        for allele in hla_alleles:
+            for tool in sorted(tool_dict.keys()):
+                for score_method in sorted(tool_dict[tool][1]):
+                    headers.append('_'.join([tool, allele, score_method]))
         print('\t'.join(headers), file=o)
         for epitope in sorted(neoepitopes.keys()):
             if len(neoepitopes[epitope]) == 1:
