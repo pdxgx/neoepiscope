@@ -482,29 +482,38 @@ class Transcript(object):
                     relevant_deletion_intervals.append(end_pos)
                 else:
                     assert end_index > start_index
-                    if (start_index % 2 or
-                        deletion_intervals[i][0] == intervals[start_index]):
-                        pos = deletion_intervals[i]
+                    if (not start_index % 2 and end_index % 2 
+                            and start_index == (end_index - 1)):
+                        relevant_deletion_intervals.extend([
+                                (intervals[start_index], 'R', tuple()),
+                                (deletion_intervals[i+1][0] - 1,
+                                    deletion_intervals[i+1][1],
+                                    deletion_intervals[i+1][2])
+                            ])
                     else:
-                        pos = (intervals[start_index], 'R', tuple())
-                        start_index += 1
-                    # deletion_intervals[i] becomes a new end
-                    relevant_deletion_intervals.extend(
-                            [pos, (intervals[start_index], 'R', tuple())]
-                        )
-                    if end_index % 2:
-                        end_pos = deletion_intervals[i+1]
+                        if (start_index % 2 or
+                            deletion_intervals[i][0] == intervals[start_index]):
+                            pos = deletion_intervals[i]
+                        else:
+                            pos = (intervals[start_index], 'R', tuple())
+                            start_index += 1
+                        # deletion_intervals[i] becomes a new end
                         relevant_deletion_intervals.extend(
-                                [(intervals[i], 'R', tuple()) for i in
-                                 range(start_index + 1, end_index)]
-                        )
-                    else:
-                        end_pos = (intervals[end_index - 1], 'R', tuple())
-                        relevant_deletion_intervals.extend(
-                                [(intervals[i], 'R', tuple()) for i in
-                                 range(start_index, end_index)]
+                                [pos, (intervals[start_index], 'R', tuple())]
                             )
-                    relevant_deletion_intervals.append(end_pos)
+                        if end_index % 2:
+                            end_pos = deletion_intervals[i+1]
+                            relevant_deletion_intervals.extend(
+                                    [(intervals[i], 'R', tuple()) for i in
+                                     range(start_index + 1, end_index)]
+                            )
+                        else:
+                            end_pos = (intervals[end_index - 1], 'R', tuple())
+                            relevant_deletion_intervals.extend(
+                                    [(intervals[i], 'R', tuple()) for i in
+                                     range(start_index, end_index)]
+                                )
+                        relevant_deletion_intervals.append(end_pos)
         intervals = sorted([(interval, 'R', tuple()) for interval in
                             intervals] + relevant_deletion_intervals)
         # Remove empty intervals
@@ -1101,7 +1110,7 @@ class Transcript(object):
                     atg_priority_list.append(atg)
         if atg_priority_list == []:
             # No valid ATGs
-            return None, None, start_warnings
+            return None, None, None, start_warnings
         else:
             # The start codon is the first of the valid start codons
             start_codon = atg_priority_list[0]
@@ -1489,9 +1498,9 @@ class Transcript(object):
                                     only_reference=only_reference
                                 )
         if start_codon is None:
-            warnings.warning(''.join(['Start codon disrupted for transcript ',
+            warnings.warn(''.join(['Start codon disrupted for transcript ',
                                         self.transcript_id,
-                                        '; no valid peptides']))
+                                        '; no valid peptides']), Warning)
             return {}
         if len(start_warnings) > 0:
             transcript_warnings.append(';'.join(start_warnings))
