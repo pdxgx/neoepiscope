@@ -117,12 +117,18 @@ def main():
             nargs=3, required=False, action='append', 
             default=[['mhcflurry', '1', 'affinity,rank']],
             help='binding affinity prediction software,'
-                'associated version number, and scoring method(s) '
-                '(e.g. -p netMHCpan 4 rank,affinity); '
-                'for multiple programs, repeat the argument; '
-                'see documentation for details'
+                 'associated version number, and scoring method(s) '
+                 '(e.g. -p netMHCpan 4 rank,affinity); '
+                 'for multiple programs, repeat the argument; '
+                 'see documentation for details'
         )
-    call_parser.add_argument('-a', '--alleles', type=str, required=True,
+    call_parser.add_argument('-n', '--no-affinity', type=bool, required=False,
+            action='store_true',
+            help='do not run binding affinity predictions; overrides any '
+                 'binding affinity prediction tools specified via '
+                 '--affinity-predictor option'
+        )
+    call_parser.add_argument('-a', '--alleles', type=str, required=False,
             help='comma separated list of alleles; '
                  'see documentation online for more information'
         )
@@ -168,7 +174,9 @@ def main():
                             paths.gencode_v27, 'transcript_to_CDS.pickle'
                         ), 'rb') as cds_stream:
                     cds_dict = pickle.load(cds_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
+                reference_index = bowtie_index.BowtieIndexReference(
+                                                            paths.bowtie_grch38
+                                                            )
             elif (args.build == 'hg19' and paths.gencode_v19 is not None 
                             and paths.bowtie_hg19 is not None):
                 with open(os.path.join(
@@ -179,10 +187,12 @@ def main():
                             paths.gencode_v19, 'transcript_to_CDS.pickle'
                         ), 'rb') as cds_stream:
                     cds_dict = pickle.load(cds_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
+                reference_index = bowtie_index.BowtieIndexReference(
+                                                            paths.bowtie_hg19
+                                                            )
             else:
                 raise RuntimeError(''.join([args.build, 
-                                            ' is not an available genome build']))
+                                        ' is not an available genome build']))
         else:
             if args.bowtie_index is not None and args.dicts is not None:
                 with open(os.path.join(
@@ -193,15 +203,20 @@ def main():
                             args.dicts, 'transcript_to_CDS.pickle'
                         ), 'rb') as cds_stream:
                     cds_dict = pickle.load(cds_stream)
-                reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
+                reference_index = bowtie_index.BowtieIndexReference(
+                                                            args.bowtie_index
+                                                            )
             else:
                 raise RuntimeError('User must specify either --build OR '
                                     ' --bowtie_index and --dicts options')
         # Check affinity predictor
         tool_dict = {}
+        if args.no_affinity:
+            args.affinity_predictor = None
         if args.affinity_predictor is not None:
-            if len(args.affinity_predictor > 1):
-                args.affinity_predictor.remove(['mhcflurry', '1', 'affinity,rank'])
+            if len(args.affinity_predictor) > 1:
+                args.affinity_predictor.remove(['mhcflurry', '1', 
+                                                'affinity,rank'])
             for tool in args.affinity_predictor:
                 program = tool[0]
                 version = tool[1]
@@ -313,8 +328,15 @@ def main():
                                               'for binding predictions'])
                                     )
         if len(tool_dict.keys()) == 0:
-            warnings.warn('No binding prediction tools given, '
+            warnings.warn('No binding prediction tools specified; '
                           'will proceed without binding predictions', Warning)
+        else:
+            if args.alleles:
+                hla_alleles = sorted(args.alleles.split(','))
+            else:
+                raise RuntimeError('To perform binding affinity predictions, '
+                                    'user must specify at least one allele '
+                                    'via the --alleles option')
         # Obtain VAF frequency VCF position
         VAF_pos = get_VAF_pos(args.vcf)
         # Obtain peptide sizes for kmerizing peptides
@@ -323,7 +345,6 @@ def main():
             size_list.sort(reverse=True)
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
-        hla_alleles = sorted(args.alleles.split(','))
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict)
@@ -379,8 +400,10 @@ def main():
                                                     include_somatic)
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes.keys()) > 0:
-            full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
-                                                     hla_alleles)
+            if not args.no_affinity:
+                full_neoepitopes = gather_binding_scores(neoepitopes, 
+                                                         tool_dict, 
+                                                         hla_alleles)
             write_results(args.output_file,
                         hla_alleles, full_neoepitopes, tool_dict)
         else:
