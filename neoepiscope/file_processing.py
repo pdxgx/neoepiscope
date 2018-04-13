@@ -254,7 +254,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
                             mutation[4], VAF, mutation[6],
                             mutation[7]]
-                for i in range(7,len(mutation)):
+                for i in range(8,len(mutation)):
                     out_line.append(str(mutation[i]))
                 print('\t'.join(out_line), file=o)
             else:
