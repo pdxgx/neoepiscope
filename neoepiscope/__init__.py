@@ -151,6 +151,11 @@ def main():
             help='which default genome build to use (hg19 or GRCh38); '
             'must have used download.py script to install these'
         )
+    call_parser.add_argument('-i', '--isolate', required=False, 
+            action='store_true',
+            help='isolate mutations - do not use phasing information to '
+            'combine nearby mutations in the same neoepitope'
+        )
     args = parser.parse_args()
     if args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -346,9 +351,6 @@ def main():
             size_list.sort(reverse=True)
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
-        # Find transcripts that haplotypes overlap 
-        relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
-                                                    interval_dict)
         # Establish handling of ATGs
         if args.upstream_atgs == 'none':
             only_novel_upstream = False
@@ -389,6 +391,14 @@ def main():
         else:
             raise RuntimeError('--somatic must be one of '
                                '{"background", "include", "exclude"}')
+        # Establish whether to phase mutations
+        if args.isolate:
+            phasing = False
+        else:
+            phasing = True
+        # Find transcripts that haplotypes overlap 
+        relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
+                                                    interval_dict, phasing)
         # Apply mutations to transcripts and get neoepitopes
         neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
                                                     VAF_pos, cds_dict,
