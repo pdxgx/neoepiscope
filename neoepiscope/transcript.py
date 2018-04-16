@@ -1868,12 +1868,13 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
             transcript_ids.append(cd.data)
     return transcript_ids
 
-def process_haplotypes(hapcut_output, interval_dict):
+def process_haplotypes(hapcut_output, interval_dict, phasing):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
         hapcut_output: output from HAPCUT2, adjusted to include unphased
                         mutations as their own haplotypes (performed in
                         software's prep mode)
         interval_dict: dictionary linking genomic intervals to transcripts
+        phasing: whether to phase mutations (boolean)
         Return value: dictinoary linking haplotypes to transcripts
     """
     chr_in_intervals = False
@@ -1892,10 +1893,14 @@ def process_haplotypes(hapcut_output, interval_dict):
                 # Process all transcripts for the block
                 for transcript_ID in block_transcripts:
                     block_transcripts[transcript_ID].sort(key=itemgetter(1))
-                    haplotype = []
-                    for mut in block_transcripts[transcript_ID]:
-                        haplotype.append(mut)
-                    affected_transcripts[transcript_ID].append(haplotype)
+                    if phasing:
+                        haplotype = []
+                        for mut in block_transcripts[transcript_ID]:
+                            haplotype.append(mut)
+                        affected_transcripts[transcript_ID].append(haplotype)
+                    else:
+                        for mut in block_transcripts[transcript_ID]:
+                            affected_transcripts[transcript_ID].append([mut])
                 # Reset transcript dictionary
                 block_transcripts = collections.defaultdict(list)
             else:

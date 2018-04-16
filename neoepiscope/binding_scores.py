@@ -33,7 +33,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
         if 'DRB' in allele:
             allele = allele.replace('HLA-', '').replace(':', '').replace('*', '_')
         elif 'DP' in allele or 'DQ' in allele:
-            allele.replace(':', '')
+            allele = allele.replace(':', '').replace('*', '')
         if allele not in avail_alleles[''.join(['netMHCIIpan', str(version)])]:
             warnings.warn(' '.join([allele,
                                     'is not a valid allele for netMHCIIpan']),
