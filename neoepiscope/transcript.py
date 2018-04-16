@@ -1996,7 +1996,6 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
         for ht in haplotypes:
-            somatic_in_haplotype = False
             # Make edits for each mutation
             for mutation in ht:
                 # Determine if mutation is somatic or germline
@@ -2004,7 +2003,6 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                     mutation_class = 'G'
                 else:
                     mutation_class = 'S'
-                    somatic_in_haplotype = True
                 # Determine VAF if available
                 if VAF_pos is not None:
                     VAF_entry = mutation[6].strip(
@@ -2034,41 +2032,40 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 mutation_type=mutation[7],
                                 mutation_class=mutation_class,
                                 vaf=VAF)
-            if somatic_in_haplotype:
-                # Extract neoepitopes
-                A_peptides = transcriptA.neopeptides(
-                                    min_size=size_list[0],
-                                    max_size=size_list[-1],
-                                    include_somatic=include_somatic,
-                                    include_germline=include_germline,
-                                    only_novel_upstream=only_novel_upstream,
-                                    only_downstream=only_downstream,
-                                    only_reference=only_reference
-                                    )
-                B_peptides = transcriptB.neopeptides(
-                                    min_size=size_list[0],
-                                    max_size=size_list[-1],
-                                    include_somatic=include_somatic,
-                                    include_germline=include_germline,
-                                    only_novel_upstream=only_novel_upstream,
-                                    only_downstream=only_downstream,
-                                    only_reference=only_reference
-                                    )
-                # Store neoepitopes and their metadata
-                for pep in A_peptides:
-                    for meta_data in A_peptides[pep]:
-                        adj_meta_data = meta_data + (
-                                            transcriptA.transcript_id,
-                                            )
-                        if adj_meta_data not in neoepitopes[pep]:
-                            neoepitopes[pep].append(adj_meta_data)
-                for pep in B_peptides:
-                    for meta_data in B_peptides[pep]:
-                        adj_meta_data = meta_data + (
-                                            transcriptB.transcript_id,
-                                            )
-                        if adj_meta_data not in neoepitopes[pep]:
-                            neoepitopes[pep].append(adj_meta_data)
+            # Extract neoepitopes
+            A_peptides = transcriptA.neopeptides(
+                                min_size=size_list[0],
+                                max_size=size_list[-1],
+                                include_somatic=include_somatic,
+                                include_germline=include_germline,
+                                only_novel_upstream=only_novel_upstream,
+                                only_downstream=only_downstream,
+                                only_reference=only_reference
+                                )
+            B_peptides = transcriptB.neopeptides(
+                                min_size=size_list[0],
+                                max_size=size_list[-1],
+                                include_somatic=include_somatic,
+                                include_germline=include_germline,
+                                only_novel_upstream=only_novel_upstream,
+                                only_downstream=only_downstream,
+                                only_reference=only_reference
+                                )
+            # Store neoepitopes and their metadata
+            for pep in A_peptides:
+                for meta_data in A_peptides[pep]:
+                    adj_meta_data = meta_data + (
+                                        transcriptA.transcript_id,
+                                        )
+                    if adj_meta_data not in neoepitopes[pep]:
+                        neoepitopes[pep].append(adj_meta_data)
+            for pep in B_peptides:
+                for meta_data in B_peptides[pep]:
+                    adj_meta_data = meta_data + (
+                                        transcriptB.transcript_id,
+                                        )
+                    if adj_meta_data not in neoepitopes[pep]:
+                        neoepitopes[pep].append(adj_meta_data)
             transcriptA.reset(reference=True)
             transcriptB.reset(reference=True)
     return neoepitopes
