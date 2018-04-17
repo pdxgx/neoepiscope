@@ -1095,7 +1095,7 @@ class Transcript(object):
                         #start_disrupting_muts.extend([x for x in atg[2]])
                         start_warnings.append('reference_start_codon_'
                                                 'disrupted')
-            if atg[3]:
+            if atg[3] and not atg[4]:
                 encountered_true_start = True
             if not only_reference:
                 '''If not true start codon and accepting non-reference starts,
