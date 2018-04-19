@@ -263,19 +263,23 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
                 print(sequence, file=f)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCpan.out',
-                                    prefix=''.join([sample_id,
-                                                    '.']),
+                                    prefix=''.join([sample_id, '.']),
                                     text=True)[1]
         files_to_remove.append(mhc_out)
-        # Run netMHCpan
-        if version == '3':
-            subprocess.check_call(
-                [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls',
-                    '-xlsfile', mhc_out, peptide_file])
-        elif version == '4':
-            subprocess.check_call(
-                [netmhcpan, '-BA', '-a', allele, '-inptype', '1', '-p', '-xls',
-                    '-xlsfile', mhc_out, peptide_file])
+        err_file = tempfile.mkstemp(suffix='.netMHCpan.err',
+                                    prefix=''.join([sample_id,'.']),
+                                    text=True)[1]
+        files_to_remove.append(err_file)
+        with open(err_file, 'w') as e:
+            # Run netMHCpan
+            if version == '3':
+                subprocess.check_call(
+                    [netmhcpan, '-a', allele, '-inptype', '1', '-p', '-xls',
+                        '-xlsfile', mhc_out, peptide_file], stderr=e)
+            elif version == '4':
+                subprocess.check_call(
+                    [netmhcpan, '-BA', '-a', allele, '-inptype', '1', '-p', 
+                        '-xls', '-xlsfile', mhc_out, peptide_file], stderr=e)
         with open(mhc_out, 'r') as f:
             f.readline()
             f.readline()
