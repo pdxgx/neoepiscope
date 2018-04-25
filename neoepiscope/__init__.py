@@ -351,6 +351,8 @@ def main():
             size_list.sort(reverse=True)
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
+        else:
+            size_list = [int(args.kmer_size)]
         # Establish handling of ATGs
         if args.upstream_atgs == 'none':
             only_novel_upstream = False
