@@ -1910,40 +1910,45 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                 if (chr_in_intervals and 'chr' not in contig 
                         and ''.join(['chr', contig]) in interval_dict.keys()):
                     contig = 'chr' + contig
-                if len(tokens[5]) == len(tokens[6]):
-                    mutation_type = 'V'
-                    pos = int(tokens[4])
-                    ref = tokens[5]
-                    alt = tokens[6]
-                    mut_size = len(tokens[5])
-                    end = pos + mut_size
-                elif len(tokens[5]) > len(tokens[6]):
-                    mutation_type = 'D'
-                    deletion_size = len(tokens[5]) - len(tokens[6])
-                    pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
-                    ref = tokens[5]
-                    alt = deletion_size
-                    end = pos + deletion_size
-                elif len(tokens[5]) < len(tokens[6]):
-                    mutation_type = 'I'
-                    insertion_size = len(tokens[6]) - len(tokens[5])
-                    pos = int(tokens[4])
-                    ref = tokens[5]
-                    alt = tokens[6][len(ref):]
-                    end = pos + 1
-                overlapping_transcripts = get_transcripts_from_tree(contig,
-                                                                pos,
-                                                                end,
-                                                                interval_dict)
-                # For each overlapping transcript, add mutation entry
-                # Contains chromosome, position, reference, alternate, allele
-                #   A, allele B, genotype line from VCF
-                for transcript in overlapping_transcripts:
-                    block_transcripts[transcript].append([contig, pos,
-                                                          ref, alt,
-                                                          tokens[1], tokens[2],
-                                                          tokens[7],
-                                                          mutation_type])
+                if ',' in tokens[6]:
+                    alternatives = tokens[6].split(',')
+                else:
+                    alternatives = [tokens[6]]
+                for allele in alternatives:
+                    if len(tokens[5]) == len(allele):
+                        mutation_type = 'V'
+                        pos = int(tokens[4])
+                        ref = tokens[5]
+                        alt = allele
+                        mut_size = len(tokens[5])
+                        end = pos + mut_size
+                    elif len(tokens[5]) > len(allele):
+                        mutation_type = 'D'
+                        deletion_size = len(tokens[5]) - len(allele)
+                        pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
+                        ref = tokens[5]
+                        alt = deletion_size
+                        end = pos + deletion_size
+                    elif len(tokens[5]) < len(allele):
+                        mutation_type = 'I'
+                        insertion_size = len(allele) - len(tokens[5])
+                        pos = int(tokens[4])
+                        ref = tokens[5]
+                        alt = allele[len(ref):]
+                        end = pos + 1
+                    overlapping_transcripts = get_transcripts_from_tree(contig,
+                                                                    pos,
+                                                                    end,
+                                                                    interval_dict)
+                    # For each overlapping transcript, add mutation entry
+                    # Contains chromosome, position, reference, alternate, allele
+                    #   A, allele B, genotype line from VCF
+                    for transcript in overlapping_transcripts:
+                        block_transcripts[transcript].append([contig, pos,
+                                                              ref, alt,
+                                                              tokens[1], tokens[2],
+                                                              tokens[7],
+                                                              mutation_type])
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
