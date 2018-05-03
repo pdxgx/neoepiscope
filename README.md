@@ -4,7 +4,7 @@ neoepiscope
 
 License
 -----
-`neoepiscope` is licensed under the [MIT](http://choosealicense.com/licenses/mit/) license. See `LICENSE`[LICENSE] for more details.
+`neoepiscope` is licensed under the [MIT](http://choosealicense.com/licenses/mit/) license. See `LICENSE(LICENSE) for more details.
 
 Installing Neoepiscope
 -----
