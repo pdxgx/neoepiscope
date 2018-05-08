@@ -1170,12 +1170,21 @@ class Transcript(object):
         """
         # if no edits to process, then skip all next steps and return {}
         if include_somatic == include_germline and include_somatic != 1:
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         if not self.edits and not self.deletion_intervals:
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         # min size to process is 2 amino acids, otherwise skip and return {}
         if min_size < 2:
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         # ensure max_size is not smaller than min_size
         if max_size < min_size:
             max_size = min_size
@@ -1187,7 +1196,10 @@ class Transcript(object):
         start = self.start_codon # redundant var; can change
         stop = self.stop_codon # redundant var; can change
         if start is None or stop is None:
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         # +1 is + strand, -1 is - strand
         strand = 1 - self.rev_strand * 2
         # hold list of ATGs (from 5' UTR, start, and one downstream of start)
@@ -1484,7 +1496,10 @@ class Transcript(object):
                 continue
         # find location of start codon in annotated_seq v. reference
         if not ATGs:
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         coordinates = []
         # Frame shifts: [genomic start coordinate, genomic end coordinate, CDS-
         # level start coordinate, CDS-level end coordinate, mutation info
@@ -1501,7 +1516,10 @@ class Transcript(object):
             warnings.warn(''.join(['Start codon disrupted for transcript ',
                                         self.transcript_id,
                                         '; no valid peptides']), Warning)
-            return {}
+            if not return_protein:
+                return {}
+            else:
+                return {}, ''
         if len(start_warnings) > 0:
             transcript_warnings.append(';'.join(start_warnings))
         if reading_frame:
