@@ -1954,8 +1954,8 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     elif len(tokens[5]) < len(allele):
                         mutation_type = 'I'
                         insertion_size = len(allele) - len(tokens[5])
-                        pos = int(tokens[4])
-                        ref = tokens[5]
+                        pos = int(tokens[4]) + len(tokens[5]) - 1
+                        ref = ''
                         alt = allele[len(ref):]
                         end = pos + 1
                     overlapping_transcripts = get_transcripts_from_tree(contig,
