@@ -1152,7 +1152,7 @@ class Transcript(object):
 
     def neopeptides(self, min_size=8, max_size=11, include_somatic=1,
         include_germline=2, only_novel_upstream=False, only_downstream=True,
-        only_reference=False):
+        only_reference=False, return_protein=False):
         """ Retrieves dict of predicted peptide fragments from transcript that
             arise from one or more variants.
             min_size: minimum subpeptide length (specified as # of amino acids)
@@ -1765,8 +1765,12 @@ class Transcript(object):
                         mutation_data = mutation_data + transcript_warnings
                         peptide_seqs[pep].append(mutation_data)
                     peptide_seqs[pep] = list(set(peptide_seqs[pep]))
-        # return list of unique neoepitope sequences
-        return peptide_seqs
+        if not return_protein:
+            # return list of unique neoepitope sequences
+            return peptide_seqs
+        else:
+            # return list of unique neoepitope sequences plus whole protein
+            return peptide_seqs, protein
 
 def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
