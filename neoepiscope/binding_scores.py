@@ -53,7 +53,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
         # Count instances of smaller peptides
         na_count = 0
         peptide_file = tempfile.mkstemp(
-                        suffix='.peptides', prefix='id.', text=True)[1]
+                        suffix='.peptides', prefix=''.join([sample_id, '.']), text=True)[1]
         files_to_remove.append(peptide_file)
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
@@ -68,7 +68,7 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out',
-                                    prefix='id.', text=True)[1]
+                                    prefix=''.join([sample_id, '.']), text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         subprocess.check_call(
@@ -143,7 +143,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
         # Count instances of smaller peptides
         # Establish temporary file to hold output
         peptide_file = tempfile.mkstemp(suffix='.csv',
-                                    prefix='id.', text=True)[1]
+                                    prefix=''.join([sample_id, '.']), text=True)[1]
         na_count = 0
         with open(peptide_file, 'w') as f:
             f.write('allele,peptide\n')
@@ -159,7 +159,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.mhcflurry.out',
-                                    prefix='id.', text=True)[1]
+                                    prefix=''.join([sample_id, '.']), text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         command = ['mhcflurry-predict', '--out', mhc_out, peptide_file]
@@ -306,6 +306,86 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         return affinities
     finally:
         # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+def get_affinity_mhcnuggets(peptides, allele, version,
+                                            remove_files=True):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: Allele to use for binding affinity (string)
+        scores: list of scoring methods
+        version: version of mhcnuggets
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(os.path.join(neoepiscope_dir, 'neoepiscope',
+                               'availableAlleles.pickle'), 'rb'
+                ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        if allele not in avail_alleles['mhcnuggets']:
+            warnings.warn(' '.join([allele,
+                                    'is not a valid allele for mhcnuggets']),
+                          Warning)
+            return [(peptides[i], 'NA') for i in range(0,len(peptides))]
+        # Establish return list and sample id
+        sample_id = '.'.join([peptides[0],
+                                str(len(peptides)), allele,
+                                'mhcnuggets', version])
+        affinities = []
+        # Write one peptide per line to a temporary file for
+        #   input if peptide length is at least 9
+        # Count instances of smaller peptides
+        # Establish temporary file to hold output
+        peptide_file = tempfile.mkstemp(suffix='.txt',
+                                    prefix='id.', text=True)[1]
+        na_count = 0
+        with open(peptide_file, 'w') as f:
+            for sequence in peptides:
+                ### ADJUST SIZE REQUIREMENTS
+                if len(sequence) < 8 or len(sequence) > 15: ### adjust
+                    na_count += 1
+                else:
+                    print(sequence, file=f)
+        if na_count > 0:
+            warnings.warn(' '.join([str(na_count),
+                                    'peptides not compatible with',
+                                    'mhcnuggets will not receive score']),
+                            Warning)
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(suffix='.mhcnuggets.out',
+                                    prefix=''.join([sample_id, '.']), text=True)[1]
+        files_to_remove.append(mhc_out)
+        # Run netMHCIIpan
+        ### ADUST CALL TO MHCNUGGETS
+        command = ['mhcnuggets', '-a', allele, '-o', mhc_out, '-p', peptide_file]
+        subprocess.check_call(command)
+        # Retrieve scores for valid peptides
+        score_dict = {}
+        with open(mhc_out, 'r') as f:
+            # Skip headers
+            f.readline()
+            for line in f:
+                # token 1 is peptide; token 4 is affinity; token[5] is rank
+                tokens = line.strip('\n').split(',')
+                score_dict[tokens[0]] = tokens[1]
+        # Produce list of scores for valid peptides
+        # Invalid peptides receive "NA" score
+        for sequence in peptides:
+            if sequence in score_dict:
+                nM = (sequence,) + score_dict[sequence]
+            else:
+                nM = (sequence,) + tuple(['NA' for i in range(0, len(scores))])
+            affinities.append(nM)
+        return affinities
+    finally:
         if remove_files:
             for file_to_remove in files_to_remove:
                 os.remove(file_to_remove)
