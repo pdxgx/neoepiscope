@@ -246,7 +246,27 @@ def main():
                     else:
                         raise NotImplementedError(
                             ' '.join(['Neoepiscope does not support version', 
-                                      version, 'of mhcflurry']))      
+                                      version, 'of mhcflurry']))
+                elif 'mhcnuggets' in program:
+                    if version == '2' and 'mhcnuggets2' not in tool_dict:
+                        program = 'mhcnuggets' ### ADJUST THIS
+                        acceptable_scoring = ['affinity']
+                        for method in scoring:
+                            if method not in acceptable_scoring:
+                                warnings.warn(' '.join([method, 
+                                        'not compatible with mhcnuggets']),
+                                        Warning)
+                                scoring.remove(method)
+                        if len(scoring) > 0:
+                            tool_dict['mhcnuggets2'] = [program,
+                                                            sorted(scoring)]
+                    elif 'mhcnuggets2' in tool_dict:
+                        raise RuntimeError('Conflicting or repetitive installs'
+                                            'of mhcnuggets given')
+                    else:
+                        raise NotImplementedError(
+                            ' '.join(['Neoepiscope does not support version', 
+                                      version, 'of mhcnuggets']))      
                 elif 'netMHCIIpan' in program:
                     if version == '3' and 'netMHCIIpan3' not in tool_dict:
                         program = paths.netMHCIIpan3

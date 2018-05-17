@@ -409,7 +409,13 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                                                 '1',
                                                 remove_files=True
                                                 )
-            if tool == 'netMHCIIpan3':
+            elif tool == 'mhcnuggets2':
+                binding_scores = get_affinity_mhcnuggets(
+                                                neoepitopes.keys(),
+                                                allele, '2',
+                                                remove_files=True
+                                                )
+            elif tool == 'netMHCIIpan3':
                 binding_scores = get_affinity_netMHCIIpan(
                                                 neoepitopes.keys(),
                                                 allele, tool_dict[tool][0],
