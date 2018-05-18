@@ -100,7 +100,7 @@ def main():
     call_parser.add_argument('-x', '--bowtie-index', type=str, required=False,
             help='path to Bowtie index basename'
         )
-    call_parser.add_argument('-v', '--vcf', type=str, required=True,
+    call_parser.add_argument('-v', '--vcf', type=str, required=False,
             help='input path to VCF'
         )
     call_parser.add_argument('-d', '--dicts', type=str, required=False,
@@ -364,7 +364,10 @@ def main():
                                     'user must specify at least one allele '
                                     'via the --alleles option')
         # Obtain VAF frequency VCF position
-        VAF_pos = get_VAF_pos(args.vcf)
+        if args.vcf:
+            VAF_pos = get_VAF_pos(args.vcf)
+        else:
+            VAF_pos = None
         # Obtain peptide sizes for kmerizing peptides
         if ',' in args.kmer_size:
             size_list = args.kmer_size.split(',')
