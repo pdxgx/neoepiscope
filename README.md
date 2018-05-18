@@ -26,7 +26,7 @@ To make sure that the software is running properly, test it by running
 Using neoepiscope
 -----
 
-###### Preparing reference files (for those using references other than hg19 or GRCh38)
+##### Preparing reference files (for those using references other than hg19 or GRCh38)
 
 If you aren't using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
 
@@ -38,7 +38,7 @@ Options:
 
 ```-d, --dicts```   path to write pickled dictionaries
 
-###### Ensure proper ordering of VCF
+##### Ensure proper ordering of VCF
 
 To call neoepitopes from somatic mutations, ensure that data for the tumor sample in your VCF file proceeds data from a matched normal sample. If it DOES NOT, run neoepiscope in ```swap``` mode to produce a new VCF:
 
@@ -50,7 +50,7 @@ Options:
 
 ```-o, --output```  path to swapped VCF
 
-###### Add germline variation (optional)
+##### Add germline variation (optional)
 
 If you would like to include germline variation in your neoepitope prediction, ```merge``` your somatic and germline VCFs for a sample prior to running HapCUT2:
 
@@ -64,7 +64,7 @@ Options:
 
 ```-o, --output```    path to write merged VCF
 
-###### Predict haplotype phasing
+##### Predict haplotype phasing
 
 Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes:
 
@@ -78,7 +78,7 @@ Options:
 
 ```-o, --output```            path to output file
 
-###### Neoepitope prediction
+##### Neoepitope prediction
 
 Finally, ```call``` neoepitopes:
 
