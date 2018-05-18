@@ -6,7 +6,7 @@ License
 -----
 `neoepiscope` is licensed under the [MIT](http://choosealicense.com/licenses/mit/) license. See [`LICENSE`](LICENSE) for more details.
 
-Installing Neoepiscope
+Installing neoepiscope
 -----
 
 First clone this repo to `/path/to/neoepiscope/repo`; then run
@@ -17,13 +17,13 @@ To download compatible reference annotation files (hg19 and/or GRCh38) and link 
 
 ```python setup.py download```
 
-and respond to the prompts as relevant for your needs.
+and respond to the prompts as relevant for your needs. 
 
 To make sure that the software is running properly, test it by running
 
 ```python setup.py test```
 
-Using Neoepiscope
+Using neoepiscope
 -----
 
 If you aren't using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
@@ -83,19 +83,44 @@ Options:
 
 ```-x, --bowtie-index```              path to bowtie index of reference genome
 
+```-d, --dicts```                     path to directory containing pickled dictionaries generated in ```index``` mode
+
+```-b, --build```                     which genome build to use (hg19 or GRCh38; overrides `-x` and `-d` options)
+
 ```-c, --merged-hapcut2-output```     path to HapCUT2 output
 
 ```-v, --vcf```                       path to VCF file used to generate HapCUT2 output
-
-```-d, --dicts```                     path to directory containing pickled dictionaries generated in ```index``` mode
 
 ```-o, --output_file```               path to output file
 
 ```-k, --kmer-size```                 kmer size for neoepitope prediction (default 8-11 amino acids)
 
-```-p, --affinity-predictor```        software to use for MHC binding predictions
+```-p, --affinity-predictor```        software to use for MHC binding predictions (default mhcflurry v1 with rank and affinity scores)
 
 ```-a, --alleles```                   alleles to use for MHC binding predictions
 
+```-n, --no-affinity```               do not run binding affinity predictions, overrides the `-p` and `-a` options
+
+```-g, --germline```                  how to handle germline mutations (by default includes as background variation)
+
+```-s, --somatic```                   how to handle somatic mutations (by default includes for neoepitope enumeration)
+
 ```-u, --upstream_atgs```             handling of translation from upstream start codons - ("novel" (default) only, "all", "none", "reference" only)
 
+```-i, --isolate```                   isolate mutations - disables phasing of mutations which share a haplotype
+
+Using the `--build` option requires use of our downloader script to procure and index the required reference files for hg19 and/or GRCh38. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
+
+Haplotype information should be included using ```-c /path/to/haplotype/file```. This in the form of HapCUT2 output, generated either from your somatic VCF or a merged germline/somatic VCF made with our ```neoepiscope merge``` mode.
+
+If you wish to extract variant allele frequency information from your VCF to be output with relevant epitopes, include the path to the VCF you used to create your haplotype information using ```-v /path/to/VCF```.
+
+The default kmer size for neoepitope enumeration is 8-11 amino acids, but a custom range can be specified using the ```--kmer-size``` argument with the minimum and maximum epitope size separated by commas (e.g. ```--kmer-size 8,20``` to get epitopes ranging from 8 to 20 amino acids in length).
+
+For affinity prediction, `neoepiscope` supports predictions from `mhcflurry` [v1](https://github.com/openvax/mhcflurry), `mhcnuggets` [v2](https://github.com/KarchinLab/mhcnuggets-2.0), `netMHCpan` version [v3](http://www.cbs.dtu.dk/cgi-bin/sw_request?netMHCpan+3.0) or [v4](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan), and `netMHCIIpan` [v3](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan). When installing our software with `pip`, `mhcflurry` and `mhcnuggets` are automatically installed or updated. Optional integration of `netMHCpan` or `netMHCIIpan` must be done from your own installation of these softwares using our downloader script (see "Installing neoepiscope" above). 
+
+The default affinity prediction software for `neoepiscope` is `mhcflurry` v1. To specify a custom suite of binding prediction softwares, use the `-p` argument for each software followed by its name, version, and desired scoring output(s) (e.g. ```-p mhcflurry 1 affinity,rank -p mhcnuggets 2 affinity```).
+
+Germline and somatic mutations can be handled in a variety of ways. The can be excluded entirely (e.g. ```--germline exclude```), included as background variation to personalize the reference transcriptome (e.g. ```--germline background```), or included as variants from which to enumerate neoepitopes (e.g. ```--somatic include```). The default value for `--germline` is `background`, and the default value for `--somatic` is `include`.
+
+The choice of start codon for a transcript can also be handled with flexibility. By default, the value for the `--upstream_atgs` argument is `none`, which specifies preferential use of the reference start codon for a transcript, or alternatively the nearest ATG downstream of it in the case of a disrupted reference start codon. Alternatively, the use of ```--upstream_atgs novel``` allows for the use of a novel ATG upstream of the reference start codon in the case of a disrupted start codon. A less conservative ```--upstream_atgs all``` uses the most upstream ATG, regardless of its novelty. For a conservative option, ```--upstream_atgs reference``` requires use of only the reference start codon, preventing enumeration of neoepitopes from a transcript if the reference start codon is disrupted.
