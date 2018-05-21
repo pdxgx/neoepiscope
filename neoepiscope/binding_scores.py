@@ -323,6 +323,7 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         Return value: affinities (a list of binding affinities
                         as strings)
     """
+    from mhcnuggets.src.predict import predict
     files_to_remove = []
     try:
         # Check that allele is valid for method
@@ -330,7 +331,15 @@ def get_affinity_mhcnuggets(peptides, allele, version,
                                'availableAlleles.pickle'), 'rb'
                 ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        if allele not in avail_alleles['mhcnuggets']:
+        allele = allele.replace('*', '').replace(':', '')
+        if allele in avail_alleles['mhcnuggets_mhcI']:
+            allele_class = 'I'
+            max_length = 15
+        elif avail_alleles['mhcnuggets_mhcII']:
+            allele_class = 'II'
+            max_length = 30
+        elif (allele not in avail_alleles['mhcnuggets_mhcI'] 
+            and allele not in avail_alleles['mhcnuggets_mhcII']):
             warnings.warn(' '.join([allele,
                                     'is not a valid allele for mhcnuggets']),
                           Warning)
@@ -350,7 +359,7 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
                 ### ADJUST SIZE REQUIREMENTS
-                if len(sequence) < 8 or len(sequence) > 15: ### adjust
+                if len(sequence) > max_length:
                     na_count += 1
                 else:
                     print(sequence, file=f)
@@ -364,9 +373,8 @@ def get_affinity_mhcnuggets(peptides, allele, version,
                                     prefix=''.join([sample_id, '.']), text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
-        ### ADUST CALL TO MHCNUGGETS
-        command = ['mhcnuggets', '-a', allele, '-o', mhc_out, '-p', peptide_file]
-        subprocess.check_call(command)
+        predict(class_=allele_class, peptides_path=peptide_file, 
+                mhc=allele, output=mhc_out)
         # Retrieve scores for valid peptides
         score_dict = {}
         with open(mhc_out, 'r') as f:
