@@ -135,6 +135,10 @@ def main():
     call_parser.add_argument('-o', '--output_file', type=str, required=True,
             help='path to output file'
         )
+    call_parser.add_argument('-f', '--fasta', required=False, 
+            action='store_true',
+            help='produce additional fasta output; see documentation'
+        )
     call_parser.add_argument('-u', '--upstream_atgs', type=str, required=False,
             default='none', help='how to handle upstream start codons, see '
             'documentation online for more information'
@@ -249,7 +253,7 @@ def main():
                                       version, 'of mhcflurry']))
                 elif 'mhcnuggets' in program:
                     if version == '2' and 'mhcnuggets2' not in tool_dict:
-                        program = 'mhcnuggets' ### ADJUST THIS
+                        program = 'NA'
                         acceptable_scoring = ['affinity']
                         for method in scoring:
                             if method not in acceptable_scoring:
@@ -425,7 +429,8 @@ def main():
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict, phasing)
         # Apply mutations to transcripts and get neoepitopes
-        neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
+        if not args.fasta:
+            neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
                                                     VAF_pos, cds_dict,
                                                     only_novel_upstream,
                                                     only_downstream, 
@@ -434,12 +439,35 @@ def main():
                                                     size_list, 
                                                     include_germline, 
                                                     include_somatic)
+        else:
+            neoepitopes, fasta = get_peptides_from_transcripts(
+                                                    relevant_transcripts, 
+                                                    VAF_pos, cds_dict,
+                                                    only_novel_upstream,
+                                                    only_downstream, 
+                                                    only_reference,
+                                                    reference_index,
+                                                    size_list, 
+                                                    include_germline, 
+                                                    include_somatic,
+                                                    protein_fasta=True
+                                                    )
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes.keys()) > 0:
+            output_file = args.output_file
             full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
                                                      hla_alleles)
-            write_results(args.output_file, hla_alleles, 
+            write_results(output_file, hla_alleles, 
                             full_neoepitopes, tool_dict)
+            if args.fasta:
+                fasta_file = ''.join([args.output_file, '.fasta'])
+                with open(fasta_file, 'w') as f:
+                    for tx in fasta:
+                        proteins = list(fasta[tx])
+                        for i in range(0, len(proteins)):
+                            identifier = ''.join(['>', tx, '_v', str(i)])
+                            print(identifier, file=f)
+                            print(proteins[i], file=f)
         else:
             sys.exit('No neoepitopes found')
     else:

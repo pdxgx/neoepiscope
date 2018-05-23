@@ -96,7 +96,9 @@ Options:
 
 ```-v, --vcf```                       path to VCF file used to generate HapCUT2 output
 
-```-o, --output_file```               path to output file
+```-o, --output_file```		          path to output file
+
+```-f, --fasta```					  output additional fasta file output
 
 ```-k, --kmer-size```                 kmer size for neoepitope prediction (default 8-11 amino acids)
 
@@ -119,6 +121,8 @@ Using the `--build` option requires use of our download functionality to procure
 Haplotype information should be included using ```-c /path/to/haplotype/file```. This in the form of HapCUT2 output, generated either from your somatic VCF or a merged germline/somatic VCF made with our ```neoepiscope merge``` functionality. The HapCUT2 output should be adjusted using our ```neoepiscope prep``` functionality to ensure that mutations that lack phasing data are still included in analysis.
 
 If you wish to extract variant allele frequency information from your VCF to be output with relevant epitopes, include the path to the VCF you used to create your haplotype information using ```-v /path/to/VCF```.
+
+To specify the output file, use ```-o /path/to/output_file```. By default, only data on neoepitopes is output in the file /path/to/output/sample_id.neoepiscope.out. By using the `--fasta` option, an additional file, /path/to/output_file.fasta, will be made. This is a FASTA file specifying the full-protein sequences from each mutation-affected transcript. The header in the FASTA will give the name of the transcript from which the protein originated, followed by an "A" or "B" if there were different alleles for the transcript.
 
 The default kmer size for neoepitope enumeration is 8-11 amino acids, but a custom range can be specified using the ```--kmer-size``` argument with the minimum and maximum epitope size separated by commas (e.g. ```--kmer-size 8,20``` to get epitopes ranging from 8 to 20 amino acids in length).
 
