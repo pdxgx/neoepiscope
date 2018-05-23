@@ -10,9 +10,7 @@ class TestGTFprocessing(unittest.TestCase):
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
         self.base_dir = neoepiscope_dir
-        self.gtf = os.path.join(self.base_dir
-                                                , 'tests', 'Ychrom.gtf'
-                                        )
+        self.gtf = os.path.join(self.base_dir, 'tests', 'Ychrom.gtf')
         self.Ycds = gtf_to_cds(self.gtf, 'NA', pickle_it=False)
         self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
     def test_transcript_to_CDS(self):
@@ -24,36 +22,37 @@ class TestGTFprocessing(unittest.TestCase):
         self.assertEqual(len(self.Ytree['chrY']), 2174)
     def test_transcript_extraction(self):
         """Fails if incorrect transcripts are pulled"""
-        self.assertEqual(len(get_transcripts_from_tree(
-                                                                                                        'chrY', 150860,
-                                                                                                        150861,
-                                                                                                        self.Ytree)),
-                                                                                                        3
-                                                                                                        )
+        self.assertEqual(
+                        len(get_transcripts_from_tree('chrY', 150860,
+                                                      150861, self.Ytree)),
+                        3
+                    )
         self.coordinate_search = list(self.Ytree['chrY'].search(150860,
-                                                                                                                 150861))
+                                                                150861))
         self.transcripts = []
         for interval in self.coordinate_search:
             self.transcripts.append(interval[2])
         self.transcripts.sort()
-        self.assertEqual(
-                                         self.transcripts, ['ENST00000381657.7_3_PAR_Y',
-                                                                                'ENST00000381663.8_3_PAR_Y',
-                                                                                'ENST00000399012.6_3_PAR_Y']
-                                        )
+        self.assertEqual(self.transcripts, ['ENST00000381657.7_3_PAR_Y',
+                                            'ENST00000381663.8_3_PAR_Y',
+                                            'ENST00000399012.6_3_PAR_Y'])
 class TestVCFmerging(unittest.TestCase):
     """Tests proper merging of somatic and germline VCFS"""
     def setUp(self):
         """Sets up files to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.varscan = os.path.join(self.base_dir, 'tests', 'Ychrom.varscan.vcf'
+        self.varscan = os.path.join(self.base_dir, 'tests', 
+                                    'Ychrom.varscan.vcf'
+                                    )
+        self.germline = os.path.join(self.base_dir, 'tests', 
+                                     'Ychrom.germline.vcf'
+                                    )
+        self.precombined = os.path.join(self.base_dir, 'tests', 
+                                        'Ychrom.combined.vcf'
                                         )
-        self.germline = os.path.join(self.base_dir, 'tests', 'Ychrom.germline.vcf'
-                                        )
-        self.precombined = os.path.join(self.base_dir, 'tests', 'Ychrom.combined.vcf'
-                                        )
-        self.outvcf = os.path.join(self.base_dir, 'tests', 'Ychrom.testcombine.vcf'
-                                        )
+        self.outvcf = os.path.join(self.base_dir, 'tests', 
+                                   'Ychrom.testcombine.vcf'
+                                    )
         combine_vcf(self.germline, self.varscan, self.outvcf)
     def test_merge(self):
         """Fails if VCFs were merged improperly"""
@@ -70,15 +69,16 @@ class TestPrepHapCUT(unittest.TestCase):
                                         )
         self.vcf = os.path.join(self.base_dir, 'tests', 'test.vcf'
                                         )
-        self.complete_hapcut = os.path.join(self.base_dir, 'tests', 'complete_hapcut.out'
-                                        )
-        self.test_hapcut = os.path.join(self.base_dir, 'tests', 'test_complete_hapcut.out'
+        self.complete_hapcut = os.path.join(self.base_dir, 'tests', 
+                                            'complete_hapcut.out'
+                                            )
+        self.test_hapcut = os.path.join(self.base_dir, 'tests', 
+                                        'test_complete_hapcut.out'
                                         )
     def test_haplotype_prep(self):
         """Tests that output of haplotype prep is correct"""
         prep_hapcut_output(self.test_hapcut, self.hapcut, self.vcf)
-        self.assertTrue(filecmp.cmp(self.test_hapcut,
-                                                                self.complete_hapcut))
+        self.assertTrue(filecmp.cmp(self.test_hapcut, self.complete_hapcut))
     def tearDown(self):
         """Removes test file"""
         os.remove(self.test_hapcut)
@@ -87,10 +87,10 @@ class TestVAFpos(unittest.TestCase):
     def setUp(self):
         """Sets up vcf files to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.varscan = os.path.join(self.base_dir, 'tests', 'Ychrom.varscan.vcf'
-                                        )
-        self.mutect = os.path.join(self.base_dir, 'tests', 'Ychrom.mutect.vcf'
-                                        )
+        self.varscan = os.path.join(self.base_dir, 'tests', 
+                                    'Ychrom.varscan.vcf'
+                                    )
+        self.mutect = os.path.join(self.base_dir, 'tests', 'Ychrom.mutect.vcf')
     def test_position(self):
         """Fails if incorrect positions are returned"""
         self.assertEqual(get_VAF_pos(self.varscan), 5)
@@ -104,94 +104,106 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                 self.base_dir, 'tests', 'Chr11.ref'
                         )
         self.reference_index = bowtie_index.BowtieIndexReference(
-                                                                                                        self.ref_prefix)
+                                                            self.ref_prefix
+                                                            )
         self.Chr11gtf = os.path.join(self.base_dir, 'tests', 'Chr11.gtf'
                                         )
         self.Chr11cds = gtf_to_cds(self.Chr11gtf, 'NA', pickle_it=False)
         for transcript in self.Chr11cds:
             for cds_block in self.Chr11cds[transcript]:
                 cds_block[0] = cds_block[0].replace('chr', '')
-        self.Chr11tree = cds_to_tree(self.Chr11cds, 'NA',
-                                                                        pickle_it=False)
-        self.Chr11hapcut = os.path.join(self.base_dir, 'tests', 'Chr11.hapcut.out'
+        self.Chr11tree = cds_to_tree(self.Chr11cds, 'NA', pickle_it=False)
+        self.Chr11hapcut = os.path.join(self.base_dir, 'tests', 
+                                        'Chr11.hapcut.out'
                                         )
     def test_hap_processing(self):
         """Fails if file is processed incorrectly"""
-        Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree, phasing=True)
-        self.assertEqual(sorted(Chr11_txs.keys()),
-                                                        ['ENST00000398531.2_2'])
+        Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree, 
+                                        phasing=True)
+        self.assertEqual(sorted(Chr11_txs.keys()), ['ENST00000398531.2_2'])
         self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
-                                        [[['11', 71276862, 'TGT', 2, '0', '0',
-                                           '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'],
-                                          ['11', 71276900, 'C', 'G', '0', '0',
-                                           '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
-                                          ['11', 71277000, '', 'AA', '0', '0',
-                                           '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]]
+                                    [[['11', 71276862, 'TGT', 2, '0', '0',
+                                       '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'],
+                                      ['11', 71276900, 'C', 'G', '0', '0',
+                                       '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
+                                      ['11', 71277000, '', 'AA', '0', '0',
+                                       '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]]
                 )
     def test_peptide_gathering(self):
         Chr11_txs = {'ENST00000398531.2_2': [
-                                                [['11', 71276651, 'CTC', 3, '0', '1',
-                                                  '0/0:.:53:52:0:3.0%:22,30,0,0:.:2', 'D'],
-                                                 ['11', 71277229, 'A', 'C', '0', '1',
-                                                  '0/0:.:35:34:0:15.7%:19,15,0,0:.:2', 'V'],
-                                                 ['11', 71277056, 'G', 'AAA', '1', '1',
-                                                  '0/0:.:35:34:0:0.1%:19,15,0,0:.:2', 'I']]
-                                                 ]
-                                }
+                                [['11', 71276651, 'CTC', 3, '0', '1',
+                                  '0/0:.:53:52:0:3.0%:22,30,0,0:.:2', 'D'],
+                                 ['11', 71277229, 'A', 'C', '0', '1',
+                                  '0/0:.:35:34:0:15.7%:19,15,0,0:.:2', 'V'],
+                                 ['11', 71277056, '', 'AAA', '1', '1',
+                                  '0/0:.:35:34:0:0.1%:19,15,0,0:.:2', 'I']]
+                                 ]
+                            }
         transcript_blocks = self.Chr11cds['ENST00000398531.2_2']
-        neoepitopes = get_peptides_from_transcripts(Chr11_txs, 5,
-                                                                                                self.Chr11cds,
-                                                                                                True, False, False,
-                                                                                                self.reference_index,
-                                                                                                [8,9,10,11])
+        neoepitopes, fasta = get_peptides_from_transcripts(Chr11_txs, 5,
+                                                        self.Chr11cds,
+                                                        True, False, False,
+                                                        self.reference_index,
+                                                        [8,9,10,11],
+                                                        protein_fasta=True
+                                                        )
         self.assertEqual(len(neoepitopes.keys()), 70)
         self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, '',
-                                                                                        'AAA', 'I', 0.1, 'NA',
-                                                                                        'ENST00000398531.2_2')])
+                                                    'AAA', 'I', 0.1, 'NA',
+                                                    'ENST00000398531.2_2')])
         self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229,
-                                                                                        'A', 'C', 'V', 15.7, 'NA',
-                                                                                        'ENST00000398531.2_2')])
+                                                    'A', 'C', 'V', 15.7, 'NA',
+                                                    'ENST00000398531.2_2')])
         self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
         self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
+        self.assertEqual(sorted(fasta['ENST00000398531.2_2']),
+            ['MGCCGCGGCGSGCGGCGSGCGGCGSGCGGYGSGCGGCGSSCCVPVCCCKPVCCCVPACSCSSCG'
+             'SCGGSKGDCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGS'
+             'CGGSKGGCGSCGCSQKCNCCKPCCCSSGCGSCCQSSCCNPCCCQSSCCVPVCCQSSCCKPC'
+             'CCQSSCCVPVCCPCKIX',
+             'MGCCGCSGGCGSGCGGCGSGCGGCGSGCGGYGSGCGGCGSSCCVPVCCCKPVCCCVPACSCSSC'
+             'GSCGGSKGDCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCG'
+             'GSKGGCGSCGCSQKCNCCKPCCCSSGCGSCCQSSCCNPCCCQSSCCVPVCCQSSCCKPCCCQSS'
+             'CCVPVCCQCKIX'])
 class TestBindingPrediction(unittest.TestCase):
     """Tests binding prediction functions"""
     def setUp(self):
         """"""
         self.neoepitopes = {'CGCSQKCN': [('11', 71277056, '', 'AAA',
-                                                                          'I', 0.1,
-                                                                          'ENST00000398531.2_2')],
-                                                'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
-                                                                          15.7, 'ENST00000398531.2_2')]}
-        self.tools = {'mhcflurry1': ['mhcflurry-predict',
-                                                                 ['affinity', 'rank']],
-                      'mhcnuggets2': ['NA', ['affinity']]}
+                                          'I', 0.1, 'ENST00000398531.2_2')],
+                            'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
+                                            15.7, 'ENST00000398531.2_2')]}
+        self.tools = {'mhcflurry1': ['mhcflurry-predict', 
+                                     ['affinity', 'rank']],
+                      'mhcnuggets2': ['NA', ['affinity']]
+                      }
         self.alleles = ['HLA-A*02:01', 'HLA-B*07:02']
     def test_binding_scores(self):
         new_neoepitopes = gather_binding_scores(self.neoepitopes,
-                                                                                        self.tools,
-                                                                                        self.alleles)
+                                                self.tools,
+                                                self.alleles)
         self.assertEqual(new_neoepitopes['CGCSQKCN'], [('11', 71277056,
-                                                                                                '', 'AAA',
-                                                                                                'I', 0.1,
-                                                                                                'ENST00000398531.2_2',
-                                                                                                '25689.70544109427',
-                                                                                                '95.52587499999998',
-                                                                                                '32873.66591243697',
-                                                                                                '28365.719606393825',
-                                                                                                '90.61212500000003',
-                                                                                                '36618.75556827501'
-                                                                                        )])
+                                                        '', 'AAA',
+                                                        'I', 0.1,
+                                                        'ENST00000398531.2_2',
+                                                        '25689.70544109427',
+                                                        '95.52587499999998',
+                                                        '32873.66591243697',
+                                                        '28365.719606393825',
+                                                        '90.61212500000003',
+                                                        '36618.75556827501'
+                                                )])
         self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229,
-                                                                                                'A', 'C', 'V',
-                                                                                                15.7,
-                                                                                                'ENST00000398531.2_2',
-                                                                                                '18671.533820398825',
-                                                                                                '42.33412499999999',
-                                                                                                '20417.344825703207',
-                                                                                                '26484.921629273078',
-                                                                                                '68.11900000000003',
-                                                                                                '25662.252913426724'
-                                                                                        )])
+                                                        'A', 'C', 'V',
+                                                        15.7,
+                                                        'ENST00000398531.2_2',
+                                                        '18671.533820398825',
+                                                        '42.33412499999999',
+                                                        '20417.344825703207',
+                                                        '26484.921629273078',
+                                                        '68.11900000000003',
+                                                        '25662.252913426724'
+                                                )])
         self.assertEqual(13, len(new_neoepitopes['PVCCPCKI'][0]))
         self.assertEqual(13, len(new_neoepitopes['CGCSQKCN'][0]))
 class TestOutput(unittest.TestCase):
@@ -201,25 +213,26 @@ class TestOutput(unittest.TestCase):
         self.base_dir = neoepiscope_dir
         self.out_file = os.path.join(self.base_dir, 'tests', 'neoepiscope.out'
                                         )
-        self.correct_out = os.path.join(self.base_dir, 'tests', 'expected.neoepiscope.out'
+        self.correct_out = os.path.join(self.base_dir, 'tests', 
+                                        'expected.neoepiscope.out'
                                         )
         self.tools = {'netMHCpan4': ['netMHCpan', ['rank', 'affinity']],
                                   'netMHCIIpan3': ['netMHCIIpan', ['rank']]}
         self.HLA_alleles = ['HLA*A01:01', 'HLA*A02:01']
         self.neoepitopes = {'CGCSQKCN': [('11', 71277056, '',
-                                                                          'AAA', 'I', 0.1, 'NA',
-                                                                          'ENST00000398531.2_2',
-                                                                          5, 10000.0, 1, 5, 150, 4),
-                                                                         ('4', 300000, 'A',
-                                                                          'T', 'V', 10.2, 'NA',
-                                                                          'ENST00000398554.1_1',
-                                                                          0.5, 100, 0.5, 3, 150, 4)],
-                                                'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
-                                                                          15.7, 'NA',' ENST00000398531.2_2',
-                                                                          10, 50.57, 1.2, 3, 10.1, 7),
-                                                                         ('11', 71277229, 'A', 'C', 'V',
-                                                                          20.3, 'NA', 'ENST00000398200.3_1',
-                                                                          10, 50.57, 1.2, 3, 10.1, 7)]}
+                                          'AAA', 'I', 0.1, 'NA',
+                                          'ENST00000398531.2_2',
+                                          5, 10000.0, 1, 5, 150, 4),
+                                         ('4', 300000, 'A',
+                                          'T', 'V', 10.2, 'NA',
+                                          'ENST00000398554.1_1',
+                                          0.5, 100, 0.5, 3, 150, 4)],
+                            'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
+                                          15.7, 'NA',' ENST00000398531.2_2',
+                                          10, 50.57, 1.2, 3, 10.1, 7),
+                                         ('11', 71277229, 'A', 'C', 'V',
+                                          20.3, 'NA', 'ENST00000398200.3_1',
+                                          10, 50.57, 1.2, 3, 10.1, 7)]}
     def testwrite(self):
         """Tests that output file is written correctly"""
         write_results(self.out_file, self.HLA_alleles, self.neoepitopes,

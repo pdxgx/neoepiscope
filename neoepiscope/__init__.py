@@ -463,7 +463,7 @@ def main():
                 fasta_file = ''.join([args.output_file, '.fasta'])
                 with open(fasta_file, 'w') as f:
                     for tx in fasta:
-                        proteins = list(fasta[tx])
+                        proteins = sorted(list(fasta[tx]))
                         for i in range(0, len(proteins)):
                             identifier = ''.join(['>', tx, '_v', str(i)])
                             print(identifier, file=f)
