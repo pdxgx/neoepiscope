@@ -117,7 +117,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                         )
     def test_hap_processing(self):
         """Fails if file is processed incorrectly"""
-        Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree)
+        Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree, phasing=True)
         self.assertEqual(sorted(Chr11_txs.keys()),
                                                         ['ENST00000398531.2_2'])
         self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
@@ -125,7 +125,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                            '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'],
                                           ['11', 71276900, 'C', 'G', '0', '0',
                                            '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
-                                          ['11', 71277000, 'G', 'AA', '0', '0',
+                                          ['11', 71277000, '', 'AA', '0', '0',
                                            '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'I']]]
                 )
     def test_peptide_gathering(self):
@@ -163,7 +163,8 @@ class TestBindingPrediction(unittest.TestCase):
                                                 'PVCCPCKI': [('11', 71277229, 'A', 'C', 'V',
                                                                           15.7, 'ENST00000398531.2_2')]}
         self.tools = {'mhcflurry1': ['mhcflurry-predict',
-                                                                 ['affinity', 'rank']]}
+                                                                 ['affinity', 'rank']],
+                      'mhcnuggets2': ['NA', ['affinity']]}
         self.alleles = ['HLA-A*02:01', 'HLA-B*07:02']
     def test_binding_scores(self):
         new_neoepitopes = gather_binding_scores(self.neoepitopes,
@@ -175,8 +176,10 @@ class TestBindingPrediction(unittest.TestCase):
                                                                                                 'ENST00000398531.2_2',
                                                                                                 '25689.70544109427',
                                                                                                 '95.52587499999998',
+                                                                                                '32873.66591243697',
                                                                                                 '28365.719606393825',
-                                                                                                '90.61212500000003'
+                                                                                                '90.61212500000003',
+                                                                                                '36618.75556827501'
                                                                                         )])
         self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229,
                                                                                                 'A', 'C', 'V',
@@ -184,11 +187,13 @@ class TestBindingPrediction(unittest.TestCase):
                                                                                                 'ENST00000398531.2_2',
                                                                                                 '18671.533820398825',
                                                                                                 '42.33412499999999',
+                                                                                                '20417.344825703207',
                                                                                                 '26484.921629273078',
-                                                                                                '68.11900000000003'
+                                                                                                '68.11900000000003',
+                                                                                                '25662.252913426724'
                                                                                         )])
-        self.assertEqual(11, len(new_neoepitopes['PVCCPCKI'][0]))
-        self.assertEqual(11, len(new_neoepitopes['CGCSQKCN'][0]))
+        self.assertEqual(13, len(new_neoepitopes['PVCCPCKI'][0]))
+        self.assertEqual(13, len(new_neoepitopes['CGCSQKCN'][0]))
 class TestOutput(unittest.TestCase):
     """Tests function to write output"""
     def setUp(self):

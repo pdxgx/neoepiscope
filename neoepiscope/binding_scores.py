@@ -354,7 +354,7 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         # Count instances of smaller peptides
         # Establish temporary file to hold output
         peptide_file = tempfile.mkstemp(suffix='.txt',
-                                    prefix='id.', text=True)[1]
+                                    prefix=''.join([sample_id, '.']), text=True)[1]
         na_count = 0
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
@@ -372,7 +372,7 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         mhc_out = tempfile.mkstemp(suffix='.mhcnuggets.out',
                                     prefix=''.join([sample_id, '.']), text=True)[1]
         files_to_remove.append(mhc_out)
-        # Run netMHCIIpan
+        # Run mhcnuggets
         predict(class_=allele_class, peptides_path=peptide_file, 
                 mhc=allele, output=mhc_out)
         # Retrieve scores for valid peptides
@@ -388,9 +388,9 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         # Invalid peptides receive "NA" score
         for sequence in peptides:
             if sequence in score_dict:
-                nM = (sequence,) + score_dict[sequence]
+                nM = (sequence, score_dict[sequence])
             else:
-                nM = (sequence,) + tuple(['NA' for i in range(0, len(scores))])
+                nM = (sequence, 'NA')
             affinities.append(nM)
         return affinities
     finally:

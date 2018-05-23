@@ -1936,28 +1936,34 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     alternatives = tokens[6].split(',')
                 else:
                     alternatives = [tokens[6]]
-                for allele in alternatives:
-                    if len(tokens[5]) == len(allele):
+                for i in range(0, min(len(alternatives), 2)):
+                    if len(tokens[5]) == len(alternatives[i]):
                         mutation_type = 'V'
                         pos = int(tokens[4])
                         ref = tokens[5]
-                        alt = allele
+                        alt = alternatives[i]
                         mut_size = len(tokens[5])
                         end = pos + mut_size
-                    elif len(tokens[5]) > len(allele):
+                    elif len(tokens[5]) > len(alternatives[i]):
                         mutation_type = 'D'
-                        deletion_size = len(tokens[5]) - len(allele)
+                        deletion_size = len(tokens[5]) - len(alternatives[i])
                         pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
                         ref = tokens[5]
                         alt = deletion_size
                         end = pos + deletion_size
-                    elif len(tokens[5]) < len(allele):
+                    elif len(tokens[5]) < len(alternatives[i]):
                         mutation_type = 'I'
-                        insertion_size = len(allele) - len(tokens[5])
+                        insertion_size = len(alternatives[i]) - len(tokens[5])
                         pos = int(tokens[4]) + len(tokens[5]) - 1
                         ref = ''
-                        alt = allele[len(ref):]
+                        alt = alternatives[i][len(tokens[5]):]
                         end = pos + 1
+                    if i == 0 and len(alternatives) > 1:
+                        tokens[1] = '1'
+                        tokens[2] = '0'
+                    elif i == 1:
+                        tokens[1] = '0'
+                        tokens[2] = '1'                        
                     overlapping_transcripts = get_transcripts_from_tree(contig,
                                                                     pos,
                                                                     end,
@@ -1976,7 +1982,8 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                   only_novel_upstream, only_downstream,
                                   only_reference, reference_index, size_list,
-                                  include_germline=2, include_somatic=1):
+                                  include_germline=2, include_somatic=1,
+                                  protein_fasta=False):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
 
@@ -2006,6 +2013,7 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
             metadata
         """
     neoepitopes = collections.defaultdict(list)
+    fasta_entries = collections.defaultdict(set)
     for affected_transcript in relevant_transcripts:
         # Create transcript object
         transcriptA = Transcript(reference_index,
@@ -2060,23 +2068,25 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                 mutation_class=mutation_class,
                                 vaf=VAF)
             # Extract neoepitopes
-            A_peptides = transcriptA.neopeptides(
+            A_peptides, A_protein = transcriptA.neopeptides(
                                 min_size=size_list[0],
                                 max_size=size_list[-1],
                                 include_somatic=include_somatic,
                                 include_germline=include_germline,
                                 only_novel_upstream=only_novel_upstream,
                                 only_downstream=only_downstream,
-                                only_reference=only_reference
+                                only_reference=only_reference,
+                                return_protein=True
                                 )
-            B_peptides = transcriptB.neopeptides(
+            B_peptides, B_protein = transcriptB.neopeptides(
                                 min_size=size_list[0],
                                 max_size=size_list[-1],
                                 include_somatic=include_somatic,
                                 include_germline=include_germline,
                                 only_novel_upstream=only_novel_upstream,
                                 only_downstream=only_downstream,
-                                only_reference=only_reference
+                                only_reference=only_reference,
+                                return_protein=True
                                 )
             # Store neoepitopes and their metadata
             for pep in A_peptides:
@@ -2093,6 +2103,19 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                         )
                     if adj_meta_data not in neoepitopes[pep]:
                         neoepitopes[pep].append(adj_meta_data)
+            if protein_fasta:
+                if (len(A_peptides.keys()) > 0 
+                    or len(B_peptides.keys()) > 0):
+                    if A_protein == B_protein:
+                        fasta_entries[affected_transcript].add(A_protein)
+                    else:
+                        if A_protein != '':
+                            fasta_entries[affected_transcript].add(A_protein)
+                        if B_protein != '':
+                            fasta_entries[affected_transcript].add(B_protein)
             transcriptA.reset(reference=True)
             transcriptB.reset(reference=True)
-    return neoepitopes
+    if not protein_fasta:
+        return neoepitopes
+    else:
+        return neoepitopes, fasta_entries
