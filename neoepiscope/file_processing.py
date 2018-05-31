@@ -112,12 +112,12 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                         try:
                             assert len(alt_alleles) == 2
                         except AssertionError:
-                            warnings.warn('Neoepiscope does not support ',
+                            warnings.warn(''.join(['Neoepiscope does not support ',
                                           'triallellic phasing; of ',
                                           'alternate alleles ', tokens[6],
                                           ' at contig ', tokens[3],
                                           ' position ', tokens[4], ', only ',
-                                          'the top two will be included.')
+                                          'the top two will be included.']))
                         for i in (int(tokens[1]) - 1, int(tokens[2]) - 1):
                             allele = alt_alleles[i]
                             phased[(tokens[3], int(tokens[4]))].add(
