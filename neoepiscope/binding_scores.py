@@ -4,6 +4,8 @@ import warnings
 import tempfile
 import pickle
 import subprocess
+from mhcnuggets.src.find_closest_mhcI import closest_allele as closest_mhcI
+from mhcnuggets.src.find_closest_mhcII import closest_allele as closest_mhcII
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -53,7 +55,8 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
         # Count instances of smaller peptides
         na_count = 0
         peptide_file = tempfile.mkstemp(
-                        suffix='.peptides', prefix=''.join([sample_id, '.']), text=True)[1]
+                        suffix='.peptides', prefix=''.join([sample_id, '.']), 
+                        text=True)[1]
         files_to_remove.append(peptide_file)
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
@@ -68,7 +71,8 @@ def get_affinity_netMHCIIpan(peptides, allele, netmhciipan, version,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.netMHCIIpan.out',
-                                    prefix=''.join([sample_id, '.']), text=True)[1]
+                                    prefix=''.join([sample_id, '.']), 
+                                    text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         subprocess.check_call(
@@ -143,7 +147,8 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
         # Count instances of smaller peptides
         # Establish temporary file to hold output
         peptide_file = tempfile.mkstemp(suffix='.csv',
-                                    prefix=''.join([sample_id, '.']), text=True)[1]
+                                    prefix=''.join([sample_id, '.']), 
+                                    text=True)[1]
         na_count = 0
         with open(peptide_file, 'w') as f:
             f.write('allele,peptide\n')
@@ -159,7 +164,8 @@ def get_affinity_mhcflurry(peptides, allele, scores, version,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.mhcflurry.out',
-                                    prefix=''.join([sample_id, '.']), text=True)[1]
+                                    prefix=''.join([sample_id, '.']), 
+                                    text=True)[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
         command = ['mhcflurry-predict', '--out', mhc_out, peptide_file]
@@ -254,8 +260,7 @@ def get_affinity_netMHCpan(peptides, allele, netmhcpan, version, scores,
         affinities = []
         # Write one peptide per line to a temporary file for input
         peptide_file = tempfile.mkstemp(suffix='.peptides',
-                                        prefix=''.join([sample_id,
-                                                        '.']),
+                                        prefix=''.join([sample_id, '.']),
                                         text=True)[1]
         files_to_remove.append(peptide_file)
         with open(peptide_file, 'w') as f:
@@ -327,19 +332,16 @@ def get_affinity_mhcnuggets(peptides, allele, version,
     files_to_remove = []
     try:
         # Check that allele is valid for method
-        with open(os.path.join(neoepiscope_dir, 'neoepiscope',
-                               'availableAlleles.pickle'), 'rb'
-                ) as allele_stream:
-            avail_alleles = pickle.load(allele_stream)
         allele = allele.replace('*', '').replace(':', '')
-        if allele in avail_alleles['mhcnuggets_mhcI']:
+        if closest_mhcI(allele) is not None:
             allele_class = 'I'
             max_length = 15
-        elif avail_alleles['mhcnuggets_mhcII']:
+            allele = closest_mhcI(allele)
+        elif closest_mhcII(allele) is not None:
             allele_class = 'II'
             max_length = 30
-        elif (allele not in avail_alleles['mhcnuggets_mhcI'] 
-            and allele not in avail_alleles['mhcnuggets_mhcII']):
+            allele = closest_mhcII(allele)
+        else:
             warnings.warn(' '.join([allele,
                                     'is not a valid allele for mhcnuggets']),
                           Warning)
@@ -354,7 +356,8 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         # Count instances of smaller peptides
         # Establish temporary file to hold output
         peptide_file = tempfile.mkstemp(suffix='.txt',
-                                    prefix=''.join([sample_id, '.']), text=True)[1]
+                                    prefix=''.join([sample_id, '.']), 
+                                    text=True)[1]
         na_count = 0
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
@@ -370,7 +373,8 @@ def get_affinity_mhcnuggets(peptides, allele, version,
                             Warning)
         # Establish temporary file to hold output
         mhc_out = tempfile.mkstemp(suffix='.mhcnuggets.out',
-                                    prefix=''.join([sample_id, '.']), text=True)[1]
+                                    prefix=''.join([sample_id, '.']), 
+                                    text=True)[1]
         files_to_remove.append(mhc_out)
         # Run mhcnuggets
         predict(class_=allele_class, peptides_path=peptide_file, 
