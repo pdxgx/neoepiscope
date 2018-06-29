@@ -4,8 +4,6 @@ import warnings
 import tempfile
 import pickle
 import subprocess
-from mhcnuggets.src.find_closest_mhcI import closest_allele as closest_mhcI
-from mhcnuggets.src.find_closest_mhcII import closest_allele as closest_mhcII
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -329,10 +327,11 @@ def get_affinity_mhcnuggets(peptides, allele, version,
                         as strings)
     """
     from mhcnuggets.src.predict import predict
+    from mhcnuggets.src.find_closest_mhcI import closest_allele as closest_mhcI
+    from mhcnuggets.src.find_closest_mhcII import closest_allele as closest_mhcII
     files_to_remove = []
     try:
         # Check that allele is valid for method
-        allele = allele.replace('*', '').replace(':', '')
         if closest_mhcI(allele) is not None:
             allele_class = 'I'
             max_length = 15
