@@ -332,6 +332,7 @@ def get_affinity_mhcnuggets(peptides, allele, version,
     files_to_remove = []
     try:
         # Check that allele is valid for method
+        allele = allele.replace('*', '')
         if closest_mhcI(allele) is not None:
             allele_class = 'I'
             max_length = 15
@@ -357,10 +358,10 @@ def get_affinity_mhcnuggets(peptides, allele, version,
         peptide_file = tempfile.mkstemp(suffix='.txt',
                                     prefix=''.join([sample_id, '.']), 
                                     text=True)[1]
+        files_to_remove.append(peptide_file)
         na_count = 0
         with open(peptide_file, 'w') as f:
             for sequence in peptides:
-                ### ADJUST SIZE REQUIREMENTS
                 if len(sequence) > max_length:
                     na_count += 1
                 else:
@@ -384,7 +385,6 @@ def get_affinity_mhcnuggets(peptides, allele, version,
             # Skip headers
             f.readline()
             for line in f:
-                # token 1 is peptide; token 4 is affinity; token[5] is rank
                 tokens = line.strip('\n').split(',')
                 score_dict[tokens[0]] = tokens[1]
         # Produce list of scores for valid peptides
