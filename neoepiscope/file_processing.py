@@ -230,7 +230,8 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     """
     with open(output_file, 'w') as o:
         headers = ['Neoepitope', 'Chromsome', 'Pos', 'Ref', 'Alt',
-                   'Mutation_type', 'VAF', 'Warnings', 'Transcript_ID']
+                   'Mutation_type', 'VAF', 'Paired_normal_epitope', 
+                   'Warnings', 'Transcript_ID']
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
@@ -253,7 +254,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     VAF = str(mutation[5])
                 out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
                             mutation[4], VAF, mutation[6],
-                            mutation[7]]
+                            mutation[7], mutation[8]]
                 for i in range(8,len(mutation)):
                     out_line.append(str(mutation[i]))
                 print('\t'.join(out_line), file=o)
@@ -275,12 +276,12 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         VAF = 'NA'
                     else:
                         VAF = str(mut[5])
-                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4], VAF)].append(
+                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4], VAF,mut[8])].append(
                                                                 [mut[6],mut[7]]
                                                                 )
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
-                                mut[4],mut[5], 
+                                mut[4],mut[5], mut[6],
                                 ';'.join(
                                         [str(x[0]) for x in mutation_dict[mut]]
                                         ),
