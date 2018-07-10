@@ -149,11 +149,11 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                                         )
         self.assertEqual(len(neoepitopes.keys()), 70)
         self.assertEqual(neoepitopes['CGCSQKCN'], [('11', 71277056, '',
-                                                    'AAA', 'I', 0.1, 'NA',
+                                                    'AAA', 'I', 0.1, 'NA', 'NA',
                                                     'ENST00000398531.2_2')])
         self.assertEqual(neoepitopes['PVCCPCKI'], [('11', 71277229,
-                                                    'A', 'C', 'V', 15.7, 'NA',
-                                                    'ENST00000398531.2_2')])
+                                                    'A', 'C', 'V', 15.7, 'PVCCQCKI', 
+                                                    'NA', 'ENST00000398531.2_2')])
         self.assertEqual(sorted(neoepitopes.keys())[0], 'CCGCGGCG')
         self.assertEqual(sorted(neoepitopes.keys())[-1], 'VPVCCPCKI')
         self.assertEqual(sorted(fasta['ENST00000398531.2_2']),
@@ -193,6 +193,7 @@ class TestBindingPrediction(unittest.TestCase):
                                                         '90.61212500000003',
                                                         '36618.75556827501'
                                                 )])
+                                        # pvccqc ki
         self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229,
                                                         'A', 'C', 'V',
                                                         15.7,
