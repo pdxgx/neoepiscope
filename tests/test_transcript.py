@@ -853,7 +853,7 @@ class TestTranscript(unittest.TestCase):
         self.all_coding_transcript.edit('T', 5810012, mutation_type='I')
         all_peptides = self.all_coding_transcript.neopeptides()
         self.assertEqual(all_peptides, {'MSFLKAPA': [('11', 5810032, 'A',
-                                                      '', 'D', None, 'NA')]})
+                                                      '', 'D', None, 'NA', 'NA')]})
 
 if __name__ == '__main__':
     unittest.main()

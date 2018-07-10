@@ -1214,8 +1214,6 @@ class Transcript(object):
         seq_previous = []
         new_ATG_upstream = False
         transcript_warnings = []
-        #compare_peptides_to_ref = False
-        compare_peptides_to_ref = True
         annotated_seq.append([])
         for seq in annotated_seq:
             # build pairwise list of 'ATG's from annotated_seq and reference
@@ -1528,7 +1526,7 @@ class Transcript(object):
                 for metadata_set in mutation[2]:
                     metadata.append(metadata_set)
             frame_shifts.append([start, -1, 0, -1, metadata])
-        new_start = start_codon[1]
+        ref_start = start_codon[1]
         coding_start = start_codon[0]
         annotated_seq.pop()
         for seq in annotated_seq:
@@ -1545,7 +1543,6 @@ class Transcript(object):
                 elif seq[2][0][4] == 'I':
                     counter += len(seq[0])
                     ref_counter +=len(seq[0])
-                    #compare_peptides_to_ref = True
 #                elif seq[2][0][4] == 'D':
 #                    continue
                 continue
@@ -1554,9 +1551,8 @@ class Transcript(object):
             if counter < coding_start + 2:
                 if seq[1] == 'H':
                     if len(seq[2][0][3]) + counter >= coding_start:
-                        compare_peptides_to_ref = True
                         coordinates.append([start, seq[2][0][1] + len(seq[2][0][3])*strand -1,
-                                        counter, counter + len(seq[2][0][3]) - 1, seq[2][0][4]])
+                                        counter, counter + len(seq[2][0][3]) - 1, 'NA', 'NA', seq[2][0][4]])
                     counter += len(seq[2][0][3])
                     ref_counter += len(seq[2][1][3])
 
@@ -1565,16 +1561,15 @@ class Transcript(object):
                     ref_counter += len(seq[2][0][2])
                     if counter + len(seq[0]) >= coding_start:
                         coordinates.append([start, seq[3] + len(seq[0])*strand -1,
-                                        counter, counter + len(seq[0]) - 1, seq[2]])
+                                        counter, counter + len(seq[0]) - 1, 'NA', 'NA', seq[2]])
                     continue
                 elif seq[2][0][4] == 'I':
                     if counter + len(seq[0]) >= coding_start:
                         coordinates.append(
                                 [start, seq[3] + len(seq[0]) * strand - 1,
                                  0, counter + len(seq[0]) - coding_start - 1,
-                                 seq[2]]
+                                 'NA', 'NA', seq[2]]
                             )
-                        compare_peptides_to_ref = True
                     counter += len(seq[0])
                     if ((seq[1] == 'G' and include_germline == 2) or
                                 (seq[1] == 'S' and include_somatic == 2)):
@@ -1585,6 +1580,7 @@ class Transcript(object):
                         coordinates.append(
                                 [start, seq[3] + len(seq[0]) * strand - 1,
                                  0, counter + len(seq[0]) - coding_start - 1,
+                                 0, ref_counter + len(seq[0]) - ref_start - 1,
                                  seq[2]]
                             )
                     counter += len(seq[0])
@@ -1597,9 +1593,8 @@ class Transcript(object):
             # handle potential frame shifts from indels
             if seq[1] == 'H':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) -1,
+                                counter, counter + len(seq[0]) -1, 'NA', 'NA',
                                 seq[2][0][4]])
-                compare_peptides_to_ref = True
                 read_frame2 = self.reading_frame(seq[2][0][1] + len(seq[2][0][3]))
                 if read_frame2 is None:
                     # this case NOT addressed at present
@@ -1634,8 +1629,7 @@ class Transcript(object):
                 continue
             elif seq[2][0][4] == 'D':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) -1 , seq[2]])
-                compare_peptides_to_ref = True
+                                counter, counter + len(seq[0]) -1 ,  'NA', 'NA', seq[2]])
                 read_frame1 = self.reading_frame(seq[3])
                 read_frame2 = self.reading_frame(seq[3] + len(seq[2][0][2]))
                 if read_frame1 is None or read_frame2 is None:
@@ -1665,12 +1659,11 @@ class Transcript(object):
                         reading_frame = (
                                 reading_frame + read_frame1 - read_frame2
                             ) % 3
-#                ref_counter += len(seq[2][0][2])
+                ref_counter += len(seq[2][0][2])
             # handle potential frame shifts from insertions
             elif seq[2][0][4] == 'I':
                 coordinates.append([seq[3], seq[3] + len(seq[0])*strand - 1,
-                                counter, counter + len(seq[0]) - 1, seq[2]])
-                compare_peptides_to_ref = True
+                                counter, counter + len(seq[0]) - 1, 'NA', 'NA', seq[2]])
                 if len(seq[0]) % 3 and counter:
                     if not reading_frame:
                         reading_frame = len(seq[0]) % 3
@@ -1705,10 +1698,19 @@ class Transcript(object):
                     A = seq_to_peptide(sequence[(i+A1):(i+A1+3)])
                     B = seq_to_peptide(ref_sequence[(i+A2):(i+A2+3)])
                     if A != B:
-                        coordinates.append(
-                                [seq[3], seq[3] + len(seq[0])*strand - 1,
-                                 counter+i*3, counter+i*3+2 - 1, seq[2]]
-                            )
+                        if frame_shifts == []:
+                            coordinates.append(
+                                    [seq[3], seq[3] + len(seq[0])*strand - 1,
+                                     counter+i*3, counter+i*3+2 - 1, 
+                                     ref_counter+i*3, ref_counter+i*3+2 - 1, 
+                                     seq[2]]
+                                )
+                        else:
+                            coordinates.append(
+                                    [seq[3], seq[3] + len(seq[0])*strand - 1,
+                                     counter+i*3, counter+i*3+2 - 1, 'NA', 'NA', 
+                                     seq[2]]
+                                )
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
         # frame shifts (if they exist) continue to end of transcript
@@ -1721,8 +1723,7 @@ class Transcript(object):
                     break
         protein = seq_to_peptide(sequence[start_codon[0]:],
                                  reverse_strand=False)
-        if compare_peptides_to_ref:
-            protein_ref = seq_to_peptide(ref_sequence[ref_atg[1]:],
+        protein_ref = seq_to_peptide(ref_sequence[ref_atg[1]:],
                                          reverse_strand=False)
         if TAA_TGA_TAG == []:
             if 'X' in protein:
@@ -1752,37 +1753,65 @@ class Transcript(object):
         # get amino acid ranges for kmerization
         for size in range(min_size, max_size + 1):
             epitope_coords = []
-            if compare_peptides_to_ref:
-                peptides_ref = kmerize_peptide(protein_ref,
+            peptides_ref = kmerize_peptide(protein_ref,
                                                min_size=size, max_size=size)
             for coords in coordinates:
-                epitope_coords.append(
-                        [max(0, ((coords[2]-coding_start) // 3)- size + 1),
-                         min(len(protein),
-                         ((coords[3] - coding_start) // 3)+size), coords[4]]
-                    )
+                if coords[4] != 'NA':
+                    epitope_coords.append(
+                            [max(0, ((coords[2]-coding_start) // 3)- size + 1),
+                             min(len(protein),
+                             ((coords[3] - coding_start) // 3)+size), 
+                             max(0, ((coords[4]-coding_start) // 3)- size + 1),
+                             min(len(protein_ref),
+                             ((coords[5] - coding_start) // 3)+size),
+                             coords[6]]
+                        )
+                else:
+                    epitope_coords.append(
+                            [max(0, ((coords[2]-coding_start) // 3)- size + 1),
+                             min(len(protein),
+                             ((coords[3] - coding_start) // 3)+size), 
+                             'NA', 'NA', coords[6]]
+                        )
             for coords in frame_shifts:
                 epitope_coords.append(
                         [max(0, ((coords[2]-coding_start) // 3)- size + 1),
                          min(len(protein),
-                         ((coords[3] - coding_start) // 3)+size), coords[4]]
+                         ((coords[3] - coding_start) // 3)+size), 'NA', 'NA', 
+                         coords[4]]
                     )
             for coords in epitope_coords:
                 peptides = kmerize_peptide(protein[coords[0]:coords[1]],
                     min_size=size, max_size=size)
-                if compare_peptides_to_ref:
+                if coords[2] != 'NA':
+                    paired_peptides = kmerize_peptide(protein_ref[coords[2]:coords[3]],
+                        min_size=size, max_size=size)
+                    peptide_pairs = zip(peptides, paired_peptides)
+                    for pair in peptide_pairs:
+                        if pair[0] not in peptides_ref:
+                            if len(coords[4]) == 2 and type(coords[4][0]) == list:
+                                # Dealing with peptide resulting from hybrid interval
+                                data_set = coords[4][0][4]
+                            else:
+                                # Dealing with regular peptide
+                                data_set = coords[4]
+                            for mutation_data in data_set:
+                                mutation_data = mutation_data + (pair[1],) + transcript_warnings
+                                peptide_seqs[pair[0]].append(mutation_data)
+                            peptide_seqs[pair[0]] = list(set(peptide_seqs[pair[0]]))
+                else:
                     peptides = list(set(peptides).difference(peptides_ref))
-                for pep in peptides:
-                    if len(coords[2]) == 2 and type(coords[2][0]) == list:
-                        # Dealing with peptide resulting from hybrid interval
-                        data_set = coords[2][0][4]
-                    else:
-                        # Dealing with regular peptide
-                        data_set = coords[2]
-                    for mutation_data in data_set:
-                        mutation_data = mutation_data + transcript_warnings
-                        peptide_seqs[pep].append(mutation_data)
-                    peptide_seqs[pep] = list(set(peptide_seqs[pep]))
+                    for pep in peptides:
+                        if len(coords[4]) == 2 and type(coords[4][0]) == list:
+                            # Dealing with peptide resulting from hybrid interval
+                            data_set = coords[4][0][4]
+                        else:
+                            # Dealing with regular peptide
+                            data_set = coords[4]
+                        for mutation_data in data_set:
+                            mutation_data = mutation_data + ('NA',) + transcript_warnings
+                            peptide_seqs[pep].append(mutation_data)
+                        peptide_seqs[pep] = list(set(peptide_seqs[pep]))
         if not return_protein:
             # return list of unique neoepitope sequences
             return peptide_seqs
