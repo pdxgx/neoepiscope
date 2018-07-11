@@ -255,13 +255,13 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 out_line = [epitope, mutation[0], str(mutation[1]), ref, alt,
                             mutation[4], VAF, mutation[6],
                             mutation[7], mutation[8]]
-                for i in range(8,len(mutation)):
+                for i in range(9,len(mutation)):
                     out_line.append(str(mutation[i]))
                 print('\t'.join(out_line), file=o)
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
-                for i in range(8, len(neoepitopes[epitope][0])):
+                for i in range(9, len(neoepitopes[epitope][0])):
                     ep_scores.append(neoepitopes[epitope][0][i])
                 for mut in neoepitopes[epitope]:
                     if mut[2] == '':
@@ -276,12 +276,12 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         VAF = 'NA'
                     else:
                         VAF = str(mut[5])
-                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4], VAF,mut[8])].append(
-                                                                [mut[6],mut[7]]
+                    mutation_dict[(mut[0], mut[1], ref, alt, mut[4], VAF, mut[6])].append(
+                                                                [mut[7],mut[8]]
                                                                 )
                 for mut in sorted(mutation_dict.keys()):
                     out_line = [epitope, mut[0], str(mut[1]), mut[2], mut[3],
-                                mut[4],mut[5], mut[6],
+                                mut[4],mut[5],mut[6],
                                 ';'.join(
                                         [str(x[0]) for x in mutation_dict[mut]]
                                         ),
@@ -290,4 +290,5 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                                         )]
                     for score in ep_scores:
                         out_line.append(str(score))
+                    print (out_line)
                     print('\t'.join(out_line), file=o)
