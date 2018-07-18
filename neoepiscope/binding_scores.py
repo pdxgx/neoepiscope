@@ -5,7 +5,7 @@ import tempfile
 import pickle
 import subprocess
 
-"""hello world, this is Ben!"""
+"""hello world this is Ben!"""
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
