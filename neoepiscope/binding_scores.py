@@ -330,6 +330,11 @@ def get_affinity_mhcnuggets(peptides, allele, version,
     files_to_remove = []
     try:
         # Check that allele is valid for method
+        with open(os.path.join(neoepiscope_dir, 'neoepiscope',
+                               'availableAlleles.pickle'), 'rb'
+                ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        # Check that allele is valid for method
         allele = allele.replace('*', '')
         if allele in avail_alleles['mhcnuggetsI']:
             allele_class = 'I'
