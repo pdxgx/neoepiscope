@@ -327,20 +327,16 @@ def get_affinity_mhcnuggets(peptides, allele, version,
                         as strings)
     """
     from mhcnuggets.src.predict import predict
-    from mhcnuggets.src.find_closest_mhcI import closest_allele as closest_mhcI
-    from mhcnuggets.src.find_closest_mhcII import closest_allele as closest_mhcII
     files_to_remove = []
     try:
         # Check that allele is valid for method
         allele = allele.replace('*', '')
-        if closest_mhcI(allele) is not None:
+        if allele in avail_alleles['mhcnuggetsI']:
             allele_class = 'I'
             max_length = 15
-            allele = closest_mhcI(allele)
-        elif closest_mhcII(allele) is not None:
+        elif allele in avail_alleles['mhcnuggetsII']:
             allele_class = 'II'
             max_length = 30
-            allele = closest_mhcII(allele)
         else:
             warnings.warn(' '.join([allele,
                                     'is not a valid allele for mhcnuggets']),
