@@ -336,10 +336,10 @@ def get_affinity_mhcnuggets(peptides, allele, version,
             avail_alleles = pickle.load(allele_stream)
         # Check that allele is valid for method
         allele = allele.replace('*', '')
-        if allele in avail_alleles['mhcnuggetsI']:
+        if allele in avail_alleles['mhcnuggets_mhcI']:
             allele_class = 'I'
             max_length = 15
-        elif allele in avail_alleles['mhcnuggetsII']:
+        elif allele in avail_alleles['mhcnuggets_mhcII']:
             allele_class = 'II'
             max_length = 30
         else:
