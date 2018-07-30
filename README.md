@@ -40,7 +40,7 @@ Options:
 
 ##### Ensure proper ordering of VCF
 
-To call neoepitopes from somatic mutations, ensure that data for the tumor sample in your VCF file proceeds data from a matched normal sample. If it DOES NOT, run neoepiscope in ```swap``` mode to produce a new VCF:
+To call neoepitopes from somatic mutations, ensure that data for the tumor sample in your VCF file precedes data from a matched normal sample. If it DOES NOT, run neoepiscope in ```swap``` mode to produce a new VCF:
 
 ```neoepiscope swap -i <INPUT VCF> -o <SWAPPED VCF>```
 
