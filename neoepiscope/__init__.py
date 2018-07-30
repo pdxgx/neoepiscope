@@ -420,6 +420,10 @@ def main():
         else:
             raise RuntimeError('--somatic must be one of '
                                '{"background", "include", "exclude"}')
+        # Warn if somatic and germline are both excluded
+        if include_somatic == 0 and include_germline == 0:
+            warnings.warn('Germline and somatic mutations are both being '
+                          'excluded, no epitopes will be returned', Warning)
         # Establish whether to phase mutations
         if args.isolate:
             phasing = False
