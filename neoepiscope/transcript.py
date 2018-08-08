@@ -1963,6 +1963,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     contig = 'chr' + contig
                 if ',' in tokens[6]:
                     alternatives = tokens[6].split(',')
+                    print('\t'.join([tokens[1], tokens[2]]))
                 else:
                     alternatives = [tokens[6]]
                 for i in range(0, min(len(alternatives), 2)):
@@ -1977,7 +1978,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         mutation_type = 'D'
                         deletion_size = len(tokens[5]) - len(alternatives[i])
                         pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
-                        ref = tokens[5]
+                        ref = tokens[5][len(alternatives[i])]
                         alt = deletion_size
                         end = pos + deletion_size
                     elif len(tokens[5]) < len(alternatives[i]):
@@ -1987,12 +1988,26 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         ref = ''
                         alt = alternatives[i][len(tokens[5]):]
                         end = pos + 1
-                    if i == 0 and len(alternatives) > 1:
-                        tokens[1] = '1'
-                        tokens[2] = '0'
-                    elif i == 1:
-                        tokens[1] = '0'
-                        tokens[2] = '1'                        
+                    if len(alternatives) > 1:
+                        print(i)
+                        if i == 0:
+                            if tokens[1] == '1':
+                                gen1 = '1'
+                                gen2 = '0'
+                            else:
+                                gen1 = '0'
+                                gen2 = '1'
+                        elif i == 1:
+                            if tokens[1] == '2':
+                                gen1 = '1'
+                                gen2 = '0'
+                            else:
+                                gen1 = '0'
+                                gen2 = '1' 
+                        print('\t'.join([gen1, gen2]))
+                    else:
+                        gen1 = tokens[1]
+                        gen2 = tokens[2]
                     overlapping_transcripts = get_transcripts_from_tree(contig,
                                                                     pos,
                                                                     end,
@@ -2003,9 +2018,11 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     for transcript in overlapping_transcripts:
                         block_transcripts[transcript].append([contig, pos,
                                                               ref, alt,
-                                                              tokens[1], tokens[2],
+                                                              gen1, gen2,
                                                               tokens[7],
                                                               mutation_type])
+                if len(alternatives) > 1:
+                    print('*****')
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
