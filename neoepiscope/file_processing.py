@@ -118,17 +118,31 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                           ' at contig ', tokens[3],
                                           ' position ', tokens[4], ', only ',
                                           'the top two will be included.']))
-                        for i in (int(tokens[1]) - 1, int(tokens[2]) - 1):
+                        for i in (0, 2):
                             allele = alt_alleles[i]
                             phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], allele)
                                                 )
-                        print('\t'.join([tokens[0], '1', '0', tokens[3],
+                            if i == 0:
+                                if tokens[1] == '1':
+                                    gen1 = '1'
+                                    gen2 = '0'
+                                else:
+                                    gen1 = '0'
+                                    gen2 = '1'
+                            elif i == 1:
+                                if tokens[1] == '2':
+                                    gen1 = '1'
+                                    gen2 = '0'
+                                else:
+                                    gen1 = '0'
+                                    gen2 = '1'
+                        print('\t'.join([tokens[0], gen1, gen2, tokens[3],
                                          tokens[4], tokens[5],
                                          alt_alleles[int(tokens[1]) - 1],
                                          tokens[7], tokens[8], tokens[9],
                                          tokens[10]]), file=output_stream)
-                        print('\t'.join([tokens[0], '0', '1', tokens[3],
+                        print('\t'.join([tokens[0], gen1, gen2, tokens[3],
                                          tokens[4], tokens[5],
                                          alt_alleles[int(tokens[2]) - 1],
                                          tokens[7], tokens[8], tokens[9],
