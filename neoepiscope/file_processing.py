@@ -118,7 +118,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                           ' at contig ', tokens[3],
                                           ' position ', tokens[4], ', only ',
                                           'the top two will be included.']))
-                        for i in (0, 1):
+                        for i in range(0, 2):
                             allele = alt_alleles[i]
                             phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], allele)
