@@ -137,16 +137,11 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                                 else:
                                     gen1 = '0'
                                     gen2 = '1'
-                        print('\t'.join([tokens[0], gen1, gen2, tokens[3],
-                                         tokens[4], tokens[5],
-                                         alt_alleles[int(tokens[1]) - 1],
-                                         tokens[7], tokens[8], tokens[9],
-                                         tokens[10]]), file=output_stream)
-                        print('\t'.join([tokens[0], gen1, gen2, tokens[3],
-                                         tokens[4], tokens[5],
-                                         alt_alleles[int(tokens[2]) - 1],
-                                         tokens[7], tokens[8], tokens[9],
-                                         tokens[10]]), file=output_stream)
+                            print('\t'.join([tokens[0], gen1, gen2, tokens[3],
+                                             tokens[4], tokens[5],
+                                             alt_alleles[i],
+                                             tokens[7], tokens[8], tokens[9],
+                                             tokens[10]]), file=output_stream)
                     else:
                         phased[(tokens[3], int(tokens[4]))].add(
                                                     (tokens[5], tokens[6])
