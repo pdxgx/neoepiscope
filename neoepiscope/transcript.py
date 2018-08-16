@@ -1885,7 +1885,7 @@ def cds_to_tree(cds_dict, dictdir, pickle_it=True):
         # Add CDS interval to tree with transcript ID
         for cds in transcript:
             start = cds[2]
-            stop = cds[3]
+            stop = cds[3] + 1
             # Interval coordinates are inclusive of start, exclusive of stop
             if stop > start:
                 searchable_tree[chrom][start:stop] = transcript_id
@@ -1978,7 +1978,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         mutation_type = 'D'
                         deletion_size = len(tokens[5]) - len(alternatives[i])
                         pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
-                        ref = tokens[5][len(alternatives[i])]
+                        ref = tokens[5][len(alternatives[i]):]
                         alt = deletion_size
                         end = pos + deletion_size
                     elif len(tokens[5]) < len(alternatives[i]):

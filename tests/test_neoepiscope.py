@@ -122,7 +122,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                         phasing=True)
         self.assertEqual(sorted(Chr11_txs.keys()), ['ENST00000398531.2_2'])
         self.assertEqual(Chr11_txs['ENST00000398531.2_2'],
-                                    [[['11', 71276862, 'TGT', 2, '0', '0',
+                                    [[['11', 71276862, 'GT', 2, '0', '0',
                                        '0/0:.:53:52:0:0%:22,30,0,0:.:2', 'D'],
                                       ['11', 71276900, 'C', 'G', '0', '0',
                                        '0/0:.:35:34:0:0%:19,15,0,0:.:2', 'V'],
