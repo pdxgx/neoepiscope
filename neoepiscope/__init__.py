@@ -160,6 +160,14 @@ def main():
             help='isolate mutations - do not use phasing information to '
             'combine nearby mutations in the same neoepitope'
         )
+    call_parser.add_argument('--NMD', required=False, action='store_true',
+            help='enumerate neoepitopes from nonsense mediated decay'
+            ' transcripts'
+        )
+    call_parser.add_argument('--PP', required=False, action='store_true',
+            help='enumerate neoepitopes from polymorphic pseudogene'
+            ' transcripts'
+        )
     args = parser.parse_args()
     if args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -429,6 +437,15 @@ def main():
             phasing = False
         else:
             phasing = True
+        # Determine whether to include NMD and polymorphic pseudogene transcripts
+        if args.NMD:
+            NMD = True
+        else:
+            NMD = False
+        if args.PP:
+            PP = True
+        else:
+            PP = False
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict, phasing)
@@ -440,7 +457,7 @@ def main():
                                                     only_downstream, 
                                                     only_reference,
                                                     reference_index,
-                                                    size_list, 
+                                                    size_list, NMD, PP,
                                                     include_germline, 
                                                     include_somatic)
         else:
@@ -451,7 +468,7 @@ def main():
                                                     only_downstream, 
                                                     only_reference,
                                                     reference_index,
-                                                    size_list, 
+                                                    size_list, NMD, PP,
                                                     include_germline, 
                                                     include_somatic,
                                                     protein_fasta=True
