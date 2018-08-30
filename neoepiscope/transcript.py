@@ -1835,8 +1835,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         for line in f:
             if line[0] != '#':
                 tokens = line.strip().split('\t')
-                if (tokens[2] in ['exon', 'start_codon', 'stop_codon'] and
-                    'protein_coding' in line):
+                if (tokens[2] in ['exon', 'start_codon', 'stop_codon']):
                     transcript_id = re.sub(
                                 r'.*transcript_id \"([A-Z0-9._]+)\"[;].*',
                                 r'\1', tokens[8]
@@ -1845,11 +1844,14 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                 r'.*transcript_type \"([a-z_]+)\"[;].*',
                                 r'\1', tokens[8]
                                 )
-                    if transcript_type == 'protein_coding':
+                    if transcript_type in ['protein_coding', 
+                                           'nonsense_mediated_decay', 
+                                           'polymorphic_pseudogene']:
                         # Create new dictionary entry for new transcripts
                         cds_dict[transcript_id].append([tokens[0],
                                                     tokens[2], int(tokens[3]),
-                                                    int(tokens[4]), tokens[6]])
+                                                    int(tokens[4]), tokens[6],
+                                                    transcript_type])
     # Sort cds_dict coordinates (left -> right) for each transcript
     for transcript_id in cds_dict.keys():
         cds_dict[transcript_id].sort(key=lambda x: x[0])
@@ -1909,15 +1911,14 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
 
         Return value: (set) a set of matching unique transcript IDs.
     """
-    transcript_ids = []
+    transcript_ids = set()
     # Interval coordinates are inclusive of start, exclusive of stop
     if chrom not in cds_tree:
         return []
     cds = list(cds_tree[chrom].search(start, stop))
     for cd in cds:
-        if cd.data not in transcript_ids:
-            transcript_ids.append(cd.data)
-    return transcript_ids
+        transcript_ids.add(cd.data)
+    return list(transcript_ids)
 
 def process_haplotypes(hapcut_output, interval_dict, phasing):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
@@ -2028,8 +2029,8 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                   only_novel_upstream, only_downstream,
                                   only_reference, reference_index, size_list,
-                                  include_germline=2, include_somatic=1,
-                                  protein_fasta=False):
+                                  NMD, PP, include_germline=2, 
+                                  include_somatic=1, protein_fasta=False):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
 
@@ -2055,23 +2056,32 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                 1 = exclude somatic mutations from reference comparison,
                 2 = include somatic mutations in both annotated sequence and
                 reference comparison
+        NMD: whether to include nonsense mediated decay transcripts (boolean)
+        PP: whether to include polymorphic pseudogene transcripts (boolean)
         return value: dictionary linking neoepitopes to their associated
             metadata
         """
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     for affected_transcript in relevant_transcripts:
+        # Filter out NMD and polymorphic pseudogene transcripts if relevant
+        if affected_transcript[5] == 'nonsense_mediated_decay' and not NMD:
+            continue
+        elif affected_transcript[5] == 'polymorphic_pseudogene' and not PP:
+            continue
         # Create transcript object
         transcriptA = Transcript(reference_index,
                         [[str(chrom), 'blah', seq_type, str(start),
                           str(end), '.', strand] for (chrom, seq_type,
-                                                      start, end, strand)
+                                                      start, end, strand, 
+                                                      tx_type)
                       in cds_dict[affected_transcript]], affected_transcript
                     )
         transcriptB = Transcript(reference_index,
                         [[str(chrom), 'blah', seq_type, str(start),
                           str(end), '.', strand] for (chrom, seq_type,
-                                                      start, end, strand)
+                                                      start, end, strand,
+                                                      tx_type)
                       in cds_dict[affected_transcript]], affected_transcript
                     )
         # Iterate over haplotypes associated with this transcript
