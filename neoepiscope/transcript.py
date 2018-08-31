@@ -1856,7 +1856,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     for transcript_id in cds_dict.keys():
         cds_dict[transcript_id].sort(key=lambda x: x[0])
         seq_types = [x[1] for x in cds_dict[transcript_id]]
-        if 'start_codon' not in seq_types or 'stop_codon' not in seq_types:
+        if 'start_codon' not in seq_types:
                 # Remove incompletely annotated transcript
             del cds_dict[transcript_id]
     # Write to pickled dictionary
