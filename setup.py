@@ -53,7 +53,7 @@ setup(name='neoepiscope',
       package_data={'neoepiscope': ['*.py', '*.pickle']},
       zip_safe=True,
       install_requires=[
-                'intervaltree', 'mhcflurry', 'mhcnuggets'
+                'intervaltree', 'mhcflurry', 'mhcnuggets',  'numpy==1.14.5'
         ],
       entry_points={
         'console_scripts': [

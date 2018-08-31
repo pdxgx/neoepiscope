@@ -253,8 +253,13 @@ class Transcript(object):
             self.stop_codon_index = bisect.bisect_left(self.intervals,
                                                         self._stop_codon)
         else:
-            self.stop_codon_index = None
-
+            if self.rev_strand:
+                self.stop_codon = int(CDS[0][3])
+            else:
+                self.stop_codon = int(CDS[-1][4])
+            self._stop_codon = self.stop_codon - 1
+            self.stop_codon_index  = bisect.bisect_left(self.intervals,
+                                                        self._stop_codon)
 
     def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
@@ -2019,7 +2024,6 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                                                               gen1, gen2,
                                                               tokens[7],
                                                               mutation_type])
-                if len(alternatives) > 1:
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
