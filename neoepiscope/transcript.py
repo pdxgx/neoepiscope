@@ -1356,14 +1356,15 @@ class Transcript(object):
                     ref_start = ref_counter + (
                                 start - seq[3] + 2*self.rev_strand
                             ) * strand
-                if (ref_stop < 0
-                    and seq[3]*strand + len(seq[0]) > stop * strand):
-                    coding_stop = counter + (
-                                stop - seq[3] + 2*self.rev_strand
-                            ) * strand
-                    ref_stop = ref_counter + (
-                                stop - seq[3] + 2 * self.rev_strand
-                            ) * strand
+                if stop is not None:
+                    if (ref_stop < 0
+                        and seq[3]*strand + len(seq[0]) > stop * strand):
+                        coding_stop = counter + (
+                                    stop - seq[3] + 2*self.rev_strand
+                                ) * strand
+                        ref_stop = ref_counter + (
+                                    stop - seq[3] + 2 * self.rev_strand
+                                ) * strand
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 counter += len(seq[0])
