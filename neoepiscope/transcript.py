@@ -212,10 +212,14 @@ class Transcript(object):
                 self.intervals.extend(
                         [int(line[3]) - 2, int(line[4]) - 1]
                     )
-            elif line[2] == 'start_codon':
-                # 1-based public, 0-based private
-                self.start_codon = int(line[3])
-                self._start_codon = self.start_codon - 1
+            elif line[2].startswith('start_codon'):
+                if line[2].endswith('_faux'):
+                    self._find_new_start = False
+                else:
+                    # 1-based public, 0-based private
+                    self._find_new_start = True
+                    self.start_codon = int(line[3])
+                    self._start_codon = self.start_codon - 1
             elif line[2] == 'stop_codon':
                 self.stop_codon = int(line[3])
                 self._stop_codon = self.stop_codon - 1
@@ -1215,132 +1219,133 @@ class Transcript(object):
         transcript_warnings = []
         annotated_seq.append([])
         for seq in annotated_seq:
-            # build pairwise list of 'ATG's from annotated_seq and reference
-            ATG1 = sequence.find('ATG', max(0, ATG_counter1-2))
-            ATG2 = ref_sequence.find('ATG', max(0, ATG_counter2-2))
-            ATG_temp1 = ATG_counter1
-            ATG_temp2 = ATG_counter2
-            while (ATG1 >= 0 or ATG2 >= 0) and ATG_limit > 0:
-                if seq_previous[-1][3]*strand > start*strand:
-                    ATG_limit -= 1
-                if ATG1 >= 0 and ATG2 < 0:
-                    # New sequence contains start codon while reference doesn't
-                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                        relevant_seq = seq_previous[-1]
-                    else:
-                        found_all_variants = False
-                        if seq_previous[-1][2] != [()]:
-                            relevant_seq = [seq_previous[-1]]
-                        else:
-                            relevant_seq = []
-                        i = -2
-                        while not found_all_variants and i > -1*len(seq_previous):
-                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1
-                                            and seq_previous[i][2] != [()]):
-                                relevant_seq.append(seq_previous[i])
-                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                                found_all_variants = True
-                            i -= 1
-                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
-                     ATG1 >= coding_start and coding_start >= 0, True, False])
-                    ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                    ATG1 = sequence.find('ATG', ATG_counter1)
-                elif ATG1 < 0 and ATG2 >= 0:
-                    # Reference contains start codon but new sequence doesn't
-                    if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                        relevant_seq = seq_previous[-1]
-                    else:
-                        found_all_variants = False
-                        if seq_previous[-1][2] != [()]:
-                            relevant_seq = [seq_previous[-1]]
-                        else:
-                            relevant_seq = []
-                        i = -2
-                        while not found_all_variants and i > -1*len(seq_previous):
-                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2
-                                            and seq_previous[i][2] != [()]):
-                                relevant_seq.append(seq_previous[i])
-                            if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                                found_all_variants = True
-                            i -= 1
-                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
-                     ATG2 >= ref_start and ref_start >= 0, False, True])
-                    ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
-                elif ATG1-ATG_temp1 == ATG2-ATG_temp2:
-                    # Reference and new sequence contain start in same place
-                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                        relevant_seq = seq_previous[-1]
-                    else:
-                        found_all_variants = False
-                        relevant_seq = []
-                        i = -1
-                        while not found_all_variants and i > -1*len(seq_previous):
-                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1
-                                            and seq_previous[i][2] != [()]):
-                                relevant_seq.append(seq_previous[i])
-                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                                found_all_variants = True
-                            i -= 1
-                        if relevant_seq == []:
+            if self._find_new_start:
+                # build pairwise list of 'ATG's from annotated_seq and reference
+                ATG1 = sequence.find('ATG', max(0, ATG_counter1-2))
+                ATG2 = ref_sequence.find('ATG', max(0, ATG_counter2-2))
+                ATG_temp1 = ATG_counter1
+                ATG_temp2 = ATG_counter2
+                while (ATG1 >= 0 or ATG2 >= 0) and ATG_limit > 0:
+                    if seq_previous[-1][3]*strand > start*strand:
+                        ATG_limit -= 1
+                    if (ATG1-ATG_temp1 == ATG2-ATG_temp2):
+                        # Reference and new sequence contain start in same place
+                        if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
                             relevant_seq = seq_previous[-1]
-                    ATGs.append([ATG1, ATG2, relevant_seq,
-                     ATG2 >= ref_start and ref_start >= 0, False, False])
-                    ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                    ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    ATG1 = sequence.find('ATG', ATG_counter1)
-                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
-                elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
-                    # Start codon happens in new sequence before ref sequence
-                    if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                        relevant_seq = seq_previous[-1]
-                    else:
-                        found_all_variants = False
-                        if seq_previous[-1][2] != [()]:
-                            relevant_seq = [seq_previous[-1]]
                         else:
+                            found_all_variants = False
                             relevant_seq = []
-                        i = -2
-                        while not found_all_variants and i > -1*len(seq_previous):
-                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(sequence) - len(prev_seq)) >= ATG1
-                                            and seq_previous[i][2] != [()]):
-                                relevant_seq.append(seq_previous[i])
-                            if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                                found_all_variants = True
-                            i -= 1
-                    ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
-                        ATG1 >= coding_start and coding_start >= 0, True, False])
-                    ATG_counter1 = max(ATG_counter1, ATG1 + 1)
-                    ATG1 = sequence.find('ATG', ATG_counter1)
-                else:
-                    # Start codon happens in ref sequence before new sequence
-                    if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                        relevant_seq = seq_previous[-1]
-                    else:
-                        found_all_variants = False
-                        if seq_previous[-1][2] != [()]:
-                            relevant_seq = [seq_previous[-1]]
+                            i = -1
+                            while not found_all_variants and i > -1*len(seq_previous):
+                                prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                                if ((len(sequence) - len(prev_seq)) >= ATG1
+                                                and seq_previous[i][2] != [()]):
+                                    relevant_seq.append(seq_previous[i])
+                                if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                    found_all_variants = True
+                                i -= 1
+                            if relevant_seq == []:
+                                relevant_seq = seq_previous[-1]
+                        ATGs.append([ATG1, ATG2, relevant_seq,
+                         ATG2 >= ref_start and ref_start >= 0, False, False])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                        ATG1 = sequence.find('ATG', ATG_counter1)
+                        ATG2 = ref_sequence.find('ATG', ATG_counter2)
+                    elif ATG1 >= 0 and ATG2 < 0:
+                        # New sequence contains start codon while reference doesn't
+                        if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                            relevant_seq = seq_previous[-1]
                         else:
-                            relevant_seq = []
-                        i = -2
-                        while not found_all_variants and i > -1*len(seq_previous):
-                            prev_seq = ''.join([x[0] for x in seq_previous[i:]])
-                            if ((len(ref_sequence) - len(prev_seq)) >= ATG2
-                                            and seq_previous[i][2] != [()]):
-                                relevant_seq.append(seq_previous[i])
-                            if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                                found_all_variants = True
-                            i -= 1
-                    ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
-                        ATG2 >= ref_start and ref_start >= 0, False, True])
-                    ATG_counter2 = max(ATG_counter2, ATG2 + 1)
-                    ATG2 = ref_sequence.find('ATG', ATG_counter2)
-            ATG_counter1 = len(sequence)
-            ATG_counter2 = len(ref_sequence)
+                            found_all_variants = False
+                            if seq_previous[-1][2] != [()]:
+                                relevant_seq = [seq_previous[-1]]
+                            else:
+                                relevant_seq = []
+                            i = -2
+                            while not found_all_variants and i > -1*len(seq_previous):
+                                prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                                if ((len(sequence) - len(prev_seq)) >= ATG1
+                                                and seq_previous[i][2] != [()]):
+                                    relevant_seq.append(seq_previous[i])
+                                if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                    found_all_variants = True
+                                i -= 1
+                        ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
+                         ATG1 >= coding_start and coding_start >= 0, True, False])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                        ATG1 = sequence.find('ATG', ATG_counter1)
+                    elif ATG1 < 0 and ATG2 >= 0:
+                        # Reference contains start codon but new sequence doesn't
+                        if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                            relevant_seq = seq_previous[-1]
+                        else:
+                            found_all_variants = False
+                            if seq_previous[-1][2] != [()]:
+                                relevant_seq = [seq_previous[-1]]
+                            else:
+                                relevant_seq = []
+                            i = -2
+                            while not found_all_variants and i > -1*len(seq_previous):
+                                prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                                if ((len(ref_sequence) - len(prev_seq)) >= ATG2
+                                                and seq_previous[i][2] != [()]):
+                                    relevant_seq.append(seq_previous[i])
+                                if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                                    found_all_variants = True
+                                i -= 1
+                        ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
+                         ATG2 >= ref_start and ref_start >= 0, False, True])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                        ATG2 = ref_sequence.find('ATG', ATG_counter2)
+                    elif ATG1-ATG_temp1 < ATG2-ATG_temp2:
+                        # Start codon happens in new sequence before ref sequence
+                        if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                            relevant_seq = seq_previous[-1]
+                        else:
+                            found_all_variants = False
+                            if seq_previous[-1][2] != [()]:
+                                relevant_seq = [seq_previous[-1]]
+                            else:
+                                relevant_seq = []
+                            i = -2
+                            while not found_all_variants and i > -1*len(seq_previous):
+                                prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                                if ((len(sequence) - len(prev_seq)) >= ATG1
+                                                and seq_previous[i][2] != [()]):
+                                    relevant_seq.append(seq_previous[i])
+                                if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
+                                    found_all_variants = True
+                                i -= 1
+                        ATGs.append([ATG1, ATG1-ATG_temp1+ATG_temp2, relevant_seq,
+                            ATG1 >= coding_start and coding_start >= 0, True, False])
+                        ATG_counter1 = max(ATG_counter1, ATG1 + 1)
+                        ATG1 = sequence.find('ATG', ATG_counter1)
+                    else:
+                        # Start codon happens in ref sequence before new sequence
+                        if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                            relevant_seq = seq_previous[-1]
+                        else:
+                            found_all_variants = False
+                            if seq_previous[-1][2] != [()]:
+                                relevant_seq = [seq_previous[-1]]
+                            else:
+                                relevant_seq = []
+                            i = -2
+                            while not found_all_variants and i > -1*len(seq_previous):
+                                prev_seq = ''.join([x[0] for x in seq_previous[i:]])
+                                if ((len(ref_sequence) - len(prev_seq)) >= ATG2
+                                                and seq_previous[i][2] != [()]):
+                                    relevant_seq.append(seq_previous[i])
+                                if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
+                                    found_all_variants = True
+                                i -= 1
+                        ATGs.append([ATG2-ATG_temp2+ATG_temp1, ATG2, relevant_seq,
+                            ATG2 >= ref_start and ref_start >= 0, False, True])
+                        ATG_counter2 = max(ATG_counter2, ATG2 + 1)
+                        ATG2 = ref_sequence.find('ATG', ATG_counter2)
+                ATG_counter1 = len(sequence)
+                ATG_counter2 = len(ref_sequence)
             if seq == []:
                 break
             seq_previous.append(seq)
@@ -1497,7 +1502,7 @@ class Transcript(object):
                 ref_counter += len(seq[0])
                 continue
         # find location of start codon in annotated_seq v. reference
-        if not ATGs:
+        if not ATGs and self._find_new_start:
             if not return_protein:
                 return {}
             else:
@@ -1508,12 +1513,17 @@ class Transcript(object):
         # associated with frame shift]
         frame_shifts = []
         counter, ref_counter = 0, 0 # hold edited transcript level coordinates
-        reading_frame, start_codon, ref_atg, start_warnings = self._atg_choice(
+        if self._find_new_start:
+            reading_frame, start_codon, ref_atg, start_warnings = self._atg_choice(
                                     ATGs,
                                     only_novel_upstream=only_novel_upstream,
                                     only_downstream=only_downstream,
                                     only_reference=only_reference
                                 )
+        else:
+            reading_frame = 0 ##???
+            start_codon = ['seq','ref']###?
+            start_warnings = "hello no known start codon" ###??
         if start_codon is None:
             warnings.warn(''.join(['Start codon disrupted for transcript ',
                                         self.transcript_id,
