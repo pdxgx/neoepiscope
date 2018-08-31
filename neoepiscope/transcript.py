@@ -253,13 +253,7 @@ class Transcript(object):
             self.stop_codon_index = bisect.bisect_left(self.intervals,
                                                         self._stop_codon)
         else:
-            if self.rev_strand:
-                self.stop_codon = int(CDS[0][3])
-            else:
-                self.stop_codon = int(CDS[-1][4])
-            self._stop_codon = self.stop_codon - 1
-            self.stop_codon_index  = bisect.bisect_left(self.intervals,
-                                                        self._stop_codon)
+            self.stop_codon_index  = None
 
     def reset(self, reference=False):
         """ Resets to last save point or reference (i.e., removes all edits).
@@ -1385,15 +1379,16 @@ class Transcript(object):
                     ref_start = ref_counter + (
                             start - seq[2][1][1] + 2 * self.rev_strand
                         ) * strand
-                if (ref_stop < 0
-                    and seq[2][1][1]*strand + len(seq[2][1][2]) > stop * strand):
-                    coding_stop = counter + (
-                                stop - seq[2][0][1] + 2 * self.rev_strand
-                            ) * strand
-                    ref_stop = ref_counter + (
-                                stop - seq[2][1][1] + 2 * self.rev_strand
-                            ) * strand
-                    TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
+                if stop is not None:
+                    if (ref_stop < 0
+                        and seq[2][1][1]*strand + len(seq[2][1][2]) > stop * strand):
+                        coding_stop = counter + (
+                                    stop - seq[2][0][1] + 2 * self.rev_strand
+                                ) * strand
+                        ref_stop = ref_counter + (
+                                    stop - seq[2][1][1] + 2 * self.rev_strand
+                                ) * strand
+                        TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
                 sequence += seq[2][0][3]
                 counter += len(seq[2][0][3])
                 if self.rev_strand:
@@ -1413,15 +1408,16 @@ class Transcript(object):
                     ref_start = ref_counter + (
                                 start - seq[3] + 2 * self.rev_strand
                             ) * strand
-                if (ref_stop < 0
-                    and seq[3]*strand + len(seq[0]) > stop * strand):
-                    coding_stop = counter + (
-                                stop - seq[3] + 2 * self.rev_strand
-                            ) * strand
-                    ref_stop = ref_counter + (
-                                stop - seq[3] + 2 * self.rev_strand
-                            ) * strand
-                    TAA_TGA_TAG = seq
+                if stop is not None:
+                    if (ref_stop < 0
+                        and seq[3]*strand + len(seq[0]) > stop * strand):
+                        coding_stop = counter + (
+                                    stop - seq[3] + 2 * self.rev_strand
+                                ) * strand
+                        ref_stop = ref_counter + (
+                                    stop - seq[3] + 2 * self.rev_strand
+                                ) * strand
+                        TAA_TGA_TAG = seq
                 if not ((seq[1] == 'G' and include_germline == 2) or
                     (seq[1] == 'S' and include_somatic == 2)):
 #                    ref_sequence += seq[0]
@@ -1447,15 +1443,16 @@ class Transcript(object):
                     ref_start = ref_counter + (
                                 start - seq[3] + 2*self.rev_strand
                             ) * strand
-                if (ref_stop < 0
-                    and seq[3] * strand + len(seq[0]) > stop * strand):
-                    coding_stop = counter + (
-                                stop - seq[3] + 2 * self.rev_strand
-                            ) * strand
-                    ref_stop = ref_counter + (
-                                stop - seq[3] + 2*self.rev_strand
-                            ) * strand
-                    TAA_TGA_TAG = seq
+                if stop is not None:
+                    if (ref_stop < 0
+                        and seq[3] * strand + len(seq[0]) > stop * strand):
+                        coding_stop = counter + (
+                                    stop - seq[3] + 2 * self.rev_strand
+                                ) * strand
+                        ref_stop = ref_counter + (
+                                    stop - seq[3] + 2*self.rev_strand
+                                ) * strand
+                        TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or
@@ -1472,15 +1469,16 @@ class Transcript(object):
                     ref_start = ref_counter + (
                                 start - seq[3] + 2 * self.rev_strand
                             ) * strand
-                if (ref_stop < 0
-                    and seq[3] * strand + len(seq[0]) > stop * strand):
-                    coding_stop = counter + (
-                                stop - seq[3] + 2*self.rev_strand
-                            ) * strand
-                    ref_stop = ref_counter + (
-                                stop - seq[3] + 2*self.rev_strand
-                            ) * strand
-                    TAA_TGA_TAG = seq
+                if stop is not None:
+                    if (ref_stop < 0
+                        and seq[3] * strand + len(seq[0]) > stop * strand):
+                        coding_stop = counter + (
+                                    stop - seq[3] + 2*self.rev_strand
+                                ) * strand
+                        ref_stop = ref_counter + (
+                                    stop - seq[3] + 2*self.rev_strand
+                                ) * strand
+                        TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
                 if ((seq[1] == 'G' and include_germline == 2) or
