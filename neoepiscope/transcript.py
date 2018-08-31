@@ -1195,7 +1195,7 @@ class Transcript(object):
         sequence, ref_sequence = '', '' # hold flattened nucleotide sequence
         start = self.start_codon # redundant var; can change
         stop = self.stop_codon # redundant var; can change
-        if start is None or stop is None:
+        if start is None:
             if not return_protein:
                 return {}
             else:
@@ -1964,7 +1964,6 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     contig = 'chr' + contig
                 if ',' in tokens[6]:
                     alternatives = tokens[6].split(',')
-                    print('\t'.join([tokens[1], tokens[2]]))
                 else:
                     alternatives = [tokens[6]]
                 for i in range(0, min(len(alternatives), 2)):
@@ -1990,7 +1989,6 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         alt = alternatives[i][len(tokens[5]):]
                         end = pos + 1
                     if len(alternatives) > 1:
-                        print(i)
                         if i == 0:
                             if tokens[1] == '1':
                                 gen1 = '1'
@@ -2005,7 +2003,6 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                             else:
                                 gen1 = '0'
                                 gen2 = '1' 
-                        print('\t'.join([gen1, gen2]))
                     else:
                         gen1 = tokens[1]
                         gen2 = tokens[2]
@@ -2023,7 +2020,6 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                                                               tokens[7],
                                                               mutation_type])
                 if len(alternatives) > 1:
-                    print('*****')
     return affected_transcripts
 
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
