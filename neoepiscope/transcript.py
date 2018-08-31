@@ -1831,6 +1831,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """
     cds_dict = collections.defaultdict(list)
     # Parse GTF to obtain CDS/stop codon info
+    cds_lines = collections.defaultdict(list)
     with xopen(None, gtf_file) as f:
         for line in f:
             if line[0] != '#':
@@ -1852,13 +1853,37 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                                     tokens[2], int(tokens[3]),
                                                     int(tokens[4]), tokens[6],
                                                     transcript_type])
+                elif tokens[2] == 'CDS':
+                    cds_lines[transcript_id].append(tokens)
     # Sort cds_dict coordinates (left -> right) for each transcript
-    for transcript_id in cds_dict.keys():
+    for transcript_id in cds_dict:
+        current_cds = cds_lines[transcript_id]
         cds_dict[transcript_id].sort(key=lambda x: x[0])
         seq_types = [x[1] for x in cds_dict[transcript_id]]
         if 'start_codon' not in seq_types:
+            # Fake a start codon if we have strand info
+            try:
+                reverse_strand = current_cds[0][6] == '-'
+            except IndexError:
                 # Remove incompletely annotated transcript
-            del cds_dict[transcript_id]
+                del cds_dict[transcript_id]
+            else:
+                if reverse_strand:
+                    pos = max(
+                            map(int,[tokens[4] for tokens in cds_lines])
+                        ) - int(tokens[7])
+                    cds_dict[transcript_id].append([current_cds[0][0],
+                            'start_codon_faux', pos, pos - 2, '-',
+                            cds_dict[transcript_id][0][5]
+                        ])
+                else:
+                    pos = min(
+                            map(int,[tokens[3] for tokens in cds_lines])
+                        ) + int(tokens[7])
+                    cds_dict[transcript_id].append([current_cds[0][0],
+                            'start_codon_faux', pos, pos + 2, '+',
+                            cds_dict[transcript_id][0][5]
+                        ])
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = os.path.join(dictdir, 'transcript_to_CDS.pickle')
