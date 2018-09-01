@@ -1521,9 +1521,10 @@ class Transcript(object):
                                     only_reference=only_reference
                                 )
         else:
-            reading_frame = 0 ##???
-            start_codon = ['seq','ref']###?
-            start_warnings = "hello no known start codon" ###??
+            reading_frame = 0
+            start_codon = [coding_start, ref_start, True, False, False]
+            ref_atg = [coding_start, ref_start, True, False, False] 
+            start_warnings = ['no_annotated_start_codon']
         if start_codon is None:
             warnings.warn(''.join(['Start codon disrupted for transcript ',
                                         self.transcript_id,
@@ -1861,7 +1862,9 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                 )
                     if transcript_type in ['protein_coding', 
                                            'nonsense_mediated_decay', 
-                                           'polymorphic_pseudogene']:
+                                           'polymorphic_pseudogene',
+                                           'IG_V_gene',
+                                           'TR_V_gene']:
                         # Create new dictionary entry for new transcripts
                         cds_dict[transcript_id].append([tokens[0],
                                                     tokens[2], int(tokens[3]),
@@ -2063,7 +2066,8 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
 def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                                   only_novel_upstream, only_downstream,
                                   only_reference, reference_index, size_list,
-                                  NMD, PP, include_germline=2, 
+                                  NMD, PP, IGV, TRV, allow_nonstart, 
+                                  allow_nonstop, include_germline=2, 
                                   include_somatic=1, protein_fasta=False):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
@@ -2092,6 +2096,8 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                 reference comparison
         NMD: whether to include nonsense mediated decay transcripts (boolean)
         PP: whether to include polymorphic pseudogene transcripts (boolean)
+        IGV: whether to include IGV transcripts (boolean)
+        TRV: whether to include TRV transcripts (boolean)
         return value: dictionary linking neoepitopes to their associated
             metadata
         """
@@ -2099,9 +2105,21 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
     fasta_entries = collections.defaultdict(set)
     for affected_transcript in relevant_transcripts:
         # Filter out NMD and polymorphic pseudogene transcripts if relevant
-        if affected_transcript[5] == 'nonsense_mediated_decay' and not NMD:
+        if (cds_dict[affected_transcript][0][5] == 'nonsense_mediated_decay' 
+                    and not NMD):
             continue
-        elif affected_transcript[5] == 'polymorphic_pseudogene' and not PP:
+        elif (cds_dict[affected_transcript][0][5] == 'polymorphic_pseudogene' 
+                    and not PP):
+            continue
+        elif cds_dict[affected_transcript][0][5] == 'IG_V_gene' and not IGV:
+            continue
+        elif cds_dict[affected_transcript][0][5] == 'TR_V_gene' and not TRV:
+            continue
+        elif ('start_codon' not in [x[1] for x in cds_dict[affected_transcript]] 
+                    and not allow_nonstart):
+            continue
+        elif ('stop_codon' not in [x[1] for x in cds_dict[affected_transcript]] 
+                    and not allow_nonstop):
             continue
         # Create transcript object
         transcriptA = Transcript(reference_index,
