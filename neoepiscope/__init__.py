@@ -168,6 +168,18 @@ def main():
             help='enumerate neoepitopes from polymorphic pseudogene'
             ' transcripts'
         )
+    call_parser.add_argument('--IGV', required=False, action='store_true',
+            help='enumerate neoepitopes IGV transcripts'
+        )
+    call_parser.add_argument('--TRV', required=False, action='store_true',
+            help='enumerate neoepitopes from TRV transcripts'
+        )
+    call_parser.add_argument('--allow_nonstart', required=False, action='store_true',
+            help='enumerate neoepitopes from transcripts without annotated start codons'
+        )
+    call_parser.add_argument('--allow_nonstop', required=False, action='store_true',
+            help='enumerate neoepitopes from transcripts without annotated stop codons'
+        )
     args = parser.parse_args()
     if args.subparser_name == 'index':
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
@@ -437,7 +449,7 @@ def main():
             phasing = False
         else:
             phasing = True
-        # Determine whether to include NMD and polymorphic pseudogene transcripts
+        # Determine whether to include certain transcript types
         if args.NMD:
             NMD = True
         else:
@@ -446,6 +458,22 @@ def main():
             PP = True
         else:
             PP = False
+        if args.IGV:
+            IGV = True
+        else:
+            IGV = False
+        if args.TRV:
+            TRV = True
+        else:
+            TRV = False
+        if args.allow_nonstart:
+            allow_nonstart = True
+        else:
+            allow_nonstart = False
+        if args.allow_nonstop:
+            allow_nonstop = True
+        else:
+            allow_nonstop = False
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
                                                     interval_dict, phasing)
@@ -458,6 +486,9 @@ def main():
                                                     only_reference,
                                                     reference_index,
                                                     size_list, NMD, PP,
+                                                    IGV, TRV,
+                                                    allow_nonstart,
+                                                    allow_nonstop
                                                     include_germline, 
                                                     include_somatic)
         else:
@@ -469,6 +500,9 @@ def main():
                                                     only_reference,
                                                     reference_index,
                                                     size_list, NMD, PP,
+                                                    IGV, TRV,
+                                                    allow_nonstart,
+                                                    allow_nonstop,
                                                     include_germline, 
                                                     include_somatic,
                                                     protein_fasta=True
