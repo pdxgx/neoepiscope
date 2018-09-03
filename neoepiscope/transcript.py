@@ -1886,17 +1886,15 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 del cds_dict[transcript_id]
             else:
                 if reverse_strand:
-                    pos = max(
-                            map(int,[tokens[4] for tokens in cds_lines])
-                        ) - int(tokens[7])
+                    current_cds.sort(key=lambda x: int(x[4]), reverse=True)
+                    pos = int(current_cds[0][4]) - int(current_cds[0][7])
                     cds_dict[transcript_id].append([current_cds[0][0],
                             'start_codon_faux', pos, pos - 2, '-',
                             cds_dict[transcript_id][0][5]
                         ])
                 else:
-                    pos = min(
-                            map(int,[tokens[3] for tokens in cds_lines])
-                        ) + int(tokens[7])
+                    current_cds.sort(key=lambda x: int(x[3]))
+                    pos = current_cds[0][3] + current_cds[0][7]
                     cds_dict[transcript_id].append([current_cds[0][0],
                             'start_codon_faux', pos, pos + 2, '+',
                             cds_dict[transcript_id][0][5]
