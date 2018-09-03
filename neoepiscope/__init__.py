@@ -488,7 +488,7 @@ def main():
                                                     size_list, NMD, PP,
                                                     IGV, TRV,
                                                     allow_nonstart,
-                                                    allow_nonstop
+                                                    allow_nonstop,
                                                     include_germline, 
                                                     include_somatic)
         else:
