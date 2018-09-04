@@ -1838,7 +1838,8 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     """ References cds_dict to get cds bounds for later Bowtie query
         Keys in the dictionary are transcript IDs, while entries are lists of
             relevant CDS/stop codon data
-            Data: [chromosome, start, stop, +/- strand]
+            Data: [chromosome, sequence type, start, stop, 
+                    +/- strand, transcript type]
         Writes cds_dict as a pickled dictionary
         gtf_file: input gtf file to process
         dictdir: path to directory to store pickled dicts
@@ -1857,7 +1858,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                                 r'\1', tokens[8]
                                 )
                     transcript_type = re.sub(
-                                r'.*transcript_type \"([a-z_]+)\"[;].*',
+                                r'.*transcript_type \"([A-Za-z_]+)\"[;].*',
                                 r'\1', tokens[8]
                                 )
                     if transcript_type in ['protein_coding', 
