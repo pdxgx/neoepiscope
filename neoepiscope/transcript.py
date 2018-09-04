@@ -1845,8 +1845,8 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         Return value: dictionary
     """
     cds_dict = collections.defaultdict(list)
-    # Parse GTF to obtain CDS/stop codon info
     cds_lines = collections.defaultdict(list)
+    # Parse GTF to obtain CDS/stop codon info
     with xopen(None, gtf_file) as f:
         for line in f:
             if line[0] != '#':
@@ -1889,7 +1889,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                     current_cds.sort(key=lambda x: int(x[4]), reverse=True)
                     pos = int(current_cds[0][4]) - int(current_cds[0][7])
                     cds_dict[transcript_id].append([current_cds[0][0],
-                            'start_codon_faux', pos, pos - 2, '-',
+                            'start_codon_faux', pos - 2, pos, '-',
                             cds_dict[transcript_id][0][5]
                         ])
                 else:
