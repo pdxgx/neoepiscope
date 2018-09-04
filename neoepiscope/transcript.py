@@ -218,8 +218,8 @@ class Transcript(object):
                 else:
                     # 1-based public, 0-based private
                     self._find_new_start = True
-                    self.start_codon = int(line[3])
-                    self._start_codon = self.start_codon - 1
+                self.start_codon = int(line[3])
+                self._start_codon = self.start_codon - 1
             elif line[2] == 'stop_codon':
                 self.stop_codon = int(line[3])
                 self._stop_codon = self.stop_codon - 1
@@ -1894,7 +1894,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                         ])
                 else:
                     current_cds.sort(key=lambda x: int(x[3]))
-                    pos = current_cds[0][3] + current_cds[0][7]
+                    pos = int(current_cds[0][3]) + int(current_cds[0][7])
                     cds_dict[transcript_id].append([current_cds[0][0],
                             'start_codon_faux', pos, pos + 2, '+',
                             cds_dict[transcript_id][0][5]
