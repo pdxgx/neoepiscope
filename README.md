@@ -115,10 +115,18 @@ Options:
 ```-u, --upstream_atgs```             handling of translation from upstream start codons - ("novel" (default) only, "all", "none", "reference" only)
 
 ```-i, --isolate```                   isolate mutations - disables phasing of mutations which share a haplotype
+
 ```--NMD```                           enumerate neoepitopes from nonsense mediated decay transcripts
+
 ```--PP```                            enumerate neoepitopes from polymorphic pseudogene transcripts
-```--IGV```                           enumerate neoepitopes from IGV transcripts
-```--TRV```                            enumerate neoepitopes from TRV transcripts
+
+```--IGV```                           enumerate neoepitopes from IG V transcripts
+
+```--TRV```                           enumerate neoepitopes from TR V transcripts
+
+```--allow_nonstart```                enumerate neoepitopes from transcripts without annotated start codons
+
+```--allow_nonstop```                 enumerate neoepitopes from transcripts without annotated stop codons
 
 Using the `--build` option requires use of our download functionality to procure and index the required reference files for hg19 and/or GRCh38. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
 
@@ -138,4 +146,4 @@ Germline and somatic mutations can be handled in a variety of ways. The can be e
 
 The choice of start codon for a transcript can also be handled with flexibility. By default, the value for the `--upstream_atgs` argument is `none`, which specifies preferential use of the reference start codon for a transcript, or alternatively the nearest ATG downstream of it in the case of a disrupted reference start codon. Alternatively, the use of ```--upstream_atgs novel``` allows for the use of a novel ATG upstream of the reference start codon in the case of a disrupted start codon. A less conservative ```--upstream_atgs all``` uses the most upstream ATG, regardless of its novelty. For a conservative option, ```--upstream_atgs reference``` requires use of only the reference start codon, preventing enumeration of neoepitopes from a transcript if the reference start codon is disrupted.
 
-By default, `neoepiscope` only enumerates neoepitopes from protein coding transcripts. However, by specifying the `--NMD`, `--PP`, `--IGV`, and/or `--TRV` flags, you can additionally enumerate neoepitopes from nonsense mediated decay, polymorphic pseudogene transcripts, immunoglobulin variable transcripts, and/or T cell receptor variable transcripts respectively.
+By default, `neoepiscope` only enumerates neoepitopes from protein coding transcripts with annotated start and stop codons. However, by specifying the `--NMD`, `--PP`, `--IGV`, and/or `--TRV` flags, you can additionally enumerate neoepitopes from nonsense mediated decay, polymorphic pseudogene transcripts, immunoglobulin variable transcripts, and/or T cell receptor variable transcripts, respectively. For further flexibility, you can add the `--allow_nonstart` and/or `--allow_nonstop` to enumerate neoepitopes from transcripts without annotated start and/or stop codons, respectively.
