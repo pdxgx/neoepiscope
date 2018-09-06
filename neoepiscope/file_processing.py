@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 file_processing.py
 
@@ -29,7 +30,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 import subprocess
 import warnings
 import collections
@@ -95,7 +96,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
             print(line, file=f)
 
 
-def combine_vcf(vcf1, vcf2, outfile="Combined.vcf"):
+def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
     """ Combines VCFs
 
         No return value.
@@ -325,7 +326,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
 
         Return value: None.
     """
-    with open(output_file, "w") as o:
+    with open(output_file, "w") as output_stream:
         headers = [
             "Neoepitope",
             "Chromsome",
@@ -342,7 +343,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
                     headers.append("_".join([tool, allele, score_method]))
-        print("\t".join(headers), file=o)
+        print("\t".join(headers), file=output_stream)
         for epitope in sorted(neoepitopes.keys()):
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
@@ -372,7 +373,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 ]
                 for i in range(9, len(mutation)):
                     out_line.append(str(mutation[i]))
-                print("\t".join(out_line), file=o)
+                print("\t".join(out_line), file=output_stream)
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
@@ -409,5 +410,4 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     ]
                     for score in ep_scores:
                         out_line.append(str(score))
-                    print(out_line)
-                    print("\t".join(out_line), file=o)
+                    print("\t".join(out_line), file=output_stream)

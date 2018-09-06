@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 transcript.py
 
@@ -37,8 +38,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from __future__ import print_function
-import bowtie_index
+from __future__ import absolute_import, division, print_function
+from . import bowtie_index
 import collections
 import copy
 import bisect
@@ -1086,13 +1087,13 @@ class Transcript(object):
                 adj. deletion, allele seq, [mutation information]] for the alternate and
                 reference sequences, respectively.
         """
-        if end < start:
-            return []
         # Use 0-based coordinates internally
         if start is None:
             start = self.intervals[0] + 2
         if end is None:
             end = self.intervals[-1] + 1
+        if end < start:
+            return []
         if genome:
             # Capture only sequence between start and end
             edits, intervals = self.expressed_edits(
