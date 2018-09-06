@@ -98,9 +98,9 @@ Options:
 
 ```-v, --vcf```                       path to VCF file used to generate HapCUT2 output
 
-```-o, --output_file```		          path to output file
+```-o, --output```		                path to output file
 
-```-f, --fasta```					  output additional fasta file output
+```-f, --fasta```					            output additional fasta file output
 
 ```-k, --kmer-size```                 kmer size for neoepitope prediction (default 8-11 amino acids)
 
@@ -114,21 +114,21 @@ Options:
 
 ```-s, --somatic```                   how to handle somatic mutations (by default includes for neoepitope enumeration)
 
-```-u, --upstream_atgs```             handling of translation from upstream start codons - ("novel" (default) only, "all", "none", "reference" only)
+```-u, --upstream-atgs```             handling of translation from upstream start codons - ("novel" (default) only, "all", "none", "reference" only)
 
 ```-i, --isolate```                   isolate mutations - disables phasing of mutations which share a haplotype
 
-```--NMD```                           enumerate neoepitopes from nonsense mediated decay transcripts
+```--nmd```                           enumerate neoepitopes from nonsense mediated decay transcripts
 
-```--PP```                            enumerate neoepitopes from polymorphic pseudogene transcripts
+```--pp```                            enumerate neoepitopes from polymorphic pseudogene transcripts
 
-```--IGV```                           enumerate neoepitopes from IG V transcripts
+```--igv```                           enumerate neoepitopes from IG V transcripts
 
-```--TRV```                           enumerate neoepitopes from TR V transcripts
+```--trv```                           enumerate neoepitopes from TR V transcripts
 
-```--allow_nonstart```                enumerate neoepitopes from transcripts without annotated start codons
+```--allow-nonstart```                enumerate neoepitopes from transcripts without annotated start codons
 
-```--allow_nonstop```                 enumerate neoepitopes from transcripts without annotated stop codons
+```--allow-nonstop```                 enumerate neoepitopes from transcripts without annotated stop codons
 
 Using the `--build` option requires use of our download functionality to procure and index the required reference files for hg19 and/or GRCh38. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
 
