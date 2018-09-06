@@ -24,7 +24,7 @@ class TestTranscript(unittest.TestCase):
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.',
                                       strand] for (chrom, seq_type, start,
-                                                    end, strand) in
+                                                    end, strand, tx_type) in
                                       self.cds['ENST00000335295.4_1']],
                                       'ENST00000335295.4_1')
         # PTDSS2-001: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
@@ -32,7 +32,7 @@ class TestTranscript(unittest.TestCase):
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.',
                                       strand] for (chrom, seq_type, start,
-                                                    end, strand) in
+                                                    end, strand, tx_type) in
                                       self.cds['ENST00000308020.5_1']],
                                       'ENST00000308020.5_1')
         # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
@@ -40,7 +40,7 @@ class TestTranscript(unittest.TestCase):
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.',
                                       strand] for (chrom, seq_type, start,
-                                                    end, strand) in
+                                                    end, strand, tx_type) in
                                       self.cds['ENST00000317078.1_1']],
                                       'ENST00000317078.1_1')
         # CAPRIN1-001: 4108bp transcript w/ 19 exons (18/19 coding) --> 709aa peptide
@@ -48,7 +48,7 @@ class TestTranscript(unittest.TestCase):
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.',
                                       strand] for (chrom, seq_type, start,
-                                                    end, strand) in
+                                                    end, strand, tx_type) in
                                       self.cds['ENST00000341394.8_1']],
                                       'ENST00000341394.8_1')
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
@@ -56,9 +56,9 @@ class TestTranscript(unittest.TestCase):
                                     [[str(chrom).replace('chr', ''), 'N/A', seq_type,
                                       str(start), str(end), '.',
                                       strand] for (chrom, seq_type, start,
-                                                    end, strand) in
-                                      [['chr11', 'exon', 65190245, 65190854, '+'],
-                                       ['chr11', 'exon', 65191098, 65192298, '+']]],
+                                                    end, strand, tx_type) in
+                                      [['chr11', 'exon', 65190245, 65190854, '+', 'lincRNA'],
+                                       ['chr11', 'exon', 65191098, 65192298, '+', 'lincRNA']]],
                                       'ENST00000499732.2_1')
     def test_transcript_structure(self):
         """Fails if structure of unedited transcript is incorrect"""
