@@ -2228,7 +2228,4 @@ def get_peptides_from_transcripts(relevant_transcripts, VAF_pos, cds_dict,
                             fasta_entries[affected_transcript].add(B_protein)
             transcriptA.reset(reference=True)
             transcriptB.reset(reference=True)
-    if not protein_fasta:
-        return neoepitopes
-    else:
-        return neoepitopes, fasta_entries
+    return neoepitopes, fasta_entries
