@@ -479,7 +479,7 @@ def main():
                                                     allow_nonstart,
                                                     allow_nonstop,
                                                     include_germline, 
-                                                    include_somatic
+                                                    include_somatic,
                                                     protein_fasta=args.fasta
                                                 )
         # If neoepitopes are found, get binding scores and write results
