@@ -15,17 +15,17 @@ class TestGTFprocessing(unittest.TestCase):
         self.Ytree = cds_to_tree(self.Ycds, 'NA', pickle_it=False)
     def test_transcript_to_CDS(self):
         """Fails if dictionary was built incorrectly"""
-        self.assertEqual(len(self.Ycds.keys()), 164)
+        self.assertEqual(len(self.Ycds.keys()), 220)
     def test_CDS_tree(self):
         """Fails if dictionary was built incorrectly"""
         self.assertEqual(len(self.Ytree.keys()), 1)
-        self.assertEqual(len(self.Ytree['chrY']), 2174)
+        self.assertEqual(len(self.Ytree['chrY']), 2585)
     def test_transcript_extraction(self):
         """Fails if incorrect transcripts are pulled"""
         self.assertEqual(
                         len(get_transcripts_from_tree('chrY', 150860,
                                                       150861, self.Ytree)),
-                        3
+                        10
                     )
         self.coordinate_search = list(self.Ytree['chrY'].search(150860,
                                                                 150861))
@@ -35,7 +35,14 @@ class TestGTFprocessing(unittest.TestCase):
         self.transcripts.sort()
         self.assertEqual(self.transcripts, ['ENST00000381657.7_3_PAR_Y',
                                             'ENST00000381663.8_3_PAR_Y',
-                                            'ENST00000399012.6_3_PAR_Y'])
+                                            'ENST00000399012.6_3_PAR_Y',
+                                            'ENST00000415337.6_3_PAR_Y',
+                                            'ENST00000429181.6_2_PAR_Y',
+                                            'ENST00000430923.7_3_PAR_Y',
+                                            'ENST00000443019.6_2_PAR_Y',
+                                            'ENST00000445062.6_2_PAR_Y',
+                                            'ENST00000447472.6_3_PAR_Y',
+                                            'ENST00000448477.6_2_PAR_Y'])
 class TestVCFmerging(unittest.TestCase):
     """Tests proper merging of somatic and germline VCFS"""
     def setUp(self):
@@ -93,8 +100,8 @@ class TestVAFpos(unittest.TestCase):
         self.mutect = os.path.join(self.base_dir, 'tests', 'Ychrom.mutect.vcf')
     def test_position(self):
         """Fails if incorrect positions are returned"""
-        self.assertEqual(get_VAF_pos(self.varscan), 5)
-        self.assertEqual(get_VAF_pos(self.mutect), None)
+        self.assertEqual(get_vaf_pos(self.varscan), 5)
+        self.assertEqual(get_vaf_pos(self.mutect), None)
 class TestHaplotypeProcessing(unittest.TestCase):
     """Tests proper processing of HAPCUT2 files"""
     def setUp(self):
@@ -145,6 +152,9 @@ class TestHaplotypeProcessing(unittest.TestCase):
                                                         True, False, False,
                                                         self.reference_index,
                                                         [8,9,10,11],
+                                                        False, False, False,
+                                                        False, False, False,
+                                                        2, 1,
                                                         protein_fasta=True
                                                         )
         self.assertEqual(len(neoepitopes.keys()), 70)
@@ -193,7 +203,6 @@ class TestBindingPrediction(unittest.TestCase):
                                                         '90.61212500000003',
                                                         '36618.75556827501'
                                                 )])
-                                        # pvccqc ki
         self.assertEqual(new_neoepitopes['PVCCPCKI'], [('11', 71277229,
                                                         'A', 'C', 'V',
                                                         15.7,
