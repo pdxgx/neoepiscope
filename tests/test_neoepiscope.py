@@ -31,16 +31,21 @@ SOFTWARE.
 from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
 import os.path as path, sys
-current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from neoepiscope import * # Import package in same directory as tests
+
+current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
+sys.path.insert(0, current_dir[: current_dir.rfind(path.sep)])
+from neoepiscope import *  # Import package in same directory as tests
+
 sys.path.pop(0)
 
 import unittest
 import filecmp
 import os
 
-neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(getsourcefile(lambda:0)))))
+neoepiscope_dir = os.path.dirname(
+    os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
+)
+
 
 class TestGTFprocessing(unittest.TestCase):
     """Tests proper creation of dictionaries store GTF data"""

@@ -51,9 +51,7 @@ from .transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from .binding_scores import (
-    gather_binding_scores
-)
+from .binding_scores import gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,
     combine_vcf,
@@ -110,14 +108,8 @@ def main():
             "phasing with HAPCUT2"
         ),
     )
-    download_parser = subparsers.add_parser(
-        "download",
-        help="downloads dependencies",
-    )
-    test_parser = subparsers.add_parser(
-        "test",
-        help="runs all unit tests",
-    )
+    download_parser = subparsers.add_parser("download", help="downloads dependencies")
+    test_parser = subparsers.add_parser("test", help="runs all unit tests")
     prep_parser = subparsers.add_parser(
         "prep", help=("combines HAPCUT2 output with unphased variants for call mode")
     )
@@ -142,7 +134,7 @@ def main():
         "--output",
         type=str,
         required=False,
-        default='-',
+        default="-",
         help="output path to column-swapped VCF; use - for stdout",
     )
     # Merger parser options (merges somatic and germline VCFs)
@@ -153,9 +145,12 @@ def main():
         "-s", "--somatic", type=str, required=True, help="input path to somatic VCF"
     )
     merge_parser.add_argument(
-        "-o", "--output", type=str, required=False,
-        default='-',
-        help="output path to combined VCF; use - for stdout"
+        "-o",
+        "--output",
+        type=str,
+        required=False,
+        default="-",
+        help="output path to combined VCF; use - for stdout",
     )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
@@ -197,7 +192,7 @@ def main():
         "--merged-hapcut2-output",
         type=str,
         required=False,
-        default='-',
+        default="-",
         help="path to output of prep subcommand; use - for stdin",
     )
     call_parser.add_argument(
@@ -240,9 +235,12 @@ def main():
         "see documentation online for more information",
     )
     call_parser.add_argument(
-        "-o", "--output", type=str, required=False,
-        default='-',
-        help="path to output file; use - for stdout"
+        "-o",
+        "--output",
+        type=str,
+        required=False,
+        default="-",
+        help="path to output file; use - for stdout",
     )
     call_parser.add_argument(
         "-f",
@@ -337,12 +335,14 @@ def main():
     args = parser.parse_args()
     if args.subparser_name == "download":
         from download import NeoepiscopeDownloader
+
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "test":
         import unittest
+
         # get setup.py directory
-        setup_file = sys.modules['__main__'].__file__
+        setup_file = sys.modules["__main__"].__file__
         setup_dir = os.path.abspath(os.path.dirname(setup_file))
         # use the default shared TestLoader instance
         test_loader = unittest.defaultTestLoader
@@ -737,6 +737,7 @@ def main():
             sys.exit("No neoepitopes found")
     else:
         parser.print_usage()
+
 
 if __name__ == "__main__":
     main()

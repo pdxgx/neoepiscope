@@ -40,6 +40,7 @@ from operator import itemgetter
 from collections import defaultdict
 from bisect import bisect_right
 import sys
+
 # Python 2-3 compatibility
 try:
     xrange
@@ -47,18 +48,25 @@ except NameError:
     xrange = range
 
 if sys.version_info[0] > 2:
+
     def byte_readline(fh):
-        return fh.readline().decode(encoding='UTF-8')
-    #we need a version of ord that does nothing in python 3
-    #but regular ord is still needed on refname reads thanks to
-    #our byte_readline
+        return fh.readline().decode(encoding="UTF-8")
+
+    # we need a version of ord that does nothing in python 3
+    # but regular ord is still needed on refname reads thanks to
+    # our byte_readline
     def ord2or3(chr):
         return chr
+
+
 else:
+
     def byte_readline(fh):
         return fh.readline()
+
     def ord2or3(chr):
         return ord(chr)
+
 
 class BowtieIndexReference(object):
     """
