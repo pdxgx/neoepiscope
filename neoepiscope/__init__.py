@@ -39,7 +39,7 @@ from file_processing import (
     combine_vcf,
     prep_hapcut_output,
     which,
-    get_VAF_pos,
+    get_vaf_pos,
     write_results,
 )
 from operator import itemgetter
@@ -91,8 +91,7 @@ def main():
         ),
     )
     prep_parser = subparsers.add_parser(
-        "prep",
-        help=("combines HAPCUT2 output with unphased variants for call mode"),
+        "prep", help=("combines HAPCUT2 output with unphased variants for call mode")
     )
     call_parser = subparsers.add_parser("call", help="calls neoepitopes")
     # Index parser options (produces pickled dictionaries for transcript data)
@@ -566,9 +565,9 @@ def main():
                 )
         # Obtain VAF frequency VCF position
         if args.vcf:
-            VAF_pos = get_VAF_pos(args.vcf)
+            vaf_pos = get_vaf_pos(args.vcf)
         else:
-            VAF_pos = None
+            vaf_pos = None
         # Obtain peptide sizes for kmerizing peptides
         if "," in args.kmer_size:
             size_list = args.kmer_size.split(",")
@@ -648,7 +647,7 @@ def main():
         # Apply mutations to transcripts and get neoepitopes
         neoepitopes, fasta = get_peptides_from_transcripts(
             relevant_transcripts,
-            VAF_pos,
+            vaf_pos,
             cds_dict,
             only_novel_upstream,
             only_downstream,
