@@ -142,7 +142,8 @@ def main():
         "--output",
         type=str,
         required=False,
-        help="output path to column-swapped VCF",
+        default='-',
+        help="output path to column-swapped VCF; use - for stdout",
     )
     # Merger parser options (merges somatic and germline VCFs)
     merge_parser.add_argument(
@@ -152,7 +153,9 @@ def main():
         "-s", "--somatic", type=str, required=True, help="input path to somatic VCF"
     )
     merge_parser.add_argument(
-        "-o", "--output", type=str, required=False, help="output path to combined VCF"
+        "-o", "--output", type=str, required=False,
+        default='-',
+        help="output path to combined VCF; use - for stdout"
     )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
@@ -167,8 +170,9 @@ def main():
         "-o",
         "--output",
         type=str,
-        required=True,
-        help="path to output file to be input to call mode",
+        required=False,
+        default="-",
+        help="path to output file to be input to call mode; use - for stdout",
     )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
@@ -192,8 +196,9 @@ def main():
         "-c",
         "--merged-hapcut2-output",
         type=str,
-        required=True,
-        help="path to output of prep subcommand",
+        required=False,
+        default='-',
+        help="path to output of prep subcommand; use - for stdin",
     )
     call_parser.add_argument(
         "-k",
@@ -235,7 +240,9 @@ def main():
         "see documentation online for more information",
     )
     call_parser.add_argument(
-        "-o", "--output", type=str, required=True, help="path to output file"
+        "-o", "--output", type=str, required=False,
+        default='-',
+        help="path to output file; use - for stdout"
     )
     call_parser.add_argument(
         "-f",

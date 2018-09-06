@@ -34,7 +34,7 @@ from __future__ import absolute_import, division, print_function
 import subprocess
 import warnings
 import collections
-
+import sys
 
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
@@ -89,11 +89,18 @@ def adjust_tumor_column(in_vcf, out_vcf):
                 )
                 other_lines.append(new_line)
     # Write new vcf
-    with open(out_vcf, "w") as f:
+    try:
+        if out_vcf == '-':
+            output_stream = sys.stdout
+        else:
+            output_stream = open(out_vcf, "w")
         for line in header_lines:
-            print(line, file=f)
+            print(line, file=output_stream)
         for line in other_lines:
-            print(line, file=f)
+            print(line, file=output_stream)
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()
 
 
 def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
@@ -164,7 +171,11 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
         Return value: None
     """
     phased = collections.defaultdict(set)
-    with open(output, "w") as output_stream:
+    try:
+        if output == '-':
+            output_stream = sys.stdout
+        else:
+            output_stream = open(output, "w")
         with open(hapcut2_output) as hapcut2_stream:
             for line in hapcut2_stream:
                 if line[0] != "*" and not line.startswith("BLOCK"):
@@ -267,7 +278,9 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                         print("********", file=output_stream)
                 line = vcf_stream.readline().strip()
                 counter += 1
-
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()
 
 def which(path):
     """ Searches for whether executable is present and returns version
@@ -326,7 +339,11 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
 
         Return value: None.
     """
-    with open(output_file, "w") as output_stream:
+    try:
+        if output_file == '-':
+            output_stream = sys.stdout
+        else:
+            output_stream = open(output_file, 'w')
         headers = [
             "Neoepitope",
             "Chromsome",
@@ -411,3 +428,6 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     for score in ep_scores:
                         out_line.append(str(score))
                     print("\t".join(out_line), file=output_stream)
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()

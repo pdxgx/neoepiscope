@@ -2490,9 +2490,13 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
             chr_in_intervals = True
             continue
     affected_transcripts = collections.defaultdict(list)
-    with open(hapcut_output, "r") as f:
+    try:
+        if hapcut_output == '-':
+            input_stream = sys.stdin
+        else:
+            input_stream = open(hapcut_output)
         block_transcripts = collections.defaultdict(list)
-        for line in f:
+        for line in input_stream:
             if line.startswith("BLOCK"):
                 # Skip block header lines
                 continue
@@ -2583,6 +2587,9 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                                 mutation_type,
                             ]
                         )
+    finally:
+        if input_stream is not sys.stdin:
+            input_stream.close()
     return affected_transcripts
 
 
