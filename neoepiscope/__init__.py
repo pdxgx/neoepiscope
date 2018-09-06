@@ -31,7 +31,9 @@ from file_processing import (adjust_tumor_column, combine_vcf,
 from operator import itemgetter
 from intervaltree import Interval, IntervalTree
 
-_help_intro = '''neoepiscope searches for neoepitopes in seq data.'''
+_help_intro = (
+    '''neoepiscope searches for neoepitopes using tumor/normal DNA-seq data.'''
+    )
 
 def help_formatter(prog):
     """ So formatter_class's max_help_position can be changed. """
@@ -132,14 +134,14 @@ def main():
             help='comma separated list of alleles; '
                  'see documentation online for more information'
         )
-    call_parser.add_argument('-o', '--output_file', type=str, required=True,
+    call_parser.add_argument('-o', '--output', type=str, required=True,
             help='path to output file'
         )
     call_parser.add_argument('-f', '--fasta', required=False, 
             action='store_true',
             help='produce additional fasta output; see documentation'
         )
-    call_parser.add_argument('-u', '--upstream_atgs', type=str, required=False,
+    call_parser.add_argument('-u', '--upstream-atgs', type=str, required=False,
             default='none', help='how to handle upstream start codons, see '
             'documentation online for more information'
         )
@@ -160,24 +162,28 @@ def main():
             help='isolate mutations - do not use phasing information to '
             'combine nearby mutations in the same neoepitope'
         )
-    call_parser.add_argument('--NMD', required=False, action='store_true',
+    call_parser.add_argument('--nmd', required=False, action='store_true',
+            default=False,
             help='enumerate neoepitopes from nonsense mediated decay'
             ' transcripts'
         )
-    call_parser.add_argument('--PP', required=False, action='store_true',
+    call_parser.add_argument('--pp', required=False, action='store_true',
+            default=False,
             help='enumerate neoepitopes from polymorphic pseudogene'
             ' transcripts'
         )
-    call_parser.add_argument('--IGV', required=False, action='store_true',
+    call_parser.add_argument('--igv', required=False, action='store_true',
+            default=False,
             help='enumerate neoepitopes IGV transcripts'
         )
-    call_parser.add_argument('--TRV', required=False, action='store_true',
+    call_parser.add_argument('--trv', required=False, action='store_true',
+            default=False,
             help='enumerate neoepitopes from TRV transcripts'
         )
-    call_parser.add_argument('--allow_nonstart', required=False, action='store_true',
+    call_parser.add_argument('--allow-nonstart', required=False, action='store_true',
             help='enumerate neoepitopes from transcripts without annotated start codons'
         )
-    call_parser.add_argument('--allow_nonstop', required=False, action='store_true',
+    call_parser.add_argument('--allow-nonstop', required=False, action='store_true',
             help='enumerate neoepitopes from transcripts without annotated stop codons'
         )
     args = parser.parse_args()
@@ -237,7 +243,7 @@ def main():
                                                             )
             else:
                 raise RuntimeError('User must specify either --build OR '
-                                    ' --bowtie_index and --dicts options')
+                                   '--bowtie_index and --dicts options')
         # Check affinity predictor
         tool_dict = {}
         if args.no_affinity:
@@ -269,7 +275,7 @@ def main():
                                             'of mhcflurry given')
                     else:
                         raise NotImplementedError(
-                            ' '.join(['Neoepiscope does not support version', 
+                            ' '.join(['neoepiscope does not support version', 
                                       version, 'of mhcflurry']))
                 elif 'mhcnuggets' in program:
                     if version == '2' and 'mhcnuggets2' not in tool_dict:
@@ -289,7 +295,7 @@ def main():
                                             'of mhcnuggets given')
                     else:
                         raise NotImplementedError(
-                            ' '.join(['Neoepiscope does not support version', 
+                            ' '.join(['neoepiscope does not support version', 
                                       version, 'of mhcnuggets']))      
                 elif 'netMHCIIpan' in program:
                     if version == '3' and 'netMHCIIpan3' not in tool_dict:
@@ -318,7 +324,7 @@ def main():
                                             'of netMHCIIpan given')
                     else:
                         raise NotImplementedError(
-                            ' '.join(['Neoepiscope does not support version', 
+                            ' '.join(['neoepiscope does not support version', 
                                       version, 'of netMHCIIpan'])
                             )
                 elif 'netMHCpan' in program:
@@ -367,16 +373,16 @@ def main():
                                             'of netMHCpan given')
                     else:
                         raise NotImplementedError(
-                            ' '.join(['Neoepiscope does not support version', 
+                            ' '.join(['neoepiscope does not support version', 
                                       version, 'of netMHCpan'])
                             )
                 else:
                     raise NotImplementedError(
-                                    ' '.join(['Neoepiscope does not support', 
+                                    ' '.join(['neoepiscope does not support', 
                                               program, 
                                               'for binding predictions'])
                                     )
-        if len(tool_dict.keys()) == 0:
+        if not tool_dict:
             warnings.warn('No binding prediction tools specified; '
                           'will proceed without binding predictions', Warning)
             hla_alleles = []
@@ -418,7 +424,7 @@ def main():
             only_downstream = False
             only_reference = True
         else:
-            raise RuntimeError('--upstream_atgs must be one of '
+            raise RuntimeError('--upstream-atgs must be one of '
                                '{"novel", "all", "none", "reference"}')
         # Establish handling of germline mutations:
         if args.germline == 'background':
@@ -444,24 +450,7 @@ def main():
         if include_somatic == 0 and include_germline == 0:
             warnings.warn('Germline and somatic mutations are both being '
                           'excluded, no epitopes will be returned', Warning)
-        # Establish whether to phase mutations
-        if args.isolate:
-            phasing = False
-        else:
-            phasing = True
         # Determine whether to include certain transcript types
-        if args.NMD:
-            NMD = True
-        else:
-            NMD = False
-        if args.PP:
-            PP = True
-        else:
-            PP = False
-        if args.IGV:
-            IGV = True
-        else:
-            IGV = False
         if args.TRV:
             TRV = True
         else:
@@ -476,46 +465,30 @@ def main():
             allow_nonstop = False
         # Find transcripts that haplotypes overlap 
         relevant_transcripts = process_haplotypes(args.merged_hapcut2_output, 
-                                                    interval_dict, phasing)
+                                                    interval_dict, args.isolate)
         # Apply mutations to transcripts and get neoepitopes
-        if not args.fasta:
-            neoepitopes = get_peptides_from_transcripts(relevant_transcripts, 
-                                                    VAF_pos, cds_dict,
-                                                    only_novel_upstream,
-                                                    only_downstream, 
-                                                    only_reference,
-                                                    reference_index,
-                                                    size_list, NMD, PP,
-                                                    IGV, TRV,
-                                                    allow_nonstart,
-                                                    allow_nonstop,
-                                                    include_germline, 
-                                                    include_somatic)
-        else:
-            neoepitopes, fasta = get_peptides_from_transcripts(
+        neoepitopes, fasta = get_peptides_from_transcripts(
                                                     relevant_transcripts, 
                                                     VAF_pos, cds_dict,
                                                     only_novel_upstream,
                                                     only_downstream, 
                                                     only_reference,
                                                     reference_index,
-                                                    size_list, NMD, PP,
-                                                    IGV, TRV,
+                                                    size_list, args.nmd,
+                                                    args.pp, args.igv, args.trv,
                                                     allow_nonstart,
                                                     allow_nonstop,
                                                     include_germline, 
-                                                    include_somatic,
-                                                    protein_fasta=True
-                                                    )
+                                                    include_somatic
+                                                    protein_fasta=args.fasta
+                                                )
         # If neoepitopes are found, get binding scores and write results
-        if len(neoepitopes.keys()) > 0:
-            output_file = args.output_file
+        if len(neoepitopes) > 0:
             full_neoepitopes = gather_binding_scores(neoepitopes, tool_dict, 
                                                      hla_alleles)
-            write_results(output_file, hla_alleles, 
-                            full_neoepitopes, tool_dict)
+            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict)
             if args.fasta:
-                fasta_file = ''.join([args.output_file, '.fasta'])
+                fasta_file = ''.join([args.output, '.fasta'])
                 with open(fasta_file, 'w') as f:
                     for tx in fasta:
                         proteins = sorted(list(fasta[tx]))
