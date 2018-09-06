@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 test_transcript.py
 
@@ -27,9 +28,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import unittest
-from neoepiscope.transcript import *
+from __future__ import absolute_import, division, print_function
+from inspect import getsourcefile
+import os.path as path, sys
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from neoepiscope import * # Import package in same directory as tests
+sys.path.pop(0)
 
+import unittest
 unittest.TestCase.maxDiff = None
 import os
 
@@ -39,6 +46,7 @@ class TestTranscript(unittest.TestCase):
 
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
+        print(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
         self.gtf = os.path.join(
             os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
             "tests",

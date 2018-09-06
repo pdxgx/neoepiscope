@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 neoepiscope
 
@@ -26,23 +27,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from __future__ import print_function
+
+from __future__ import absolute_import, division, print_function
 import argparse
-import bowtie_index
+from . import bowtie_index
 import sys
 import string
 import copy
 import pickle
 import copy
-import os
 import random
 import re
 import collections
 import tempfile
 import subprocess
 import warnings
-import paths
-from transcript import (
+from . import paths
+from .transcript import (
     Transcript,
     gtf_to_cds,
     cds_to_tree,
@@ -50,13 +51,10 @@ from transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from binding_scores import (
-    gather_binding_scores,
-    get_affinity_mhcflurry,
-    get_affinity_netMHCpan,
-    get_affinity_netMHCIIpan,
+from .binding_scores import (
+    gather_binding_scores
 )
-from file_processing import (
+from .file_processing import (
     adjust_tumor_column,
     combine_vcf,
     prep_hapcut_output,
@@ -111,6 +109,14 @@ def main():
             "VCFS for combined mutation "
             "phasing with HAPCUT2"
         ),
+    )
+    download_parser = subparsers.add_parser(
+        "download",
+        help="downloads dependencies",
+    )
+    test_parser = subparsers.add_parser(
+        "test",
+        help="runs all unit tests",
     )
     prep_parser = subparsers.add_parser(
         "prep", help=("combines HAPCUT2 output with unphased variants for call mode")
@@ -322,7 +328,26 @@ def main():
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
     args = parser.parse_args()
-    if args.subparser_name == "index":
+    if args.subparser_name == "download":
+        from download import NeoepiscopeDownloader
+        downloader = NeoepiscopeDownloader()
+        downloader.run()
+    elif args.subparser_name == "test":
+        import unittest
+        # get setup.py directory
+        setup_file = sys.modules['__main__'].__file__
+        setup_dir = os.path.abspath(os.path.dirname(setup_file))
+        # use the default shared TestLoader instance
+        test_loader = unittest.defaultTestLoader
+        # use the basic test runner that outputs to sys.stderr
+        test_runner = unittest.TextTestRunner()
+        # automatically discover all tests
+        # NOTE: only works for python 2.7 and later
+        test_suite = test_loader.discover(setup_dir)
+        print(test_suite)
+        # run the test suite
+        test_runner.run(test_suite)
+    elif args.subparser_name == "index":
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
@@ -704,10 +729,7 @@ def main():
         else:
             sys.exit("No neoepitopes found")
     else:
-        raise RuntimeError(
-            "".join([args.subparser_name, " is not a valid software mode"])
-        )
-
+        parser.print_usage()
 
 if __name__ == "__main__":
     main()

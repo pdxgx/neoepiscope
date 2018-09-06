@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 download.py
 
@@ -37,17 +38,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from __future__ import print_function
-from version import version_number
-from file_processing import which
+from __future__ import absolute_import, division, print_function
+from .version import version_number
+from .file_processing import which
 import signal
 import shutil
 import tempfile
 import sys
 import os
 import subprocess
-from transcript import gtf_to_cds
-from transcript import cds_to_tree
+from .transcript import gtf_to_cds
+from .transcript import cds_to_tree
 from distutils.core import Command
 
 download = {
