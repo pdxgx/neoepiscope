@@ -770,8 +770,8 @@ class TestTranscript(unittest.TestCase):
         self.assertFalse(partial_peptides)
         # Next start is in the same reading frame
         self.all_coding_transcript.edit("T", 5810046)
-        all_peptides = self.all_coding_transcript.neopeptides().keys()
-        self.assertEqual(all_peptides, [])
+        all_peptides = self.all_coding_transcript.neopeptides()
+        self.assertFalse(all_peptides)
         # From next start, peptide is only 4 aa
 
     def test_start_lost_and_new_inframe_start(self):
