@@ -30,31 +30,29 @@ SOFTWARE.
 
 from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
-import os.path as path, sys
-current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+import os
+import sys
+current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 from neoepiscope import * # Import package in same directory as tests
 sys.path.pop(0)
 
 import unittest
 unittest.TestCase.maxDiff = None
-import os
-
 
 class TestTranscript(unittest.TestCase):
     """Tests transcript object construction"""
 
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
-        print(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
         self.gtf = os.path.join(
-            os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",
             "Chr11.gtf",
         )
         self.cds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.ref_prefix = os.path.join(
-            os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",
             "Chr11.ref",
         )
@@ -592,44 +590,44 @@ class TestTranscript(unittest.TestCase):
     # Neopeptide tests
     def test_no_mutations_peptides(self):
         """Fails if peptides are returned for unmutated sequence"""
-        peptides = self.fwd_transcript.neopeptides().keys()
-        self.assertEqual(peptides, [])
-        rev_peptides = self.transcript.neopeptides().keys()
-        self.assertEqual(rev_peptides, [])
+        peptides = self.fwd_transcript.neopeptides()
+        self.assertFalse(peptides)
+        rev_peptides = self.transcript.neopeptides()
+        self.assertFalse(rev_peptides)
 
     def test_noncoding_mutation_peptides(self):
         """Fails if peptides are returned for mutation in noncoding
             sequence"""
         self.fwd_transcript.edit("G", 450286)
-        peptides = self.fwd_transcript.neopeptides().keys()
-        self.assertEqual(peptides, [])
+        peptides = self.fwd_transcript.neopeptides()
+        self.assertFalse(peptides)
         self.transcript.edit("A", 5248266)
-        rev_peptides = self.transcript.neopeptides().keys()
-        self.assertEqual(rev_peptides, [])
+        rev_peptides = self.transcript.neopeptides()
+        self.assertFalse(rev_peptides)
 
     def test_synonymous_snv_peptides(self):
         """Fails if peptides are returned for a synonymous snv"""
         self.fwd_transcript.edit("A", 450464)
-        peptides = self.fwd_transcript.neopeptides().keys()
-        self.assertEqual(peptides, [])
+        peptides = self.fwd_transcript.neopeptides()
+        self.assertFalse(peptides)
         self.transcript.edit("A", 5248005)
-        rev_peptides = self.transcript.neopeptides().keys()
-        self.assertEqual(rev_peptides, [])
+        rev_peptides = self.transcript.neopeptides()
+        self.assertFalse(rev_peptides)
 
     def test_missense_snv_peptides(self):
         """Fails if incorrect peptides are returned for missense SNV"""
         self.fwd_transcript.edit("T", 450502)
         peptides = self.fwd_transcript.neopeptides().keys()
-        F_peptides = [pep for pep in peptides if "F" in pep]
+        f_peptides = [pep for pep in peptides if "F" in pep]
         self.assertEqual(len(peptides), 38)
-        self.assertEqual(len(peptides), len(F_peptides))
+        self.assertEqual(len(peptides), len(f_peptides))
         self.assertEqual(sorted(peptides)[0], "AGGPRPEF")
         self.assertEqual(sorted(peptides)[-1], "RRDAGGPRPEF")
         self.transcript.edit("T", 5248006)
         rev_peptides = self.transcript.neopeptides().keys()
-        N_peptides = [pep for pep in rev_peptides if "N" in pep]
+        n_peptides = [pep for pep in rev_peptides if "N" in pep]
         self.assertEqual(len(rev_peptides), 38)
-        self.assertEqual(len(rev_peptides), len(N_peptides))
+        self.assertEqual(len(rev_peptides), len(n_peptides))
         self.assertEqual(sorted(rev_peptides)[0], "GRLLVVYPWN")
         self.assertEqual(sorted(rev_peptides)[-1], "YPWNQRFFESF")
 
@@ -638,16 +636,16 @@ class TestTranscript(unittest.TestCase):
             insertion"""
         self.fwd_transcript.edit("AAA", 450551, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides().keys()
-        K_peptides = [pep for pep in peptides if "K" in pep]
+        k_peptides = [pep for pep in peptides if "K" in pep]
         self.assertEqual(len(peptides), 38)
-        self.assertEqual(len(peptides), len(K_peptides))
+        self.assertEqual(len(peptides), len(k_peptides))
         self.assertEqual(sorted(peptides)[0], "ASLEEPPDGPK")
         self.assertEqual(sorted(peptides)[-1], "SLEEPPDGPKS")
         self.transcript.edit("TTT", 5247986, mutation_type="I")
         rev_peptides = self.transcript.neopeptides().keys()
-        K_peptides = [pep for pep in peptides if "K" in pep]
+        k_peptides = [pep for pep in peptides if "K" in pep]
         self.assertEqual(len(rev_peptides), 38)
-        self.assertEqual(len(rev_peptides), len(K_peptides))
+        self.assertEqual(len(rev_peptides), len(k_peptides))
         self.assertEqual(sorted(rev_peptides)[0], "ESKFGDLS")
         self.assertEqual(sorted(rev_peptides)[-1], "YPWTQRFFESK")
 
@@ -759,8 +757,8 @@ class TestTranscript(unittest.TestCase):
         """Fails if mutation altering start codon does not return peptides
            from a new start codon"""
         self.fwd_transcript.edit("T", 450456)
-        peptides = self.fwd_transcript.neopeptides().keys()
-        self.assertEqual(peptides, [])
+        peptides = self.fwd_transcript.neopeptides()
+        self.assertFalse(peptides)
         # Next start immediately followed by stop for fwd strand transcript
         self.transcript.edit("G", 5248251)
         rev_peptides = self.transcript.neopeptides().keys()
@@ -768,8 +766,8 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(sorted(rev_peptides)[0], "AGCWWSTL")
         self.assertEqual(sorted(rev_peptides)[-1], "WWSTLGPRGSL")
         self.partial_coding_transcript.edit("T", 34073968)
-        partial_peptides = self.partial_coding_transcript.neopeptides().keys()
-        self.assertEqual(partial_peptides, [])
+        partial_peptides = self.partial_coding_transcript.neopeptides()
+        self.assertFalse(partial_peptides)
         # Next start is in the same reading frame
         self.all_coding_transcript.edit("T", 5810046)
         all_peptides = self.all_coding_transcript.neopeptides().keys()
@@ -824,16 +822,16 @@ class TestTranscript(unittest.TestCase):
         """Fails if peptides are returned from a new upstream start codon
             when the original is retained"""
         self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
-        peptides = self.fwd_transcript.neopeptides(only_downstream=True).keys()
-        self.assertEqual(peptides, [])
+        peptides = self.fwd_transcript.neopeptides(only_downstream=True)
+        self.assertFalse(peptides)
         self.transcript.edit("CAT", 5248280, mutation_type="I")
-        rev_peptides = self.transcript.neopeptides(only_downstream=True).keys()
-        self.assertEqual(rev_peptides, [])
+        rev_peptides = self.transcript.neopeptides(only_downstream=True)
+        self.assertFalse(rev_peptides)
         self.partial_coding_transcript.edit("ATG", 34073397, mutation_type="I")
         partial_peptides = self.partial_coding_transcript.neopeptides(
             only_downstream=True
         ).keys()
-        self.assertEqual(partial_peptides, [])
+        self.assertFalse(partial_peptides)
         self.non_coding_transcript.edit("ATG", 65190565, mutation_type="I")
         noncoding_peptides = self.non_coding_transcript.neopeptides()
         self.assertEqual(noncoding_peptides, {})
