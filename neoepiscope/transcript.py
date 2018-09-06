@@ -2485,7 +2485,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
         Return value: dictinoary linking haplotypes to transcripts
     """
     chr_in_intervals = False
-    for contig in interval_dict.keys():
+    for contig in interval_dict:
         if "chr" in contig:
             chr_in_intervals = True
             continue
@@ -2517,7 +2517,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                 if (
                     chr_in_intervals
                     and "chr" not in contig
-                    and "".join(["chr", contig]) in interval_dict.keys()
+                    and "".join(["chr", contig]) in interval_dict
                 ):
                     contig = "chr" + contig
                 if "," in tokens[6]:
