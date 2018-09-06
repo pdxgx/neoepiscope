@@ -2491,7 +2491,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
             continue
     affected_transcripts = collections.defaultdict(list)
     try:
-        if hapcut_output == '-':
+        if hapcut_output == "-":
             input_stream = sys.stdin
         else:
             input_stream = open(hapcut_output)

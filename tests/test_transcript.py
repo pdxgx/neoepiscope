@@ -32,13 +32,17 @@ from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
 import os
 import sys
-current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
-from neoepiscope import * # Import package in same directory as tests
+
+current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+sys.path.insert(0, current_dir[: current_dir.rfind(os.path.sep)])
+from neoepiscope import *  # Import package in same directory as tests
+
 sys.path.pop(0)
 
 import unittest
+
 unittest.TestCase.maxDiff = None
+
 
 class TestTranscript(unittest.TestCase):
     """Tests transcript object construction"""

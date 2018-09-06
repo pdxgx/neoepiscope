@@ -36,6 +36,7 @@ import warnings
 import collections
 import sys
 
+
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
 
@@ -90,7 +91,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
                 other_lines.append(new_line)
     # Write new vcf
     try:
-        if out_vcf == '-':
+        if out_vcf == "-":
             output_stream = sys.stdout
         else:
             output_stream = open(out_vcf, "w")
@@ -172,7 +173,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
     """
     phased = collections.defaultdict(set)
     try:
-        if output == '-':
+        if output == "-":
             output_stream = sys.stdout
         else:
             output_stream = open(output, "w")
@@ -282,6 +283,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
         if output_stream is not sys.stdout:
             output_stream.close()
 
+
 def which(path):
     """ Searches for whether executable is present and returns version
 
@@ -340,10 +342,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
         Return value: None.
     """
     try:
-        if output_file == '-':
+        if output_file == "-":
             output_stream = sys.stdout
         else:
-            output_stream = open(output_file, 'w')
+            output_stream = open(output_file, "w")
         headers = [
             "Neoepitope",
             "Chromsome",
