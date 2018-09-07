@@ -335,7 +335,7 @@ def main():
     )
     args = parser.parse_args()
     if args.subparser_name == "download":
-        from download import NeoepiscopeDownloader
+        from .download import NeoepiscopeDownloader
 
         downloader = NeoepiscopeDownloader()
         downloader.run()
