@@ -1,7 +1,40 @@
-from __future__ import print_function
+#!/usr/bin/env python
+# coding=utf-8
+"""
+file_processing.py
+
+Part of neoepiscope
+Includes functions for processing input and output files.
+
+Licensed under the MIT license.
+
+The MIT License (MIT)
+Copyright (c) 2018 Mary A. Wood, Austin Nguyen,
+                   Abhinav Nellore, and Reid Thompson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+from __future__ import absolute_import, division, print_function
 import subprocess
 import warnings
 import collections
+import sys
 
 
 def adjust_tumor_column(in_vcf, out_vcf):
@@ -57,14 +90,21 @@ def adjust_tumor_column(in_vcf, out_vcf):
                 )
                 other_lines.append(new_line)
     # Write new vcf
-    with open(out_vcf, "w") as f:
+    try:
+        if out_vcf == "-":
+            output_stream = sys.stdout
+        else:
+            output_stream = open(out_vcf, "w")
         for line in header_lines:
-            print(line, file=f)
+            print(line, file=output_stream)
         for line in other_lines:
-            print(line, file=f)
+            print(line, file=output_stream)
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()
 
 
-def combine_vcf(vcf1, vcf2, outfile="Combined.vcf"):
+def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
     """ Combines VCFs
 
         No return value.
@@ -132,7 +172,11 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
         Return value: None
     """
     phased = collections.defaultdict(set)
-    with open(output, "w") as output_stream:
+    try:
+        if output == "-":
+            output_stream = sys.stdout
+        else:
+            output_stream = open(output, "w")
         with open(hapcut2_output) as hapcut2_stream:
             for line in hapcut2_stream:
                 if line[0] != "*" and not line.startswith("BLOCK"):
@@ -235,6 +279,9 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                         print("********", file=output_stream)
                 line = vcf_stream.readline().strip()
                 counter += 1
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()
 
 
 def which(path):
@@ -294,7 +341,11 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
 
         Return value: None.
     """
-    with open(output_file, "w") as o:
+    try:
+        if output_file == "-":
+            output_stream = sys.stdout
+        else:
+            output_stream = open(output_file, "w")
         headers = [
             "Neoepitope",
             "Chromsome",
@@ -311,7 +362,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
                     headers.append("_".join([tool, allele, score_method]))
-        print("\t".join(headers), file=o)
+        print("\t".join(headers), file=output_stream)
         for epitope in sorted(neoepitopes.keys()):
             if len(neoepitopes[epitope]) == 1:
                 mutation = neoepitopes[epitope][0]
@@ -341,7 +392,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                 ]
                 for i in range(9, len(mutation)):
                     out_line.append(str(mutation[i]))
-                print("\t".join(out_line), file=o)
+                print("\t".join(out_line), file=output_stream)
             else:
                 mutation_dict = collections.defaultdict(list)
                 ep_scores = []
@@ -378,5 +429,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     ]
                     for score in ep_scores:
                         out_line.append(str(score))
-                    print(out_line)
-                    print("\t".join(out_line), file=o)
+                    print("\t".join(out_line), file=output_stream)
+    finally:
+        if output_stream is not sys.stdout:
+            output_stream.close()

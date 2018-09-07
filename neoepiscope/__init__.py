@@ -1,26 +1,49 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 neoepiscope
 
 Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
+
+The MIT License (MIT)
+Copyright (c) 2018 Mary A. Wood, Austin Nguyen,
+                   Abhinav Nellore, and Reid Thompson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
-from __future__ import print_function
+
+from __future__ import absolute_import, division, print_function
 import argparse
-import bowtie_index
+from . import bowtie_index
 import sys
 import string
 import copy
 import pickle
 import copy
-import os
 import random
 import re
 import collections
 import tempfile
 import subprocess
 import warnings
-import paths
-from transcript import (
+from . import paths
+from .transcript import (
     Transcript,
     gtf_to_cds,
     cds_to_tree,
@@ -28,13 +51,8 @@ from transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from binding_scores import (
-    gather_binding_scores,
-    get_affinity_mhcflurry,
-    get_affinity_netMHCpan,
-    get_affinity_netMHCIIpan,
-)
-from file_processing import (
+from .binding_scores import gather_binding_scores
+from .file_processing import (
     adjust_tumor_column,
     combine_vcf,
     prep_hapcut_output,
@@ -90,6 +108,8 @@ def main():
             "phasing with HAPCUT2"
         ),
     )
+    download_parser = subparsers.add_parser("download", help="downloads dependencies")
+    test_parser = subparsers.add_parser("test", help="runs all unit tests")
     prep_parser = subparsers.add_parser(
         "prep", help=("combines HAPCUT2 output with unphased variants for call mode")
     )
@@ -114,7 +134,8 @@ def main():
         "--output",
         type=str,
         required=False,
-        help="output path to column-swapped VCF",
+        default="-",
+        help="output path to column-swapped VCF; use - for stdout",
     )
     # Merger parser options (merges somatic and germline VCFs)
     merge_parser.add_argument(
@@ -124,7 +145,12 @@ def main():
         "-s", "--somatic", type=str, required=True, help="input path to somatic VCF"
     )
     merge_parser.add_argument(
-        "-o", "--output", type=str, required=False, help="output path to combined VCF"
+        "-o",
+        "--output",
+        type=str,
+        required=False,
+        default="-",
+        help="output path to combined VCF; use - for stdout",
     )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
@@ -139,8 +165,9 @@ def main():
         "-o",
         "--output",
         type=str,
-        required=True,
-        help="path to output file to be input to call mode",
+        required=False,
+        default="-",
+        help="path to output file to be input to call mode; use - for stdout",
     )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
@@ -164,8 +191,9 @@ def main():
         "-c",
         "--merged-hapcut2-output",
         type=str,
-        required=True,
-        help="path to output of prep subcommand",
+        required=False,
+        default="-",
+        help="path to output of prep subcommand; use - for stdin",
     )
     call_parser.add_argument(
         "-k",
@@ -207,7 +235,12 @@ def main():
         "see documentation online for more information",
     )
     call_parser.add_argument(
-        "-o", "--output", type=str, required=True, help="path to output file"
+        "-o",
+        "--output",
+        type=str,
+        required=False,
+        default="-",
+        help="path to output file; use - for stdout",
     )
     call_parser.add_argument(
         "-f",
@@ -300,7 +333,28 @@ def main():
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
     args = parser.parse_args()
-    if args.subparser_name == "index":
+    if args.subparser_name == "download":
+        from download import NeoepiscopeDownloader
+
+        downloader = NeoepiscopeDownloader()
+        downloader.run()
+    elif args.subparser_name == "test":
+        import unittest
+
+        # get setup.py directory
+        setup_file = sys.modules["__main__"].__file__
+        setup_dir = os.path.abspath(os.path.dirname(setup_file))
+        # use the default shared TestLoader instance
+        test_loader = unittest.defaultTestLoader
+        # use the basic test runner that outputs to sys.stderr
+        test_runner = unittest.TextTestRunner()
+        # automatically discover all tests
+        # NOTE: only works for python 2.7 and later
+        test_suite = test_loader.discover(setup_dir)
+        print(test_suite)
+        # run the test suite
+        test_runner.run(test_suite)
+    elif args.subparser_name == "index":
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
@@ -682,9 +736,7 @@ def main():
         else:
             sys.exit("No neoepitopes found")
     else:
-        raise RuntimeError(
-            "".join([args.subparser_name, " is not a valid software mode"])
-        )
+        parser.print_usage()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,35 @@
-from __future__ import print_function
+#!/usr/bin/env python
+# coding=utf-8
+"""
+binding_scores.py
+
+Part of neoepiscope
+Includes functions for grabbing MHC binding scores from third-party software.
+
+The MIT License (MIT)
+Copyright (c) 2018 Mary A. Wood, Austin Nguyen,
+                   Abhinav Nellore, and Reid Thompson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import absolute_import, division, print_function
 import os
 import warnings
 import tempfile
@@ -481,7 +512,7 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
         for tool in sorted(tool_dict.keys()):
             if tool == "mhcflurry1":
                 binding_scores = get_affinity_mhcflurry(
-                    neoepitopes.keys(),
+                    list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][1],
                     "1",
@@ -489,11 +520,11 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                 )
             elif tool == "mhcnuggets2":
                 binding_scores = get_affinity_mhcnuggets(
-                    neoepitopes.keys(), allele, "2", remove_files=True
+                    list(neoepitopes.keys()), allele, "2", remove_files=True
                 )
             elif tool == "netMHCIIpan3":
                 binding_scores = get_affinity_netMHCIIpan(
-                    neoepitopes.keys(),
+                    list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][0],
                     "3",
@@ -502,7 +533,7 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                 )
             elif tool == "netMHCpan3":
                 binding_scores = get_affinity_netMHCpan(
-                    neoepitopes.keys(),
+                    list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][0],
                     "3",
@@ -511,7 +542,7 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                 )
             elif tool == "netMHCpan4":
                 binding_scores = get_affinity_netMHCpan(
-                    neoepitopes.keys(),
+                    list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][0],
                     "4",
