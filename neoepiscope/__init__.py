@@ -38,6 +38,7 @@ import pickle
 import copy
 import random
 import re
+import os
 import collections
 import tempfile
 import subprocess
