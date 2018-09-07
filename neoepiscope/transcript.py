@@ -2563,8 +2563,7 @@ def get_peptides_from_transcripts(
     allow_nonstop,
     include_germline=2,
     include_somatic=1,
-    protein_fasta=False,
-):
+    protein_fasta=False):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
 
@@ -2600,7 +2599,7 @@ def get_peptides_from_transcripts(
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     for affected_transcript in relevant_transcripts:
-        # Filter out NMD and polymorphic pseudogene transcripts if relevant
+        # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
         if cds_dict[affected_transcript][0][5] == "nonsense_mediated_decay" and not nmd:
             continue
         elif cds_dict[affected_transcript][0][5] == "polymorphic_pseudogene" and not pp:
@@ -2609,12 +2608,13 @@ def get_peptides_from_transcripts(
             continue
         elif cds_dict[affected_transcript][0][5] == "TR_V_gene" and not trv:
             continue
-        elif (
+        # Filter out transcripts missing start or stop codons if relevant
+        if (
             "start_codon" not in [x[1] for x in cds_dict[affected_transcript]]
             and not allow_nonstart
         ):
             continue
-        elif (
+        if (
             "stop_codon" not in [x[1] for x in cds_dict[affected_transcript]]
             and not allow_nonstop
         ):
