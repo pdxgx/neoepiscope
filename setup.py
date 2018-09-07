@@ -60,7 +60,7 @@ setup(
     license="MIT",
     packages=["neoepiscope"],
     include_package_data=True,
-    package_data={"neoepiscope": ["*.py", "*.pickle", "tests/*"]},
+    package_data={"neoepiscope": ["*.py", "*.pickle", "tests/*.gtf", "tests/*.out", "tests/*.ebwt", "tests/*.vcf", "tests/*.germline", "tests/*.py"]},
     zip_safe=True,
     install_requires=["intervaltree", "mhcflurry", "mhcnuggets", "numpy==1.14.5"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
