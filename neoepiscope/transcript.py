@@ -1,5 +1,45 @@
-from __future__ import print_function
-import bowtie_index
+#!/usr/bin/env python
+# coding=utf-8
+"""
+transcript.py
+
+Part of neoepiscope
+Functions for manipulating transcripts and enumerating neoepitopes.
+
+Licensed under the MIT license.
+
+The MIT License (MIT)
+Copyright (c) 2018 Mary A. Wood, Austin Nguyen,
+                   Abhinav Nellore, and Reid Thompson
+
+Portions from Rail-RNA, which is copyright (c) 2015 
+                    Abhinav Nellore, Leonardo Collado-Torres,
+                    Andrew Jaffe, James Morton, Jacob Pritt,
+                    José Alquicira-Hernández,
+                    Christopher Wilks,
+                    Jeffrey T. Leek, and Ben Langmead.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import absolute_import, division, print_function
+from . import bowtie_index
 import collections
 import copy
 import bisect
@@ -1047,13 +1087,13 @@ class Transcript(object):
                 adj. deletion, allele seq, [mutation information]] for the alternate and
                 reference sequences, respectively.
         """
-        if end < start:
-            return []
         # Use 0-based coordinates internally
         if start is None:
             start = self.intervals[0] + 2
         if end is None:
             end = self.intervals[-1] + 1
+        if end < start:
+            return []
         if genome:
             # Capture only sequence between start and end
             edits, intervals = self.expressed_edits(
@@ -2445,14 +2485,18 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
         Return value: dictinoary linking haplotypes to transcripts
     """
     chr_in_intervals = False
-    for contig in interval_dict.keys():
+    for contig in interval_dict:
         if "chr" in contig:
             chr_in_intervals = True
             continue
     affected_transcripts = collections.defaultdict(list)
-    with open(hapcut_output, "r") as f:
+    try:
+        if hapcut_output == "-":
+            input_stream = sys.stdin
+        else:
+            input_stream = open(hapcut_output)
         block_transcripts = collections.defaultdict(list)
-        for line in f:
+        for line in input_stream:
             if line.startswith("BLOCK"):
                 # Skip block header lines
                 continue
@@ -2477,7 +2521,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                 if (
                     chr_in_intervals
                     and "chr" not in contig
-                    and "".join(["chr", contig]) in interval_dict.keys()
+                    and "".join(["chr", contig]) in interval_dict
                 ):
                     contig = "chr" + contig
                 if "," in tokens[6]:
@@ -2543,6 +2587,9 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                                 mutation_type,
                             ]
                         )
+    finally:
+        if input_stream is not sys.stdin:
+            input_stream.close()
     return affected_transcripts
 
 

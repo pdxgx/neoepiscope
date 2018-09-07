@@ -1,9 +1,71 @@
+#!/usr/bin/env python
+# coding=utf-8
+"""
+bowtie_index.py
+
+Includes class for grabbing genome sequence from Bowtie index.
+
+The MIT License (MIT)
+Taken from Rail-RNA, which is copyright (c) 2015 
+                    Abhinav Nellore, Leonardo Collado-Torres,
+                    Andrew Jaffe, James Morton, Jacob Pritt,
+                    José Alquicira-Hernández,
+                    Christopher Wilks,
+                    Jeffrey T. Leek, and Ben Langmead.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import absolute_import, division, print_function
 import os
 import struct
 import mmap
 from operator import itemgetter
 from collections import defaultdict
 from bisect import bisect_right
+import sys
+
+# Python 2-3 compatibility
+try:
+    xrange
+except NameError:
+    xrange = range
+
+if sys.version_info[0] > 2:
+
+    def byte_readline(fh):
+        return fh.readline().decode(encoding="UTF-8")
+
+    # we need a version of ord that does nothing in python 3
+    # but regular ord is still needed on refname reads thanks to
+    # our byte_readline
+    def ord2or3(chr):
+        return chr
+
+
+else:
+
+    def byte_readline(fh):
+        return fh.readline()
+
+    def ord2or3(chr):
+        return ord(chr)
 
 
 class BowtieIndexReference(object):
@@ -75,7 +137,7 @@ class BowtieIndexReference(object):
 
         refnames = []
         while True:
-            refname = fh1.readline()
+            refname = byte_readline(fh1)
             if len(refname) == 0 or ord(refname[0]) == 0:
                 break
             refnames.append(refname.split()[0])
@@ -114,7 +176,7 @@ class BowtieIndexReference(object):
             running_unambig += ln
 
         length[ref_name] = running_length
-        assert nrecs == sum(map(len, self.recs.itervalues()))
+        assert nrecs == sum(map(len, self.recs.values()))
 
         #
         # Memory-map the .4.bt2 file
@@ -155,6 +217,9 @@ class BowtieIndexReference(object):
 
         # For compatibility
         self.rname_lengths = self.length
+        fh1.close()
+        fh3.close()
+        fh4.close()
 
     def get_stretch(self, ref_id, ref_off, count):
         """
@@ -196,7 +261,7 @@ class BowtieIndexReference(object):
             while ref_off < off and count > 0:
                 buf_elt = buf_off >> 2
                 shift_amt = (buf_off & 3) << 1
-                stretch.append("ACGT"[(ord(self.fh4mm[buf_elt]) >> shift_amt) & 3])
+                stretch.append("ACGT"[(ord2or3(self.fh4mm[buf_elt]) >> shift_amt) & 3])
                 buf_off += 1
                 count -= 1
                 ref_off += 1
