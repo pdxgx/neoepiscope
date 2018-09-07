@@ -48,6 +48,44 @@ class DownloadDependencies(Command):
         downloader = NeoepiscopeDownloader()
         downloader.run()
 
+class CustomInstall(install):
+    # Custom installation that downloads dependencies and runs unit tests
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        # First install
+        from setuptools import command
+        command.install.run()
+
+        # Then run the downloader
+        from neoepiscope.download import NeoepiscopeDownloader
+        downloader = NeoepiscopeDownloader()
+        downloader.run()
+
+        # Then run unit tests
+        import os
+        import sys
+        import unittest
+        # get setup.py directory
+        setup_file = sys.modules["__main__"].__file__
+        setup_dir = os.path.abspath(os.path.dirname(setup_file))
+        # use the default shared TestLoader instance
+        test_loader = unittest.defaultTestLoader
+        # use the basic test runner that outputs to sys.stderr
+        test_runner = unittest.TextTestRunner()
+        # automatically discover all tests
+        # NOTE: only works for python 2.7 and later
+        test_suite = test_loader.discover(setup_dir)
+        print(test_suite)
+        # run the test suite
+        test_runner.run(test_suite)
+
 
 setup(
     name="neoepiscope",
