@@ -47,7 +47,7 @@ class DownloadDependencies(Command):
 
         downloader = NeoepiscopeDownloader()
         downloader.run()
-
+'''
 class CustomInstall(install):
     # Custom installation that downloads dependencies and runs unit tests
     user_options = []
@@ -85,7 +85,7 @@ class CustomInstall(install):
         print(test_suite)
         # run the test suite
         test_runner.run(test_suite)
-
+'''
 
 setup(
     name="neoepiscope",
