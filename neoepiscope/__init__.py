@@ -682,19 +682,6 @@ def main():
                 "excluded, no epitopes will be returned",
                 Warning,
             )
-        # Determine whether to include certain transcript types
-        if args.TRV:
-            TRV = True
-        else:
-            TRV = False
-        if args.allow_nonstart:
-            allow_nonstart = True
-        else:
-            allow_nonstart = False
-        if args.allow_nonstop:
-            allow_nonstop = True
-        else:
-            allow_nonstop = False
         # Find transcripts that haplotypes overlap
         relevant_transcripts = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, args.isolate
