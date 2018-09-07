@@ -62,6 +62,7 @@ setup(
     package_data={"neoepiscope": ["*.py", "*.pickle"]},
     zip_safe=True,
     include_package_data=True,
+    package_data={'neoepiscope': ['tests/*']},
     install_requires=["intervaltree", "mhcflurry", "mhcnuggets", "numpy==1.14.5"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
