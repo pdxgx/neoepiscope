@@ -32,19 +32,14 @@ from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
 import os.path as path, sys
 
-current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, current_dir[: current_dir.rfind(path.sep)])
-from neoepiscope import *  # Import package in same directory as tests
-
-sys.path.pop(0)
+from . import *
 
 import unittest
 import filecmp
 import os
 
-neoepiscope_dir = os.path.dirname(
-    os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
-)
+neoepiscope_dir = os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
+
 
 
 class TestGTFprocessing(unittest.TestCase):
@@ -53,7 +48,7 @@ class TestGTFprocessing(unittest.TestCase):
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
         self.base_dir = neoepiscope_dir
-        self.gtf = os.path.join(self.base_dir, "tests", "Ychrom.gtf")
+        self.gtf = os.path.join(self.base_dir, "Ychrom.gtf")
         self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
 
@@ -99,10 +94,10 @@ class TestVCFmerging(unittest.TestCase):
     def setUp(self):
         """Sets up files to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.varscan = os.path.join(self.base_dir, "tests", "Ychrom.varscan.vcf")
-        self.germline = os.path.join(self.base_dir, "tests", "Ychrom.germline.vcf")
-        self.precombined = os.path.join(self.base_dir, "tests", "Ychrom.combined.vcf")
-        self.outvcf = os.path.join(self.base_dir, "tests", "Ychrom.testcombine.vcf")
+        self.varscan = os.path.join(self.base_dir, "Ychrom.varscan.vcf")
+        self.germline = os.path.join(self.base_dir, "Ychrom.germline.vcf")
+        self.precombined = os.path.join(self.base_dir, "Ychrom.combined.vcf")
+        self.outvcf = os.path.join(self.base_dir, "Ychrom.testcombine.vcf")
         combine_vcf(self.germline, self.varscan, self.outvcf)
 
     def test_merge(self):
@@ -120,13 +115,13 @@ class TestPrepHapCUT(unittest.TestCase):
     def setUp(self):
         """Sets up hapcut and vcf files to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.hapcut = os.path.join(self.base_dir, "tests", "test.hapcut.out")
-        self.vcf = os.path.join(self.base_dir, "tests", "test.vcf")
+        self.hapcut = os.path.join(self.base_dir, "test.hapcut.out")
+        self.vcf = os.path.join(self.base_dir, "test.vcf")
         self.complete_hapcut = os.path.join(
-            self.base_dir, "tests", "complete_hapcut.out"
+            self.base_dir, "complete_hapcut.out"
         )
         self.test_hapcut = os.path.join(
-            self.base_dir, "tests", "test_complete_hapcut.out"
+            self.base_dir, "test_complete_hapcut.out"
         )
 
     def test_haplotype_prep(self):
@@ -145,8 +140,8 @@ class TestVAFpos(unittest.TestCase):
     def setUp(self):
         """Sets up vcf files to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.varscan = os.path.join(self.base_dir, "tests", "Ychrom.varscan.vcf")
-        self.mutect = os.path.join(self.base_dir, "tests", "Ychrom.mutect.vcf")
+        self.varscan = os.path.join(self.base_dir, "Ychrom.varscan.vcf")
+        self.mutect = os.path.join(self.base_dir, "Ychrom.mutect.vcf")
 
     def test_position(self):
         """Fails if incorrect positions are returned"""
@@ -160,15 +155,15 @@ class TestHaplotypeProcessing(unittest.TestCase):
     def setUp(self):
         """Sets up input files and dictionaries to use for tests"""
         self.base_dir = neoepiscope_dir
-        self.ref_prefix = os.path.join(self.base_dir, "tests", "Chr11.ref")
+        self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
-        self.Chr11gtf = os.path.join(self.base_dir, "tests", "Chr11.gtf")
+        self.Chr11gtf = os.path.join(self.base_dir, "Chr11.gtf")
         self.Chr11cds = gtf_to_cds(self.Chr11gtf, "NA", pickle_it=False)
         for transcript in self.Chr11cds:
             for cds_block in self.Chr11cds[transcript]:
                 cds_block[0] = cds_block[0].replace("chr", "")
         self.Chr11tree = cds_to_tree(self.Chr11cds, "NA", pickle_it=False)
-        self.Chr11hapcut = os.path.join(self.base_dir, "tests", "Chr11.hapcut.out")
+        self.Chr11hapcut = os.path.join(self.base_dir, "Chr11.hapcut.out")
 
     def test_hap_processing(self):
         """Fails if file is processed incorrectly"""
@@ -376,9 +371,9 @@ class TestOutput(unittest.TestCase):
     def setUp(self):
         """Sets up paths and dictionaries"""
         self.base_dir = neoepiscope_dir
-        self.out_file = os.path.join(self.base_dir, "tests", "neoepiscope.out")
+        self.out_file = os.path.join(self.base_dir, "neoepiscope.out")
         self.correct_out = os.path.join(
-            self.base_dir, "tests", "expected.neoepiscope.out"
+            self.base_dir, "expected.neoepiscope.out"
         )
         self.tools = {
             "netMHCpan4": ["netMHCpan", ["rank", "affinity"]],

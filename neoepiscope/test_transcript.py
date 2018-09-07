@@ -33,9 +33,7 @@ from inspect import getsourcefile
 import os
 import sys
 
-current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, current_dir[: current_dir.rfind(os.path.sep)])
-from neoepiscope import *  # Import package in same directory as tests
+from . import *  # Import package in same directory as tests
 
 sys.path.pop(0)
 
@@ -50,14 +48,12 @@ class TestTranscript(unittest.TestCase):
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
         self.gtf = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
+            os.path.dirname(os.path.abspath(__file__)),
             "Chr11.gtf",
         )
         self.cds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.ref_prefix = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
+            os.path.dirname(os.path.abspath(__file__)),
             "Chr11.ref",
         )
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
