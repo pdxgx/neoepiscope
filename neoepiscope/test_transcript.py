@@ -33,7 +33,7 @@ from inspect import getsourcefile
 import os
 import sys
 
-from . import *  # Import package in same directory as tests
+from neoepiscope import *  # Import package in same directory as tests
 
 sys.path.pop(0)
 
