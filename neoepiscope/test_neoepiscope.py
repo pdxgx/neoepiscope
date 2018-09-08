@@ -32,7 +32,7 @@ from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
 import os.path as path, sys
 
-from . import *
+from neoepiscope import *
 
 import unittest
 import filecmp
