@@ -336,23 +336,15 @@ def main():
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
-
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "test":
         import unittest
-
-        # get setup.py directory
-        setup_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_data")
-        # use the default shared TestLoader instance
+        test_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "tests")
         test_loader = unittest.defaultTestLoader
-        # use the basic test runner that outputs to sys.stderr
         test_runner = unittest.TextTestRunner()
-        # automatically discover all tests
-        # NOTE: only works for python 2.7 and later
-        test_suite = test_loader.discover(setup_dir)
+        test_suite = test_loader.discover(test_dir)
         print(test_suite)
-        # run the test suite
         test_runner.run(test_suite)
     elif args.subparser_name == "index":
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
