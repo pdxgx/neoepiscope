@@ -19,14 +19,14 @@ class DiscoverTest(Command):
 
         # get setup.py directory
         setup_file = sys.modules["__main__"].__file__
-        setup_dir = os.path.abspath(os.path.dirname(setup_file))
+        test_dir = os.path.join(os.path.abspath(os.path.dirname(setup_file)), 'neoepiscope', 'tests')
         # use the default shared TestLoader instance
         test_loader = unittest.defaultTestLoader
         # use the basic test runner that outputs to sys.stderr
         test_runner = unittest.TextTestRunner()
         # automatically discover all tests
         # NOTE: only works for python 2.7 and later
-        test_suite = test_loader.discover(setup_dir)
+        test_suite = test_loader.discover(test_dir)
         print(test_suite)
         # run the test suite
         test_runner.run(test_suite)
@@ -98,7 +98,7 @@ setup(
     license="MIT",
     packages=["neoepiscope"],
     include_package_data=True,
-    package_data={"neoepiscope": ["*.py", "*.pickle", "test_data/*"]},
+    package_data={"neoepiscope": ["*.py", "*.pickle", "tests/*"]},
     zip_safe=True,
     install_requires=["intervaltree", "mhcflurry", "mhcnuggets", "numpy==1.14.5"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
