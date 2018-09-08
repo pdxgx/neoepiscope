@@ -343,7 +343,7 @@ def main():
         import unittest
 
         # get setup.py directory
-        setup_dir = os.path.abspath(os.path.dirname(__file__))
+        setup_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_data")
         # use the default shared TestLoader instance
         test_loader = unittest.defaultTestLoader
         # use the basic test runner that outputs to sys.stderr
