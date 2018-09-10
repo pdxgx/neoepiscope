@@ -13,17 +13,17 @@ Installing neoepiscope
 
 First clone this repo to `/path/to/neoepiscope/repo`; then run
 
-```pip install /path/to/neoepiscope/repo```.
+```pip install neoepiscope```.
 
 To download compatible reference annotation files (hg19 and/or GRCh38) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. From within `/path/to/neoepiscope/repo` run
 
-```python setup.py download```
+```neoepiscope download```
 
 and respond to the prompts as relevant for your needs. 
 
 To make sure that the software is running properly, test it by running
 
-```python setup.py test```
+```neoepiscope test```
 
 Using neoepiscope
 -----
@@ -84,7 +84,7 @@ Options:
 
 Finally, ```call``` neoepitopes:
 
-```neoepiscope call -x <BOWTIE INDEX> -v <VCF> -d <DICTIONARIES> -c <HAPCUT2 OUTPUT> -o <OUTPUT> [options]```
+```neoepiscope call -b <GENOME BUILD> -c <PREPPED HAPCUT2 OUTPUT> [options]```
 
 Options:
 
@@ -98,9 +98,9 @@ Options:
 
 ```-v, --vcf```                       path to VCF file used to generate HapCUT2 output
 
-```-o, --output```		                path to output file
+```-o, --output```		              path to output file
 
-```-f, --fasta```					            output additional fasta file output
+```-f, --fasta```					  output additional fasta file output 
 
 ```-k, --kmer-size```                 kmer size for neoepitope prediction (default 8-11 amino acids)
 
@@ -136,16 +136,16 @@ Haplotype information should be included using ```-c /path/to/haplotype/file```.
 
 If you wish to extract variant allele frequency information from your VCF to be output with relevant epitopes, include the path to the VCF you used to create your haplotype information using ```-v /path/to/VCF```.
 
-To specify the output file, use ```-o /path/to/output_file```. By default, only data on neoepitopes is output in the file /path/to/output/sample_id.neoepiscope.out. By using the `--fasta` option, an additional file, /path/to/output_file.fasta, will be made. This is a FASTA file specifying the full-protein sequences from each mutation-affected transcript. The header in the FASTA will give the name of the transcript from which the protein originated, followed by "v[#]" for every version of the transcript.
+To specify the output file, use ```-o /path/to/output_file```. If no output file is specified, the output will be written to standard out. By default, only data on neoepitopes is output in the file. By using the `--fasta` option, an additional file, /path/to/output_file.fasta, will be made. This is a FASTA file specifying the full-protein sequences from each mutation-affected transcript. The header in the FASTA will give the name of the transcript from which the protein originated, followed by "v[#]" for every version of the transcript. This option is only available when writing output to a file, not standard out.
 
 The default kmer size for neoepitope enumeration is 8-11 amino acids, but a custom range can be specified using the ```--kmer-size``` argument with the minimum and maximum epitope size separated by commas (e.g. ```--kmer-size 8,20``` to get epitopes ranging from 8 to 20 amino acids in length).
 
-For affinity prediction, `neoepiscope` supports predictions from `mhcflurry` [v1](https://github.com/openvax/mhcflurry), `mhcnuggets` [v2](https://github.com/KarchinLab/mhcnuggets-2.0), `netMHCpan` version [v3](http://www.cbs.dtu.dk/cgi-bin/sw_request?netMHCpan+3.0) or [v4](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan), and `netMHCIIpan` [v3](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan). When installing our software with `pip`, `mhcflurry` and `mhcnuggets` are automatically installed or updated. Optional integration of `netMHCpan` or `netMHCIIpan` must be done from your own installation of these softwares using our download functionality (see "Installing neoepiscope" above). 
+For affinity prediction, `neoepiscope` currently supports predictions from `mhcflurry` [v1](https://github.com/openvax/mhcflurry), `mhcnuggets` [v2](https://github.com/KarchinLab/mhcnuggets-2.0), `netMHCpan` version [v3](http://www.cbs.dtu.dk/cgi-bin/sw_request?netMHCpan+3.0) or [v4](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan), and `netMHCIIpan` [v3](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan). When installing our software with `pip`, `mhcflurry` and `mhcnuggets` are automatically installed or updated. Optional integration of `netMHCpan` or `netMHCIIpan` must be done from your own installation of these softwares using our download functionality (see "Installing neoepiscope" above). 
 
-The default affinity prediction software for `neoepiscope` is `mhcflurry` v1. To specify a custom suite of binding prediction softwares, use the `-p` argument for each software followed by its name, version, and desired scoring output(s) (e.g. ```-p mhcflurry 1 affinity,rank -p mhcnuggets 2 affinity```).
+The default affinity prediction software for `neoepiscope` is `mhcflurry` v1. To specify a custom suite of binding prediction softwares, use the `-p` argument for each software followed by its name, version, and desired scoring output(s) (e.g. ```-p mhcflurry 1 affinity,rank -p mhcnuggets 2 affinity```). To forgo binding affinity predictions, use the `--no-affinity` command line option.
 
-Germline and somatic mutations can be handled in a variety of ways. The can be excluded entirely (e.g. ```--germline exclude```), included as background variation to personalize the reference transcriptome (e.g. ```--germline background```), or included as variants from which to enumerate neoepitopes (e.g. ```--somatic include```). The default value for `--germline` is `background`, and the default value for `--somatic` is `include`.
+Germline and somatic mutations can be handled in a variety of ways. They can be excluded entirely (e.g. ```--germline exclude```), included as background variation to personalize the reference transcriptome (e.g. ```--germline background```), or included as variants from which to enumerate neoepitopes (e.g. ```--somatic include```). The default value for `--germline` is `background`, and the default value for `--somatic` is `include`.
 
-The choice of start codon for a transcript can also be handled with flexibility. By default, the value for the `--upstream_atgs` argument is `none`, which specifies preferential use of the reference start codon for a transcript, or alternatively the nearest ATG downstream of it in the case of a disrupted reference start codon. Alternatively, the use of ```--upstream_atgs novel``` allows for the use of a novel ATG upstream of the reference start codon in the case of a disrupted start codon. A less conservative ```--upstream_atgs all``` uses the most upstream ATG, regardless of its novelty. For a conservative option, ```--upstream_atgs reference``` requires use of only the reference start codon, preventing enumeration of neoepitopes from a transcript if the reference start codon is disrupted.
+The choice of start codon for a transcript can also be handled with flexibility. By default, the value for the `--upstream-atgs` argument is `none`, which specifies preferential use of the reference start codon for a transcript, or alternatively the nearest ATG downstream of it in the case of a disrupted reference start codon. Alternatively, the use of ```--upstream-atgs novel``` allows for the use of a novel ATG upstream of the reference start codon in the case of a disrupted start codon. A less conservative ```--upstream-atgs all``` uses the most upstream ATG, regardless of its novelty. For a conservative option, ```--upstream-atgs reference``` requires use of only the reference start codon, preventing enumeration of neoepitopes from a transcript if the reference start codon is disrupted.
 
-By default, `neoepiscope` only enumerates neoepitopes from protein coding transcripts with annotated start and stop codons. However, by specifying the `--NMD`, `--PP`, `--IGV`, and/or `--TRV` flags, you can additionally enumerate neoepitopes from nonsense mediated decay, polymorphic pseudogene transcripts, immunoglobulin variable transcripts, and/or T cell receptor variable transcripts, respectively. For further flexibility, you can add the `--allow_nonstart` and/or `--allow_nonstop` to enumerate neoepitopes from transcripts without annotated start and/or stop codons, respectively.
+By default, `neoepiscope` only enumerates neoepitopes from protein coding transcripts with annotated start and stop codons. However, by specifying the `--nmd`, `--pp`, `--igv`, and/or `--trv` flags, you can additionally enumerate neoepitopes from nonsense mediated decay transcripts, polymorphic pseudogene transcripts, immunoglobulin variable transcripts, and/or T cell receptor variable transcripts, respectively. For further flexibility, you can add the `--allow-nonstart` and/or `--allow-nonstop` to enumerate neoepitopes from transcripts without annotated start and/or stop codons, respectively.
