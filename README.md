@@ -104,7 +104,7 @@ Options:
 
 ```-k, --kmer-size```                 kmer size for neoepitope prediction (default 8-11 amino acids)
 
-```-p, --affinity-predictor```        software to use for MHC binding predictions (default mhcflurry v1 with rank and affinity scores)
+```-p, --affinity-predictor```        software to use for MHC binding predictions (default MHCflurry v1 with rank and affinity scores)
 
 ```-a, --alleles```                   alleles to use for MHC binding predictions
 
@@ -140,9 +140,9 @@ To specify the output file, use ```-o /path/to/output_file```. If no output file
 
 The default kmer size for neoepitope enumeration is 8-11 amino acids, but a custom range can be specified using the ```--kmer-size``` argument with the minimum and maximum epitope size separated by commas (e.g. ```--kmer-size 8,20``` to get epitopes ranging from 8 to 20 amino acids in length).
 
-For affinity prediction, `neoepiscope` currently supports predictions from `mhcflurry` [v1](https://github.com/openvax/mhcflurry), `mhcnuggets` [v2](https://github.com/KarchinLab/mhcnuggets-2.0), `netMHCpan` version [v3](http://www.cbs.dtu.dk/cgi-bin/sw_request?netMHCpan+3.0) or [v4](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan), and `netMHCIIpan` [v3](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan). When installing our software with `pip`, `mhcflurry` and `mhcnuggets` are automatically installed or updated. Optional integration of `netMHCpan` or `netMHCIIpan` must be done from your own installation of these softwares using our download functionality (see "Installing neoepiscope" above). 
+For affinity prediction, `neoepiscope` currently supports predictions from `MHCflurry` [v1](https://github.com/openvax/mhcflurry), `MHCnuggets` [v2](https://github.com/KarchinLab/mhcnuggets-2.0), `netMHCpan` version [v3](http://www.cbs.dtu.dk/cgi-bin/sw_request?netMHCpan+3.0) or [v4](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan), and `netMHCIIpan` [v3](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan). When installing our software with `pip`, `MHCflurry` and `MHCnuggets` are automatically installed or updated. Optional integration of `netMHCpan` or `netMHCIIpan` must be done from your own installation of these softwares using our download functionality (see "Installing neoepiscope" above). 
 
-The default affinity prediction software for `neoepiscope` is `mhcflurry` v1. To specify a custom suite of binding prediction softwares, use the `-p` argument for each software followed by its name, version, and desired scoring output(s) (e.g. ```-p mhcflurry 1 affinity,rank -p mhcnuggets 2 affinity```). To forgo binding affinity predictions, use the `--no-affinity` command line option.
+The default affinity prediction software for `neoepiscope` is `MHCflurry` v1. To specify a custom suite of binding prediction softwares, use the `-p` argument for each software followed by its name, version, and desired scoring output(s) (e.g. ```-p mhcflurry 1 affinity,rank -p mhcnuggets 2 affinity```). To forgo binding affinity predictions, use the `--no-affinity` command line option.
 
 Germline and somatic mutations can be handled in a variety of ways. They can be excluded entirely (e.g. ```--germline exclude```), included as background variation to personalize the reference transcriptome (e.g. ```--germline background```), or included as variants from which to enumerate neoepitopes (e.g. ```--somatic include```). The default value for `--germline` is `background`, and the default value for `--somatic` is `include`.
 
