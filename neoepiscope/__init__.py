@@ -436,7 +436,7 @@ def main():
                 program = tool[0]
                 version = tool[1]
                 scoring = tool[2].split(",")
-                if "mhcflurry" in program:
+                if "mhcflurry" in program.lower():
                     if version == "1" and "mhcflurry1" not in tool_dict:
                         program = "mhcflurry-predict"
                         acceptable_scoring = ["rank", "affinity", "high", "low"]
@@ -463,7 +463,7 @@ def main():
                                 ]
                             )
                         )
-                elif "mhcnuggets" in program:
+                elif "mhcnuggets" in program.lower():
                     if version == "2" and "mhcnuggets2" not in tool_dict:
                         program = "NA"
                         acceptable_scoring = ["affinity"]
