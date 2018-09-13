@@ -56,6 +56,7 @@ class TestGTFprocessing(unittest.TestCase):
 
     def test_cds_tree(self):
         """Fails if dictionary was built incorrectly"""
+        raise RuntimeError
         self.assertEqual(len(self.Ytree.keys()), 1)
         self.assertEqual(len(self.Ytree["chrY"]), 2585)
 
