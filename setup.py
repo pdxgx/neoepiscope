@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# coding=utf-8
+
+from __future__ import absolute_import, division, print_function
 from setuptools import setup, find_packages
 from distutils.core import Command
 from setuptools.command.install import install
