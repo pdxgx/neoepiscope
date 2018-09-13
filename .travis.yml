@@ -8,5 +8,5 @@ python:
 install:
   - pip install .
   - mhcflurry-downloads fetch models_class1
-script: neoepiscope test
+script: python setup.py test
 
