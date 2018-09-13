@@ -24,7 +24,7 @@ class DiscoverTest(Command):
 
         # get setup.py directory
         setup_file = sys.modules["__main__"].__file__
-        test_dir = os.path.join(os.path.abspath(os.path.dirname(setup_file)), 'neoepiscope', 'tests')
+        test_dir = os.path.join(os.path.abspath(os.path.dirname(setup_file)), 'tests')
         # use the default shared TestLoader instance
         test_loader = unittest.defaultTestLoader
         # use the basic test runner that outputs to sys.stderr
@@ -64,7 +64,7 @@ setup(
     license="MIT",
     packages=["neoepiscope"],
     include_package_data=True,
-    package_data={"neoepiscope": ["*.py", "*.pickle", "tests/*"]},
+    package_data={"neoepiscope": ["*.py", "*.pickle"]},
     zip_safe=True,
     install_requires=["intervaltree", "mhcflurry", "mhcnuggets", "numpy==1.14.5"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},

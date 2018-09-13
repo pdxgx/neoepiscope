@@ -110,7 +110,6 @@ def main():
         ),
     )
     download_parser = subparsers.add_parser("download", help="downloads dependencies")
-    test_parser = subparsers.add_parser("test", help="runs all unit tests")
     prep_parser = subparsers.add_parser(
         "prep", help=("combines HAPCUT2 output with unphased variants for call mode")
     )
@@ -338,14 +337,6 @@ def main():
         from .download import NeoepiscopeDownloader
         downloader = NeoepiscopeDownloader()
         downloader.run()
-    elif args.subparser_name == "test":
-        import unittest
-        test_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "tests")
-        test_loader = unittest.defaultTestLoader
-        test_runner = unittest.TextTestRunner()
-        test_suite = test_loader.discover(test_dir)
-        print(test_suite)
-        test_runner.run(test_suite)
     elif args.subparser_name == "index":
         cds_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
