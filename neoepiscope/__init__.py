@@ -7,7 +7,7 @@ Identifies neoepitopes from DNA-seq, VCF, GTF, and Bowtie index.
 
 The MIT License (MIT)
 Copyright (c) 2018 Mary A. Wood, Austin Nguyen,
-                   Abhinav Nellore, and Reid Thompson
+                   Abhinav Nellore, and Reid F. Thompson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
