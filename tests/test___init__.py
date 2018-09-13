@@ -38,7 +38,10 @@ import unittest
 import filecmp
 import os
 
-neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(getsourcefile(lambda: 0)))))
+neoepiscope_dir = os.path.dirname(
+    os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
+)
+
 
 class TestGTFprocessing(unittest.TestCase):
     """Tests proper creation of dictionaries store GTF data"""
@@ -115,12 +118,8 @@ class TestPrepHapCUT(unittest.TestCase):
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.hapcut = os.path.join(self.base_dir, "test.hapcut.out")
         self.vcf = os.path.join(self.base_dir, "test.vcf")
-        self.complete_hapcut = os.path.join(
-            self.base_dir, "complete_hapcut.out"
-        )
-        self.test_hapcut = os.path.join(
-            self.base_dir, "test_complete_hapcut.out"
-        )
+        self.complete_hapcut = os.path.join(self.base_dir, "complete_hapcut.out")
+        self.test_hapcut = os.path.join(self.base_dir, "test_complete_hapcut.out")
 
     def test_haplotype_prep(self):
         """Tests that output of haplotype prep is correct"""
@@ -370,9 +369,7 @@ class TestOutput(unittest.TestCase):
         """Sets up paths and dictionaries"""
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.out_file = os.path.join(self.base_dir, "neoepiscope.out")
-        self.correct_out = os.path.join(
-            self.base_dir, "expected.neoepiscope.out"
-        )
+        self.correct_out = os.path.join(self.base_dir, "expected.neoepiscope.out")
         self.tools = {
             "netMHCpan4": ["netMHCpan", ["rank", "affinity"]],
             "netMHCIIpan3": ["netMHCIIpan", ["rank"]],

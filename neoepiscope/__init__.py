@@ -335,6 +335,7 @@ def main():
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
+
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
@@ -348,10 +349,12 @@ def main():
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
     elif args.subparser_name == "call":
         # Check that output options are compatible
-        if args.fasta and args.output == '-':
-            sys.exit("Cannot write fasta results when writing output to standard out; "
-                     "please specify an output file using the -o/--output option when "
-                     "using the -f/--fasta flag")
+        if args.fasta and args.output == "-":
+            sys.exit(
+                "Cannot write fasta results when writing output to standard out; "
+                "please specify an output file using the -o/--output option when "
+                "using the -f/--fasta flag"
+            )
         # Load pickled dictionaries and prepare bowtie index
         if args.build is not None:
             if (
@@ -386,29 +389,54 @@ def main():
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
             else:
                 raise RuntimeError(
-                    "".join([args.build, " is not an available genome build. Please "
-                        "check that you have run neoepiscope download and are "
-                        "using 'hg19' or 'GRCh38' for this argument."])
+                    "".join(
+                        [
+                            args.build,
+                            " is not an available genome build. Please "
+                            "check that you have run neoepiscope download and are "
+                            "using 'hg19' or 'GRCh38' for this argument.",
+                        ]
+                    )
                 )
         else:
             if args.bowtie_index is not None and args.dicts is not None:
-                intervals_path = os.path.join(args.dicts, "intervals_to_transcript.pickle")
+                intervals_path = os.path.join(
+                    args.dicts, "intervals_to_transcript.pickle"
+                )
                 if os.path.isfile(intervals_dict):
                     with open(intervals_path, "rb") as interval_stream:
                         interval_dict = pickle.load(interval_stream)
                 else:
-                    raise RuntimeError("".join(["Cannot find ", intervals_path, 
-                                                "; have you indexed your GTF with neoepiscope index?"]))
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                intervals_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
                 cds_path = os.path.join(args.dicts, "transcript_to_CDS.pickle")
                 if os.path.isfile(cds_path):
                     with open(cds_path, "rb") as cds_stream:
                         cds_dict = pickle.load(cds_stream)
                 else:
-                    raise RuntimeError("".join(["Cannot find ", cds_path, 
-                                                "; have you indexed your GTF with neoepiscope index?"]))
-                bowtie_files = ["".join([args.bowtie_index, '.', x, '.ebwt']) for x in range(1,5)]
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                cds_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
+                bowtie_files = [
+                    "".join([args.bowtie_index, ".", x, ".ebwt"]) for x in range(1, 5)
+                ]
                 if list(set([os.path.isfile(x) for x in bowtie_files])) == [True]:
-                    reference_index = bowtie_index.BowtieIndexReference(args.bowtie_index)
+                    reference_index = bowtie_index.BowtieIndexReference(
+                        args.bowtie_index
+                    )
                 else:
                     raise RuntimeError("Cannot find specified bowtie index")
             else:

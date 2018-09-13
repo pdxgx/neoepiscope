@@ -24,7 +24,7 @@ class DiscoverTest(Command):
 
         # get setup.py directory
         setup_file = sys.modules["__main__"].__file__
-        test_dir = os.path.join(os.path.abspath(os.path.dirname(setup_file)), 'tests')
+        test_dir = os.path.join(os.path.abspath(os.path.dirname(setup_file)), "tests")
         # use the default shared TestLoader instance
         test_loader = unittest.defaultTestLoader
         # use the basic test runner that outputs to sys.stderr
@@ -53,11 +53,22 @@ class DownloadDependencies(Command):
         downloader = NeoepiscopeDownloader()
         downloader.run()
 
+
 setup(
     name="neoepiscope",
     version="0.1.0",
     description="comprehensive neoepitope prediction software",
-    long_description="neoepiscope is software for predicting neoepitopes from DNA sequencing (DNA-seq) data. Where most neoepitope prediction software confines attention to neoepitopes arising from at most one somatic mutation, often just an SNV, neoepiscope uses assembled haplotype output of HapCUT2 (Edge et al., 2017) to also enumerate neoepitopes arising from more than one somatic mutation. neoepiscope also takes into account frameshifting from indels and permits personalizing the reference transcriptome using germline variants.",
+    long_description=(
+        "neoepiscope is software for predicting neoepitopes "
+        "from DNA sequencing (DNA-seq) data. Where most neoepitope "
+        "prediction software confines attention to neoepitopes arising "
+        "from at most one somatic mutation, often just an SNV, "
+        "neoepiscope uses assembled haplotype output of HapCUT2 "
+        "(Edge et al., 2017) to also enumerate neoepitopes arising "
+        "from more than one somatic mutation. neoepiscope also takes "
+        "into account frameshifting from indels and permits "
+        "personalizing the reference transcriptome using germline variants."
+    ),
     url="http://github.com/ohsu-comp-bio/neoepiscope",
     download_url="https://github.com/ohsu-comp-bio/neoepiscope/tarball/0.1.0",
     author="Mary A. Wood, Austin Nguyen, Abhinav Nellore, Reid F. Thompson",
