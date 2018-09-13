@@ -39,6 +39,7 @@ import unittest
 
 unittest.TestCase.maxDiff = None
 
+
 class TestTranscript(unittest.TestCase):
     """Tests transcript object construction"""
 
@@ -46,13 +47,13 @@ class TestTranscript(unittest.TestCase):
         """Sets up gtf file and creates dictionaries for tests"""
         self.gtf = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'tests',
+            "tests",
             "Chr11.gtf",
         )
         self.cds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.ref_prefix = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'tests',
+            "tests",
             "Chr11.ref",
         )
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)

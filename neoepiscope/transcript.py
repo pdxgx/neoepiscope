@@ -2610,7 +2610,8 @@ def get_peptides_from_transcripts(
     allow_nonstop,
     include_germline=2,
     include_somatic=1,
-    protein_fasta=False):
+    protein_fasta=False,
+):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
 
