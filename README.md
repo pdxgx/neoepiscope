@@ -8,6 +8,10 @@ License
 
 Portions of neoepiscope---specifically, segments of code in [`transcript.py`](neoepiscope/transcript.py), [`bowtie_index.py`](neoepiscope/bowtie_index.py), and [`download.py`](neoepiscope/download.py)---are taken from Rail-RNA, which is copyright (c) 2015 Abhinav Nellore, Leonardo Collado-Torres, Andrew Jaffe, James Morton, Jacob Pritt, José Alquicira-Hernández, Christopher Wilks, Jeffrey T. Leek, and Ben Langmead and licensed under the MIT License.
 
+Support
+-----
+[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/neoepiscope) or email hellopdxgx@gmail.com.
+
 Installing neoepiscope
 -----
 
