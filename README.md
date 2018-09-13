@@ -1,4 +1,4 @@
-neoepiscope
+neoepiscope [![Build Status](https://travis-ci.org/pdxgx/neoepiscope.svg?branch=master)](https://travis-ci.org/pdxgx/neoepiscope)
 -----
 `neoepiscope` is software for predicting neoepitopes from DNA sequencing (DNA-seq) data. Where most neoepitope prediction software confines attention to neoepitopes arising from at most one somatic mutation, often just an SNV, `neoepiscope` uses assembled haplotype output of [HapCUT2](https://github.com/vibansal/HapCUT2) to also enumerate neoepitopes arising from more than one somatic mutation. `neoepiscope` also takes into account frameshifting from indels and permits personalizing the reference transcriptome using germline variants.
 
