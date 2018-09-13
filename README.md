@@ -15,9 +15,9 @@ Support
 Installing neoepiscope
 -----
 
-First clone this repo to `/path/to/neoepiscope/repo`; then run
+`neoepiscope` is compatible with Python 2.7 and Python 3.4 and higher. To install, run
 
-```pip install neoepiscope```.
+```pip install neoepiscope```
 
 To download compatible reference annotation files (hg19 and/or GRCh38) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
 
