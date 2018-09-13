@@ -34,22 +34,18 @@ import os.path as path, sys
 
 from neoepiscope import *
 
-sys.path.pop(0)
-
 import unittest
 import filecmp
 import os
 
-neoepiscope_dir = os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
-
-
+neoepiscope_dir = os.path.dirname(os.path.dirname((os.path.abspath(getsourcefile(lambda: 0)))))
 
 class TestGTFprocessing(unittest.TestCase):
     """Tests proper creation of dictionaries store GTF data"""
 
     def setUp(self):
         """Sets up gtf file and creates dictionaries for tests"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.gtf = os.path.join(self.base_dir, "Ychrom.gtf")
         self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
@@ -95,7 +91,7 @@ class TestVCFmerging(unittest.TestCase):
 
     def setUp(self):
         """Sets up files to use for tests"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.varscan = os.path.join(self.base_dir, "Ychrom.varscan.vcf")
         self.germline = os.path.join(self.base_dir, "Ychrom.germline.vcf")
         self.precombined = os.path.join(self.base_dir, "Ychrom.combined.vcf")
@@ -116,7 +112,7 @@ class TestPrepHapCUT(unittest.TestCase):
 
     def setUp(self):
         """Sets up hapcut and vcf files to use for tests"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.hapcut = os.path.join(self.base_dir, "test.hapcut.out")
         self.vcf = os.path.join(self.base_dir, "test.vcf")
         self.complete_hapcut = os.path.join(
@@ -141,7 +137,7 @@ class TestVAFpos(unittest.TestCase):
 
     def setUp(self):
         """Sets up vcf files to use for tests"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.varscan = os.path.join(self.base_dir, "Ychrom.varscan.vcf")
         self.mutect = os.path.join(self.base_dir, "Ychrom.mutect.vcf")
 
@@ -156,7 +152,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
 
     def setUp(self):
         """Sets up input files and dictionaries to use for tests"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         self.Chr11gtf = os.path.join(self.base_dir, "Chr11.gtf")
@@ -372,7 +368,7 @@ class TestOutput(unittest.TestCase):
 
     def setUp(self):
         """Sets up paths and dictionaries"""
-        self.base_dir = neoepiscope_dir
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.out_file = os.path.join(self.base_dir, "neoepiscope.out")
         self.correct_out = os.path.join(
             self.base_dir, "expected.neoepiscope.out"
