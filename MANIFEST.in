@@ -1,6 +1,0 @@
-recursive-include tests/*.gtf
-recursive-include tests/*.out
-recursive-include tests/*.ebwt
-recursive-include tests/*.vcf
-recursive-include tests/*.germline
-recursive-include tests/*.py
