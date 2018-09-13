@@ -34,6 +34,8 @@ import os.path as path, sys
 
 from neoepiscope import *
 
+sys.path.pop(0)
+
 import unittest
 import filecmp
 import os
