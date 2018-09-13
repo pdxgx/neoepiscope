@@ -90,7 +90,6 @@ setup(
         "Intended Audience :: Education",
         "Operating System :: MacOS",
         "Operating System :: Unix",
-        "Operating System :: Microsoft :: Windows",
         "Topic :: Scientific/Engineering :: Medical Science Apps.",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
