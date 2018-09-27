@@ -158,7 +158,7 @@ def main():
         "-c",
         "--hapcut2-output",
         type=str,
-        required=True,
+        required=False,
         help="path to output file of HAPCUT2 run on input VCF",
     )
     prep_parser.add_argument(
@@ -346,7 +346,10 @@ def main():
     elif args.subparser_name == "merge":
         combine_vcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == "prep":
-        prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
+        if args.hapcut2_output:
+            prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
+        else:
+            prep_hapcut_output(args.output, None, args.vcf)
     elif args.subparser_name == "call":
         # Check that output options are compatible
         if args.fasta and args.output == "-":
