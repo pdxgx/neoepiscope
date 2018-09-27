@@ -166,7 +166,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
 
         output: path to output file to write adjusted haplotypes
         hapcut2_output: path to original output from HapCUT2 with only
-            phased mutations
+            phased mutations, or None if using unphased mutations
         vcf: path to vcf used to generate original HapCUT2 output
 
         Return value: None
@@ -177,74 +177,75 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
             output_stream = sys.stdout
         else:
             output_stream = open(output, "w")
-        with open(hapcut2_output) as hapcut2_stream:
-            for line in hapcut2_stream:
-                if line[0] != "*" and not line.startswith("BLOCK"):
-                    tokens = line.strip().split("\t")
-                    if tokens[1] == "-" or tokens[2] == "-":
-                        continue
-                    elif "," in tokens[6]:
-                        alt_alleles = tokens[6].split(",")
-                        try:
-                            assert len(alt_alleles) == 2
-                        except AssertionError:
-                            warnings.warn(
-                                "".join(
-                                    [
-                                        "Neoepiscope does not support ",
-                                        "triallellic phasing; of ",
-                                        "alternate alleles ",
-                                        tokens[6],
-                                        " at contig ",
-                                        tokens[3],
-                                        " position ",
-                                        tokens[4],
-                                        ", only ",
-                                        "the top two will be included.",
-                                    ]
+        if hapcut2_output is not None:
+            with open(hapcut2_output) as hapcut2_stream:
+                for line in hapcut2_stream:
+                    if line[0] != "*" and not line.startswith("BLOCK"):
+                        tokens = line.strip().split("\t")
+                        if tokens[1] == "-" or tokens[2] == "-":
+                            continue
+                        elif "," in tokens[6]:
+                            alt_alleles = tokens[6].split(",")
+                            try:
+                                assert len(alt_alleles) == 2
+                            except AssertionError:
+                                warnings.warn(
+                                    "".join(
+                                        [
+                                            "Neoepiscope does not support ",
+                                            "triallellic phasing; of ",
+                                            "alternate alleles ",
+                                            tokens[6],
+                                            " at contig ",
+                                            tokens[3],
+                                            " position ",
+                                            tokens[4],
+                                            ", only ",
+                                            "the top two will be included.",
+                                        ]
+                                    )
                                 )
-                            )
-                        for i in range(0, 2):
-                            allele = alt_alleles[i]
-                            phased[(tokens[3], int(tokens[4]))].add((tokens[5], allele))
-                            if i == 0:
-                                if tokens[1] == "1":
-                                    gen1 = "1"
-                                    gen2 = "0"
-                                else:
-                                    gen1 = "0"
-                                    gen2 = "1"
-                            elif i == 1:
-                                if tokens[1] == "2":
-                                    gen1 = "1"
-                                    gen2 = "0"
-                                else:
-                                    gen1 = "0"
-                                    gen2 = "1"
-                            print(
-                                "\t".join(
-                                    [
-                                        tokens[0],
-                                        gen1,
-                                        gen2,
-                                        tokens[3],
-                                        tokens[4],
-                                        tokens[5],
-                                        alt_alleles[i],
-                                        tokens[7],
-                                        tokens[8],
-                                        tokens[9],
-                                        tokens[10],
-                                    ]
-                                ),
-                                file=output_stream,
-                            )
+                            for i in range(0, 2):
+                                allele = alt_alleles[i]
+                                phased[(tokens[3], int(tokens[4]))].add((tokens[5], allele))
+                                if i == 0:
+                                    if tokens[1] == "1":
+                                        gen1 = "1"
+                                        gen2 = "0"
+                                    else:
+                                        gen1 = "0"
+                                        gen2 = "1"
+                                elif i == 1:
+                                    if tokens[1] == "2":
+                                        gen1 = "1"
+                                        gen2 = "0"
+                                    else:
+                                        gen1 = "0"
+                                        gen2 = "1"
+                                print(
+                                    "\t".join(
+                                        [
+                                            tokens[0],
+                                            gen1,
+                                            gen2,
+                                            tokens[3],
+                                            tokens[4],
+                                            tokens[5],
+                                            alt_alleles[i],
+                                            tokens[7],
+                                            tokens[8],
+                                            tokens[9],
+                                            tokens[10],
+                                        ]
+                                    ),
+                                    file=output_stream,
+                                )
+                        else:
+                            phased[(tokens[3], int(tokens[4]))].add((tokens[5], tokens[6]))
+                            print(line.strip(), file=output_stream)
                     else:
-                        phased[(tokens[3], int(tokens[4]))].add((tokens[5], tokens[6]))
                         print(line.strip(), file=output_stream)
-                else:
-                    print(line.strip(), file=output_stream)
-        print("********", file=output_stream)
+            print("********", file=output_stream)
         with open(vcf) as vcf_stream:
             first_char = "#"
             while first_char == "#":
