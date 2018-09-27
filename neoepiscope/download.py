@@ -39,6 +39,7 @@ SOFTWARE.
 """
 
 from __future__ import absolute_import, division, print_function
+from six.moves import input
 from .version import version_number
 from .file_processing import which
 import signal
@@ -265,7 +266,7 @@ class NeoepiscopeDownloader(object):
             sys.stdout.write("\x1b[K%s [y/n]: " % question)
             try:
                 try:
-                    return strtobool(raw_input().lower())
+                    return strtobool(input().lower())
                 except KeyboardInterrupt:
                     sys.stdout.write("\n")
                     sys.exit(0)
@@ -287,7 +288,7 @@ class NeoepiscopeDownloader(object):
         while True:
             sys.stdout.write("%s: " % request)
             try:
-                path = which_function(raw_input())
+                path = which_function(input())
                 if path is not None:
                     return path
                 else:
