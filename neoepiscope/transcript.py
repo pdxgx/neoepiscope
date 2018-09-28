@@ -2317,12 +2317,12 @@ class Transcript(object):
                             for mutation_data in data_set:
                                 if unknown_aa and '?' in pair[0] or '?' in pair[1]:
                                     mutation_data = (
-                                        mutation_data + (pair[1],) + transcript_warnings
+                                        mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
+                                                                                'unknown_amino_acid']),)
                                 )
                                 else:
                                     mutation_data = (
-                                        mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
-                                                                                'unknown_amino_acid']),)
+                                        mutation_data + (pair[1],) + transcript_warnings
                                     )
                                 peptide_seqs[pair[0]].append(mutation_data)
                             peptide_seqs[pair[0]] = list(set(peptide_seqs[pair[0]]))
