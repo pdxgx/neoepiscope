@@ -261,7 +261,20 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     seq_size = len(seq)
     peptide = []
     for i in range(0, seq_size - seq_size % 3, 3):
-        codon = _codon_table[seq[i : i + 3]]
+        if 'N' not in seq[i : i + 3]:
+            codon = _codon_table[seq[i : i + 3]]
+        elif seq[i : i + 3].count('N') == 1 and seq[i+2] == 'N':
+            # Only 1 N in the wobble position
+            codon_options = set(
+                [_codon_table[''.join([seq[i : i + 2], x])] 
+                                        for x in ['A', 'C', 'G', 'T']]
+                )
+            if len(codon_options) == 1:
+                codon = codon_options[0]
+            else:
+                codon = '?'
+        else:
+            codon = '?'
         peptide.append(codon)
         if codon == "X":
             break
@@ -1540,6 +1553,7 @@ class Transcript(object):
         sequence, ref_sequence = "", ""  # hold flattened nucleotide sequence
         start = self.start_codon  # redundant var; can change
         stop = self.stop_codon  # redundant var; can change
+        unknown_aa = False
         if start is None:
             if not return_protein:
                 return {}
@@ -2206,6 +2220,8 @@ class Transcript(object):
                     break
         protein = seq_to_peptide(sequence[start_codon[0] :], reverse_strand=False)
         protein_ref = seq_to_peptide(ref_sequence[ref_atg[1] :], reverse_strand=False)
+        if '?' in protein or '?' in protein_ref:
+            unknown_aa = True
         if TAA_TGA_TAG == []:
             if "X" in protein:
                 for i in range(coding_start, len(sequence), 3):
@@ -2299,9 +2315,15 @@ class Transcript(object):
                                 # Dealing with regular peptide
                                 data_set = coords[4]
                             for mutation_data in data_set:
-                                mutation_data = (
-                                    mutation_data + (pair[1],) + transcript_warnings
+                                if unknown_aa and '?' in pair[0] or '?' in pair[1]:
+                                    mutation_data = (
+                                        mutation_data + (pair[1],) + transcript_warnings
                                 )
+                                else:
+                                    mutation_data = (
+                                        mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
+                                                                                'unknown_amino_acid']),)
+                                    )
                                 peptide_seqs[pair[0]].append(mutation_data)
                             peptide_seqs[pair[0]] = list(set(peptide_seqs[pair[0]]))
                 else:
@@ -2314,9 +2336,15 @@ class Transcript(object):
                             # Dealing with regular peptide
                             data_set = coords[4]
                         for mutation_data in data_set:
-                            mutation_data = (
-                                mutation_data + ("NA",) + transcript_warnings
-                            )
+                            if unknown_aa and '?' in pair[0]:
+                                mutation_data = (
+                                    mutation_data + ("NA",) + (';'.join([transcript_warnings[0], 
+                                                                         'unknown_amino_acid']),)
+                                )
+                            else:
+                                mutation_data = (
+                                    mutation_data + ("NA",) + transcript_warnings
+                                )
                             peptide_seqs[pep].append(mutation_data)
                         peptide_seqs[pep] = list(set(peptide_seqs[pep]))
         if not return_protein:
