@@ -77,7 +77,7 @@ def xopen(gzipped, *args):
         Yield value: file object
     """
     import sys
-
+    import codecs
     if gzipped == "-":
         fh = sys.stdout
     else:
@@ -86,7 +86,8 @@ def xopen(gzipped, *args):
         import gzip
 
         if gzipped is None:
-            with open(args[0], "rb") as binary_input_stream:
+            with codecs.open(args[0], "rb", 
+                             encoding='utf-8', errors='replace') as binary_input_stream:
                 # Check for magic number
                 if binary_input_stream.read(2) == "\x1f\x8b":
                     gzipped = True
@@ -101,7 +102,7 @@ def xopen(gzipped, *args):
                 # Be forgiving of gzips that end unexpectedly
                 old_read_eof = gzip.GzipFile._read_eof
                 gzip.GzipFile._read_eof = lambda *args, **kwargs: None
-                fh = gzip.open(*args)
+                fh = gzip.open(*args, encoding='utf-8', errors='replace')
             elif "w" in mode or "a" in mode:
                 try:
                     compresslevel = int(args[2])
@@ -121,7 +122,7 @@ def xopen(gzipped, *args):
             else:
                 raise IOError("Mode " + mode + " not supported")
         else:
-            fh = open(*args)
+            fh = open(*args, encoding='utf-8', errors='replace')
     try:
         yield fh
     finally:
