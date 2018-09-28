@@ -2336,7 +2336,7 @@ class Transcript(object):
                             # Dealing with regular peptide
                             data_set = coords[4]
                         for mutation_data in data_set:
-                            if unknown_aa and '?' in pair[0]:
+                            if unknown_aa and '?' in pep:
                                 mutation_data = (
                                     mutation_data + ("NA",) + (';'.join([transcript_warnings[0], 
                                                                          'unknown_amino_acid']),)
