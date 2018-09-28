@@ -89,7 +89,8 @@ def xopen(gzipped, *args):
             with codecs.open(args[0], "rb", 
                              encoding='utf-8', errors='replace') as binary_input_stream:
                 # Check for magic number
-                if binary_input_stream.read(2) == "\x1f\x8b":
+                b2 = binary_input_stream.read(2)
+                if b2 == "\x1f\x8b" or b2 == "\x1f\x08":
                     gzipped = True
                 else:
                     gzipped = False
@@ -100,8 +101,8 @@ def xopen(gzipped, *args):
                 mode = "rb"
             if "r" in mode:
                 # Be forgiving of gzips that end unexpectedly
-                old_read_eof = gzip.GzipFile._read_eof
-                gzip.GzipFile._read_eof = lambda *args, **kwargs: None
+                #old_read_eof = gzip.GzipFile._read_eof
+                #gzip.GzipFile._read_eof = lambda *args, **kwargs: None
                 fh = gzip.open(*args, encoding='utf-8', errors='replace')
             elif "w" in mode or "a" in mode:
                 try:
@@ -122,7 +123,7 @@ def xopen(gzipped, *args):
             else:
                 raise IOError("Mode " + mode + " not supported")
         else:
-            fh = open(*args, encoding='utf-8', errors='replace')
+            fh = codecs.open(*args, encoding='utf-8', errors='replace')
     try:
         yield fh
     finally:
@@ -271,7 +272,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
                                         for x in ['A', 'C', 'G', 'T']]
                 )
             if len(codon_options) == 1:
-                codon = codon_options[0]
+                codon = list(codon_options)[0]
             else:
                 codon = '?'
         else:
@@ -1411,6 +1412,7 @@ class Transcript(object):
                         transcript, maintain it to keep track of reading frame
                         changes for new start"""
                     coding_ref_start = atg
+                    encountered_true_start = True
                     if atg[5]:
                         for seq in atg[2]:
                             for x in seq[2]:
