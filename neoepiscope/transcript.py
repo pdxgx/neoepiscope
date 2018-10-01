@@ -58,10 +58,8 @@ from sys import version_info
 if version_info[0] < 3:
     from string import maketrans
     revcomp_translation_table = maketrans("ATCG", "TAGC")
-    gzip_read_string = 'rb'
 else:
     revcomp_translation_table = str.maketrans("ATCG", "TAGC")
-    gzip_read_string = 'r'
 
 
 @contextlib.contextmanager
@@ -86,7 +84,7 @@ def xopen(gzipped, *args):
         import gzip
 
         if gzipped is None:
-            with open(args[0], gzip_read_string) as binary_input_stream:
+            with open(args[0], 'rb') as binary_input_stream:
                 # Check for magic number
                 b2 = binary_input_stream.read(2)
                 if b2 == "\x1f\x8b":
