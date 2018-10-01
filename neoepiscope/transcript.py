@@ -87,7 +87,7 @@ def xopen(gzipped, *args):
             with open(args[0], 'rb') as binary_input_stream:
                 # Check for magic number
                 b2 = binary_input_stream.read(2)
-                if b2 == "\x1f\x8b":
+                if b2 == b"\x1f\x8b":
                     gzipped = True
                 else:
                     gzipped = False
@@ -100,7 +100,6 @@ def xopen(gzipped, *args):
                 # Be forgiving of gzips that end unexpectedly
                 #old_read_eof = gzip.GzipFile._read_eof
                 #gzip.GzipFile._read_eof = lambda *args, **kwargs: None
-                print(args)
                 fh = gzip.open(*args)
             elif "w" in mode or "a" in mode:
                 try:
@@ -2371,6 +2370,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     # Parse GTF to obtain CDS/stop codon info
     with xopen(None, gtf_file) as f:
         for line in f:
+            line = line.decode("ascii")
             if line[0] != "#":
                 tokens = line.strip().split("\t")
                 if tokens[2] in ["exon", "start_codon", "stop_codon"]:
