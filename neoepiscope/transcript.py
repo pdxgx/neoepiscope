@@ -95,12 +95,13 @@ def xopen(gzipped, *args):
             try:
                 mode = args[1]
             except IndexError:
-                mode = "rb"
+                mode = "r"
             if "r" in mode:
                 # Be forgiving of gzips that end unexpectedly
                 #old_read_eof = gzip.GzipFile._read_eof
                 #gzip.GzipFile._read_eof = lambda *args, **kwargs: None
-                fh = gzip.open(*args, encoding='utf-8', errors='replace')
+                print(args)
+                fh = gzip.open(*args)
             elif "w" in mode or "a" in mode:
                 try:
                     compresslevel = int(args[2])
