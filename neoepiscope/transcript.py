@@ -1412,12 +1412,11 @@ class Transcript(object):
                         transcript, maintain it to keep track of reading frame
                         changes for new start"""
                     coding_ref_start = atg
-                    encountered_true_start = True
                     if atg[5]:
+                        print(atg[2])
                         for seq in atg[2]:
                             for x in seq[2]:
                                 start_disrupting_muts.append(x)
-                        # start_disrupting_muts.extend([x for x in atg[2]])
                         start_warnings.append("reference_start_codon_disrupted")
             if atg[3] and not atg[4]:
                 encountered_true_start = True
@@ -1590,7 +1589,7 @@ class Transcript(object):
                     if ATG1 - ATG_temp1 == ATG2 - ATG_temp2:
                         # Reference and new sequence contain start in same place
                         if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                            relevant_seq = seq_previous[-1]
+                            relevant_seq = [seq_previous[-1]]
                         else:
                             found_all_variants = False
                             relevant_seq = []
@@ -1607,7 +1606,7 @@ class Transcript(object):
                                     found_all_variants = True
                                 i -= 1
                             if relevant_seq == []:
-                                relevant_seq = seq_previous[-1]
+                                relevant_seq = [seq_previous[-1]]
                         ATGs.append(
                             [
                                 ATG1,
@@ -1625,7 +1624,7 @@ class Transcript(object):
                     elif ATG1 >= 0 and ATG2 < 0:
                         # New sequence contains start codon while reference doesn't
                         if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                            relevant_seq = seq_previous[-1]
+                            relevant_seq = [seq_previous[-1]]
                         else:
                             found_all_variants = False
                             if seq_previous[-1][2] != [()]:
@@ -1659,7 +1658,7 @@ class Transcript(object):
                     elif ATG1 < 0 and ATG2 >= 0:
                         # Reference contains start codon but new sequence doesn't
                         if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                            relevant_seq = seq_previous[-1]
+                            relevant_seq = [seq_previous[-1]]
                         else:
                             found_all_variants = False
                             if seq_previous[-1][2] != [()]:
@@ -1693,7 +1692,7 @@ class Transcript(object):
                     elif ATG1 - ATG_temp1 < ATG2 - ATG_temp2:
                         # Start codon happens in new sequence before ref sequence
                         if (len(sequence) - len(seq_previous[-1][0]) - 1) < ATG1:
-                            relevant_seq = seq_previous[-1]
+                            relevant_seq = [seq_previous[-1]]
                         else:
                             found_all_variants = False
                             if seq_previous[-1][2] != [()]:
@@ -1727,7 +1726,7 @@ class Transcript(object):
                     else:
                         # Start codon happens in ref sequence before new sequence
                         if (len(ref_sequence) - len(seq_previous[-1][0]) - 1) < ATG2:
-                            relevant_seq = seq_previous[-1]
+                            relevant_seq = [seq_previous[-1]]
                         else:
                             found_all_variants = False
                             if seq_previous[-1][2] != [()]:
