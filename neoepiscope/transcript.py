@@ -57,10 +57,11 @@ from sys import version_info
 
 if version_info[0] < 3:
     from string import maketrans
-
     revcomp_translation_table = maketrans("ATCG", "TAGC")
+    gzip_read_string = 'rb'
 else:
     revcomp_translation_table = str.maketrans("ATCG", "TAGC")
+    gzip_read_string = 'r'
 
 
 @contextlib.contextmanager
@@ -77,7 +78,6 @@ def xopen(gzipped, *args):
         Yield value: file object
     """
     import sys
-    import codecs
     if gzipped == "-":
         fh = sys.stdout
     else:
@@ -86,11 +86,10 @@ def xopen(gzipped, *args):
         import gzip
 
         if gzipped is None:
-            with codecs.open(args[0], "rb", 
-                             encoding='utf-8', errors='replace') as binary_input_stream:
+            with open(args[0], gzip_read_string) as binary_input_stream:
                 # Check for magic number
                 b2 = binary_input_stream.read(2)
-                if b2 == "\x1f\x8b" or b2 == "\x1f\x08":
+                if b2 == "\x1f\x8b":
                     gzipped = True
                 else:
                     gzipped = False
@@ -123,7 +122,7 @@ def xopen(gzipped, *args):
             else:
                 raise IOError("Mode " + mode + " not supported")
         else:
-            fh = codecs.open(*args, encoding='utf-8', errors='replace')
+            fh = open(*args)
     try:
         yield fh
     finally:
