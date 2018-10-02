@@ -2370,7 +2370,11 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     # Parse GTF to obtain CDS/stop codon info
     with xopen(None, gtf_file) as f:
         for line in f:
-            line = line.decode("ascii")
+            try:
+                line = line.decode("ascii")
+            except AttributeError:
+                # it's a string
+                pass
             if line[0] != "#":
                 tokens = line.strip().split("\t")
                 if tokens[2] in ["exon", "start_codon", "stop_codon"]:
