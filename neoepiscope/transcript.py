@@ -704,6 +704,11 @@ class Transcript(object):
                                 ),
                             ]
                         )
+                    elif not start_index % 2 and not end_index % 2:
+                        relevant_deletion_intervals.extend([
+                                    (intervals[i], "R", tuple())
+                                    for i in range(start_index, end_index)
+                                ])
                     else:
                         if (
                             start_index % 2
@@ -2564,7 +2569,13 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                 else:
                     alternatives = [tokens[6]]
                 for i in range(0, min(len(alternatives), 2)):
-                    if len(tokens[5]) == len(alternatives[i]):
+                    if alternatives[i] == "<DEL>":
+                        mutation_type = "D"
+                        deletion_size = len(tokens[5])
+                        ref = tokens[5]
+                        alt = deletion_size
+                        end = pos + deletion_size
+                    elif len(tokens[5]) == len(alternatives[i]):
                         mutation_type = "V"
                         pos = int(tokens[4])
                         ref = tokens[5]
@@ -2575,7 +2586,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         mutation_type = "D"
                         deletion_size = len(tokens[5]) - len(alternatives[i])
                         pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
-                        ref = tokens[5][len(alternatives[i]) :]
+                        ref = tokens[5][len(alternatives[i]):]
                         alt = deletion_size
                         end = pos + deletion_size
                     elif len(tokens[5]) < len(alternatives[i]):
