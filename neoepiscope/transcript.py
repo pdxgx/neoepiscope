@@ -780,9 +780,12 @@ class Transcript(object):
                             # Add edit if and only if it lies within bounds
                             edits[pos].append(edit)
                     elif edit[1] == "I":
-                        if start_index % 2 or pos == intervals[start_index][0]:
-                            # An insertion is valid before or after a block
-                            edits[pos].append(edit)
+                        try:
+                            if start_index % 2 or pos == intervals[start_index][0]:
+                                # An insertion is valid before or after a block
+                                edits[pos].append(edit)
+                        except IndexError:
+                            continue
             # If there is more than 1 SNV at the same position, one must be
             # germline and the other somatic, as only 1 mutation per mutation
             # class is allowed at the same position. Favor somatic mutation.
