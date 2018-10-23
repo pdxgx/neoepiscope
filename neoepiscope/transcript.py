@@ -712,7 +712,7 @@ class Transcript(object):
                     else:
                         if (
                             start_index % 2
-                            or deletion_intervals[i][0] == intervals[start_index]
+                            #or deletion_intervals[i][0] == intervals[start_index]
                         ):
                             pos = deletion_intervals[i]
                         else:
@@ -1418,7 +1418,6 @@ class Transcript(object):
                         changes for new start"""
                     coding_ref_start = atg
                     if atg[5]:
-                        print(atg[2])
                         for seq in atg[2]:
                             for x in seq[2]:
                                 start_disrupting_muts.append(x)
