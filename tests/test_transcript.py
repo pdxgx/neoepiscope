@@ -241,6 +241,13 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(
             len([x for x in self.transcript.annotated_seq() if x[1] != "R"]), 0
         )
+        # Insertion in an intron, only fetching a portion of annotated seq
+        self.transcript.reset()
+        self.assertEqual(self.transcript.annotated_seq(5246947, 5247012), 
+                         [('CTCCTGGGCA', 'R', [()], 5246956)])
+        self.transcript.edit("ATGCGGGG", 5246980, mutation_type="I")
+        self.assertEqual(self.transcript.annotated_seq(5246947, 5247012), 
+                         [('CTCCTGGGCA', 'R', [()], 5246956)])
         # In a transcript with no coding exons
         self.non_coding_transcript.edit("A", 65190856)
         relevant_edits = self.non_coding_transcript.expressed_edits()
