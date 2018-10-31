@@ -752,7 +752,7 @@ def main():
                             print(identifier, file=f)
                             print(proteins[i], file=f)
         else:
-            sys.exit("No neoepitopes found")
+            print("No neoepitopes found", file=sys.stderr)
     else:
         parser.print_usage()
 
