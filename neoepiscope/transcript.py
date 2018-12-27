@@ -823,7 +823,7 @@ class Transcript(object):
         if (
             not (pos_index % 2)
             or not self.start_codon_index
-            or not self.stop_codon_index
+            #or not self.stop_codon_index
         ):
             # We're outside exon sequence
             return None

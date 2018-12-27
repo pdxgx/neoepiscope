@@ -34,7 +34,7 @@ Using neoepiscope
 
 ##### Preparing reference files (for those using references other than hg19 or GRCh38)
 
-If you aren't using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
+If you __aren't__ using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
 
 ```neoepiscope index -g <GTF> -d <DIRECTORY TO HOLD PICKLED DICTIONARIES>```
 
@@ -46,7 +46,7 @@ Options:
 
 ##### Ensure proper ordering of VCF
 
-To call neoepitopes from somatic mutations, ensure that data for the tumor sample in your VCF file precedes data from a matched normal sample. If it DOES NOT, run neoepiscope in ```swap``` mode to produce a new VCF:
+To call neoepitopes from somatic mutations, ensure that the column with data for the tumor sample in your VCF file precedes the column with data from a matched normal sample. If it __does not__, run neoepiscope in ```swap``` mode to produce a new VCF:
 
 ```neoepiscope swap -i <INPUT VCF> -o <SWAPPED VCF>```
 
@@ -58,7 +58,7 @@ Options:
 
 ##### Add germline variation (optional)
 
-If you would like to include germline variation in your neoepitope prediction, ```merge``` your somatic and germline VCFs for a sample prior to running HapCUT2:
+If you would like to include germline variation in your neoepitope prediction, ```merge``` your somatic and germline VCFs for a sample prior to phasing variants:
 
 ```neoepiscope merge -g <GERMLINE VCF> -s <SOMATIC VCF> -o <MERGED VCF>```
 
@@ -83,6 +83,16 @@ Options:
 ```-c, --hapcut2-output```    path to original HapCUT2 output
 
 ```-o, --output```            path to output file
+
+```-p, --phased```			  flag input VCF as phased with GATK ReadBackedPhasing
+
+Alternatively, you may perform phasing using [GATK's ReadBackedPhasing](https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_phasing_ReadBackedPhasing.php) on your merged or somatic VCF. If you phase variants with GATK instead of HapCUT2, make sure to use the ```-p``` flag when running ```neoepiscope prep``` to format your output:
+
+```neoepiscope prep -v <VCF> -o <ADJUSTED HAPCUT OUTPUT> -p```
+
+You may also predict neoepitopes without phasing by preparing your merged or somatic VCF:
+
+```neoepiscope prep -v <VCF> -o <ADJUSTED HAPCUT OUTPUT>```
 
 ##### Neoepitope prediction
 

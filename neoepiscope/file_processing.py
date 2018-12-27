@@ -161,13 +161,14 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
         subprocess.call(cleanup, shell=True)
 
 
-def prep_hapcut_output(output, hapcut2_output, vcf):
+def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
     """ Adds unphased mutations to HapCUT2 output as their own haplotypes
 
         output: path to output file to write adjusted haplotypes
         hapcut2_output: path to original output from HapCUT2 with only
             phased mutations, or None if using unphased mutations
         vcf: path to vcf used to generate original HapCUT2 output
+        phased: vcf file is a phased vcf from GATK ReadBackedPhasing
 
         Return value: None
     """
@@ -246,40 +247,141 @@ def prep_hapcut_output(output, hapcut2_output, vcf):
                     else:
                         print(line.strip(), file=output_stream)
             print("********", file=output_stream)
-        with open(vcf) as vcf_stream:
-            first_char = "#"
-            while first_char == "#":
-                line = vcf_stream.readline().strip()
-                try:
-                    first_char = line[0]
-                except IndexError:
-                    first_char = "#"
-            counter = 1
-            while line:
-                tokens = line.split("\t")
-                pos = int(tokens[1])
-                alt_alleles = tokens[4].split(",")
-                for allele in alt_alleles:
-                    if (tokens[3], allele) not in phased[(tokens[0], pos)]:
-                        print("BLOCK: unphased", file=output_stream)
-                        print(
-                            (
-                                "{vcf_line}\t1\t0\t{chrom}\t"
-                                "{pos}\t{ref}\t{alt}\t"
-                                "{genotype}\tNA\tNA"
-                            ).format(
-                                vcf_line=counter,
-                                chrom=tokens[0],
-                                pos=pos,
-                                ref=tokens[3],
-                                alt=allele,
-                                genotype=tokens[9],
-                            ),
-                            file=output_stream,
-                        )
-                        print("********", file=output_stream)
-                line = vcf_stream.readline().strip()
-                counter += 1
+        if phased_vcf:
+            current_haplotype = None
+            counter = 0
+            with open(vcf) as vcf_stream:
+                for line in vcf_stream:
+                    if line[0] != '#':
+                        counter += 1
+                        tokens = line.split("\t")
+                        pos = int(tokens[1])
+                        if 'HP' in tokens[8]:
+                            hp_index = tokens[8].split(':').index('HP')
+                            hap = tokens[9].split(':')[hp_index].split(',')
+                            if current_haplotype is None:
+                                current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
+                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
+                                    print("BLOCK: phased", file=output_stream)
+                                    print(
+                                        (
+                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
+                                            "{pos}\t{ref}\t{alt}\t"
+                                            "{genotype}\tNA\tNA"
+                                        ).format(
+                                            vcf_line=counter,
+                                            hap1=str(current_haplotype[1]),
+                                            hap2=str(current_haplotype[2]),
+                                            chrom=tokens[0],
+                                            pos=pos,
+                                            ref=tokens[3],
+                                            alt=tokens[4],
+                                            genotype=tokens[9].strip(),
+                                        ),
+                                        file=output_stream,
+                                    )   
+                            elif int(hap[0].split('-')[0]) == current_haplotype[0]:
+                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
+                                    print(
+                                        (
+                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
+                                            "{pos}\t{ref}\t{alt}\t"
+                                            "{genotype}\tNA\tNA"
+                                        ).format(
+                                            vcf_line=counter,
+                                            hap1=str(int(hap[0].split('-')[1])-1),
+                                            hap2=str(int(hap[1].split('-')[1])-1),
+                                            chrom=tokens[0],
+                                            pos=pos,
+                                            ref=tokens[3],
+                                            alt=tokens[4],
+                                            genotype=tokens[9].strip(),
+                                        ),
+                                        file=output_stream,
+                                    )
+                            else:
+                                print("********", file=output_stream)
+                                current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
+                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
+                                    print("BLOCK: phased", file=output_stream)
+                                    print(
+                                        (
+                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
+                                            "{pos}\t{ref}\t{alt}\t"
+                                            "{genotype}\tNA\tNA"
+                                        ).format(
+                                            vcf_line=counter,
+                                            hap1=str(current_haplotype[1]),
+                                            hap2=str(current_haplotype[2]),
+                                            chrom=tokens[0],
+                                            pos=pos,
+                                            ref=tokens[3],
+                                            alt=tokens[4],
+                                            genotype=tokens[9].strip(),
+                                        ),
+                                        file=output_stream,
+                                    )
+                        else:
+                            if current_haplotype is not None:
+                                print("********", file=output_stream)
+                                current_haplotype = None
+                            alt_alleles = tokens[4].split(",")
+                            for allele in alt_alleles:
+                                if (tokens[3], allele) not in phased[(tokens[0], pos)]:
+                                    print("BLOCK: unphased", file=output_stream)
+                                    print(
+                                        (
+                                            "{vcf_line}\t0\t1\t{chrom}\t"
+                                            "{pos}\t{ref}\t{alt}\t"
+                                            "{genotype}\tNA\tNA"
+                                        ).format(
+                                            vcf_line=counter,
+                                            chrom=tokens[0],
+                                            pos=pos,
+                                            ref=tokens[3],
+                                            alt=allele,
+                                            genotype=tokens[9].strip(),
+                                        ),
+                                        file=output_stream,
+                                    )
+                                    print("********", file=output_stream)
+            if current_haplotype is not None:
+                print("********", file=output_stream)
+        else:
+            with open(vcf) as vcf_stream:
+                first_char = "#"
+                while first_char == "#":
+                    line = vcf_stream.readline().strip()
+                    try:
+                        first_char = line[0]
+                    except IndexError:
+                        first_char = "#"
+                counter = 1
+                while line:
+                    tokens = line.split("\t")
+                    pos = int(tokens[1])
+                    alt_alleles = tokens[4].split(",")
+                    for allele in alt_alleles:
+                        if (tokens[3], allele) not in phased[(tokens[0], pos)]:
+                            print("BLOCK: unphased", file=output_stream)
+                            print(
+                                (
+                                    "{vcf_line}\t1\t0\t{chrom}\t"
+                                    "{pos}\t{ref}\t{alt}\t"
+                                    "{genotype}\tNA\tNA"
+                                ).format(
+                                    vcf_line=counter,
+                                    chrom=tokens[0],
+                                    pos=pos,
+                                    ref=tokens[3],
+                                    alt=allele,
+                                    genotype=tokens[9].strip(),
+                                ),
+                                file=output_stream,
+                            )
+                            print("********", file=output_stream)
+                    line = vcf_stream.readline().strip()
+                    counter += 1
     finally:
         if output_stream is not sys.stdout:
             output_stream.close()

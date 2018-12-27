@@ -169,6 +169,14 @@ def main():
         default="-",
         help="path to output file to be input to call mode; use - for stdout",
     )
+    prep_parser.add_argument(
+        "-p",
+        "--phased",
+        required=False,
+        action="store_true",
+        default=False,
+        help="specifies that input VCF is phased with GATK ReadBackedPhasing"
+    )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
         "-x",
@@ -324,12 +332,14 @@ def main():
         "--allow-nonstart",
         required=False,
         action="store_true",
+        default=False,
         help="enumerate neoepitopes from transcripts without annotated start codons",
     )
     call_parser.add_argument(
         "--allow-nonstop",
         required=False,
         action="store_true",
+        default=False,
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
     args = parser.parse_args()
@@ -347,9 +357,9 @@ def main():
         combine_vcf(args.germline, args.somatic, outfile=args.output)
     elif args.subparser_name == "prep":
         if args.hapcut2_output:
-            prep_hapcut_output(args.output, args.hapcut2_output, args.vcf)
+            prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)
         else:
-            prep_hapcut_output(args.output, None, args.vcf)
+            prep_hapcut_output(args.output, None, args.vcf, args.phased)
     elif args.subparser_name == "call":
         # Check that output options are compatible
         if args.fasta and args.output == "-":
