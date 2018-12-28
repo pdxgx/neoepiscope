@@ -105,4 +105,4 @@ venv.bak/
 .mypy_cache/
 
 
-src/exe_paths_mary.py*
+src/exe_paths_mary.py*Mel8_tumor_v_Mel8_normal.combine_variants.haplotypes
