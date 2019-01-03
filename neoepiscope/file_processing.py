@@ -135,7 +135,7 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
                 print(lines.strip(), file=header)
     vcffile.close()
     temp.close()
-    for line in info_lines:
+    for line in sorted(list(info_lines)):
         print(line, file=header)
     print('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", 
                      "FILTER", "INFO", "FORMAT", tumor_id]), 
