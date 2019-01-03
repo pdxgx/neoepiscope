@@ -67,7 +67,7 @@ class TestGTFprocessing(unittest.TestCase):
         self.assertEqual(
             len(get_transcripts_from_tree("chrY", 150860, 150861, self.Ytree)), 10
         )
-        self.coordinate_search = list(self.Ytree["chrY"].search(150860, 150861))
+        self.coordinate_search = list(self.Ytree["chrY"].overlap(150860, 150861))
         self.transcripts = []
         for interval in self.coordinate_search:
             self.transcripts.append(interval[2])
