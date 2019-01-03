@@ -70,6 +70,10 @@ Options:
 
 ```-o, --output```    path to write merged VCF
 
+```-t, --tumor-id```  tumor ID (matching sample in tumor BAM file's read group field)
+
+If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), make sure to specify a tumor ID using the `-t` flag. It should match the sample name in the header of your tumor BAM file (the SM value in the read group field).
+
 ##### Predict haplotype phasing
 
 Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes:

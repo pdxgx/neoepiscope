@@ -152,6 +152,15 @@ def main():
         default="-",
         help="output path to combined VCF; use - for stdout",
     )
+    merge_parser.add_argument(
+        "-t",
+        "--tumor-id",
+        type=str,
+        required=False,
+        default="TUMOR",
+        help="tumor ID (matching the sample in your tumor BAM file "
+             "if using GATK ReadBackedPhasing)",
+    )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
     prep_parser.add_argument(
@@ -354,7 +363,7 @@ def main():
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
-        combine_vcf(args.germline, args.somatic, outfile=args.output)
+        combine_vcf(args.germline, args.somatic, outfile=args.output, tumor_id=args.tumor_id)
     elif args.subparser_name == "prep":
         if args.hapcut2_output:
             prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)

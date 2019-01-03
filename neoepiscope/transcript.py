@@ -2508,7 +2508,7 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     # Interval coordinates are inclusive of start, exclusive of stop
     if chrom not in cds_tree:
         return []
-    cds = list(cds_tree[chrom].search(start, stop))
+    cds = list(cds_tree[chrom].overlap(start, stop))
     for cd in cds:
         transcript_ids.add(cd.data)
     return list(transcript_ids)

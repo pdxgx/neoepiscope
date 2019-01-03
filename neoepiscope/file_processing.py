@@ -104,7 +104,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
             output_stream.close()
 
 
-def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
+def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
     """ Combines VCFs
 
         No return value.
@@ -112,21 +112,36 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf"):
     vcffile = open(vcf2, "r")
     temp = open(vcf2 + ".tumortemp", "w+")
     header = open(vcf2 + ".header", "w+")
+    info_lines = set()
     for lines in vcffile:
         if lines[0] != "#":
             print(lines.strip(), file=temp)
-        else:
-            print(lines.strip(), file=header)
+        elif lines[0:2] == "##":
+            if "INFO" in lines:
+                info_lines.add(lines.strip())
+            else:
+                print(lines.strip(), file=header)
     vcffile.close()
     temp.close()
-    header.close()
     vcffile = open(vcf1, "r")
     temp = open(vcf2 + ".germlinetemp", "w+")
     for lines in vcffile:
         if lines[0] != "#":
             print(lines.strip(), file=temp)
+        elif lines[0:2] == "##":
+            if "INFO" in lines:
+                info_lines.add(lines.strip())
+            else:
+                print(lines.strip(), file=header)
     vcffile.close()
     temp.close()
+    for line in info_lines:
+        print(line, file=header)
+    print('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", 
+                     "FILTER", "INFO", "FORMAT", tumor_id]), 
+                    file=header
+    )
+    header.close()
     markgermline = "".join(
         ["""awk '{print $0"*"}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
     )
