@@ -286,11 +286,11 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         counter += 1
                         tokens = line.split("\t")
                         if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                            tokens[9] = ''.join([tokens[9], '*'])
+                            tokens[9] = ''.join([tokens[9].strip(), '*'])
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
                             hp_index = tokens[8].split(':').index('HP')
-                            hap = tokens[9].split(':')[hp_index].split(',').replace('*', '')
+                            hap = tokens[9].replace('*', '').split(':')[hp_index].split(',')
                             if current_haplotype is None:
                                 current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
                                 if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
