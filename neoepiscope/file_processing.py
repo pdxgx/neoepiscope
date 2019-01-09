@@ -190,10 +190,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
     germline_variants = set()
     if germline_vcf is not None:
         with open(germline_vcf, 'r') as f:
-            for line in vcf:
+            for line in f:
                 if line[0] != '#':
                     tokens = line.strip().split('\t')
-                    germline_variants.add((tokens[0], tokens[1], tokens[3], tokens[4], tokens[5]))
+                    germline_variants.add((tokens[0], tokens[1], tokens[3], tokens[4]))
     try:
         if output == "-":
             output_stream = sys.stdout
@@ -276,7 +276,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                     if line[0] != '#':
                         counter += 1
                         tokens = line.split("\t")
-                        if (tokens[0], tokens[1], tokens[3], tokens[4], tokens[5]) in germline_variants:
+                        if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
                             tokens[8] = ''.join([tokens[8], '*'])
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
