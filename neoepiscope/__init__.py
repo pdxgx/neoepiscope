@@ -161,13 +161,6 @@ def main():
         help="tumor ID (matching the sample in your tumor BAM file "
              "if using GATK ReadBackedPhasing)",
     )
-    merge_parser.add_argument(
-        "-d",
-        "--dictionary",
-        type=str,
-        required=False,
-        help="path to write pickled dictionary with germline variants; "
-             "use if merged VCF will be used for GATK ReadBackedPhasing")
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
     prep_parser.add_argument(
@@ -184,6 +177,13 @@ def main():
         required=False,
         default="-",
         help="path to output file to be input to call mode; use - for stdout",
+    )
+    prep_parser.add_argument(
+        "-p",
+        "--phased",
+        required=False,
+        action="store_true",
+        help="indicates that input VCF is phased using GATK ReadBackedPhasing",
     )
     prep_parser.add_argument(
         "-g",
