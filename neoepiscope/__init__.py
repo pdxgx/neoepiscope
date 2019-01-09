@@ -317,6 +317,12 @@ def main():
         "combine nearby mutations in the same neoepitope",
     )
     call_parser.add_argument(
+        "-r",
+        "--rna-bam",
+        type=str,
+        required=False,
+        help="path to tumor RNA-seq BAM alignment file")
+    call_parser.add_argument(
         "--nmd",
         required=False,
         action="store_true",
