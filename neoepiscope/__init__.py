@@ -161,6 +161,13 @@ def main():
         help="tumor ID (matching the sample in your tumor BAM file "
              "if using GATK ReadBackedPhasing)",
     )
+    merge_parser.add_argument(
+        "-d",
+        "--dictionary",
+        type=str,
+        required=False,
+        help="path to write pickled dictionary with germline variants; "
+             "use if merged VCF will be used for GATK ReadBackedPhasing")
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
     prep_parser.add_argument(
@@ -179,12 +186,12 @@ def main():
         help="path to output file to be input to call mode; use - for stdout",
     )
     prep_parser.add_argument(
-        "-p",
-        "--phased",
+        "-g",
+        "--germline-vcf",
+        type=str,
         required=False,
-        action="store_true",
-        default=False,
-        help="specifies that input VCF is phased with GATK ReadBackedPhasing"
+        help="path to germline VCF used with neoepiscope merge; "
+             "for use when phasing somatic and germline variants with GATK ReadBackedPhasing"
     )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
@@ -365,10 +372,8 @@ def main():
     elif args.subparser_name == "merge":
         combine_vcf(args.germline, args.somatic, outfile=args.output, tumor_id=args.tumor_id)
     elif args.subparser_name == "prep":
-        if args.hapcut2_output:
-            prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)
-        else:
-            prep_hapcut_output(args.output, None, args.vcf, args.phased)
+        prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, 
+                           args.phased, args.germline_vcf)
     elif args.subparser_name == "call":
         # Check that output options are compatible
         if args.fasta and args.output == "-":

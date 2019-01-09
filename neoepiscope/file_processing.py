@@ -175,8 +175,7 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         cleanup = "".join(["rm ", vcf2, file])
         subprocess.call(cleanup, shell=True)
 
-
-def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
+def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_vcf=None):
     """ Adds unphased mutations to HapCUT2 output as their own haplotypes
 
         output: path to output file to write adjusted haplotypes
@@ -188,6 +187,13 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
         Return value: None
     """
     phased = collections.defaultdict(set)
+    germline_variants = set()
+    if germline_vcf is not None:
+        with open(germline_vcf, 'r') as f:
+            for line in vcf:
+                if line[0] != '#':
+                    tokens = line.strip().split('\t')
+                    germline_variants.add((tokens[0], tokens[1], tokens[3], tokens[4], tokens[5]))
     try:
         if output == "-":
             output_stream = sys.stdout
@@ -270,6 +276,8 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                     if line[0] != '#':
                         counter += 1
                         tokens = line.split("\t")
+                        if (tokens[0], tokens[1], tokens[3], tokens[4], tokens[5]) in germline_variants:
+                            tokens[8] = ''.join([tokens[8], '*'])
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
                             hp_index = tokens[8].split(':').index('HP')
