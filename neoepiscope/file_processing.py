@@ -286,7 +286,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         counter += 1
                         tokens = line.split("\t")
                         if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                            tokens[9] = ''.join([tokens[9].strip(), '*'])
+                            tokens[9] = ''.join([tokens[9].strip().replace('*',''), '*'])
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
                             hp_index = tokens[8].split(':').index('HP')
