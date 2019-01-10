@@ -289,6 +289,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                             tokens[9] = ''.join([tokens[9].strip().replace('*',''), '*'])
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
+                            if '*' in tokens[9]:
+                                gen_end = '*'
+                            else:
+                                gen_end = ''
                             hp_index = tokens[8].split(':').index('HP')
                             hap = tokens[9].replace('*', '').split(':')[hp_index].split(',')
                             if current_haplotype is None:
@@ -308,7 +312,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=tokens[9].strip(),
+                                            genotype=''.join([tokens[9].strip(), gen_end]),
                                         ),
                                         file=output_stream,
                                     )   
@@ -327,7 +331,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=tokens[9].strip(),
+                                            genotype=''.join([tokens[9].strip(), gen_end]),
                                         ),
                                         file=output_stream,
                                     )
@@ -349,7 +353,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=tokens[9].strip(),
+                                            genotype=''.join([tokens[9].strip(), gen_end]),
                                         ),
                                         file=output_stream,
                                     )
@@ -717,3 +721,43 @@ def indels_junctions_exons_mismatches(
             last_exon = exon
     new_exons.append(last_exon)
     return insertions, deletions, junctions, new_exons, mismatches
+
+def rna_support_dict(bam, transcript_to_haplotypes):
+    rna_support = defaultdict(list)
+    BAM_reader = pysam.AlignmentFile(bam, "rb")
+    mutation_dict = {}
+    for tx in transcript_to_haplotypes:
+        for block in transcript_to_haplotypes[tx]:
+            for i in range(0, len(block)):
+                if not block[i][6].endswith('*'):
+                    phased_muts = [x for x in block if x != block[i] and (x[4] == block[i][4] or x[5] == block[i][5])]
+                    mutation_dict[(block[i][0], block[i][1], block[i][2], block[i][3])] = [phased_muts, []]
+    contig_list = list(set([x[0] for x in mutation_dict]))
+    for contig in contig_list:
+        if contig in reference_index.recs.keys():
+            x = BAM_reader.fetch(contig=contig) ### RESTRICT TO RELEVANT REGIONS
+            for alignment in x:
+                tokens = str(alignment).split('\t')
+                tags = ast.literal_eval(tokens[11])
+                md = [x[1] for x in tags if x[0] == 'MD'][0]
+                cigar = tokens[5]
+                pos = int(tokens[3])
+                seq = tokens[9]
+                jx = False
+                insertions, deletions, junctions, exons, mismatches = indels_junctions_exons_mismatches(cigar, md, pos, seq)
+                covered_mutations = set()
+                if len(junctions) > 0:
+                    jx = True
+                for ins in insertions:
+                    if (contig, ins[0], '', ins[1]) in mutation_dict:
+                        covered_mutations.add(ins)
+                for dele in deletions:
+                    if (contig, dele[0], dele[1], len(dele[1])) in mutation_dict:
+                        covered_mutations.add(deletions)
+                for mm in mismatches:
+                    normal_base = reference_index.get_stretch(contig, mm[0]-1, len(mm[1]))
+                    if (contig, mm[0], normal_base, mm[1]) in mutation_dict:
+                        covered_mutations.add(mm)
+                if len(covered_mutations) > 1:
+                    rna_support[tuple(covered_mutations)].append([tokens[0], jx])
+    return rna_support
