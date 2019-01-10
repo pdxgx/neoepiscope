@@ -286,13 +286,13 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         counter += 1
                         tokens = line.split("\t")
                         if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                            tokens[9] = ''.join([tokens[9].strip().replace('*',''), '*'])
+                            tokens[9] = tokens[9].strip().replace('*','')
+                            gen_end = '*'
+                        else:
+                            tokens[9] = tokens[9].strip()
+                            gen_end = ''
                         pos = int(tokens[1])
                         if 'HP' in tokens[8]:
-                            if '*' in tokens[9]:
-                                gen_end = '*'
-                            else:
-                                gen_end = ''
                             hp_index = tokens[8].split(':').index('HP')
                             hap = tokens[9].replace('*', '').split(':')[hp_index].split(',')
                             if current_haplotype is None:
@@ -312,7 +312,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=''.join([tokens[9].strip(), gen_end]),
+                                            genotype=''.join([tokens[9], gen_end]),
                                         ),
                                         file=output_stream,
                                     )   
@@ -331,7 +331,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=''.join([tokens[9].strip(), gen_end]),
+                                            genotype=''.join([tokens[9], gen_end]),
                                         ),
                                         file=output_stream,
                                     )
@@ -353,7 +353,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=tokens[4],
-                                            genotype=''.join([tokens[9].strip(), gen_end]),
+                                            genotype=''.join([tokens[9], gen_end]),
                                         ),
                                         file=output_stream,
                                     )
@@ -361,6 +361,8 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                             if current_haplotype is not None:
                                 print("********", file=output_stream)
                                 current_haplotype = None
+                            if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
+                                tokens[9] = ''.join([tokens[9].strip().replace('*',''), '*'])
                             alt_alleles = tokens[4].split(",")
                             for allele in alt_alleles:
                                 if (tokens[3], allele) not in phased[(tokens[0], pos)]:
@@ -376,7 +378,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             pos=pos,
                                             ref=tokens[3],
                                             alt=allele,
-                                            genotype=tokens[9].strip(),
+                                            genotype=''.join([tokens[9], gen_end]),
                                         ),
                                         file=output_stream,
                                     )
