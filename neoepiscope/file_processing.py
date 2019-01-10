@@ -361,8 +361,6 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                             if current_haplotype is not None:
                                 print("********", file=output_stream)
                                 current_haplotype = None
-                            if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                                tokens[9] = ''.join([tokens[9].strip().replace('*',''), '*'])
                             alt_alleles = tokens[4].split(",")
                             for allele in alt_alleles:
                                 if (tokens[3], allele) not in phased[(tokens[0], pos)]:
