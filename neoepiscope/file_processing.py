@@ -44,6 +44,8 @@ import warnings
 import collections
 import sys
 import re
+import datetime
+from .version import version_number
 
 
 def adjust_tumor_column(in_vcf, out_vcf):
@@ -113,7 +115,8 @@ def adjust_tumor_column(in_vcf, out_vcf):
             output_stream.close()
 
 
-def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
+def combine_vcf(vcf1, vcf2, outfile="combined.vcf", 
+                tumor_id="TUMOR", phased_vcf=False):
     """ Combines VCFs
 
         No return value.
@@ -151,9 +154,14 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
                     file=header
     )
     header.close()
-    markgermline = "".join(
-        ["""awk '{print $0"*"}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
-    )
+    if not phased_vcf:
+        markgermline = "".join(
+            ["""awk '{print $0"*"}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
+        )
+    else:
+        markgermline = "".join(
+            ["""awk '{print $0}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
+        )
     marktumor = "".join(
         ["""awk '{print $0}' """, vcf2, ".tumortemp > ", vcf2, ".tumor"]
     )
@@ -279,109 +287,69 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
             print("********", file=output_stream)
         if phased_vcf:
             current_haplotype = None
+            haplotype_dict = defaultdict(list)
             counter = 0
             with open(vcf) as vcf_stream:
-                for line in vcf_stream:
-                    if line[0] != '#':
-                        counter += 1
-                        tokens = line.split("\t")
-                        if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                            tokens[9] = tokens[9].strip().replace('*','')
-                            gen_end = '*'
-                        else:
-                            tokens[9] = tokens[9].strip()
-                            gen_end = ''
-                        pos = int(tokens[1])
-                        if 'HP' in tokens[8]:
-                            hp_index = tokens[8].split(':').index('HP')
-                            hap = tokens[9].replace('*', '').split(':')[hp_index].split(',')
-                            if current_haplotype is None:
-                                current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
-                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
-                                    print("BLOCK: phased", file=output_stream)
-                                    print(
-                                        (
-                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
-                                            "{pos}\t{ref}\t{alt}\t"
-                                            "{genotype}\tNA\tNA"
-                                        ).format(
-                                            vcf_line=counter,
-                                            hap1=str(current_haplotype[1]),
-                                            hap2=str(current_haplotype[2]),
-                                            chrom=tokens[0],
-                                            pos=pos,
-                                            ref=tokens[3],
-                                            alt=tokens[4],
-                                            genotype=''.join([tokens[9], gen_end]),
-                                        ),
-                                        file=output_stream,
-                                    )   
-                            elif int(hap[0].split('-')[0]) == current_haplotype[0]:
-                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
-                                    print(
-                                        (
-                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
-                                            "{pos}\t{ref}\t{alt}\t"
-                                            "{genotype}\tNA\tNA"
-                                        ).format(
-                                            vcf_line=counter,
-                                            hap1=str(int(hap[0].split('-')[1])-1),
-                                            hap2=str(int(hap[1].split('-')[1])-1),
-                                            chrom=tokens[0],
-                                            pos=pos,
-                                            ref=tokens[3],
-                                            alt=tokens[4],
-                                            genotype=''.join([tokens[9], gen_end]),
-                                        ),
-                                        file=output_stream,
+                first_char = "#"
+                while first_char == "#":
+                    line = vcf_stream.readline().strip()
+                    try:
+                        first_char = line[0]
+                    except IndexError:
+                        first_char = "#"
+                counter = 1
+                while line:
+                    tokens = line.strip().split("\t")
+                    if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
+                        tokens[9] = tokens[9].strip().replace('*','')
+                        gen_end = '*'
+                    else:
+                        tokens[9] = tokens[9].strip()
+                        gen_end = ''
+                    pos = int(tokens[1])
+                    if 'HP' in tokens[8]:
+                        hp_index = tokens[8].split(':').index('HP')
+                        hap = tokens[9].split(':')[hp_index].split(',')
+                        current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
+                        hap_entry = ("{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
+                                    "{pos}\t{ref}\t{alt}\t"
+                                    "{genotype}\tNA\tNA"
+                                    ).format(
+                                        vcf_line=counter,
+                                        hap1=str(current_haplotype[1]),
+                                        hap2=str(current_haplotype[2]),
+                                        chrom=tokens[0],
+                                        pos=pos,
+                                        ref=tokens[3],
+                                        alt=tokens[4],
+                                        genotype=''.join([tokens[9], gen_end]),
                                     )
-                            else:
-                                print("********", file=output_stream)
-                                current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
-                                if (tokens[3], tokens[4]) not in phased[(tokens[0], pos)]:
-                                    print("BLOCK: phased", file=output_stream)
-                                    print(
-                                        (
-                                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
-                                            "{pos}\t{ref}\t{alt}\t"
-                                            "{genotype}\tNA\tNA"
-                                        ).format(
-                                            vcf_line=counter,
-                                            hap1=str(current_haplotype[1]),
-                                            hap2=str(current_haplotype[2]),
-                                            chrom=tokens[0],
-                                            pos=pos,
-                                            ref=tokens[3],
-                                            alt=tokens[4],
-                                            genotype=''.join([tokens[9], gen_end]),
-                                        ),
-                                        file=output_stream,
-                                    )
-                        else:
-                            if current_haplotype is not None:
-                                print("********", file=output_stream)
-                                current_haplotype = None
-                            alt_alleles = tokens[4].split(",")
-                            for allele in alt_alleles:
-                                if (tokens[3], allele) not in phased[(tokens[0], pos)]:
-                                    print("BLOCK: unphased", file=output_stream)
-                                    print(
-                                        (
-                                            "{vcf_line}\t0\t1\t{chrom}\t"
-                                            "{pos}\t{ref}\t{alt}\t"
-                                            "{genotype}\tNA\tNA"
-                                        ).format(
-                                            vcf_line=counter,
-                                            chrom=tokens[0],
-                                            pos=pos,
-                                            ref=tokens[3],
-                                            alt=allele,
-                                            genotype=''.join([tokens[9], gen_end]),
-                                        ),
-                                        file=output_stream,
-                                    )
-                                    print("********", file=output_stream)
-            if current_haplotype is not None:
+                        haplotype_dict[current_haplotype].append(hap_entry)
+                    else:
+                        alt_alleles = tokens[4].split(",")
+                        for allele in alt_alleles:
+                            print("BLOCK: unphased", file=output_stream)
+                            print(
+                                (
+                                    "{vcf_line}\t0\t1\t{chrom}\t"
+                                    "{pos}\t{ref}\t{alt}\t"
+                                    "{genotype}\tNA\tNA"
+                                ).format(
+                                    vcf_line=counter,
+                                    chrom=tokens[0],
+                                    pos=pos,
+                                    ref=tokens[3],
+                                    alt=allele,
+                                    genotype=''.join([tokens[9], gen_end]),
+                                ),
+                                file=output_stream,
+                            )
+                            print("********", file=output_stream)
+                    counter += 1
+            for haplotype in haplotype_dict:
+                print("BLOCK: phased", file=output_stream)
+                for hap_entry in haplotype_dict[haplotype]:
+                    print(hap_entry, file=output_stream)
                 print("********", file=output_stream)
         else:
             with open(vcf) as vcf_stream:
@@ -394,7 +362,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         first_char = "#"
                 counter = 1
                 while line:
-                    tokens = line.split("\t")
+                    tokens = line.strip().split("\t")
                     pos = int(tokens[1])
                     alt_alleles = tokens[4].split(",")
                     for allele in alt_alleles:
@@ -485,6 +453,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             output_stream = sys.stdout
         else:
             output_stream = open(output_file, "w")
+        print(''.join(['# Neoepiscope version ', version_number, '; run ', 
+                       str(datetime.date.today())]), 
+              file=output_stream)
         headers = [
             "Neoepitope",
             "Chromsome",
@@ -735,29 +706,30 @@ def rna_support_dict(bam, transcript_to_haplotypes):
     contig_list = list(set([x[0] for x in mutation_dict]))
     for contig in contig_list:
         if contig in reference_index.recs.keys():
-            x = BAM_reader.fetch(contig=contig) ### RESTRICT TO RELEVANT REGIONS
-            for alignment in x:
-                tokens = str(alignment).split('\t')
-                tags = ast.literal_eval(tokens[11])
-                md = [x[1] for x in tags if x[0] == 'MD'][0]
-                cigar = tokens[5]
-                pos = int(tokens[3])
-                seq = tokens[9]
-                jx = False
-                insertions, deletions, junctions, exons, mismatches = indels_junctions_exons_mismatches(cigar, md, pos, seq)
-                covered_mutations = set()
-                if len(junctions) > 0:
-                    jx = True
-                for ins in insertions:
-                    if (contig, ins[0], '', ins[1]) in mutation_dict:
-                        covered_mutations.add(ins)
-                for dele in deletions:
-                    if (contig, dele[0], dele[1], len(dele[1])) in mutation_dict:
-                        covered_mutations.add(deletions)
-                for mm in mismatches:
-                    normal_base = reference_index.get_stretch(contig, mm[0]-1, len(mm[1]))
-                    if (contig, mm[0], normal_base, mm[1]) in mutation_dict:
-                        covered_mutations.add(mm)
-                if len(covered_mutations) > 1:
-                    rna_support[tuple(covered_mutations)].append([tokens[0], jx])
+            for region in contig_dict[contig]:
+                x = BAM_reader.fetch(contig=contig, start=region[0], stop=region[1])
+                for alignment in x:
+                    tokens = str(alignment).split('\t')
+                    tags = ast.literal_eval(tokens[11])
+                    md = [x[1] for x in tags if x[0] == 'MD'][0]
+                    cigar = tokens[5]
+                    pos = int(tokens[3])
+                    seq = tokens[9]
+                    jx = set()
+                    insertions, deletions, junctions, exons, mismatches = indels_junctions_exons_mismatches(cigar, md, pos, seq)
+                    covered_mutations = set()
+                    for j in junctions:
+                        jx.add((j[0], j[1]))
+                    for ins in insertions:
+                        if (contig, ins[0], '', ins[1]) in mutation_dict:
+                            covered_mutations.add(ins)
+                    for dele in deletions:
+                        if (contig, dele[0], dele[1], len(dele[1])) in mutation_dict:
+                            covered_mutations.add(deletions)
+                    for mm in mismatches:
+                        normal_base = reference_index.get_stretch(contig, mm[0]-1, len(mm[1]))
+                        if (contig, mm[0], normal_base, mm[1]) in mutation_dict:
+                            covered_mutations.add(mm)
+                    if len(covered_mutations) > 0:
+                        rna_support[tuple(covered_mutations)].append([tokens[0], jx])
     return rna_support

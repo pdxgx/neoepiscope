@@ -161,6 +161,13 @@ def main():
         help="tumor ID (matching the sample in your tumor BAM file "
              "if using GATK ReadBackedPhasing)",
     )
+    merge_parser.add_argument(
+        "-p",
+        "--phased",
+        required=False,
+        action="store_true",
+        help="indicates that VCF will be used with GATK ReadBackedPhasing",
+    )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
     prep_parser.add_argument(
@@ -376,7 +383,8 @@ def main():
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
-        combine_vcf(args.germline, args.somatic, outfile=args.output, tumor_id=args.tumor_id)
+        combine_vcf(args.germline, args.somatic, outfile=args.output, 
+                    tumor_id=args.tumor_id, phased_vcf=args.phased)
     elif args.subparser_name == "prep":
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, 
                            args.phased, args.germline_vcf)
@@ -742,9 +750,13 @@ def main():
                 "excluded, no epitopes will be returned",
                 Warning,
             )
+        if not args.isolate:
+            phase_mutations = True
+        else:
+            phase_mutations = False
         # Find transcripts that haplotypes overlap
         relevant_transcripts = process_haplotypes(
-            args.merged_hapcut2_output, interval_dict, args.isolate
+            args.merged_hapcut2_output, interval_dict, phase_mutations
         )
         # Apply mutations to transcripts and get neoepitopes
         neoepitopes, fasta = get_peptides_from_transcripts(

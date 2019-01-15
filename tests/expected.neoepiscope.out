@@ -1,3 +1,4 @@
+# Neoepiscope version 0.2.1; run 2019-01-15
 Neoepitope	Chromsome	Pos	Ref	Alt	Mutation_type	VAF	Paired_normal_epitope	Warnings	Transcript_ID	netMHCIIpan3_HLA*A01:01_rank	netMHCpan4_HLA*A01:01_affinity	netMHCpan4_HLA*A01:01_rank	netMHCIIpan3_HLA*A02:01_rank	netMHCpan4_HLA*A02:01_affinity	netMHCpan4_HLA*A02:01_rank
 CGCSQKCN	11	71277056	*	AAA	I	0.1	NA	NA	ENST00000398531.2_2	5	10000.0	1	5	150	4
 CGCSQKCN	4	300000	A	T	V	10.2	CGCSQCNN	NA	ENST00000398554.1_1	5	10000.0	1	5	150	4

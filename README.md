@@ -72,7 +72,9 @@ Options:
 
 ```-t, --tumor-id```  tumor ID (matching sample in tumor BAM file's read group field)
 
-If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), make sure to specify a tumor ID using the `-t` flag. It should match the sample name in the header of your tumor BAM file (the SM value in the read group field).
+```-p, --phased```	  flag VCF as future input to GATK's ReadBackedPhasing
+
+If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), make sure to use the `-p` flag and specify a tumor ID using the `-t` flag. It should match the sample name in the header of your tumor BAM file (the SM value in the read group field).
 
 ##### Predict haplotype phasing
 
