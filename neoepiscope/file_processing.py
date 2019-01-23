@@ -46,6 +46,7 @@ import sys
 import re
 import datetime
 from .version import version_number
+from intervaltree import Interval, IntervalTree
 
 
 def adjust_tumor_column(in_vcf, out_vcf):
@@ -286,8 +287,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         print(line.strip(), file=output_stream)
             print("********", file=output_stream)
         if phased_vcf:
-            current_haplotype = None
-            haplotype_dict = defaultdict(list)
+            haplotype_dict = collections.defaultdict(list)
             counter = 0
             with open(vcf) as vcf_stream:
                 first_char = "#"
@@ -309,29 +309,48 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                     pos = int(tokens[1])
                     if 'HP' in tokens[8]:
                         hp_index = tokens[8].split(':').index('HP')
-                        hap = tokens[9].split(':')[hp_index].split(',')
-                        current_haplotype = [pos, int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1]
+                        hap = tuple(tokens[9].split(':')[hp_index].split(','))
+                        haplotype_id = (tokens[0], hap[0].split('-')[0])
+                        current_haplotype = (int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1)
                         hap_entry = ("{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
                                     "{pos}\t{ref}\t{alt}\t"
                                     "{genotype}\tNA\tNA"
                                     ).format(
                                         vcf_line=counter,
-                                        hap1=str(current_haplotype[1]),
-                                        hap2=str(current_haplotype[2]),
+                                        hap1=str(current_haplotype[0]),
+                                        hap2=str(current_haplotype[1]),
                                         chrom=tokens[0],
                                         pos=pos,
                                         ref=tokens[3],
                                         alt=tokens[4],
                                         genotype=''.join([tokens[9], gen_end]),
                                     )
-                        haplotype_dict[current_haplotype].append(hap_entry)
+                        haplotype_dict[haplotype_id].append(hap_entry)
+                    elif '1/1' in tokens[9]:
+                        print("BLOCK: unphased", file=output_stream)
+                        print(
+                            (
+                                "{vcf_line}\t1\t1\t{chrom}\t"
+                                "{pos}\t{ref}\t{alt}\t"
+                                "{genotype}\tNA\tNA"
+                            ).format(
+                                vcf_line=counter,
+                                chrom=tokens[0],
+                                pos=pos,
+                                ref=tokens[3],
+                                alt=allele,
+                                genotype=''.join([tokens[9], gen_end]),
+                            ),
+                            file=output_stream,
+                        )
+                        print("********", file=output_stream)
                     else:
                         alt_alleles = tokens[4].split(",")
                         for allele in alt_alleles:
                             print("BLOCK: unphased", file=output_stream)
                             print(
                                 (
-                                    "{vcf_line}\t0\t1\t{chrom}\t"
+                                    "{vcf_line}\t1\t0\t{chrom}\t"
                                     "{pos}\t{ref}\t{alt}\t"
                                     "{genotype}\tNA\tNA"
                                 ).format(
@@ -345,6 +364,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                 file=output_stream,
                             )
                             print("********", file=output_stream)
+                    line = vcf_stream.readline().strip()
                     counter += 1
             for haplotype in haplotype_dict:
                 print("BLOCK: phased", file=output_stream)
@@ -368,21 +388,38 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                     for allele in alt_alleles:
                         if (tokens[3], allele) not in phased[(tokens[0], pos)]:
                             print("BLOCK: unphased", file=output_stream)
-                            print(
-                                (
-                                    "{vcf_line}\t1\t0\t{chrom}\t"
-                                    "{pos}\t{ref}\t{alt}\t"
-                                    "{genotype}\tNA\tNA"
-                                ).format(
-                                    vcf_line=counter,
-                                    chrom=tokens[0],
-                                    pos=pos,
-                                    ref=tokens[3],
-                                    alt=allele,
-                                    genotype=tokens[9].strip(),
-                                ),
-                                file=output_stream,
-                            )
+                            if "1/1" in tokens[9]:
+                                print(
+                                    (
+                                        "{vcf_line}\t1\t1\t{chrom}\t"
+                                        "{pos}\t{ref}\t{alt}\t"
+                                        "{genotype}\tNA\tNA"
+                                    ).format(
+                                        vcf_line=counter,
+                                        chrom=tokens[0],
+                                        pos=pos,
+                                        ref=tokens[3],
+                                        alt=allele,
+                                        genotype=tokens[9].strip(),
+                                    ),
+                                    file=output_stream,
+                                )
+                            else:
+                                print(
+                                    (
+                                        "{vcf_line}\t1\t0\t{chrom}\t"
+                                        "{pos}\t{ref}\t{alt}\t"
+                                        "{genotype}\tNA\tNA"
+                                    ).format(
+                                        vcf_line=counter,
+                                        chrom=tokens[0],
+                                        pos=pos,
+                                        ref=tokens[3],
+                                        alt=allele,
+                                        genotype=tokens[9].strip(),
+                                    ),
+                                    file=output_stream,
+                                )
                             print("********", file=output_stream)
                     line = vcf_stream.readline().strip()
                     counter += 1

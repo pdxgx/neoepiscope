@@ -2529,6 +2529,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
             chr_in_intervals = True
             continue
     affected_transcripts = collections.defaultdict(list)
+    homozygous_variants = collections.defaultdict(list)
     try:
         if hapcut_output == "-":
             input_stream = sys.stdin
@@ -2616,30 +2617,46 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     overlapping_transcripts = get_transcripts_from_tree(
                         contig, pos, end, interval_dict
                     )
-                    # For each overlapping transcript, add mutation entry
-                    # Contains chromosome, position, reference, alternate, allele
-                    #   A, allele B, genotype line from VCF
-                    for transcript in overlapping_transcripts:
-                        block_transcripts[transcript].append(
-                            [
-                                contig,
-                                pos,
-                                ref,
-                                alt,
-                                gen1,
-                                gen2,
-                                tokens[7],
-                                mutation_type,
-                            ]
-                        )
+                    if not phasing or gen1 != gen2:
+                        # For each overlapping transcript, add mutation entry
+                        # Contains chromosome, position, reference, alternate, allele
+                        #   A, allele B, genotype line from VCF
+                        for transcript in overlapping_transcripts:
+                            block_transcripts[transcript].append(
+                                [
+                                    contig,
+                                    pos,
+                                    ref,
+                                    alt,
+                                    gen1,
+                                    gen2,
+                                    tokens[7],
+                                    mutation_type,
+                                ]
+                            )
+                    else:
+                        for transcript in overlapping_transcripts:
+                            homozygous_variants[transcript].append(
+                                [
+                                    contig,
+                                    pos,
+                                    ref,
+                                    alt,
+                                    gen1,
+                                    gen2,
+                                    tokens[7],
+                                    mutation_type,
+                                ]
+                            )
     finally:
         if input_stream is not sys.stdin:
             input_stream.close()
-    return affected_transcripts
+    return affected_transcripts, homozygous_variants
 
 
 def get_peptides_from_transcripts(
     relevant_transcripts,
+    homozygous_variants,
     vaf_pos,
     cds_dict,
     only_novel_upstream,
@@ -2691,6 +2708,7 @@ def get_peptides_from_transcripts(
         """
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
+    used_homozygous_variants = set()
     for affected_transcript in relevant_transcripts:
         # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
         if cds_dict[affected_transcript][0][5] == "nonsense_mediated_decay" and not nmd:
@@ -2736,6 +2754,10 @@ def get_peptides_from_transcripts(
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
         for ht in haplotypes:
+            if affected_transcript in homozygous_variants:
+                for homozygous in homozygous_variants[affected_transcript]:
+                    ht.append(homozygous)
+                    used_homozygous_variants.add(tuple(homozygous))
             # Make edits for each mutation
             for mutation in ht:
                 # Determine if mutation is somatic or germline
@@ -2824,4 +2846,74 @@ def get_peptides_from_transcripts(
                             fasta_entries[affected_transcript].add(protein_b)
             transcript_a.reset(reference=True)
             transcript_b.reset(reference=True)
+    for transcript in homozygous_variants:
+        transcript_a = Transcript(
+            reference_index,
+            [
+                [str(chrom), "blah", seq_type, str(start), str(end), ".", strand]
+                for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
+                   transcript
+                ]
+            ],
+            transcript,
+        )
+        for mutation in homozygous_variants[transcript]:
+            if tuple(mutation) not in used_homozygous_variants:
+                # Determine if mutation is somatic or germline
+                if mutation[6][-1] == "*":
+                    mutation_class = "G"
+                else:
+                    mutation_class = "S"
+                # Determine VAF if available
+                if vaf_pos is not None:
+                    try:
+                        vaf_entry = mutation[6].strip("*").split(":")[vaf_pos]
+                        if "," in vaf_entry:
+                            vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
+                            if len(vaf_entry) > 0:
+                                vaf = sum(
+                                    [float(x.strip("%")) for x in vaf_entry]
+                                ) / len(vaf_entry)
+                            else:
+                                vaf = None
+                        else:
+                            if vaf_entry.strip("%") != ".":
+                                vaf = float(vaf_entry.strip("%"))
+                            else:
+                                vaf = None
+                    except IndexError:
+                        vaf = None
+                else:
+                    vaf = None
+                # Determine which copies variant exists on & make edits
+                if mutation[4] == "1":
+                    transcript_a.edit(
+                        mutation[3],
+                        mutation[1],
+                        mutation_type=mutation[7],
+                        mutation_class=mutation_class,
+                        vaf=vaf,
+                    )
+                # Extract neoepitopes
+                peptides_a, protein_a = transcript_a.neopeptides(
+                    min_size=size_list[0],
+                    max_size=size_list[-1],
+                    include_somatic=include_somatic,
+                    include_germline=include_germline,
+                    only_novel_upstream=only_novel_upstream,
+                    only_downstream=only_downstream,
+                    only_reference=only_reference,
+                    return_protein=True,
+                    )
+                # Store neoepitopes and their metadata
+                for pep in peptides_a:
+                    for meta_data in peptides_a[pep]:
+                        adj_meta_data = meta_data + (transcript_a.transcript_id,)
+                        if adj_meta_data not in neoepitopes[pep]:
+                            neoepitopes[pep].append(adj_meta_data)
+                if protein_fasta:
+                    if len(peptides_a) > 0:
+                        if protein_a != "":
+                            fasta_entries[transcript].add(protein_a)
+                transcript_a.reset(reference=True)
     return neoepitopes, fasta_entries

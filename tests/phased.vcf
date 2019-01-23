@@ -1,0 +1,159 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=DETP20,Description="Average distance of the variant base to the effective 3' end is less than 0.2">
+##FILTER=<ID=DPFilter,Description="DP < 10.0">
+##FILTER=<ID=IRC,Description="Unable to grab any sort of readcount for either the reference or the variant allele">
+##FILTER=<ID=LowQual,Description="Low quality">
+##FILTER=<ID=MMQS100,Description="The average mismatch quality sum of reads supporting the variant is greater than 100">
+##FILTER=<ID=MMQSD50,Description="Difference in average mismatch quality sum between variant and reference supporting reads is greater than 50">
+##FILTER=<ID=MQD30,Description="Difference in average mapping quality sum between variant and reference supporting reads is greater than 30">
+##FILTER=<ID=MVC4,Description="Less than 4 high quality reads support the variant">
+##FILTER=<ID=MVF5,Description="Variant allele frequency is less than 0.05">
+##FILTER=<ID=NRC,Description="Unable to grab readcounts for variant allele">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=PB10,Description="Average position on read less than 0.1 or greater than 0.9 fraction of the read length">
+##FILTER=<ID=QDFilter,Description="QD < 2.0">
+##FILTER=<ID=QUALFilter,Description="QUAL < 100.0">
+##FILTER=<ID=REJECT,Description="Rejected as a confident somatic mutation">
+##FILTER=<ID=RLD25,Description="Difference in average clipped read length between variant and reference supporting reads is greater than 25">
+##FILTER=<ID=SB1,Description="Reads supporting the variant have less than 0.01 fraction of the reads on one strand, but reference supporting reads are not similarly biased">
+##FILTER=<ID=SnpCluster,Description="SNPs found in clusters">
+##FILTER=<ID=Tier1,Description="Confident level 1">
+##FILTER=<ID=Tier2,Description="Confident level 2">
+##FILTER=<ID=Tier3,Description="Confident level 3">
+##FILTER=<ID=Tier4,Description="Confident level 4">
+##FILTER=<ID=Tier5,Description="Confident level 5">
+##FILTER=<ID=blat,Description="The call did not pass the BLAT filter">
+##FILTER=<ID=diffref,Description="Position skipped, different references in files">
+##FILTER=<ID=dnmnab,Description="DNA Normal minimum ALT bases is less than user-specified cut-off">
+##FILTER=<ID=dnmnap,Description="DNA Normal minimum ALT percentage is less than user-specified cut-off">
+##FILTER=<ID=dnmnbq,Description="DNA Normal minimum average ALT base quality is less than user-specified cut-off">
+##FILTER=<ID=dnmnrb,Description="DNA Normal minimum REF bases is less than user-specified cut-off">
+##FILTER=<ID=dnmnrp,Description="DNA Normal minimum REF percentage is less than user-specified cut-off">
+##FILTER=<ID=dnmntb,Description="DNA Normal minimum total bases is less than user-specified cut-off">
+##FILTER=<ID=dnmxerr,Description="DNA Normal maximum total ALT percentage attributed to error (sequencing, contamination, etc.) is greater than user-specified cut-off">
+##FILTER=<ID=dnmxtb,Description="DNA Normal maximum total bases is greater than user-specified cut-off">
+##FILTER=<ID=dnsbias,Description="Strand bias, majority of reads supporting ALT are on forward OR reverse strand">
+##FILTER=<ID=dtmnab,Description="DNA Tumor minimum ALT bases is less than user-specified cut-off">
+##FILTER=<ID=dtmnap,Description="DNA Tumor minimum ALT percentage is less than user-specified cut-off">
+##FILTER=<ID=dtmnbq,Description="DNA Tumor minimum average ALT base quality is less than user-specified cut-off">
+##FILTER=<ID=dtmnrb,Description="DNA Tumor minimum REF bases is less than user-specified cut-off">
+##FILTER=<ID=dtmnrp,Description="DNA Tumor minimum REF percentage is less than user-specified cut-off">
+##FILTER=<ID=dtmntb,Description="DNA Tumor minimum total bases is less than user-specified cut-off">
+##FILTER=<ID=dtmxerr,Description="DNA Tumor maximum total ALT percentage attributed to error (sequencing, contamination, etc.) is greater than user-specified cut-off">
+##FILTER=<ID=dtmxtb,Description="DNA Tumor maximum total bases is greater than user-specified cut-off">
+##FILTER=<ID=dtsbias,Description="Strand bias, majority of reads supporting ALT are on forward OR reverse strand">
+##FILTER=<ID=mba,Description="Minimum ALT bases is less than user-specified cut-off">
+##FILTER=<ID=mbt,Description="Minimum total bases is less than user-specified cut-off">
+##FILTER=<ID=multi,Description="There are multiple ALT alleles across all samples at this position">
+##FILTER=<ID=noref,Description="Position skipped, reference=N">
+##FILTER=<ID=pbias,Description="The call did not pass the positional bias filter">
+##FILTER=<ID=perfect5,Description="There were not enough perfect reads for this position.">
+##FILTER=<ID=perfectsbias,Description="A strand bias exists on the perfect reads.">
+##FILTER=<ID=rnmnab,Description="RNA Normal minimum ALT bases is less than user-specified cut-off">
+##FILTER=<ID=rnmnap,Description="RNA Normal minimum ALT percentage is less than user-specified cut-off">
+##FILTER=<ID=rnmnbq,Description="RNA Normal minimum average ALT base quality is less than user-specified cut-off">
+##FILTER=<ID=rnmntb,Description="RNA Normal minimum total bases is less than user-specified cut-off">
+##FILTER=<ID=rnmxerr,Description="RNA Normal maximum total ALT percentage attributed to error (sequencing, contamination, etc.) is greater than user-specified cut-off">
+##FILTER=<ID=rnmxtb,Description="RNA Normal maximum total bases is greater than user-specified cut-off">
+##FILTER=<ID=rnsbias,Description="Strand bias, majority of reads supporting ALT are on forward OR reverse strand">
+##FILTER=<ID=rtmnab,Description="RNA Tumor minimum ALT bases is less than user-specified cut-off">
+##FILTER=<ID=rtmnap,Description="RNA Tumor minimum ALT percentage is less than user-specified cut-off">
+##FILTER=<ID=rtmnbq,Description="RNA Tumor minimum average ALT base quality is less than user-specified cut-off">
+##FILTER=<ID=rtmntb,Description="RNA Tumor minimum total bases is less than user-specified cut-off">
+##FILTER=<ID=rtmxerr,Description="RNA Tumor maximum total ALT percentage attributed to error (sequencing, contamination, etc.) is greater than user-specified cut-off">
+##FILTER=<ID=rtmxtb,Description="RNA Tumor maximum total bases is greater than user-specified cut-off">
+##FILTER=<ID=rtsbias,Description="Strand bias, majority of reads supporting ALT are on forward OR reverse strand">
+##FILTER=<ID=str10,Description="Fails VarScan Strand Filter">
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=AF,Number=.,Type=Float,Description="Fraction of reads supporting alleles">
+##FORMAT=<ID=AMQ,Number=.,Type=Integer,Description="Average mapping quality for each allele present in the genotype">
+##FORMAT=<ID=BCOUNT,Number=4,Type=Integer,Description="Occurrence count for each base at this site (A,C,G,T)">
+##FORMAT=<ID=BQ,Number=.,Type=Integer,Description="Average base quality for reads supporting alleles">
+##FORMAT=<ID=CALLER,Number=.,Type=String,Description="Not provided in original VCF header">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=DP4,Number=4,Type=Integer,Description="Number of high-quality ref-forward, ref-reverse, alt-forward and alt-reverse bases">
+##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele fraction of the alternate allele with regard to reference">
+##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
+##FORMAT=<ID=GMQ,Number=1,Type=Integer,Description="Average mapping quality across all reads">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=HP,Number=.,Type=String,Description="Read-backed phasing haplotype identifiers">
+##FORMAT=<ID=IGT,Number=1,Type=String,Description="Genotype when called independently (only filled if called in joint prior mode)">
+##FORMAT=<ID=INDEL,Number=1,Type=Integer,Description="Number of indels">
+##FORMAT=<ID=JGQ,Number=1,Type=Integer,Description="Joint genotype quality (only filled if called in join prior mode)">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=PQ,Number=1,Type=Float,Description="Read-backed phasing quality">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="ID for set of phased genotypes">
+##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
+##FORMAT=<ID=SB,Number=.,Type=Float,Description="Strand Bias for reads supporting alleles">
+##FORMAT=<ID=SS,Number=1,Type=Integer,Description="Variant status relative to non-adjacent Normal,0=wildtype,1=germline,2=somatic,3=LOH,4=post-transcriptional modification,5=unknown">
+##FORMAT=<ID=SSC,Number=1,Type=Integer,Description="Somatic Score">
+##FORMAT=<ID=START,Number=1,Type=Integer,Description="Number of reads starting at this position">
+##FORMAT=<ID=STOP,Number=1,Type=Integer,Description="Number of reads stopping at this position">
+##FORMAT=<ID=VAQ,Number=1,Type=Integer,Description="Variant allele quality">
+##GATKCommandLine.HaplotypeCaller=<ID=HaplotypeCaller,Version=3.5-0-g36282e4,Date="Fri Apr 06 14:43:00 PDT 2018",Epoch=1523050980546,CommandLineOptions="analysis_type=HaplotypeCaller input_file=[/home/exacloud/lustre1/CompBio/data/mc3_variants/Data_Dec2017/SRR4289717/SRR4289716.reheadered.realigned.cleaned.bam] showFullBamList=false read_buffer_size=null phone_home=AWS gatk_key=null tag=NA read_filter=[] disable_read_filter=[] intervals=null excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=../../Summer2017/core_ref_GRCh37d5/genome.fa nonDeterministicRandomSeed=false disableDithering=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=500 baq=OFF baqGapOpenPenalty=40.0 refactor_NDN_cigar_string=false fix_misencoded_quality_scores=false allow_potentially_misencoded_quality_scores=false useOriginalQualities=false defaultBaseQualities=-1 performanceLog=null BQSR=null quantize_quals=0 static_quantized_quals=null round_down_quantized=false disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 globalQScorePrior=-1.0 validation_strictness=SILENT remove_program_records=false keep_program_records=false sample_rename_mapping_file=null unsafe=null disable_auto_index_creation_and_locking_when_reading_rods=false no_cmdline_in_header=false sites_only=false never_trim_vcf_format_field=false bcf=false bam_compression=null simplifyBAM=false disable_bam_indexing=false generate_md5=false num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false variant_index_type=DYNAMIC_SEEK variant_index_parameter=-1 reference_window_stop=0 logging_level=INFO log_to_file=null help=false version=false out=/home/exacloud/lustre1/CompBio/data/immunotherapy/germline_calls/hg19/SRR4289716.germline.raw.vcf likelihoodCalculationEngine=PairHMM heterogeneousKmerSizeResolution=COMBO_MIN dbsnp=(RodBinding name= source=UNBOUND) dontTrimActiveRegions=false maxDiscARExtension=25 maxGGAARExtension=300 paddingAroundIndels=150 paddingAroundSNPs=20 comp=[] annotation=[] excludeAnnotation=[] group=[Standard, StandardHCAnnotation] debug=false useFilteredReadsForAnnotations=false emitRefConfidence=NONE bamOutput=null bamWriterType=CALLED_HAPLOTYPES disableOptimizations=false annotateNDA=false heterozygosity=0.001 indel_heterozygosity=1.25E-4 standard_min_confidence_threshold_for_calling=30.0 standard_min_confidence_threshold_for_emitting=30.0 max_alternate_alleles=6 input_prior=[] sample_ploidy=2 genotyping_mode=DISCOVERY alleles=(RodBinding name= source=UNBOUND) contamination_fraction_to_filter=0.0 contamination_fraction_per_sample_file=null p_nonref_model=null exactcallslog=null output_mode=EMIT_VARIANTS_ONLY allSitePLs=false gcpHMM=10 pair_hmm_implementation=VECTOR_LOGLESS_CACHING pair_hmm_sub_implementation=ENABLE_ALL always_load_vector_logless_PairHMM_lib=false phredScaledGlobalReadMismappingRate=45 noFpga=false sample_name=null kmerSize=[10, 25] dontIncreaseKmerSizesForCycles=false allowNonUniqueKmersInRef=false numPruningSamples=1 recoverDanglingHeads=false doNotRecoverDanglingBranches=false minDanglingBranchLength=4 consensus=false maxNumHaplotypesInPopulation=128 errorCorrectKmers=false minPruning=2 debugGraphTransformations=false allowCyclesInKmerGraphToGeneratePaths=false graphOutput=null kmerLengthForReadErrorCorrection=25 minObservationsForKmerToBeSolid=20 GVCFGQBands=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 70, 80, 90, 99] indelSizeToEliminateInRefModel=10 min_base_quality_score=10 includeUmappedReads=false useAllelesTrigger=false doNotRunPhysicalPhasing=true keepRG=null justDetermineActiveRegions=false dontGenotype=false dontUseSoftClippedBases=false captureAssemblyFailureBAM=false errorCorrectReads=false pcr_indel_model=CONSERVATIVE maxReadsInRegionPerSample=10000 minReadsPerAlignmentStart=10 mergeVariantsViaLD=false activityProfileOut=null activeRegionOut=null activeRegionIn=null activeRegionExtension=null forceActive=false activeRegionMaxSize=null bandPassSigma=null maxProbPropagationDistance=50 activeProbabilityThreshold=0.002 min_mapping_quality_score=20 filter_reads_with_N_cigar=false filter_mismatching_base_and_quals=false filter_bases_not_stored=false">
+##GATKCommandLine.ReadBackedPhasing=<ID=ReadBackedPhasing,Version=3.5-0-g36282e4,Date="Tue Jan 22 16:39:37 PST 2019",Epoch=1548203977138,CommandLineOptions="analysis_type=ReadBackedPhasing input_file=[/home/exacloud/lustre1/CompBio/data/mc3_variants/Data_Dec2017/SRR4289717/SRR4289717.reheadered.realigned.cleaned.bam] showFullBamList=false read_buffer_size=null phone_home=AWS gatk_key=null tag=NA read_filter=[] disable_read_filter=[] intervals=[/home/exacloud/lustre1/CompBio/projs/RThompson/immunotherapy/jobs/readbackedphasing/vcfs/Hugo_Pt10.SRR4289717.sorted.vcf] excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=/home/exacloud/lustre1/CompBio/projs/RThompson/immunotherapy/jobs/mc3/reference_data/core_ref_GRCh37d5/genome.fa nonDeterministicRandomSeed=false disableDithering=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 baq=OFF baqGapOpenPenalty=40.0 refactor_NDN_cigar_string=false fix_misencoded_quality_scores=false allow_potentially_misencoded_quality_scores=false useOriginalQualities=false defaultBaseQualities=-1 performanceLog=null BQSR=null quantize_quals=0 static_quantized_quals=null round_down_quantized=false disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 globalQScorePrior=-1.0 validation_strictness=SILENT remove_program_records=false keep_program_records=false sample_rename_mapping_file=null unsafe=null disable_auto_index_creation_and_locking_when_reading_rods=false no_cmdline_in_header=false sites_only=false never_trim_vcf_format_field=false bcf=false bam_compression=null simplifyBAM=false disable_bam_indexing=false generate_md5=false num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false variant_index_type=DYNAMIC_SEEK variant_index_parameter=-1 reference_window_stop=0 logging_level=INFO log_to_file=null help=false version=false debug=false variant=(RodBinding name=variant source=/home/exacloud/lustre1/CompBio/projs/RThompson/immunotherapy/jobs/readbackedphasing/vcfs/Hugo_Pt10.SRR4289717.sorted.vcf) out=htsjdk.variant.variantcontext.writer.SortingVariantContextWriter cacheWindowSize=20000 maxPhaseSites=10 phaseQualityThresh=20.0 variantStatsFilePrefix=null min_base_quality_score=17 min_mapping_quality_score=20 sampleToPhase=null permitNoSampleOverlap=false enableMergePhasedSegregatingPolymorphismsToMNP=false maxGenomicDistanceForMNP=1 outputMultipleBaseCountsFile=null filter_reads_with_N_cigar=false filter_mismatching_base_and_quals=false filter_bases_not_stored=false">
+##GATKCommandLine.VariantFiltration=<ID=VariantFiltration,Version=3.5-0-g36282e4,Date="Fri Apr 06 22:10:35 PDT 2018",Epoch=1523077835538,CommandLineOptions="analysis_type=VariantFiltration input_file=[] showFullBamList=false read_buffer_size=null phone_home=AWS gatk_key=null tag=NA read_filter=[] disable_read_filter=[] intervals=null excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=../../Summer2017/core_ref_GRCh37d5/genome.fa nonDeterministicRandomSeed=false disableDithering=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 baq=OFF baqGapOpenPenalty=40.0 refactor_NDN_cigar_string=false fix_misencoded_quality_scores=false allow_potentially_misencoded_quality_scores=false useOriginalQualities=false defaultBaseQualities=-1 performanceLog=null BQSR=null quantize_quals=0 static_quantized_quals=null round_down_quantized=false disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 globalQScorePrior=-1.0 validation_strictness=SILENT remove_program_records=false keep_program_records=false sample_rename_mapping_file=null unsafe=null disable_auto_index_creation_and_locking_when_reading_rods=false no_cmdline_in_header=false sites_only=false never_trim_vcf_format_field=false bcf=false bam_compression=null simplifyBAM=false disable_bam_indexing=false generate_md5=false num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false variant_index_type=DYNAMIC_SEEK variant_index_parameter=-1 reference_window_stop=0 logging_level=INFO log_to_file=null help=false version=false variant=(RodBinding name=variant source=/home/exacloud/lustre1/CompBio/data/immunotherapy/germline_calls/hg19//SRR4289716.germline.raw.vcf) mask=(RodBinding name= source=UNBOUND) out=/home/exacloud/lustre1/CompBio/data/immunotherapy/germline_calls/hg19/SRR4289716.germline.filtered.vcf filterExpression=[QD < 2.0, QUAL < 100.0, DP < 10.0] filterName=[QDFilter, QUALFilter, DPFilter] genotypeFilterExpression=[] genotypeFilterName=[] clusterSize=3 clusterWindowSize=15 maskExtension=0 maskName=Mask filterNotInMask=false missingValuesInExpressionsShouldEvaluateAsFailing=true invalidatePreviousFilters=false invertFilterExpression=false invertGenotypeFilterExpression=false setFilteredGtToNocall=false filter_reads_with_N_cigar=false filter_mismatching_base_and_quals=false filter_bases_not_stored=false">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=BQ,Number=1,Type=Integer,Description="RMS base quality">
+##INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities">
+##INFO=<ID=ClippingRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref number of hard clipped bases">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
+##INFO=<ID=DS,Number=0,Type=Flag,Description="Were any of the samples downsampled?">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=ExcessHet,Number=1,Type=Float,Description="Phred-scaled p-value for exact test of excess heterozygosity">
+##INFO=<ID=FA,Number=1,Type=Float,Description="Overall fraction of reads supporting ALT">
+##INFO=<ID=FS,Number=1,Type=Float,Description="Phred-scaled p-value using Fisher's exact test to detect strand bias">
+##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
+##INFO=<ID=HOMLEN,Number=.,Type=Integer,Description="Length of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=HOMSEQ,Number=.,Type=String,Description="Sequence of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=HaplotypeScore,Number=1,Type=Float,Description="Consistency of the site with at most two segregating haplotypes">
+##INFO=<ID=INDEL,Number=1,Type=Integer,Description="Number of indels for all samples">
+##INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description="Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation">
+##INFO=<ID=MC,Number=.,Type=String,Description="Modification base changes at this position">
+##INFO=<ID=MLEAC,Number=A,Type=Integer,Description="Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed">
+##INFO=<ID=MLEAF,Number=A,Type=Float,Description="Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality">
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##INFO=<ID=MQRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities">
+##INFO=<ID=MT,Number=.,Type=String,Description="Modification types at this position">
+##INFO=<ID=MUSE,Number=.,Type=String,Description="Variant called by muse">
+##INFO=<ID=MUTECT,Number=.,Type=String,Description="Variant called by mutect">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">
+##INFO=<ID=NTLEN,Number=.,Type=Integer,Description="Number of bases inserted in place of deleted code">
+##INFO=<ID=OLD_CLUMPED,Number=1,Type=String,Description="Original chr:pos:ref:alt encoding">
+##INFO=<ID=OLD_MULTIALLELIC,Number=1,Type=String,Description="Original chr:pos:ref:alt encoding">
+##INFO=<ID=OLD_VARIANT,Number=.,Type=String,Description="Original chr:pos:ref:alt encoding">
+##INFO=<ID=ORIGIN,Number=.,Type=String,Description="Where the call originated from, the tumor DNA, RNA, or both">
+##INFO=<ID=PF,Number=1,Type=Integer,Description="The number of samples carry the variant">
+##INFO=<ID=PINDEL,Number=.,Type=String,Description="Variant called by pindel">
+##INFO=<ID=PhasingInconsistent,Number=0,Type=Flag,Description="Are the reads significantly haplotype-inconsistent?">
+##INFO=<ID=QD,Number=1,Type=Float,Description="Variant Confidence/Quality by Depth">
+##INFO=<ID=RADIA,Number=.,Type=String,Description="Variant called by radia">
+##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias">
+##INFO=<ID=SB,Number=1,Type=Float,Description="Strand bias">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
+##INFO=<ID=SOMATICSNIPER,Number=.,Type=String,Description="Variant called by somaticsniper">
+##INFO=<ID=SOR,Number=1,Type=Float,Description="Symmetric Odds Ratio of 2x2 contingency table to detect strand bias">
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
+##INFO=<ID=SS,Number=1,Type=Integer,Description="Variant status relative to non-adjacent Normal,0=wildtype,1=germline,2=somatic,3=LOH,4=post-transcriptional modification,5=unknown">
+##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
+##INFO=<ID=START,Number=1,Type=Integer,Description="Number of reads starting at this position across all samples">
+##INFO=<ID=STOP,Number=1,Type=Integer,Description="Number of reads stopping at this position across all samples">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=TYPEOFSV,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=VARSCAN,Number=.,Type=String,Description="Variant called by varscan">
+##INFO=<ID=VT,Number=1,Type=String,Description="Variant type, can be SNP, INS or DEL">
+##contig=<ID=14,length=107349540>
+##fileDate=2019-01-22
+##reference=file:///home/exacloud/lustre1/CompBio/projs/RThompson/immunotherapy/jobs/mc3/reference_data/core_ref_GRCh37d5/genome.fa
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+14	19553200	.	C	G	1765.88	PASS	DP=4263;GPV=1;PhasingInconsistent;SOMATIC;SOMATICSNIPER=.;SPV=7.7859e-16;SS=2;SSC=151;VARSCAN=.	GT:FREQ	0/1:15.52%
+14	19553372	.	G	A	1655.77	PASS	AC=1;AF=0.500;AN=2;BaseQRankSum=17.070;ClippingRankSum=-0.141;DP=784;ExcessHet=3.0103;FS=0.000;MLEAC=1;MLEAF=0.500;MQ=26.24;MQRankSum=0.064;QD=2.11;ReadPosRankSum=1.515;SOR=0.757	GT:AD:DP:GQ:HP:PL	0/1:647,136:783:99:19553372-1,19553372-2:1684,0,17385
+14	19553436	.	C	T	1901.77	PASS	AC=1;AF=0.500;AN=2;BaseQRankSum=-3.496;ClippingRankSum=-0.779;DP=844;ExcessHet=3.0103;FS=0.000;MLEAC=1;MLEAF=0.500;MQ=26.30;MQRankSum=-5.561;QD=2.26;ReadPosRankSum=1.350;SOR=0.020	GT:AD:DP:GQ:HP:PL:PQ	0/1:740,103:843:99:19553372-2,19553372-1:1930,0,30239:3965.49
+14	19553443	.	G	A	1860.77	PASS	AC=1;AF=0.500;AN=2;BaseQRankSum=15.590;ClippingRankSum=0.995;DP=826;ExcessHet=3.0103;FS=0.000;MLEAC=1;MLEAF=0.500;MQ=26.29;MQRankSum=-5.387;QD=2.26;ReadPosRankSum=0.405;SOR=0.018	GT:AD:DP:GQ:HP:PL:PQ	0/1:726,98:824:99:19553372-1,19553372-2:1889,0,29565:17731.95
+14	19553764	.	A	G	15817.77	PASS	AC=1;AF=0.500;AN=2;BaseQRankSum=10.164;ClippingRankSum=0.629;DP=2073;ExcessHet=3.0103;FS=8.679;MLEAC=1;MLEAF=0.500;MQ=33.20;MQRankSum=-10.205;QD=7.66;ReadPosRankSum=-0.314;SOR=0.982	GT:AD:DP:GQ:HP:PL:PQ	0/1:1344,721:2065:99:19553372-1,19553372-2:15846,0,36781:726.04
+14	19553795	.	G	A	.	PASS	DP=4263;GPV=1;PhasingInconsistent;SOMATIC;SOMATICSNIPER=.;SPV=7.7859e-16;SS=2;SSC=151;VARSCAN=.	GT:FREQ:HP:PQ	0/1:16.22%:19553372-1,19553372-2:8761.31

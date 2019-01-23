@@ -42,6 +42,11 @@ neoepiscope_dir = os.path.dirname(
     os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
 )
 
+def predicate(line):
+    ''' whether reading first line of neoepiscope output '''
+    if "Neoepiscope version" in line:
+        return False
+    return True
 
 class TestGTFprocessing(unittest.TestCase):
     """Tests proper creation of dictionaries store GTF data"""
@@ -118,17 +123,28 @@ class TestPrepHapCUT(unittest.TestCase):
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.hapcut = os.path.join(self.base_dir, "test.hapcut.out")
         self.vcf = os.path.join(self.base_dir, "test.vcf")
+        self.phased_vcf = os.path.join(self.base_dir, "phased.vcf")
+        self.germline_vcf = os.path.join(self.base_dir, "germline.vcf")
         self.complete_hapcut = os.path.join(self.base_dir, "complete_hapcut.out")
         self.test_hapcut = os.path.join(self.base_dir, "test_complete_hapcut.out")
+        self.rbp_haplotypes = os.path.join(self.base_dir, "rbp.haplotypes")
+        self.test_rbp = os.path.join(self.base_dir, "test.rbp.haplotypes")
 
     def test_haplotype_prep(self):
-        """Tests that output of haplotype prep is correct"""
+        """Tests that output of haplotype prep is correct for either regular
+           hapcut output or phased VCFs
+        """
         prep_hapcut_output(self.test_hapcut, self.hapcut, self.vcf)
         self.assertTrue(filecmp.cmp(self.test_hapcut, self.complete_hapcut))
+        prep_hapcut_output(self.test_rbp, None, self.phased_vcf, phased_vcf=True, 
+                           germline_vcf=self.germline_vcf)
+        self.assertTrue(filecmp.cmp(self.rbp_haplotypes, self.test_rbp))
+
 
     def tearDown(self):
         """Removes test file"""
         os.remove(self.test_hapcut)
+        os.remove(self.test_rbp)
 
 
 class TestVAFpos(unittest.TestCase):
@@ -161,11 +177,41 @@ class TestHaplotypeProcessing(unittest.TestCase):
                 cds_block[0] = cds_block[0].replace("chr", "")
         self.Chr11tree = cds_to_tree(self.Chr11cds, "NA", pickle_it=False)
         self.Chr11hapcut = os.path.join(self.base_dir, "Chr11.hapcut.out")
+        self.rbp_ref_prefix = os.path.join(self.base_dir, "chr14_index")
+        self.rbp_reference_index = bowtie_index.BowtieIndexReference(self.rbp_ref_prefix)
+        self.Chr14gtf = os.path.join(self.base_dir, "Chr14.gtf")
+        self.Chr14cds = gtf_to_cds(self.Chr14gtf, "NA", pickle_it=False)
+        for transcript in self.Chr14cds:
+            for cds_block in self.Chr14cds[transcript]:
+                cds_block[0] = cds_block[0].replace("chr", "")
+        self.Chr14tree = cds_to_tree(self.Chr14cds, "NA", pickle_it=False)
+        self.phased_hapcut = os.path.join(self.base_dir, "rbp.haplotypes")
 
     def test_hap_processing(self):
         """Fails if file is processed incorrectly"""
-        Chr11_txs = process_haplotypes(self.Chr11hapcut, self.Chr11tree, phasing=True)
-        self.assertEqual(sorted(Chr11_txs.keys()), ["ENST00000398531.2_2"])
+        Chr11_txs, homozygous_vars = process_haplotypes(self.Chr11hapcut, 
+                                                        self.Chr11tree, 
+                                                        phasing=True)
+        phased_txs, phased_homozygous = process_haplotypes(self.phased_hapcut, 
+                                                        self.Chr14tree,
+                                                        phasing=True)
+        self.assertEqual(sorted(Chr11_txs.keys()), ['ENST00000299106.8_2', 
+                                                    'ENST00000398531.2_2', 
+                                                    'ENST00000441717.3_2'])
+        self.assertEqual(homozygous_vars["ENST00000299106.8_2"], 
+                [
+                    [
+                        "11",
+                        134018663,
+                        "A",
+                        "G",
+                        "1",
+                        "1",
+                        "1/1:.:17:17:0:0%:17,0,0,0:.:2",
+                        "V",
+                    ]
+                ]
+        )
         self.assertEqual(
             Chr11_txs["ENST00000398531.2_2"],
             [
@@ -176,8 +222,8 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "GT",
                         2,
                         "0",
-                        "0",
-                        "0/0:.:53:52:0:0%:22,30,0,0:.:2",
+                        "1",
+                        "0/1:.:53:52:0:0%:22,30,0,0:.:2",
                         "D",
                     ],
                     [
@@ -186,8 +232,8 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "C",
                         "G",
                         "0",
-                        "0",
-                        "0/0:.:35:34:0:0%:19,15,0,0:.:2",
+                        "1",
+                        "0/1:.:35:34:0:0%:19,15,0,0:.:2",
                         "V",
                     ],
                     [
@@ -196,9 +242,68 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "",
                         "AA",
                         "0",
-                        "0",
-                        "0/0:.:35:34:0:0%:19,15,0,0:.:2",
+                        "1",
+                        "0/1:.:35:34:0:0%:19,15,0,0:.:2",
                         "I",
+                    ],
+                ]
+            ],
+        )
+        self.assertEqual(phased_txs.keys(), ['ENST00000409832.3'])
+        self.assertEqual(phased_homozygous, {})
+        self.assertEqual(
+            phased_txs["ENST00000409832.3"],
+            [
+                [
+                    [
+                        "14",
+                        19553372,
+                        "G",
+                        "A",
+                        "0",
+                        "1",
+                        "0/1:647,136:783:99:19553372-1,19553372-2:1684,0,17385*",
+                        "V",
+                    ],
+                    [
+                        "14",
+                        19553436,
+                        "C",
+                        "T",
+                        "1",
+                        "0",
+                        "0/1:740,103:843:99:19553372-2,19553372-1:1930,0,30239:3965.49*",
+                        "V",
+                    ],
+                    [
+                        "14",
+                        19553443,
+                        "G",
+                        "A",
+                        "0",
+                        "1",
+                        "0/1:726,98:824:99:19553372-1,19553372-2:1889,0,29565:17731.95*",
+                        "V",
+                    ],
+                    [
+                        "14",
+                        19553764,
+                        "A",
+                        "G",
+                        "0",
+                        "1",
+                        "0/1:1344,721:2065:99:19553372-1,19553372-2:15846,0,36781:726.04*",
+                        "V",
+                    ],
+                    [
+                        "14",
+                        19553795,
+                        "G",
+                        "A",
+                        "0",
+                        "1",
+                        "0/1:16.22%:19553372-1,19553372-2:8761.31",
+                        "V",
                     ],
                 ]
             ],
@@ -215,7 +320,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         3,
                         "0",
                         "1",
-                        "0/0:.:53:52:0:3.0%:22,30,0,0:.:2",
+                        "0/1:.:53:52:0:3.0%:22,30,0,0:.:2",
                         "D",
                     ],
                     [
@@ -225,7 +330,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "C",
                         "0",
                         "1",
-                        "0/0:.:35:34:0:15.7%:19,15,0,0:.:2",
+                        "0/1:.:35:34:0:15.7%:19,15,0,0:.:2",
                         "V",
                     ],
                     [
@@ -233,17 +338,31 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         71277056,
                         "",
                         "AAA",
+                        "0",
                         "1",
-                        "1",
-                        "0/0:.:35:34:0:0.1%:19,15,0,0:.:2",
+                        "0/1:.:35:34:0:0.1%:19,15,0,0:.:2",
                         "I",
                     ],
                 ]
             ]
         }
+        homozygous_vars = {'ENST00000299106.8_2': [
+                                    [
+                                        "11",
+                                        134018663,
+                                        "A",
+                                        "G",
+                                        "1",
+                                        "1",
+                                        "1/1:.:17:17:0:0%:17,0,0,0:.:2",
+                                        "V",
+                                    ]
+                                ]
+                        }
         transcript_blocks = self.Chr11cds["ENST00000398531.2_2"]
         neoepitopes, fasta = get_peptides_from_transcripts(
             Chr11_txs,
+            homozygous_vars,
             5,
             self.Chr11cds,
             True,
@@ -261,7 +380,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
             1,
             protein_fasta=True,
         )
-        self.assertEqual(len(neoepitopes.keys()), 70)
+        self.assertEqual(len(neoepitopes.keys()), 108)
         self.assertEqual(
             neoepitopes["CGCSQKCN"],
             [("11", 71277056, "", "AAA", "I", 0.1, "NA", "NA", "ENST00000398531.2_2")],
@@ -282,19 +401,31 @@ class TestHaplotypeProcessing(unittest.TestCase):
                 )
             ],
         )
+        self.assertEqual(
+            neoepitopes["NKQDGESYE"], 
+            [
+                (
+                    "11",
+                    134018663,
+                    "A",
+                    "G",
+                    "V",
+                    0,
+                    "NKQDGESYK",
+                    "NA",
+                    "ENST00000299106.8_2",
+                )
+            ]
+        )
         self.assertEqual(sorted(neoepitopes.keys())[0], "CCGCGGCG")
-        self.assertEqual(sorted(neoepitopes.keys())[-1], "VPVCCPCKI")
+        self.assertEqual(sorted(neoepitopes.keys())[-1], "YENPGKPDGVN")
         self.assertEqual(
             sorted(fasta["ENST00000398531.2_2"]),
             [
                 "MGCCGCGGCGSGCGGCGSGCGGCGSGCGGYGSGCGGCGSSCCVPVCCCKPVCCCVPACSCSSCG"
                 "SCGGSKGDCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGS"
                 "CGGSKGGCGSCGCSQKCNCCKPCCCSSGCGSCCQSSCCNPCCCQSSCCVPVCCQSSCCKPC"
-                "CCQSSCCVPVCCPCKIX",
-                "MGCCGCSGGCGSGCGGCGSGCGGCGSGCGGYGSGCGGCGSSCCVPVCCCKPVCCCVPACSCSSC"
-                "GSCGGSKGDCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCGGSKGGCGSCG"
-                "GSKGGCGSCGCSQKCNCCKPCCCSSGCGSCCQSSCCNPCCCQSSCCVPVCCQSSCCKPCCCQSS"
-                "CCVPVCCQCKIX",
+                "CCQSSCCVPVCCPCKIX"
             ],
         )
 
@@ -452,8 +583,21 @@ class TestOutput(unittest.TestCase):
 
     def testwrite(self):
         """Tests that output file is written correctly"""
+
+        from sys import version_info
         write_results(self.out_file, self.HLA_alleles, self.neoepitopes, self.tools)
-        self.assertTrue(filecmp.cmp(self.out_file, self.correct_out))
+        if version_info[0] < 3:
+            from itertools import izip, ifilter
+            with open(self.out_file) as fh1, open(self.correct_out) as fh2:
+                f1 = ifilter(predicate, fh1)
+                f2 = ifilter(predicate, fh2)
+                test = all(x == y for x, y in izip(f1, f2))
+        else:
+            with open(self.out_file) as fh1, open(self.correct_out) as fh2:
+                f1 = filter(predicate, fh1)
+                f2 = filter(predicate, fh2)
+                test = all(x == y for x, y in zip(f1, f2))
+        self.assertTrue(test)
 
     def tearDown(self):
         """Removes test file"""

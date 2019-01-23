@@ -755,12 +755,13 @@ def main():
         else:
             phase_mutations = False
         # Find transcripts that haplotypes overlap
-        relevant_transcripts = process_haplotypes(
+        relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations
         )
         # Apply mutations to transcripts and get neoepitopes
         neoepitopes, fasta = get_peptides_from_transcripts(
             relevant_transcripts,
+            homozygous_variants,
             vaf_pos,
             cds_dict,
             only_novel_upstream,
