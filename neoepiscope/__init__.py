@@ -161,13 +161,6 @@ def main():
         help="tumor ID (matching the sample in your tumor BAM file "
              "if using GATK ReadBackedPhasing)",
     )
-    merge_parser.add_argument(
-        "-p",
-        "--phased",
-        required=False,
-        action="store_true",
-        help="indicates that VCF will be used with GATK ReadBackedPhasing",
-    )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
     prep_parser.add_argument(
@@ -197,8 +190,7 @@ def main():
         "--germline-vcf",
         type=str,
         required=False,
-        help="path to germline VCF used with neoepiscope merge; "
-             "for use when phasing somatic and germline variants with GATK ReadBackedPhasing"
+        help="path to germline VCF used with neoepiscope merge"
     )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
@@ -384,7 +376,7 @@ def main():
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
         combine_vcf(args.germline, args.somatic, outfile=args.output, 
-                    tumor_id=args.tumor_id, phased_vcf=args.phased)
+                    tumor_id=args.tumor_id)
     elif args.subparser_name == "prep":
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, 
                            args.phased, args.germline_vcf)

@@ -72,19 +72,19 @@ Options:
 
 ```-t, --tumor-id```  tumor ID (matching sample in tumor BAM file's read group field)
 
-```-p, --phased```	  flag VCF as future input to GATK's ReadBackedPhasing
-
-If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), make sure to use the `-p` flag and specify a tumor ID using the `-t` flag. It should match the sample name in the header of your tumor BAM file (the SM value in the read group field).
+If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), make sure to specify a tumor ID using the `-t` flag. It should match the sample name in the header of your tumor BAM file (the SM value in the read group field).
 
 ##### Predict haplotype phasing
 
-Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes:
+Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes and flag germline variants if relevant:
 
-```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> -o <ADJUSTED HAPCUT OUTPUT>```
+```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> [-g <GERMLINE VCF>] -o <ADJUSTED HAPCUT OUTPUT>```
 
 Options:
 
 ```-v, --vcf```               path to VCF file used to generate HapCUT2 output
+
+```-g, --germline-vcf```	  path to germline VCF used in neoepiscope merge
 
 ```-c, --hapcut2-output```    path to original HapCUT2 output
 
@@ -92,7 +92,8 @@ Options:
 
 ```-p, --phased```			  flag input VCF as phased with GATK ReadBackedPhasing
 
-Alternatively, you may perform phasing using [GATK's ReadBackedPhasing](https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_phasing_ReadBackedPhasing.php) on your merged or somatic VCF. If you phase variants with GATK instead of HapCUT2, make sure to use the ```-p``` flag when running ```neoepiscope prep``` to format your output:
+
+Alternatively, you may perform phasing using [GATK's ReadBackedPhasing](https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_phasing_ReadBackedPhasing.php) on your merged or somatic VCF. If you phased variants with GATK instead of HapCUT2, make sure to use the ```-p``` flag when running ```neoepiscope prep``` to format your output:
 
 ```neoepiscope prep -v <VCF> -o <ADJUSTED HAPCUT OUTPUT> -p```
 

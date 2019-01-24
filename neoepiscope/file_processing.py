@@ -116,8 +116,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
             output_stream.close()
 
 
-def combine_vcf(vcf1, vcf2, outfile="combined.vcf", 
-                tumor_id="TUMOR", phased_vcf=False):
+def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
     """ Combines VCFs
 
         No return value.
@@ -155,14 +154,9 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf",
                     file=header
     )
     header.close()
-    if not phased_vcf:
-        markgermline = "".join(
-            ["""awk '{print $0"*"}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
-        )
-    else:
-        markgermline = "".join(
-            ["""awk '{print $0}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
-        )
+    markgermline = "".join(
+        ["""awk '{print $0}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
+    )
     marktumor = "".join(
         ["""awk '{print $0}' """, vcf2, ".tumortemp > ", vcf2, ".tumor"]
     )
@@ -300,11 +294,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                 counter = 1
                 while line:
                     tokens = line.strip().split("\t")
+                    tokens[9] = tokens[9].strip()
                     if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
-                        tokens[9] = tokens[9].strip().replace('*','')
                         gen_end = '*'
                     else:
-                        tokens[9] = tokens[9].strip()
                         gen_end = ''
                     pos = int(tokens[1])
                     if 'HP' in tokens[8]:
@@ -384,6 +377,11 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                 while line:
                     tokens = line.strip().split("\t")
                     pos = int(tokens[1])
+                    tokens[9] = tokens[9].strip()
+                    if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
+                        gen_end = '*'
+                    else:
+                        gen_end = ''
                     alt_alleles = tokens[4].split(",")
                     for allele in alt_alleles:
                         if (tokens[3], allele) not in phased[(tokens[0], pos)]:
@@ -400,7 +398,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                         pos=pos,
                                         ref=tokens[3],
                                         alt=allele,
-                                        genotype=tokens[9].strip(),
+                                        genotype=''.join([tokens[9], gen_end]),
                                     ),
                                     file=output_stream,
                                 )
