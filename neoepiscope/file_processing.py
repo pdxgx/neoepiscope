@@ -219,6 +219,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         if tokens[1] == "-" or tokens[2] == "-":
                             continue
                         elif "," in tokens[6]:
+                            if (tokens[3], tokens[4], tokens[5], tokens[6]) in germline_variants:
+                                gen_end = '*'
+                            else:
+                                gen_end = ''
                             alt_alleles = tokens[6].split(",")
                             try:
                                 assert len(alt_alleles) == 2
@@ -266,7 +270,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                             tokens[4],
                                             tokens[5],
                                             alt_alleles[i],
-                                            tokens[7],
+                                            ''.join([tokens[7], gen_end]),
                                             tokens[8],
                                             tokens[9],
                                             tokens[10],
@@ -275,8 +279,29 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                     file=output_stream,
                                 )
                         else:
+                            if (tokens[3], tokens[4], tokens[5], tokens[6]) in germline_variants:
+                                gen_end = '*'
+                            else:
+                                gen_end = ''
                             phased[(tokens[3], int(tokens[4]))].add((tokens[5], tokens[6]))
-                            print(line.strip(), file=output_stream)
+                            print(
+                                    "\t".join(
+                                        [
+                                            tokens[0],
+                                            tokens[1],
+                                            tokens[2],
+                                            tokens[3],
+                                            tokens[4],
+                                            tokens[5],
+                                            tokens[6],
+                                            ''.join([tokens[7], gen_end]),
+                                            tokens[8],
+                                            tokens[9],
+                                            tokens[10],
+                                        ]
+                                    ),
+                                    file=output_stream,
+                                )
                     else:
                         print(line.strip(), file=output_stream)
             print("********", file=output_stream)
@@ -307,7 +332,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                         current_haplotype = (int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1)
                         hap_entry = ("{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
                                     "{pos}\t{ref}\t{alt}\t"
-                                    "{genotype}\tNA\tNA"
+                                    "{genotype}\tNA\tNA\tNA"
                                     ).format(
                                         vcf_line=counter,
                                         hap1=str(current_haplotype[0]),
@@ -325,13 +350,13 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                             (
                                 "{vcf_line}\t1\t1\t{chrom}\t"
                                 "{pos}\t{ref}\t{alt}\t"
-                                "{genotype}\tNA\tNA"
+                                "{genotype}\tNA\tNA\tNA"
                             ).format(
                                 vcf_line=counter,
                                 chrom=tokens[0],
                                 pos=pos,
                                 ref=tokens[3],
-                                alt=allele,
+                                alt=tokens[4],
                                 genotype=''.join([tokens[9], gen_end]),
                             ),
                             file=output_stream,
@@ -345,7 +370,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                 (
                                     "{vcf_line}\t1\t0\t{chrom}\t"
                                     "{pos}\t{ref}\t{alt}\t"
-                                    "{genotype}\tNA\tNA"
+                                    "{genotype}\tNA\tNA\tNA"
                                 ).format(
                                     vcf_line=counter,
                                     chrom=tokens[0],
@@ -391,7 +416,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                     (
                                         "{vcf_line}\t1\t1\t{chrom}\t"
                                         "{pos}\t{ref}\t{alt}\t"
-                                        "{genotype}\tNA\tNA"
+                                        "{genotype}\tNA\tNA\tNA"
                                     ).format(
                                         vcf_line=counter,
                                         chrom=tokens[0],
@@ -407,7 +432,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                     (
                                         "{vcf_line}\t1\t0\t{chrom}\t"
                                         "{pos}\t{ref}\t{alt}\t"
-                                        "{genotype}\tNA\tNA"
+                                        "{genotype}\tNA\tNA\tNA"
                                     ).format(
                                         vcf_line=counter,
                                         chrom=tokens[0],
