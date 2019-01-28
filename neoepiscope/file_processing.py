@@ -129,7 +129,7 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         if lines[0] != "#":
             print(lines.strip(), file=temp)
         elif lines[0:2] == "##":
-            if "INFO" in lines:
+            if "INFO=<" in lines:
                 info_lines.add(lines.strip())
             else:
                 print(lines.strip(), file=header)
@@ -141,7 +141,7 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         if lines[0] != "#":
             print(lines.strip(), file=temp)
         elif lines[0:2] == "##":
-            if "INFO" in lines:
+            if "INFO=<" in lines:
                 info_lines.add(lines.strip())
             else:
                 print(lines.strip(), file=header)
@@ -149,16 +149,20 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
     temp.close()
     for line in sorted(list(info_lines)):
         print(line, file=header)
+    print('##FORMAT=<ID=VT,Number=1,Type=String,Description="Variant type, SOMATIC or GERMLINE">',
+            file=header)
     print('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", 
                      "FILTER", "INFO", "FORMAT", tumor_id]), 
                     file=header
     )
     header.close()
     markgermline = "".join(
-        ["""awk '{print $0}' """, vcf2, ".germlinetemp > ", vcf2, ".germline"]
+        ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":GERMLINE"}' """, 
+         vcf2, ".germlinetemp > ", vcf2, ".germline"]
     )
     marktumor = "".join(
-        ["""awk '{print $0}' """, vcf2, ".tumortemp > ", vcf2, ".tumor"]
+        ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":SOMATIC"}' """, 
+         vcf2, ".tumortemp > ", vcf2, ".tumor"]
     )
     subprocess.call(markgermline, shell=True)
     subprocess.call(marktumor, shell=True)
@@ -199,13 +203,6 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
         Return value: None
     """
     phased = collections.defaultdict(set)
-    germline_variants = set()
-    if germline_vcf is not None:
-        with open(germline_vcf, 'r') as f:
-            for line in f:
-                if line[0] != '#':
-                    tokens = line.strip().split('\t')
-                    germline_variants.add((tokens[0], tokens[1], tokens[3], tokens[4]))
     try:
         if output == "-":
             output_stream = sys.stdout
@@ -216,13 +213,13 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                 for line in hapcut2_stream:
                     if line[0] != "*" and not line.startswith("BLOCK"):
                         tokens = line.strip().split("\t")
+                        if ':GERMLINE' in tokens[7]:
+                            gen_end = '*'
+                        else:
+                            gen_end = ''
                         if tokens[1] == "-" or tokens[2] == "-":
                             continue
                         elif "," in tokens[6]:
-                            if (tokens[3], tokens[4], tokens[5], tokens[6]) in germline_variants:
-                                gen_end = '*'
-                            else:
-                                gen_end = ''
                             alt_alleles = tokens[6].split(",")
                             try:
                                 assert len(alt_alleles) == 2
@@ -279,10 +276,6 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                     file=output_stream,
                                 )
                         else:
-                            if (tokens[3], tokens[4], tokens[5], tokens[6]) in germline_variants:
-                                gen_end = '*'
-                            else:
-                                gen_end = ''
                             phased[(tokens[3], int(tokens[4]))].add((tokens[5], tokens[6]))
                             print(
                                     "\t".join(
@@ -320,7 +313,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                 while line:
                     tokens = line.strip().split("\t")
                     tokens[9] = tokens[9].strip()
-                    if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
+                    if ':GERMLINE' in tokens[9]:
                         gen_end = '*'
                     else:
                         gen_end = ''
@@ -403,7 +396,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                     tokens = line.strip().split("\t")
                     pos = int(tokens[1])
                     tokens[9] = tokens[9].strip()
-                    if (tokens[0], tokens[1], tokens[3], tokens[4]) in germline_variants:
+                    if ':GERMLINE' in tokens[9]:
                         gen_end = '*'
                     else:
                         gen_end = ''
@@ -439,7 +432,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_v
                                         pos=pos,
                                         ref=tokens[3],
                                         alt=allele,
-                                        genotype=tokens[9].strip(),
+                                        genotype=''.join([tokens[9], gen_end]),
                                     ),
                                     file=output_stream,
                                 )
