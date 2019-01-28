@@ -53,15 +53,16 @@ from .transcript import cds_to_tree
 from distutils.core import Command
 
 download = {
-    "Gencode v27 annotation": [
-        "ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human"
-        "/release_27/gencode.v27.annotation.gtf.gz"
+    "Gencode v29 annotation": [
+        "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
+        "Gencode_human/release_29/"
+        "gencode.v29.annotation.gtf.gz"
     ],
     "Gencode v19 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
         "Gencode_human/release_19/"
         "gencode.v19.annotation.gtf.gz"
-    ],
+    ], 
     "Bowtie NCBI GRCh38 index": [
         "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip",
         "http://verve.webfactional.com/GRCh38_no_alt.zip",
@@ -503,20 +504,20 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        if self._yes_no_query("Download Gencode v27 gtf annotation file?"):
+        if self._yes_no_query("Download Gencode v29 gtf annotation file?"):
             self._grab_and_explode(
-                download["Gencode v27 annotation"],
-                "Gencode v27 annotation",
+                download["Gencode v29 annotation"],
+                "Gencode v29 annotation",
                 explode=False,
             )
-            gencode_v27_temp = os.path.join(temp_install_dir, "gencode_v27")
-            gencode_v27 = os.path.join(self.download_dir, "gencode_v27")
-            gencode_v27_gtf = os.path.join(
+            gencode_v29_temp = os.path.join(temp_install_dir, "gencode_v29")
+            gencode_v29 = os.path.join(self.download_dir, "gencode_v29")
+            gencode_v29_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["Gencode v27 annotation"][0]),
+                os.path.basename(download["Gencode v29 annotation"][0]),
             )
             try:
-                os.makedirs(gencode_v27_temp)
+                os.makedirs(gencode_v29_temp)
             except OSError as e:
                 self._print_to_screen_and_log(
                     (
@@ -524,14 +525,14 @@ class NeoepiscopeDownloader(object):
                         "directory %s for installation. May need "
                         "sudo permissions."
                     )
-                    % gencode_v27_temp
+                    % gencode_v29_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing Gencode v27...")
-            cds_dict = gtf_to_cds(gencode_v27_gtf, gencode_v27_temp)
-            cds_to_tree(cds_dict, gencode_v27_temp)
+            self._print_to_screen_and_log("[Configuring] Indexing Gencode v29...")
+            cds_dict = gtf_to_cds(gencode_v29_gtf, gencode_v29_temp)
+            cds_to_tree(cds_dict, gencode_v29_temp)
         else:
-            gencode_v27 = None
+            gencode_v29 = None
         if self._yes_no_query("Download Gencode v19 gtf annotation file?"):
             self._grab_and_explode(
                 download["Gencode v19 annotation"],
@@ -637,7 +638,7 @@ Defines default paths of neoepiscope's dependencies
 None indicates the user didn't install the tool or data
 \"""
 
-gencode_v27 = {gencode_v27}
+gencode_v29 = {gencode_v29}
 gencode_v19 = {gencode_v19}
 bowtie_grch38 = {bowtie_grch38}
 bowtie_hg19 = {bowtie_hg19}
@@ -648,8 +649,8 @@ hapcut2_hairs = {hapcut2_hairs}
 hapcut2 = {hapcut2}
 """
                 ).format(
-                    gencode_v27=(
-                        "None" if gencode_v27 is None else self._quote(gencode_v27)
+                    gencode_v29=(
+                        "None" if gencode_v29 is None else self._quote(gencode_v29)
                     ),
                     gencode_v19=(
                         "None" if gencode_v19 is None else self._quote(gencode_v19)

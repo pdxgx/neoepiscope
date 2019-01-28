@@ -392,16 +392,16 @@ def main():
         if args.build is not None:
             if (
                 args.build == "GRCh38"
-                and paths.gencode_v27 is not None
+                and paths.gencode_v29 is not None
                 and paths.bowtie_grch38 is not None
             ):
                 with open(
-                    os.path.join(paths.gencode_v27, "intervals_to_transcript.pickle"),
+                    os.path.join(paths.gencode_v29, "intervals_to_transcript.pickle"),
                     "rb",
                 ) as interval_stream:
                     interval_dict = pickle.load(interval_stream)
                 with open(
-                    os.path.join(paths.gencode_v27, "transcript_to_CDS.pickle"), "rb"
+                    os.path.join(paths.gencode_v29, "transcript_to_CDS.pickle"), "rb"
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
