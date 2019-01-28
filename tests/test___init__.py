@@ -55,12 +55,18 @@ class TestGTFprocessing(unittest.TestCase):
         """Sets up gtf file and creates dictionaries for tests"""
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.gtf = os.path.join(self.base_dir, "Ychrom.gtf")
+        self.gtf2 = os.path.join(self.base_dir, "Chr11.gtf")
         self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
+        self.cds11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
+        self.tree11 = cds_to_tree(self.cds11, "NA", pickle_it=False)
 
     def test_transcript_to_cds(self):
         """Fails if dictionary was built incorrectly"""
         self.assertEqual(len(self.Ycds.keys()), 220)
+        start_test = [x for x in self.cds11['ENST00000429923.5_1'] if x[1] == "start_codon"]
+        self.assertEqual(len(start_test), 1)
+        self.assertEqual(start_test[0][2], 1891437)
 
     def test_cds_tree(self):
         """Fails if dictionary was built incorrectly"""
@@ -262,7 +268,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "A",
                         "0",
                         "1",
-                        "0/1:647,136:783:99:19553372-1,19553372-2:1684,0,17385*",
+                        "0/1:647,136:783:99:19553372-1,19553372-2:1684,0,17385:GERMLINE*",
                         "V",
                     ],
                     [
@@ -272,7 +278,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "T",
                         "1",
                         "0",
-                        "0/1:740,103:843:99:19553372-2,19553372-1:1930,0,30239:3965.49*",
+                        "0/1:740,103:843:99:19553372-2,19553372-1:1930,0,30239:3965.49:GERMLINE*",
                         "V",
                     ],
                     [
@@ -282,7 +288,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "A",
                         "0",
                         "1",
-                        "0/1:726,98:824:99:19553372-1,19553372-2:1889,0,29565:17731.95*",
+                        "0/1:726,98:824:99:19553372-1,19553372-2:1889,0,29565:17731.95:GERMLINE*",
                         "V",
                     ],
                     [
@@ -292,7 +298,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "G",
                         "0",
                         "1",
-                        "0/1:1344,721:2065:99:19553372-1,19553372-2:15846,0,36781:726.04*",
+                        "0/1:1344,721:2065:99:19553372-1,19553372-2:15846,0,36781:726.04:GERMLINE*",
                         "V",
                     ],
                     [
@@ -302,7 +308,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                         "A",
                         "0",
                         "1",
-                        "0/1:16.22%:19553372-1,19553372-2:8761.31",
+                        "0/1:16.22%:19553372-1,19553372-2:8761.31:SOMATIC",
                         "V",
                     ],
                 ]

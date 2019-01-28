@@ -2450,6 +2450,20 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                             cds_dict[transcript_id][0][5],
                         ]
                     )
+        else:
+            start_codon_blocks = [block for block in cds_dict[transcript_id] if block[1] == 'start_codon']
+            if len(start_codon_blocks) > 1:
+                min_start = min([int(block[2]) for block in start_codon_blocks])
+                for block in start_codon_blocks:
+                    if int(block[2]) != min_start:
+                        cds_dict[transcript_id].remove(block)
+        if "stop_codon" in seq_types:
+            stop_codon_blocks = [block for block in cds_dict[transcript_id] if block[1] == 'stop_codon']
+            if len(stop_codon_blocks) > 1:
+                min_stop = min([int(block[2]) for block in stop_codon_blocks])
+                for block in stop_codon_blocks:
+                    if int(block[2]) != min_stop:
+                        cds_dict[transcript_id].remove(block)
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = os.path.join(dictdir, "transcript_to_CDS.pickle")
