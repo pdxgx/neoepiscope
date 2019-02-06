@@ -185,13 +185,6 @@ def main():
         action="store_true",
         help="indicates that input VCF is phased using GATK ReadBackedPhasing",
     )
-    prep_parser.add_argument(
-        "-g",
-        "--germline-vcf",
-        type=str,
-        required=False,
-        help="path to germline VCF used with neoepiscope merge"
-    )
     # Call parser options (calls neoepitopes)
     call_parser.add_argument(
         "-x",
@@ -378,8 +371,7 @@ def main():
         combine_vcf(args.germline, args.somatic, outfile=args.output, 
                     tumor_id=args.tumor_id)
     elif args.subparser_name == "prep":
-        prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, 
-                           args.phased, args.germline_vcf)
+        prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)
     elif args.subparser_name == "call":
         # Check that output options are compatible
         if args.fasta and args.output == "-":

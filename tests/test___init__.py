@@ -142,8 +142,7 @@ class TestPrepHapCUT(unittest.TestCase):
         """
         prep_hapcut_output(self.test_hapcut, self.hapcut, self.vcf)
         self.assertTrue(filecmp.cmp(self.test_hapcut, self.complete_hapcut))
-        prep_hapcut_output(self.test_rbp, None, self.phased_vcf, phased_vcf=True, 
-                           germline_vcf=self.germline_vcf)
+        prep_hapcut_output(self.test_rbp, None, self.phased_vcf, phased_vcf=True)
         self.assertTrue(filecmp.cmp(self.rbp_haplotypes, self.test_rbp))
 
 
@@ -255,7 +254,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                 ]
             ],
         )
-        self.assertEqual(phased_txs.keys(), ['ENST00000409832.3'])
+        self.assertEqual(list(phased_txs.keys()), ['ENST00000409832.3'])
         self.assertEqual(phased_homozygous, {})
         self.assertEqual(
             phased_txs["ENST00000409832.3"],

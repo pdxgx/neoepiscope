@@ -191,7 +191,7 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         cleanup = "".join(["rm ", vcf2, file])
         subprocess.call(cleanup, shell=True)
 
-def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False, germline_vcf=None):
+def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
     """ Adds unphased mutations to HapCUT2 output as their own haplotypes
 
         output: path to output file to write adjusted haplotypes
