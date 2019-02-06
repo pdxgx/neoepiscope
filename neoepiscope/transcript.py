@@ -2412,7 +2412,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 elif tokens[2] == "CDS":
                     cds_lines[transcript_id].append(tokens)
     # Sort cds_dict coordinates (left -> right) for each transcript
-    for transcript_id in cds_dict.keys():
+    for transcript_id, tx_data in cds_dict.items():
         current_cds = cds_lines[transcript_id]
         cds_dict[transcript_id].sort(key=lambda x: x[0])
         seq_types = [x[1] for x in cds_dict[transcript_id]]
