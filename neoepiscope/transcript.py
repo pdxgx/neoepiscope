@@ -1853,9 +1853,6 @@ class Transcript(object):
                     (seq[1] == "G" and include_germline == 2)
                     or (seq[1] == "S" and include_somatic == 2)
                 ):
-                    #                    ref_sequence += seq[0]
-                    #                    ref_counter += len(seq[0])
-                    #                else:
                     if self.rev_strand:
                         for i in seq[2]:
                             ref_sequence += i[2][::-1].translate(
@@ -2233,6 +2230,7 @@ class Transcript(object):
                 for i in range(coding_start, len(sequence), 3):
                     if sequence[i : i + 3] in ["TAA", "TGA", "TAG"]:
                         coding_stop = i + 3
+                        break
             else:
                 warnings.warn(
                     "".join(
@@ -2311,7 +2309,10 @@ class Transcript(object):
                     paired_peptides = kmerize_peptide(
                         protein_ref[coords[2] : coords[3]], min_size=size, max_size=size
                     )
-                    peptide_pairs = zip(peptides, paired_peptides)
+                    if len(paired_peptides) == len(peptides):
+                        peptide_pairs = zip(peptides, paired_peptides)
+                    else:
+                        peptide_pairs = zip(peptides, ['NA' for i in range(0, len(peptides))])
                     for pair in peptide_pairs:
                         if pair[0] not in peptides_ref:
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:

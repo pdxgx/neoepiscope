@@ -733,8 +733,10 @@ class TestTranscript(unittest.TestCase):
         self.all_coding_transcript.edit("T", 5809086)
         peptides = self.all_coding_transcript.neopeptides()
         for pep in peptides:
+            print(pep)
+            print(peptides[pep])
             for mutation_data in peptides[pep]:
-                self.assertEqual(mutation_data[6], "nonstop")
+                self.assertEqual(mutation_data[7], "nonstop")
 
     def test_split_start(self):
         """Fails if split start codon is handled improperly"""
