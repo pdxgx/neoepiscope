@@ -347,6 +347,8 @@ class Transcript(object):
         self.edits = collections.defaultdict(list)
         self.deletion_intervals = []
         self.chrom = last_chrom
+        # Flag to indicate if there is a deletion that spans intron-exon boundary
+        self.boundary_spanning_deletion = False
         self.rev_strand = True if last_strand == "-" else False
         """Assume intervals are nonoverlapping! Uncomment following lines to
         check (slower)."""
@@ -412,12 +414,25 @@ class Transcript(object):
                 ref_deletion = self.bowtie_reference_index.get_stretch(
                     self.chrom, pos - 1, pos + deletion_size + 1 - pos - 1
                 )
+                if ((bisect.bisect_left(self.intervals, pos-2) % 2) 
+                    and (bisect.bisect_left(self.intervals, pos+deletion_size-2) % 2)):
+                    boundary_span = False
+                elif ((not (bisect.bisect_left(self.intervals, pos-2) % 2)) 
+                    and (not (bisect.bisect_left(self.intervals, pos+deletion_size-2) % 2))):
+                    boundary_span = False
+                elif (pos-2) in self.intervals and (bisect.bisect_left(self.intervals, pos+deletion_size-2)%2):
+                    boundary_span = False
+                elif (pos+deletion_size-2) in self.intervals and (bisect.bisect_left(self.intervals, pos-2) % 2):
+                    boundary_span = False
+                else:
+                    boundary_span = True
+                    self.boundary_spanning_deletion = True
                 if seq == ref_deletion:
                     del_interval = (
                         pos - 2,
                         pos + deletion_size - 2,
                         mutation_class,
-                        (self.chrom, pos, seq, "", mutation_type, vaf),
+                        (self.chrom, pos, seq, "", mutation_type, vaf, boundary_span),
                     )
                 else:
                     raise RuntimeError(
@@ -434,6 +449,19 @@ class Transcript(object):
                         )
                     )
             else:
+                if ((bisect.bisect_left(self.intervals, pos-2) % 2)
+                    and (bisect.bisect_left(self.intervals, pos+deletion_size-2) % 2)):
+                    boundary_span = False
+                elif ((not (bisect.bisect_left(self.intervals, pos-2) % 2)) 
+                    and (not (bisect.bisect_left(self.intervals, pos+deletion_size-2) % 2))):
+                    boundary_span = False
+                elif (pos-2) in self.intervals and (bisect.bisect_left(self.intervals, pos+deletion_size-2)%2):
+                    boundary_span = False
+                elif (pos+deletion_size-2) in self.intervals and (bisect.bisect_left(self.intervals, pos-2) % 2):
+                    boundary_span = False
+                else:
+                    boundary_span = True
+                    self.boundary_spanning_deletion = True
                 del_interval = (
                     pos - 2,
                     pos + deletion_size - 2,
@@ -446,16 +474,16 @@ class Transcript(object):
                         ),
                         "",
                         mutation_type,
-                        vaf,
+                        vaf, boundary_span
                     ),
                 )
             for interval in self.deletion_intervals:
                 if del_interval[2] == interval[2]:
                     if (
                         del_interval[0] >= interval[0]
-                        and del_interval[0] <= interval[1]
+                        and del_interval[0] < interval[1]
                     ) or (
-                        del_interval[1] >= interval[0]
+                        del_interval[1] > interval[0]
                         and del_interval[1] <= interval[1]
                     ):
                         class_dict = {"S": "somatic", "G": "germline"}
@@ -1229,14 +1257,15 @@ class Transcript(object):
                             genomic_position = min([x[1] for x in intervals[i - 1][2]])
                         else:
                             genomic_position = intervals[i - 1][2][1]
-                        self._seq_append(
-                            final_seq,
-                            "",
-                            intervals[i - 1][1],
-                            intervals[i - 1][2],
-                            genomic_position,
-                            merge=False,
-                        )
+                        if ("", intervals[i - 1][1], [intervals[i - 1][2]], genomic_position) not in final_seq:
+                            self._seq_append(
+                                final_seq,
+                                "",
+                                intervals[i - 1][1],
+                                intervals[i - 1][2],
+                                genomic_position,
+                                merge=False,
+                            )
                     ref_to_add = seqs[(i - 1) // 2][0][last_index:]
                     if ref_to_add:
                         if self.rev_strand:
@@ -1370,7 +1399,93 @@ class Transcript(object):
                         adj_seq.append(final_seq[i])
                 else:
                     adj_seq.append(final_seq[i])
-            return adj_seq
+            if not self.boundary_spanning_deletion:
+                # Don't need to truncate the list of sequences
+                for i in range(0, len(adj_seq)):
+                    if adj_seq[i][0] == '':
+                        if adj_seq[i][1] in ['G', 'S']:
+                            adj_seq[i] = (adj_seq[i][0], adj_seq[i][1], 
+                                          [adj_seq[i][2][0][:-1]],
+                                          adj_seq[i][3])
+                        elif adj_seq[i][1] == 'H':
+                            adj_seq[i] = (adj_seq[i][0], adj_seq[i][1], 
+                                          [adj_seq[i][2][0][0:4]+[[x[:-1] for x in adj_seq[i][2][0][4]]], 
+                                           adj_seq[i][2][1][0:4]+[[x[:-1] for x in adj_seq[i][2][1][4]]]],
+                                          adj_seq[i][3])
+                return adj_seq
+            else:
+                # Need to determine where boundary spanning deletions start
+                dels = [x for x in adj_seq if x[0] == '']
+                triggering_mutations = []
+                for i in range(0, len(dels)):
+                    if dels[i][1] in ['G', 'S']:
+                        if dels[i][2][0][6]:
+                            triggering_mutations.append(dels[i][2][0])
+                            deletion_start = dels[i][3]-1
+                            start_index = bisect.bisect_left(self.intervals, deletion_start)
+                            deletion_end = (dels[i][3]-1)+len(dels[i][2][0][2])-1
+                            end_index = bisect.bisect_left(self.intervals, deletion_end)
+                            break
+                    elif dels[i][1] == 'H':
+                        contributing_deletions = dels[i][2][0][4]
+                        if len([x for x in contributing_deletions if x[6]]) > 0:
+                            for x in contributing_deletions:
+                                triggering_mutations.append(x)
+                            deletion_start = dels[i][3]-1
+                            start_index = bisect.bisect_left(self.intervals, deletion_start)
+                            deletion_end = (dels[i][3]-1)+len(dels[i][2][0][2])-1
+                            end_index = bisect.bisect_left(self.intervals, deletion_end)
+                            break
+                if start_index % 2:
+                    if self.rev_strand:
+                        try:
+                            acceptable = self.intervals[start_index+1] + 2
+                        except IndexError:
+                            truncated_seq = []
+                        else:
+                            truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
+                    else:
+                        try:
+                            acceptable = self.intervals[max(start_index-2, 0)] + 1
+                        except IndexError:
+                            truncated_seq = []
+                        else:
+                            truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
+                elif end_index % 2:
+                    if self.rev_strand:
+                        try:
+                            acceptable = self.intervals[end_index+1] + 2
+                        except IndexError:
+                            truncated_seq = []
+                        else:
+                            truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
+                    else:
+                        try:
+                            acceptable = self.intervals[max(end_index-2, 0)] + 1
+                        except IndexError:
+                            truncated_seq = []
+                        else:
+                            truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
+                skipped_mutations = [x for x in adj_seq if x[1] != 'R' and x not in truncated_seq]
+                warnings.warn(''.join(["Deletion spanning intron-exon boundary",
+                                       " leads to truncated version of transcript ",
+                                       self.transcript_id, ';\nContributing deletions: ',
+                                       str(triggering_mutations), ';\nMutations excluded from trancript: ',
+                                       str(skipped_mutations)]))
+                for i in range(0, len(truncated_seq)):
+                    if truncated_seq[i][0] == '':
+                        if truncated_seq[i][1] in ['G', 'S']:
+                            truncated_seq[i] = (truncated_seq[i][0], truncated_seq[i][1], 
+                                                [truncated_seq[i][2][0][:-1]],
+                                                truncated_seq[i][3])
+                        elif truncated_seq[i][1] == 'H':
+                            truncated_seq[i] = (truncated_seq[i][0], truncated_seq[i][1], 
+                                                [truncated_seq[i][2][0][0:4]+[[x[:-1] for x in truncated_seq[i][2][0][4]]], 
+                                                 truncated_seq[i][2][1][0:4]+[[x[:-1] for x in truncated_seq[i][2][1][4]]]],
+                                                truncated_seq[i][3])
+                return truncated_seq
+
+
         raise NotImplementedError(
             "Retrieving sequence with transcript coordinates not "
             "yet fully supported."

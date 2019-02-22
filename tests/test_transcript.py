@@ -337,7 +337,7 @@ class TestTranscript(unittest.TestCase):
         )
         self.assertEqual(
             self.transcript.last_deletion_intervals,
-            [(5246692, 5246695, "S", ("11", 5246694, "TTG", "", "D", None))],
+            [(5246692, 5246695, "S", ("11", 5246694, "TTG", "", "D", None, False))],
         )
 
     def test_reset_to_save_point(self):
@@ -358,7 +358,7 @@ class TestTranscript(unittest.TestCase):
         )
         self.assertEqual(
             self.transcript.last_deletion_intervals,
-            [(5246692, 5246695, "S", ("11", 5246694, "TTG", "", "D", None))],
+            [(5246692, 5246695, "S", ("11", 5246694, "TTG", "", "D", None, False))],
         )
         self.assertNotEqual(self.transcript.edits, {})
 
@@ -423,7 +423,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(
             self.transcript.deletion_intervals,
-            [(5246698, 5246701, "S", ("11", 5246700, "TGA", "", "D", None))],
+            [(5246698, 5246701, "S", ("11", 5246700, "TGA", "", "D", None, False))],
         )
         seq = self.transcript.annotated_seq()
         self.assertEqual(len(seq), 5)
@@ -441,16 +441,24 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(
             self.transcript.deletion_intervals,
-            [(5246948, 5246958, "S", ("11", 5246950, "CCAGGAGCTG", "", "D", None))],
+            [(5246948, 5246958, "S", ("11", 5246950, "CCAGGAGCTG", "", "D", None, True))],
         )
         seq = self.transcript.annotated_seq()
-        self.assertEqual(len(seq), 4)
-        self.assertEqual(
-            seq[2], ("", "S", [("11", 5246950, "CCAGGAGCTG", "", "D", None)], 5246950)
-        )
+        self.assertEqual(len(seq), 2)
         self.assertEqual(len(seq[0][0]), 142)
         self.assertEqual(len(seq[1][0]), 223)
-        self.assertEqual(len(seq[3][0]), 256)
+
+    def test_complex_overlapping_deletion(self):
+        """Fails if deletion of an exon-intron junction + other mutations is incorrect"""
+        self.transcript.edit(10, 5247804, mutation_type="D")
+        self.transcript.edit("G", 5247943)
+        self.assertEqual(
+            self.transcript.deletion_intervals,
+            [(5247802, 5247812, "S", ("11", 5247804, "CACCCTGAAG", "", "D", None, True))],
+        )
+        seq = self.transcript.annotated_seq()
+        self.assertEqual(len(seq), 1)
+        self.assertEqual(len(seq[0][0]), 142)
 
     def test_spanning_deletion(self):
         """Fails if deletion spanning two or more exons is incorrect"""
@@ -479,14 +487,12 @@ class TestTranscript(unittest.TestCase):
         """Fails if deletion spanning start of transcript is incorrect"""
         self.transcript.edit(5, 5246692, mutation_type="D")
         seq = self.transcript.annotated_seq()
-        self.assertEqual(len(seq), 4)
-        self.assertEqual(seq[-1][0], "")
-        self.assertEqual(len(seq[-2][0]), 260)
+        self.assertEqual(len(seq), 2)
+        self.assertEqual(len(seq[0][0]), 142)
+        self.assertEqual(len(seq[1][0]), 223)
         self.fwd_transcript.edit(10, 450275, mutation_type="D")
         seq2 = self.fwd_transcript.annotated_seq()
-        self.assertEqual(len(seq2), 13)
-        self.assertEqual(seq2[0][0], "")
-        self.assertEqual(len(seq2[1][0]), 353)
+        self.assertEqual(seq2, [])
 
     def test_adjacent_deletions(self):
         """Fails if adjacent deletions are handled incorrectly"""
@@ -552,6 +558,17 @@ class TestTranscript(unittest.TestCase):
             seq2[1][2][1],
             ["11", 5248211, "GCAGT", "AGG", [("11", 5248211, "GCAGT", "", "D", None)]],
         )
+
+    def test_hybrid_boundary_deletion(self):
+        """Fails if hybrid deletion over intron-exon boundary is incorrect"""
+        self.fwd_transcript.edit(4, 473888, mutation_type="D", mutation_class="G")
+        self.fwd_transcript.edit(10, 473890, mutation_type="D")
+        seq = self.fwd_transcript.annotated_seq()
+        self.assertEqual(len(seq), 2)
+        self.transcript.edit(10, 5246952, mutation_type="D", mutation_class="G")
+        self.transcript.edit(20, 5246955, mutation_type="D")
+        seq2 = self.transcript.annotated_seq()
+        self.assertEqual(len(seq2), 2)
 
     def test_deletion_of_transcript(self):
         """Fails if deletion of entire transcript is incorrect"""
@@ -733,8 +750,6 @@ class TestTranscript(unittest.TestCase):
         self.all_coding_transcript.edit("T", 5809086)
         peptides = self.all_coding_transcript.neopeptides()
         for pep in peptides:
-            print(pep)
-            print(peptides[pep])
             for mutation_data in peptides[pep]:
                 self.assertEqual(mutation_data[7], "nonstop")
 
