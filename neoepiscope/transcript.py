@@ -386,9 +386,12 @@ class Transcript(object):
         if reference:
             self.edits = collections.defaultdict(list)
             self.deletion_intervals = []
+            self.boundary_spanning_deletion = False
         else:
             self.edits = copy.copy(self.last_edits)
             self.deletion_intervals = copy.copy(self.last_deletion_intervals)
+            if [x for x in deletion_intervals if x[3][6]] == []:
+                self.boundary_spanning_deletion = False
 
     def edit(self, seq, pos, mutation_type="V", mutation_class="S", vaf=None):
         """ Adds an edit to the transcript.
@@ -3015,15 +3018,14 @@ def get_peptides_from_transcripts(
                         vaf = None
                 else:
                     vaf = None
-                # Determine which copies variant exists on & make edits
-                if mutation[4] == "1":
-                    transcript_a.edit(
-                        mutation[3],
-                        mutation[1],
-                        mutation_type=mutation[7],
-                        mutation_class=mutation_class,
-                        vaf=vaf,
-                    )
+                # Make edits
+                transcript_a.edit(
+                    mutation[3],
+                    mutation[1],
+                    mutation_type=mutation[7],
+                    mutation_class=mutation_class,
+                    vaf=vaf,
+                )
                 # Extract neoepitopes
                 peptides_a, protein_a = transcript_a.neopeptides(
                     min_size=size_list[0],
@@ -3045,5 +3047,5 @@ def get_peptides_from_transcripts(
                     if len(peptides_a) > 0:
                         if protein_a != "":
                             fasta_entries[transcript].add(protein_a)
-                transcript_a.reset(reference=True)
+            transcript_a.reset(reference=True)
     return neoepitopes, fasta_entries
