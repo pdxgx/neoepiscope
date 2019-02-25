@@ -390,7 +390,7 @@ class Transcript(object):
         else:
             self.edits = copy.copy(self.last_edits)
             self.deletion_intervals = copy.copy(self.last_deletion_intervals)
-            if [x for x in deletion_intervals if x[3][6]] == []:
+            if [x for x in self.deletion_intervals if x[3][6]] == []:
                 self.boundary_spanning_deletion = False
 
     def edit(self, seq, pos, mutation_type="V", mutation_class="S", vaf=None):
@@ -772,7 +772,8 @@ class Transcript(object):
                         relevant_deletion_intervals.append(end_pos)
         intervals = sorted(
             [(interval, "R", tuple()) for interval in intervals]
-            + relevant_deletion_intervals
+            + relevant_deletion_intervals,
+            key=lambda k: (k[0], k[1]!='R')
         )
         # Remove empty intervals
         intervals = [
