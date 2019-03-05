@@ -52,6 +52,7 @@ from operator import itemgetter
 import sys
 import warnings
 import contextlib
+import networkx as nx
 
 from sys import version_info
 
@@ -2787,6 +2788,73 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
             input_stream.close()
     return affected_transcripts, homozygous_variants
 
+def get_haplotype_cliques(haplotype):
+    """ Finds the maximal cliques of phased variants for a predicted haplotype.
+        
+        HapCUT2 and GATK's ReadBackedPhasing may phase together incompatible, 
+        overlapping variants. This function turns a predicted haplotype into a
+        graph, where variants that are predicted to be phased are connected by
+        edges only if they are compatible with each other. The maximal cliques
+        are then found and returned as their own haplotypes.
+
+        haplotype: predicted haplotype block (as output from process_haplotypes);
+            list of lists containing [chromosome, position, reference allele, 
+            alternate allele, presence on DNA copy 1 (0/1), presence on DNA copy
+            2 (0/1), variant information from VCF, variant type ('V', 'D', or 'I')]
+            for each variant in the block
+
+        Return value: list of maximal cliques within the haplotype
+    """
+    graph = nx.Graph()
+    for i in range(len(haplotype)):
+        # Add node to graph for variant
+        graph.add_node(tuple(haplotype[i]))
+        # Check mutation class and start position of variant
+        if '*' in haplotype[i][6]:
+            i_class = 'G'
+        else:
+            i_class = 'S'
+        i_start = haplotype[i][1]
+        # Iterate through other variants to check compatibility
+        for j in range(len(haplotype)):
+            # Variants are different and predicted to be phased together
+            if (j != i and ((haplotype[i][4] == haplotype[j][4]) 
+                            or (haplotype[i][5] == haplotype[j][5]))):
+                # Check mutation class and start position of second variant
+                if '*' in haplotype[j][6]:
+                    j_class = 'G'
+                else:
+                    j_class = 'S'
+                j_start = haplotype[j][1]
+                # Check for compatibility of the two variants, add edge to graph if they're compatible
+                if haplotype[i][7] == 'I' and haplotype[j][7] == 'I' and haplotype[i][1] == haplotype[j][1]:
+                    # Insertions that start at same position are incompatible
+                    continue
+                elif haplotype[i][7] == 'V' and haplotype[j][7] == 'V' and i_class == j_class:
+                    # Check whether substitutions of same mutation class overlap
+                    i_end = i_start + len(haplotype[i][3]) - 1
+                    j_end = j_start + len(haplotype[j][3]) - 1
+                    if (i_end >= j_start and i_end <= j_end) or (i_start >= j_start and i_start <= j_end):
+                        # Substitutions overlap and are incompatible
+                        continue
+                    else:
+                        # Substitutions are compatible
+                        graph.add_edge(tuple(haplotype[i]), tuple(haplotype[j]))
+                elif haplotype[i][7] == 'D' and haplotype[j][7] == 'D' and i_class == j_class:
+                    # Check whether deletions of same mutation class overlap
+                    i_end = i_start + haplotype[i][3] - 1
+                    j_end = j_start + haplotype[j][3] - 1
+                    if (i_end >= j_start and i_end <= j_end) or (i_start >= j_start and i_start <= j_end):
+                        # Deletions overlap and are incompatible
+                        continue
+                    else:
+                        # Deletions are compatible
+                        graph.add_edge(tuple(haplotype[i]), tuple(haplotype[j]))
+                else:
+                    # Variants are compatible
+                    graph.add_edge(tuple(haplotype[i]), tuple(haplotype[j]))
+    # Return maximal cliques for this predicted haplotype
+    return list(nx.find_cliques(graph))
 
 def get_peptides_from_transcripts(
     relevant_transcripts,
@@ -2875,53 +2943,46 @@ def get_peptides_from_transcripts(
             ],
             affected_transcript,
         )
-        transcript_b = Transcript(
-            reference_index,
-            [
-                [str(chrom), "blah", seq_type, str(start), str(end), ".", strand]
-                for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
-                    affected_transcript
-                ]
-            ],
-            affected_transcript,
-        )
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
         for ht in haplotypes:
+            # Check for homozygous variants on affected transcript
             if affected_transcript in homozygous_variants:
                 for homozygous in homozygous_variants[affected_transcript]:
                     ht.append(homozygous)
                     used_homozygous_variants.add(tuple(homozygous))
-            # Make edits for each mutation
-            for mutation in ht:
-                # Determine if mutation is somatic or germline
-                if mutation[6][-1] == "*":
-                    mutation_class = "G"
-                else:
-                    mutation_class = "S"
-                # Determine VAF if available
-                if vaf_pos is not None:
-                    try:
-                        vaf_entry = mutation[6].strip("*").split(":")[vaf_pos]
-                        if "," in vaf_entry:
-                            vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
-                            if len(vaf_entry) > 0:
-                                vaf = sum(
-                                    [float(x.strip("%")) for x in vaf_entry]
-                                ) / len(vaf_entry)
+            # Find maximal cliques
+            cliques = get_haplotype_cliques(ht)
+            for c in cliques:
+                # Make edits for each mutation
+                for mutation in ht:
+                    # Determine if mutation is somatic or germline
+                    if mutation[6][-1] == "*":
+                        mutation_class = "G"
+                    else:
+                        mutation_class = "S"
+                    # Determine VAF if available
+                    if vaf_pos is not None:
+                        try:
+                            vaf_entry = mutation[6].strip("*").split(":")[vaf_pos]
+                            if "," in vaf_entry:
+                                vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
+                                if len(vaf_entry) > 0:
+                                    vaf = sum(
+                                        [float(x.strip("%")) for x in vaf_entry]
+                                    ) / len(vaf_entry)
+                                else:
+                                    vaf = None
                             else:
-                                vaf = None
-                        else:
-                            if vaf_entry.strip("%") != ".":
-                                vaf = float(vaf_entry.strip("%"))
-                            else:
-                                vaf = None
-                    except IndexError:
+                                if vaf_entry.strip("%") != ".":
+                                    vaf = float(vaf_entry.strip("%"))
+                                else:
+                                    vaf = None
+                        except IndexError:
+                            vaf = None
+                    else:
                         vaf = None
-                else:
-                    vaf = None
-                # Determine which copies variant exists on & make edits
-                if mutation[4] == "1":
+                    # Determine which copies variant exists on & make edits
                     transcript_a.edit(
                         mutation[3],
                         mutation[1],
@@ -2929,58 +2990,37 @@ def get_peptides_from_transcripts(
                         mutation_class=mutation_class,
                         vaf=vaf,
                     )
-                if mutation[5] == "1":
-                    transcript_b.edit(
-                        mutation[3],
-                        mutation[1],
-                        mutation_type=mutation[7],
-                        mutation_class=mutation_class,
-                        vaf=vaf,
-                    )
-            # Extract neoepitopes
-            peptides_a, protein_a = transcript_a.neopeptides(
-                min_size=size_list[0],
-                max_size=size_list[-1],
-                include_somatic=include_somatic,
-                include_germline=include_germline,
-                only_novel_upstream=only_novel_upstream,
-                only_downstream=only_downstream,
-                only_reference=only_reference,
-                return_protein=True,
-            )
-            peptides_b, protein_b = transcript_b.neopeptides(
-                min_size=size_list[0],
-                max_size=size_list[-1],
-                include_somatic=include_somatic,
-                include_germline=include_germline,
-                only_novel_upstream=only_novel_upstream,
-                only_downstream=only_downstream,
-                only_reference=only_reference,
-                return_protein=True,
-            )
-            # Store neoepitopes and their metadata
-            for pep in peptides_a:
-                for meta_data in peptides_a[pep]:
-                    adj_meta_data = meta_data + (transcript_a.transcript_id,)
-                    if adj_meta_data not in neoepitopes[pep]:
-                        neoepitopes[pep].append(adj_meta_data)
-            for pep in peptides_b:
-                for meta_data in peptides_b[pep]:
-                    adj_meta_data = meta_data + (transcript_b.transcript_id,)
-                    if adj_meta_data not in neoepitopes[pep]:
-                        neoepitopes[pep].append(adj_meta_data)
-            if protein_fasta:
-                if len(peptides_a) > 0 or len(peptides_b) > 0:
-                    if protein_a == protein_b:
-                        fasta_entries[affected_transcript].add(protein_a)
-                    else:
-                        if protein_a != "":
-                            fasta_entries[affected_transcript].add(protein_a)
-                        if protein_b != "":
-                            fasta_entries[affected_transcript].add(protein_b)
-            transcript_a.reset(reference=True)
-            transcript_b.reset(reference=True)
+                # Extract neoepitopes
+                peptides, protein = transcript_a.neopeptides(
+                    min_size=size_list[0],
+                    max_size=size_list[-1],
+                    include_somatic=include_somatic,
+                    include_germline=include_germline,
+                    only_novel_upstream=only_novel_upstream,
+                    only_downstream=only_downstream,
+                    only_reference=only_reference,
+                    return_protein=True,
+                )
+                # Store neoepitopes and their metadata
+                for pep in peptides:
+                    for meta_data in peptides[pep]:
+                        adj_meta_data = meta_data + (transcript_a.transcript_id,)
+                        if adj_meta_data not in neoepitopes[pep]:
+                            neoepitopes[pep].append(adj_meta_data)
+                if protein_fasta:
+                    if len(peptides) > 0 and protein != "":
+                        fasta_entries[affected_transcript].add(protein)
+                transcript_a.reset(reference=True)
     for transcript in homozygous_variants:
+        # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
+        if cds_dict[affected_transcript][0][5] == "nonsense_mediated_decay" and not nmd:
+            continue
+        elif cds_dict[affected_transcript][0][5] == "polymorphic_pseudogene" and not pp:
+            continue
+        elif cds_dict[affected_transcript][0][5] == "IG_V_gene" and not igv:
+            continue
+        elif cds_dict[affected_transcript][0][5] == "TR_V_gene" and not trv:
+            continue
         transcript_a = Transcript(
             reference_index,
             [
@@ -3028,7 +3068,7 @@ def get_peptides_from_transcripts(
                     vaf=vaf,
                 )
                 # Extract neoepitopes
-                peptides_a, protein_a = transcript_a.neopeptides(
+                peptides, protein = transcript_a.neopeptides(
                     min_size=size_list[0],
                     max_size=size_list[-1],
                     include_somatic=include_somatic,
@@ -3039,14 +3079,13 @@ def get_peptides_from_transcripts(
                     return_protein=True,
                     )
                 # Store neoepitopes and their metadata
-                for pep in peptides_a:
-                    for meta_data in peptides_a[pep]:
+                for pep in peptides:
+                    for meta_data in peptides[pep]:
                         adj_meta_data = meta_data + (transcript_a.transcript_id,)
                         if adj_meta_data not in neoepitopes[pep]:
                             neoepitopes[pep].append(adj_meta_data)
                 if protein_fasta:
-                    if len(peptides_a) > 0:
-                        if protein_a != "":
-                            fasta_entries[transcript].add(protein_a)
+                    if len(peptides) > 0 and protein != "":
+                        fasta_entries[transcript].add(protein)
             transcript_a.reset(reference=True)
     return neoepitopes, fasta_entries
