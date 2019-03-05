@@ -78,7 +78,7 @@ setup(
     include_package_data=True,
     package_data={"neoepiscope": ["*.py", "*.pickle"]},
     zip_safe=True,
-    install_requires=["intervaltree==3.0.2", "mhcflurry", "mhcnuggets", "numpy==1.14.5"],
+    install_requires=["intervaltree==3.0.2", "mhcflurry", "mhcnuggets", "networkx", "numpy==1.14.5"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
     keywords=["neoepitope", "neoantigen", "cancer", "immunotherapy"],
