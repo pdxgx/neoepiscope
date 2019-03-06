@@ -511,19 +511,30 @@ class Transcript(object):
                         )
             self.deletion_intervals.append(del_interval)
         elif mutation_type == "I":
-            self.edits[pos - 1].append(
-                (
-                    seq,
-                    mutation_type,
-                    mutation_class,
-                    (self.chrom, pos, "", seq, mutation_type, vaf),
+            other_insertions = [edit for edit in self.edits[pos - 1] if edit[1] == 'I']
+            if len(other_insertions) == 0:
+                self.edits[pos - 1].append(
+                    (
+                        seq,
+                        mutation_type,
+                        mutation_class,
+                        (self.chrom, pos, "", seq, mutation_type, vaf),
+                    )
                 )
-            )
+            else:
+                raise NotImplementedError("".join(
+                        [
+                            "2 insertions cannot be added at same position",
+                            " - is insertion of ", seq, " at ",
+                            str(pos), " valid?",
+                        ]
+                    )
+                )
         elif mutation_type == "V":
             reference_seq = self.bowtie_reference_index.get_stretch(
                 self.chrom, pos - 1, len(seq)
             )
-            other_snvs = [edit for edit in self.edits[pos - 1]]
+            other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
             if mutation_class not in [snv[2] for snv in other_snvs]:
                 self.edits[pos - 1].append(
                     (
@@ -2955,7 +2966,7 @@ def get_peptides_from_transcripts(
             cliques = get_haplotype_cliques(ht)
             for c in cliques:
                 # Make edits for each mutation
-                for mutation in ht:
+                for mutation in c:
                     # Determine if mutation is somatic or germline
                     if mutation[6][-1] == "*":
                         mutation_class = "G"
