@@ -2848,6 +2848,9 @@ def get_haplotype_cliques(haplotype):
                     if (i_end >= j_start and i_end <= j_end) or (i_start >= j_start and i_start <= j_end):
                         # Substitutions overlap and are incompatible
                         continue
+                    elif (i_start >= j_start and i_end <= j_end) or (j_start >= i_start and j_end <= i_end):
+                        # One substitution completely inside the other
+                        continue
                     else:
                         # Substitutions are compatible
                         graph.add_edge(tuple(haplotype[i]), tuple(haplotype[j]))
@@ -2857,6 +2860,9 @@ def get_haplotype_cliques(haplotype):
                     j_end = j_start + haplotype[j][3] - 1
                     if (i_end >= j_start and i_end <= j_end) or (i_start >= j_start and i_start <= j_end):
                         # Deletions overlap and are incompatible
+                        continue
+                    elif (i_start >= j_start and i_end <= j_end) or (j_start >= i_start and j_end <= i_end):
+                        # One deletion completely inside the other
                         continue
                     else:
                         # Deletions are compatible
