@@ -1452,42 +1452,45 @@ class Transcript(object):
                             deletion_end = (dels[i][3]-1)+len(dels[i][2][0][2])-1
                             end_index = bisect.bisect_left(self.intervals, deletion_end)
                             break
-                if start_index % 2:
-                    if self.rev_strand:
-                        try:
-                            acceptable = self.intervals[start_index+1] + 2
-                        except IndexError:
-                            truncated_seq = []
+                try:
+                    if start_index % 2:
+                        if self.rev_strand:
+                            try:
+                                acceptable = self.intervals[start_index+1] + 2
+                            except IndexError:
+                                truncated_seq = []
+                            else:
+                                truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
                         else:
-                            truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
-                    else:
-                        try:
-                            acceptable = self.intervals[max(start_index-2, 0)] + 1
-                        except IndexError:
-                            truncated_seq = []
+                            try:
+                                acceptable = self.intervals[max(start_index-2, 0)] + 1
+                            except IndexError:
+                                truncated_seq = []
+                            else:
+                                truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
+                    elif end_index % 2:
+                        if self.rev_strand:
+                            try:
+                                acceptable = self.intervals[end_index+1] + 2
+                            except IndexError:
+                                truncated_seq = []
+                            else:
+                                truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
                         else:
-                            truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
-                elif end_index % 2:
-                    if self.rev_strand:
-                        try:
-                            acceptable = self.intervals[end_index+1] + 2
-                        except IndexError:
-                            truncated_seq = []
-                        else:
-                            truncated_seq = [x for x in adj_seq if x[3] >= acceptable and x[3] <= self.intervals[-1]+1]
-                    else:
-                        try:
-                            acceptable = self.intervals[max(end_index-2, 0)] + 1
-                        except IndexError:
-                            truncated_seq = []
-                        else:
-                            truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
-                skipped_mutations = [x for x in adj_seq if x[1] != 'R' and x not in truncated_seq]
-                warnings.warn(''.join(["Deletion spanning intron-exon boundary",
-                                       " leads to truncated version of transcript ",
-                                       self.transcript_id, ';\nContributing deletions: ',
-                                       str(triggering_mutations), ';\nMutations excluded from trancript: ',
-                                       str(skipped_mutations)]))
+                            try:
+                                acceptable = self.intervals[max(end_index-2, 0)] + 1
+                            except IndexError:
+                                truncated_seq = []
+                            else:
+                                truncated_seq = [x for x in adj_seq if x[3] <= acceptable and x[3] >= self.intervals[0]+2]
+                    skipped_mutations = [x for x in adj_seq if x[1] != 'R' and x not in truncated_seq]
+                    warnings.warn(''.join(["Deletion spanning intron-exon boundary",
+                                           " leads to truncated version of transcript ",
+                                           self.transcript_id, ';\nContributing deletions: ',
+                                           str(triggering_mutations), ';\nMutations excluded from trancript: ',
+                                           str(skipped_mutations)]))
+                except UnboundLocalError:
+                    truncated_seq = [x for x in adj_seq]
                 for i in range(0, len(truncated_seq)):
                     if truncated_seq[i][0] == '':
                         if truncated_seq[i][1] in ['G', 'S']:
