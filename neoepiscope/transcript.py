@@ -2547,6 +2547,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 elif tokens[2] == "CDS":
                     cds_lines[transcript_id].append(tokens)
     # Sort cds_dict coordinates (left -> right) for each transcript
+    delete_txs = []
     for transcript_id, tx_data in cds_dict.items():
         current_cds = cds_lines[transcript_id]
         cds_dict[transcript_id].sort(key=lambda x: x[0])
@@ -2557,7 +2558,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 reverse_strand = current_cds[0][6] == "-"
             except IndexError:
                 # Remove incompletely annotated transcript
-                del cds_dict[transcript_id]
+                delete_txs.append(transcript_id)
             else:
                 if reverse_strand:
                     current_cds.sort(key=lambda x: int(x[4]), reverse=True)
@@ -2599,6 +2600,8 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 for block in stop_codon_blocks:
                     if int(block[2]) != min_stop:
                         cds_dict[transcript_id].remove(block)
+    for transcript_id in delete_txs:
+        del cds_dict[transcript_id]
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = os.path.join(dictdir, "transcript_to_CDS.pickle")
