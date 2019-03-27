@@ -428,7 +428,7 @@ def main():
                 intervals_path = os.path.join(
                     args.dicts, "intervals_to_transcript.pickle"
                 )
-                if os.path.isfile(intervals_dict):
+                if os.path.isfile(intervals_path):
                     with open(intervals_path, "rb") as interval_stream:
                         interval_dict = pickle.load(interval_stream)
                 else:
@@ -456,7 +456,7 @@ def main():
                         )
                     )
                 bowtie_files = [
-                    "".join([args.bowtie_index, ".", x, ".ebwt"]) for x in range(1, 5)
+                    "".join([args.bowtie_index, ".", str(x), ".ebwt"]) for x in range(1, 5)
                 ]
                 if list(set([os.path.isfile(x) for x in bowtie_files])) == [True]:
                     reference_index = bowtie_index.BowtieIndexReference(
