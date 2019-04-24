@@ -2665,6 +2665,60 @@ def get_transcripts_from_tree(chrom, start, stop, cds_tree):
         transcript_ids.add(cd.data)
     return list(transcript_ids)
 
+def add_mut_to_haplotype_block(alternative, contig):
+    if len(alternatives) > 1:
+        if i == 0:
+            if tokens[1] == "1":
+                gen1 = "1"
+                gen2 = "0"
+            else:
+                gen1 = "0"
+                gen2 = "1"
+        elif i == 1:
+            if tokens[1] == "2":
+                gen1 = "1"
+                gen2 = "0"
+            else:
+                gen1 = "0"
+                gen2 = "1"
+    else:
+        gen1 = tokens[1]
+        gen2 = tokens[2]
+    overlapping_transcripts = get_transcripts_from_tree(
+        contig, pos, end, interval_dict
+    )
+    if not phasing or gen1 != gen2:
+        # For each overlapping transcript, add mutation entry
+        # Contains chromosome, position, reference, alternate, allele
+        #   A, allele B, genotype line from VCF
+        for transcript in overlapping_transcripts:
+            block_transcripts[transcript].append(
+                [
+                    contig,
+                    pos,
+                    ref,
+                    alt,
+                    gen1,
+                    gen2,
+                    tokens[7],
+                    mutation_type,
+                ]
+            )
+    else:
+        for transcript in overlapping_transcripts:
+            homozygous_variants[transcript].append(
+                [
+                    contig,
+                    pos,
+                    ref,
+                    alt,
+                    gen1,
+                    gen2,
+                    tokens[7],
+                    mutation_type,
+                ]
+            )
+
 
 def process_haplotypes(hapcut_output, interval_dict, phasing):
     """ Stores all haplotypes relevant to different transcripts as a dictionary
@@ -2688,6 +2742,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
         else:
             input_stream = open(hapcut_output)
         block_transcripts = collections.defaultdict(list)
+        block_complex_pairs = []
         for line in input_stream:
             if line.startswith("BLOCK"):
                 # Skip block header lines
@@ -2702,10 +2757,18 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                             haplotype.append(mut)
                         affected_transcripts[transcript_id].append(haplotype)
                     else:
+                        paired_muts = []
+                        # First add mutations broken down from complex indels as haplotypes
+                        for pair in block_complex_pairs:
+                            affected_transcripts[transcript_id].append(pair)
+                            paired_muts.extend(pair)
+                        # Then add simple mutations as their own haplotypes
                         for mut in block_transcripts[transcript_id]:
-                            affected_transcripts[transcript_id].append([mut])
+                            if mut not in paired_muts:
+                                affected_transcripts[transcript_id].append([mut])
                 # Reset transcript dictionary
                 block_transcripts = collections.defaultdict(list)
+                block_complex_pairs = []
             else:
                 # Add mutation to transcript dictionary for the block
                 tokens = line.strip("\n").split()
@@ -2721,12 +2784,15 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                 else:
                     alternatives = [tokens[6]]
                 for i in range(0, min(len(alternatives), 2)):
+                    variants_to_process = []
                     if alternatives[i] == "<DEL>":
                         mutation_type = "D"
+                        pos = int(tokens[4])
                         deletion_size = len(tokens[5])
                         ref = tokens[5]
                         alt = deletion_size
                         end = pos + deletion_size
+                        variants_to_process.append([pos, ref, alt, end, mutation_type])
                     elif len(tokens[5]) == len(alternatives[i]):
                         mutation_type = "V"
                         pos = int(tokens[4])
@@ -2734,72 +2800,128 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                         alt = alternatives[i]
                         mut_size = len(tokens[5])
                         end = pos + mut_size
+                        variants_to_process.append([pos, ref, alt, end, mutation_type])
                     elif len(tokens[5]) > len(alternatives[i]):
-                        mutation_type = "D"
-                        deletion_size = len(tokens[5]) - len(alternatives[i])
-                        pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
-                        ref = tokens[5][len(alternatives[i]):]
-                        alt = deletion_size
-                        end = pos + deletion_size
+                        if tokens[5].startswith(alternatives[i]):
+                            # Simple deletion
+                            mutation_type = "D"
+                            deletion_size = len(tokens[5]) - len(alternatives[i])
+                            pos = int(tokens[4]) + (len(tokens[5]) - deletion_size)
+                            ref = tokens[5][len(alternatives[i]):]
+                            alt = deletion_size
+                            end = pos + deletion_size
+                            variants_to_process.append([pos, ref, alt, end, mutation_type])
+                        else:
+                            # Complex indel
+                            # Add deletion first
+                            mutation_type = "D"
+                            pos = int(tokens[4])
+                            ref = tokens[5]
+                            alt = len(tokens[5])
+                            end = pos + alt
+                            variants_to_process.append([pos, ref, alt, end, mutation_type])
+                            # Then add insertion
+                            mutation_type = "I"
+                            pos = int(tokens[4]) + len(tokens[5]) - 1
+                            ref = ""
+                            alt = alternatives[i]
+                            end = pos + 1
+                            variants_to_process.append([pos, ref, alt, end, mutation_type])
                     elif len(tokens[5]) < len(alternatives[i]):
-                        mutation_type = "I"
-                        insertion_size = len(alternatives[i]) - len(tokens[5])
-                        pos = int(tokens[4]) + len(tokens[5]) - 1
-                        ref = ""
-                        alt = alternatives[i][len(tokens[5]) :]
-                        end = pos + 1
-                    if len(alternatives) > 1:
-                        if i == 0:
-                            if tokens[1] == "1":
-                                gen1 = "1"
-                                gen2 = "0"
-                            else:
-                                gen1 = "0"
-                                gen2 = "1"
-                        elif i == 1:
-                            if tokens[1] == "2":
-                                gen1 = "1"
-                                gen2 = "0"
-                            else:
-                                gen1 = "0"
-                                gen2 = "1"
-                    else:
-                        gen1 = tokens[1]
-                        gen2 = tokens[2]
-                    overlapping_transcripts = get_transcripts_from_tree(
-                        contig, pos, end, interval_dict
-                    )
-                    if not phasing or gen1 != gen2:
-                        # For each overlapping transcript, add mutation entry
-                        # Contains chromosome, position, reference, alternate, allele
-                        #   A, allele B, genotype line from VCF
-                        for transcript in overlapping_transcripts:
-                            block_transcripts[transcript].append(
-                                [
-                                    contig,
-                                    pos,
-                                    ref,
-                                    alt,
-                                    gen1,
-                                    gen2,
-                                    tokens[7],
-                                    mutation_type,
-                                ]
-                            )
-                    else:
-                        for transcript in overlapping_transcripts:
-                            homozygous_variants[transcript].append(
-                                [
-                                    contig,
-                                    pos,
-                                    ref,
-                                    alt,
-                                    gen1,
-                                    gen2,
-                                    tokens[7],
-                                    mutation_type,
-                                ]
-                            )
+                        if alternatives[i].startswith(tokens[5]):
+                            # Simple insertion
+                            mutation_type = "I"
+                            insertion_size = len(alternatives[i]) - len(tokens[5])
+                            pos = int(tokens[4]) + len(tokens[5]) - 1
+                            ref = ""
+                            alt = alternatives[i][len(tokens[5]) :]
+                            end = pos + 1
+                            variants_to_process.append([pos, ref, alt, end, mutation_type])
+                        else:
+                            # Complex indel - add deletion first
+                            mutation_type = "D"
+                            pos = int(tokens[4])
+                            ref = tokens[5]
+                            alt = len(tokens[5])
+                            end = pos + alt
+                            variants_to_process.append([pos, ref, alt, end, mutation_type])
+                            # Then add insertion
+                            mutation_type = "I"
+                            pos = int(tokens[4]) + len(tokens[5]) - 1
+                            ref = ""
+                            alt = alternatives[i]
+                            end = pos + 1
+                            variants_to_process.append((pos, ref, alt, end, mutation_type))
+                    # Store complex variants together if relevant
+                    complex_pairs = []
+                    for (pos, ref, alt, end, mutation_type) in variants_to_process:
+                        if len(alternatives) > 1:
+                            if i == 0:
+                                if tokens[1] == "1":
+                                    gen1 = "1"
+                                    gen2 = "0"
+                                else:
+                                    gen1 = "0"
+                                    gen2 = "1"
+                            elif i == 1:
+                                if tokens[1] == "2":
+                                    gen1 = "1"
+                                    gen2 = "0"
+                                else:
+                                    gen1 = "0"
+                                    gen2 = "1"
+                        else:
+                            gen1 = tokens[1]
+                            gen2 = tokens[2]
+                        overlapping_transcripts = get_transcripts_from_tree(
+                            contig, pos, end, interval_dict
+                        )
+                        if not phasing or gen1 != gen2:
+                            # For each overlapping transcript, add mutation entry
+                            # Contains chromosome, position, reference, alternate, allele
+                            #   A, allele B, genotype line from VCF
+                            for transcript in overlapping_transcripts:
+                                block_transcripts[transcript].append(
+                                    [
+                                        contig,
+                                        pos,
+                                        ref,
+                                        alt,
+                                        gen1,
+                                        gen2,
+                                        tokens[7],
+                                        mutation_type,
+                                    ]
+                                )
+                                complex_pairs.append([
+                                                    contig,
+                                                    pos,
+                                                    ref,
+                                                    alt,
+                                                    gen1,
+                                                    gen2,
+                                                    tokens[7],
+                                                    mutation_type,
+                                                ]
+                                            )
+                        else:
+                            for transcript in overlapping_transcripts:
+                                homozygous_variants[transcript].append(
+                                    [
+                                        contig,
+                                        pos,
+                                        ref,
+                                        alt,
+                                        gen1,
+                                        gen2,
+                                        tokens[7],
+                                        mutation_type,
+                                    ]
+                                )
+                    # Store complex pairs if the variant was complex
+                    if len(complex_pairs) > 1:
+                        complex_pairs.sort(key=itemgetter(1))
+                        block_complex_pairs.append(complex_pairs)
     finally:
         if input_stream is not sys.stdin:
             input_stream.close()

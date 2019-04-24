@@ -570,6 +570,17 @@ class TestTranscript(unittest.TestCase):
         seq2 = self.transcript.annotated_seq()
         self.assertEqual(len(seq2), 2)
 
+    def test_complex_indel(self):
+        """Fails if adjacent deletion and insertion are handled incorrectly"""
+        self.transcript.edit(4, 5247824, mutation_type="D")
+        self.transcript.edit('TT', 5247827, mutation_type="I")
+        seq = self.transcript.annotated_seq()
+        self.assertEqual(len(seq), 7)
+        self.fwd_transcript.edit(4, 473916, mutation_type="D")
+        self.fwd_transcript.edit('AA', 473919, mutation_type="I")
+        seq = self.fwd_transcript.annotated_seq()
+        self.assertEqual(len(seq), 16)
+
     def test_deletion_of_transcript(self):
         """Fails if deletion of entire transcript is incorrect"""
         self.transcript.edit(1700, 5246690, mutation_type="D")
