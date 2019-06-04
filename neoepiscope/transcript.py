@@ -1999,6 +1999,7 @@ class Transcript(object):
                             ref_counter += len(i[2])
                 continue
             elif seq[2][0][4] == "I":
+                '''
                 if ref_start < 0 and seq[3] * strand + len(seq[0]) > start * strand:
                     coding_start = (
                         counter + (start - seq[3] + 2 * self.rev_strand) * strand
@@ -2015,6 +2016,7 @@ class Transcript(object):
                             ref_counter + (stop - seq[3] + 2 * self.rev_strand) * strand
                         )
                         TAA_TGA_TAG = seq
+                '''
                 sequence += seq[0]
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
