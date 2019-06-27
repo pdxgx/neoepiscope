@@ -56,7 +56,7 @@ class DownloadDependencies(Command):
 
 setup(
     name="neoepiscope",
-    version="0.3.3",
+    version="0.3.4",
     description="comprehensive neoepitope prediction software",
     long_description=(
         "neoepiscope is software for predicting neoepitopes "
