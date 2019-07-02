@@ -564,47 +564,13 @@ class TestBindingPrediction(unittest.TestCase):
             self.neoepitopes, self.tools, self.alleles
         )
         self.assertEqual(
-            new_neoepitopes["CGCSQKCN"],
-            [
-                (
-                    "11",
-                    71277056,
-                    "",
-                    "AAA",
-                    "I",
-                    0.1,
-                    "ENST00000398531.2_2",
-                    "25689.70544109427",
-                    "95.52587499999998",
-                    "32873.66591243697",
-                    "28365.719606393825",
-                    "90.61212500000003",
-                    "36618.75556827501",
-                )
-            ],
-        )
+            len(new_neoepitopes["CGCSQKCN"][0]), 13)
         self.assertEqual(
-            new_neoepitopes["PVCCPCKI"],
-            [
-                (
-                    "11",
-                    71277229,
-                    "A",
-                    "C",
-                    "V",
-                    15.7,
-                    "ENST00000398531.2_2",
-                    "18671.533820398825",
-                    "42.33412499999999",
-                    "20417.344825703207",
-                    "26484.921629273078",
-                    "68.11900000000003",
-                    "25662.252913426724",
-                )
-            ],
-        )
-        self.assertEqual(13, len(new_neoepitopes["PVCCPCKI"][0]))
-        self.assertEqual(13, len(new_neoepitopes["CGCSQKCN"][0]))
+            len(new_neoepitopes["PVCCPCKI"][0]), 13)
+        for score in new_neoepitopes["CGCSQKCN"][0][7:]:
+            self.assertEqual(type(score), str)
+        for score in new_neoepitopes["PVCCPCKI"][0][7:]:
+            self.assertEqual(type(score), str)
 
 
 class TestOutput(unittest.TestCase):
