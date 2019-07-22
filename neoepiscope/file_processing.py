@@ -119,6 +119,11 @@ def adjust_tumor_column(in_vcf, out_vcf):
 def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
     """ Combines VCFs
 
+        vcf1: path to germline VCF file
+        vcf2: path to tumor VCF file
+        outfile: path to write merged VCF file
+        tumor_id: identifier of tumor sample listed in VCF header
+
         No return value.
     """
     vcffile = open(vcf2, "r")
@@ -133,6 +138,64 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
                 info_lines.add(lines.strip())
             else:
                 print(lines.strip(), file=header)
+        else:
+            tokens = lines.strip().split('\t')
+            if len(tokens) == 10:
+                print(0)
+                tumor_first = True
+                warnings.warn(''.join(['Only 1 sample in somatic VCF; '
+                                       'treating ', tokens[9], 'column as ',
+                                       'the tumor sample']))
+            elif len(tokens) == 11:
+                if tokens[9] == "TUMOR" and tokens[10] == "NORMAL":
+                    tumor_first = True
+                elif tokens[10] == "TUMOR" and tokens[9] == "NORMAL":
+                    tumor_first = False
+                elif tokens[9] == "PRIMARY" and tokens[10] == "NORMAL":
+                    tumor_first = True
+                elif tokens[10] == "PRIMARY" and tokens[9] == "NORMAL":
+                    tumor_first = False
+                elif tokens[9] == tumor_id:
+                    tumor_first = True
+                elif tokens[10] == tumor_id:
+                    tumor_first = False
+                elif tokens[9] == 'TUMOR':
+                    warnings.warn(''.join(['Irregular sample identifiers; '
+                                       'treating ', tokens[9], 'column as ',
+                                       'the tumor sample']))
+                    tumor_first = True
+                elif tokens[10] == 'TUMOR':
+                    warnings.warn(''.join(['Irregular sample identifiers; '
+                                       'treating ', tokens[10], 'column as ',
+                                       'the tumor sample']))
+                    tumor_first = False
+                elif tokens[9] == 'NORMAL':
+                    warnings.warn(''.join(['Irregular sample identifiers; '
+                                       'treating ', tokens[10], 'column as ',
+                                       'the tumor sample']))
+                    tumor_first = False
+                elif tokens[10] == 'NORMAL':
+                    warnings.warn(''.join(['Irregular sample identifiers; '
+                                       'treating ', tokens[9], 'column as ',
+                                       'the tumor sample']))
+                    tumor_first = True
+                else:
+                    raise RuntimeError(
+                                        ''.join(["Can't identify tumor sample",
+                                                 " in somatic VCF; please ",
+                                                 "provide tumor identifier ",
+                                                 "using -t ", tokens[9],
+                                                 " or -t ", tokens[10]])
+                    )
+            elif len(tokens) > 11:
+                raise RuntimeError(
+                                    "Somatic VCF contains more than two "
+                                    "samples, please use a VCF that contains "
+                                    "only 1 tumor and 1 normal sample or only "
+                                    "1 tumor sample."
+                )
+            else:
+                raise RuntimeError("Somatic VCF is missing sample data.")
     vcffile.close()
     temp.close()
     vcffile = open(vcf1, "r")
@@ -145,6 +208,16 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
                 info_lines.add(lines.strip())
             else:
                 print(lines.strip(), file=header)
+        else:
+            tokens = lines.strip().split('\t')
+            if len(tokens) > 10:
+                raise RuntimeError(
+                                    "Germline VCF contains more than one "
+                                    "sample, please use a VCF that contains "
+                                    "only  1 normal sample."
+                )
+            elif len(tokens) < 10:
+                raise RuntimeError("Germline VCF is missing sample data.")
     vcffile.close()
     temp.close()
     for line in sorted(list(info_lines)):
@@ -160,10 +233,16 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":GERMLINE"}' """, 
          vcf2, ".germlinetemp > ", vcf2, ".germline"]
     )
-    marktumor = "".join(
-        ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":SOMATIC"}' """, 
-         vcf2, ".tumortemp > ", vcf2, ".tumor"]
-    )
+    if tumor_first:
+        marktumor = "".join(
+            ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":SOMATIC"}' """, 
+             vcf2, ".tumortemp > ", vcf2, ".tumor"]
+        )
+    else:
+        marktumor = "".join(
+            ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$11":SOMATIC"}' """, 
+             vcf2, ".tumortemp > ", vcf2, ".tumor"]
+        )
     subprocess.call(markgermline, shell=True)
     subprocess.call(marktumor, shell=True)
     command = "".join(
