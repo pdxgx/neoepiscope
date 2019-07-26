@@ -778,20 +778,21 @@ def get_affinity_pickpocket(
             suffix=".pickpocket.err", prefix="".join([sample_id, "."]), text=True
         )[1]
         files_to_remove.append(err_file)
-        with open(err_file, "w"), open(mhc_out, 'w') as e,o:
-            # Run PickPocket
-            subprocess.check_call(
-                [
-                    pickpocket,
-                    "-a",
-                    allele,
-                    "-inptype",
-                    "1",
-                    "-p",
-                    peptide_file
-                ],
-                stderr=e, stdout=o
-            )
+        with open(err_file, "w") as e:
+            with open(mhc_out, "w") as o:
+                # Run PickPocket
+                subprocess.check_call(
+                    [
+                        pickpocket,
+                        "-a",
+                        allele,
+                        "-inptype",
+                        "1",
+                        "-p",
+                        peptide_file
+                    ],
+                    stderr=e, stdout=o
+                )
         with open(mhc_out, "r") as f:
             first_char = "#"
             while first_char == "#":
