@@ -163,8 +163,8 @@ class TestVAFpos(unittest.TestCase):
 
     def test_position(self):
         """Fails if incorrect positions are returned"""
-        self.assertEqual(get_vaf_pos(self.varscan), 5)
-        self.assertEqual(get_vaf_pos(self.mutect), None)
+        self.assertEqual(get_vaf_pos(self.varscan), (5, 'FREQ'))
+        self.assertEqual(get_vaf_pos(self.mutect), (4, 'FA'))
 
 
 class TestHaplotypeProcessing(unittest.TestCase):
@@ -478,7 +478,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
         neoepitopes, fasta = get_peptides_from_transcripts(
             Chr11_txs,
             homozygous_vars,
-            5,
+            (5, 'FREQ'),
             self.Chr11cds,
             True,
             False,
@@ -498,7 +498,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
         self.assertEqual(len(neoepitopes.keys()), 108)
         self.assertEqual(
             neoepitopes["CGCSQKCN"],
-            [("11", 71277056, "", "AAA", "I", 0.1, "NA", "NA", "ENST00000398531.2_2")],
+            [("11", 71277056, "", "AAA", "I", 0.001, "NA", "NA", "ENST00000398531.2_2")],
         )
         self.assertEqual(
             neoepitopes["PVCCPCKI"],
@@ -509,7 +509,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
                     "A",
                     "C",
                     "V",
-                    15.7,
+                    0.157,
                     "PVCCQCKI",
                     "NA",
                     "ENST00000398531.2_2",
@@ -550,8 +550,8 @@ class TestBindingPrediction(unittest.TestCase):
     def setUp(self):
         """"""
         self.neoepitopes = {
-            "CGCSQKCN": [("11", 71277056, "", "AAA", "I", 0.1, "ENST00000398531.2_2")],
-            "PVCCPCKI": [("11", 71277229, "A", "C", "V", 15.7, "ENST00000398531.2_2")],
+            "CGCSQKCN": [("11", 71277056, "", "AAA", "I", 0.001, "ENST00000398531.2_2")],
+            "PVCCPCKI": [("11", 71277229, "A", "C", "V", 0.157, "ENST00000398531.2_2")],
         }
         self.tools = {
             "mhcflurry1": ["mhcflurry-predict", ["affinity", "rank"]],
@@ -594,7 +594,7 @@ class TestOutput(unittest.TestCase):
                     "",
                     "AAA",
                     "I",
-                    0.1,
+                    0.001,
                     "NA",
                     "NA",
                     "ENST00000398531.2_2",
@@ -611,7 +611,7 @@ class TestOutput(unittest.TestCase):
                     "A",
                     "T",
                     "V",
-                    10.2,
+                    0.102,
                     "CGCSQCNN",
                     "NA",
                     "ENST00000398554.1_1",
@@ -630,7 +630,7 @@ class TestOutput(unittest.TestCase):
                     "A",
                     "C",
                     "V",
-                    15.7,
+                    0.157,
                     "PVCCQCKI",
                     "NA",
                     " ENST00000398531.2_2",
@@ -647,7 +647,7 @@ class TestOutput(unittest.TestCase):
                     "A",
                     "C",
                     "V",
-                    20.3,
+                    0.203,
                     "PVCCQCKI",
                     "NA",
                     "ENST00000398200.3_1",

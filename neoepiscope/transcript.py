@@ -3109,26 +3109,22 @@ def get_peptides_from_transcripts(
                     else:
                         mutation_class = "S"
                     # Determine VAF if available
-                    if vaf_pos is not None:
-                        try:
-                            vaf_entry = mutation[6].strip("*").split(":")[vaf_pos]
-                            if "," in vaf_entry:
-                                vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
-                                if len(vaf_entry) > 0:
-                                    vaf = sum(
-                                        [float(x.strip("%")) for x in vaf_entry]
-                                    ) / len(vaf_entry)
-                                else:
-                                    vaf = None
-                            else:
-                                if vaf_entry.strip("%") != ".":
-                                    vaf = float(vaf_entry.strip("%"))
-                                else:
-                                    vaf = None
-                        except IndexError:
-                            vaf = None
-                    else:
-                        vaf = None
+                    vaf = None
+                    if vaf_pos is not None and mutation_class == "S":
+                        vaf_entry = mutation[6].strip('*').split(":")[vaf_pos[0]]
+                        if "," in vaf_entry:
+                            vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
+                            if len(vaf_entry) > 0:
+                                vaf = sum(
+                                    [float(x.strip("%")) for x in vaf_entry]
+                                ) / len(vaf_entry)
+                                if vaf_pos[1] == 'FREQ':
+                                    vaf = vaf/100.0
+                        else:
+                            if vaf_entry.strip("%") != ".":
+                                vaf = float(vaf_entry.strip("%"))
+                                if vaf_pos[1] == 'FREQ':
+                                    vaf = vaf/100.0
                     # Determine which copies variant exists on & make edits
                     transcript_a.edit(
                         mutation[3],
@@ -3186,26 +3182,22 @@ def get_peptides_from_transcripts(
                 else:
                     mutation_class = "S"
                 # Determine VAF if available
+                vaf = None
                 if vaf_pos is not None:
-                    try:
-                        vaf_entry = mutation[6].strip("*").split(":")[vaf_pos]
-                        if "," in vaf_entry:
-                            vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
-                            if len(vaf_entry) > 0:
-                                vaf = sum(
-                                    [float(x.strip("%")) for x in vaf_entry]
-                                ) / len(vaf_entry)
-                            else:
-                                vaf = None
-                        else:
-                            if vaf_entry.strip("%") != ".":
-                                vaf = float(vaf_entry.strip("%"))
-                            else:
-                                vaf = None
-                    except IndexError:
-                        vaf = None
-                else:
-                    vaf = None
+                    vaf_entry = mutation[6].strip("*").split(":")[vaf_pos[0]]
+                    if "," in vaf_entry:
+                        vaf_entry = [x for x in vaf_entry.split(",") if x != "."]
+                        if len(vaf_entry) > 0:
+                            vaf = sum(
+                                [float(x.strip("%")) for x in vaf_entry]
+                            ) / len(vaf_entry)
+                            if vaf_pos[1] == 'FREQ':
+                                vaf = vaf/100.0
+                    else:
+                        if vaf_entry.strip("%") != ".":
+                            vaf = float(vaf_entry.strip("%"))
+                            if vaf_pos[1] == 'FREQ':
+                                vaf = vaf/100.0
                 # Make edits
                 transcript_a.edit(
                     mutation[3],

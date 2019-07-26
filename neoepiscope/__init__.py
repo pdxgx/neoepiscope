@@ -52,7 +52,7 @@ from .transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from .binding_scores import gather_binding_scores
+from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,
     combine_vcf,
@@ -194,7 +194,7 @@ def main():
         help="path to Bowtie index basename",
     )
     call_parser.add_argument(
-        "-v", "--vcf", type=str, required=False, help="input path to VCF"
+        "-v", "--vcf", type=str, required=False, help="input path to somatic VCF"
     )
     call_parser.add_argument(
         "-d",
@@ -469,191 +469,11 @@ def main():
                     "User must specify either --build OR "
                     "--bowtie_index and --dicts options"
                 )
-        # Check affinity predictor
-        tool_dict = {}
+        # Check affinity predictor(s)
         if args.no_affinity:
-            args.affinity_predictor = None
+            args.affinity_predictor
         if args.affinity_predictor is not None:
-            if len(args.affinity_predictor) > 1:
-                args.affinity_predictor.remove(["mhcflurry", "1", "affinity,rank"])
-            for tool in args.affinity_predictor:
-                program = tool[0]
-                version = tool[1]
-                scoring = tool[2].split(",")
-                if "mhcflurry" in program.lower():
-                    if version == "1" and "mhcflurry1" not in tool_dict:
-                        program = "mhcflurry-predict"
-                        acceptable_scoring = ["rank", "affinity", "high", "low"]
-                        for method in scoring:
-                            if method not in acceptable_scoring:
-                                warnings.warn(
-                                    " ".join([method, "not compatible with mhcflurry"]),
-                                    Warning,
-                                )
-                                scoring.remove(method)
-                        if len(scoring) > 0:
-                            tool_dict["mhcflurry1"] = [program, sorted(scoring)]
-                    elif "mhcflurry1" in tool_dict:
-                        raise RuntimeError(
-                            "Conflicting or repetitive installs of mhcflurry given"
-                        )
-                    else:
-                        raise NotImplementedError(
-                            " ".join(
-                                [
-                                    "neoepiscope does not support version",
-                                    version,
-                                    "of mhcflurry",
-                                ]
-                            )
-                        )
-                elif "mhcnuggets" in program.lower():
-                    if version == "2" and "mhcnuggets2" not in tool_dict:
-                        program = "NA"
-                        acceptable_scoring = ["affinity"]
-                        for method in scoring:
-                            if method not in acceptable_scoring:
-                                warnings.warn(
-                                    " ".join(
-                                        [method, "not compatible with mhcnuggets"]
-                                    ),
-                                    Warning,
-                                )
-                                scoring.remove(method)
-                        if len(scoring) > 0:
-                            tool_dict["mhcnuggets2"] = [program, sorted(scoring)]
-                    elif "mhcnuggets2" in tool_dict:
-                        raise RuntimeError(
-                            "Conflicting or repetitive installs of mhcnuggets given"
-                        )
-                    else:
-                        raise NotImplementedError(
-                            " ".join(
-                                [
-                                    "neoepiscope does not support version",
-                                    version,
-                                    "of mhcnuggets",
-                                ]
-                            )
-                        )
-                elif "netMHCIIpan" in program:
-                    if version == "3" and "netMHCIIpan3" not in tool_dict:
-                        program = paths.netMHCIIpan3
-                        if program is None:
-                            program = which("netMHCIIpan3")
-                        else:
-                            program = which(program)
-                        if program is None:
-                            warnings.warn(
-                                " ".join(
-                                    ["No valid install of", "netMHCIIpan available"]
-                                ),
-                                Warning,
-                            )
-                            continue
-                        acceptable_scoring = ["rank", "affinity"]
-                        for method in scoring:
-                            if method not in acceptable_scoring:
-                                warnings.warn(
-                                    " ".join(
-                                        [method, "not compatible with netMHCIIpan"]
-                                    ),
-                                    Warning,
-                                )
-                                scoring.remove(method)
-                        if len(scoring) > 0:
-                            tool_dict["netMHCIIpan3"] = [program, sorted(scoring)]
-                    elif "netMHCIIpan3" in tool_dict:
-                        raise RuntimeError(
-                            "Conflicting or repetitive installs of netMHCIIpan given"
-                        )
-                    else:
-                        raise NotImplementedError(
-                            " ".join(
-                                [
-                                    "neoepiscope does not support version",
-                                    version,
-                                    "of netMHCIIpan",
-                                ]
-                            )
-                        )
-                elif "netMHCpan" in program:
-                    if ("netMHCpan3" not in tool_dict and version == "3") or (
-                        "netMHCpan4" not in tool_dict and version == "4"
-                    ):
-                        if version == "3":
-                            program = paths.netMHCpan3
-                            if program is None:
-                                program = which("netMHCpan3")
-                            else:
-                                program = which(program)
-                        elif version == "4":
-                            program = paths.netMHCpan4
-                            if program is None:
-                                program = which("netMHCpan4")
-                            else:
-                                program = which(program)
-                        if program is None:
-                            warnings.warn(
-                                " ".join(
-                                    ["No valid install of ", "netMHCIIpan available"]
-                                ),
-                                Warning,
-                            )
-                            continue
-                        if program is None:
-                            warnings.warn(
-                                " ".join(
-                                    [
-                                        "No valid install of",
-                                        "netMHCpan version",
-                                        version,
-                                        "available",
-                                    ]
-                                ),
-                                Warning,
-                            )
-                            continue
-                        acceptable_scoring = ["rank", "affinity"]
-                        for method in scoring:
-                            if method not in acceptable_scoring:
-                                warnings.warn(
-                                    " ".join([method, "not compatible with netMHCpan"]),
-                                    Warning,
-                                )
-                                scoring.remove(method)
-                        if len(scoring) > 0:
-                            if version == "3":
-                                name = "netMHCpan3"
-                            elif version == "4":
-                                name = "netMHCpan4"
-                            tool_dict[name] = [program, sorted(scoring)]
-                    elif ("netMHCpan3" in tool_dict and version == "3") or (
-                        "netMHCpan4" in tool_dict and version == "4"
-                    ):
-                        raise RuntimeError(
-                            "Conflicting or repetitive installs of netMHCpan given"
-                        )
-                    else:
-                        raise NotImplementedError(
-                            " ".join(
-                                [
-                                    "neoepiscope does not support version",
-                                    version,
-                                    "of netMHCpan",
-                                ]
-                            )
-                        )
-                else:
-                    raise NotImplementedError(
-                        " ".join(
-                            [
-                                "neoepiscope does not support",
-                                program,
-                                "for binding predictions",
-                            ]
-                        )
-                    )
+            tool_dict = get_binding_tools(args.affinity_predictor)
         if not tool_dict:
             warnings.warn(
                 "No binding prediction tools specified; "
@@ -670,14 +490,14 @@ def main():
                     "user must specify at least one allele "
                     "via the --alleles option"
                 )
-        # Obtain VAF frequency VCF position
-        if args.vcf:
-            vaf_pos = get_vaf_pos(args.vcf)
-        else:
-            vaf_pos = None
         # Obtain peptide sizes for kmerizing peptides
         if "," in args.kmer_size:
             size_list = args.kmer_size.split(",")
+            size_list.sort(reverse=True)
+            for i in range(0, len(size_list)):
+                size_list[i] = int(size_list[i])
+        elif "-" in args.kmer_size:
+            size_list = args.kmer_size.split("-")
             size_list.sort(reverse=True)
             for i in range(0, len(size_list)):
                 size_list[i] = int(size_list[i])
@@ -705,6 +525,8 @@ def main():
                 "--upstream-atgs must be one of "
                 '{"novel", "all", "none", "reference"}'
             )
+        # Establish VAF position as None (can be modified)
+        vaf_pos = None
         # Establish handling of germline mutations:
         if args.germline == "background":
             include_germline = 2
@@ -719,6 +541,9 @@ def main():
         # Establish handling of somatic mutations:
         if args.somatic == "include":
             include_somatic = 1
+            # If VCF is given, search for VAF position
+            if args.vcf:
+                vaf_pos = get_vaf_pos(args.vcf)
         elif args.somatic == "background":
             include_somatic = 2
         elif args.somatic == "exclude":

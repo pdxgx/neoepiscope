@@ -548,26 +548,30 @@ def get_vaf_pos(VCF):
                         otherwise position of VAF
     """
     vaf_check = False
+    vaf_pos = None
     with open(VCF) as f:
         for line in f:
             # Check header lines to see if FREQ exits in FORMAT fields
             if line[0] == "#":
-                if "FREQ" in line:
+                if "ID=AF" in line:
                     vaf_check = True
+                    field = "AF"
+                elif "ID=FREQ" in line:
+                    vaf_check = True
+                    field = "FREQ"
+                elif "ID=FA" in line:
+                    vaf_check = True
+                    field = "FA"
             else:
                 # Check first entry to get position of FREQ if it exists
                 if vaf_check:
                     tokens = line.strip("\n").split("\t")
                     format_field = tokens[8].split(":")
                     for i in range(0, len(format_field)):
-                        if format_field[i] == "FREQ":
+                        if format_field[i] == field:
                             vaf_pos = i
                             break
-                # Return None if VCF does not contain VAF data
-                else:
-                    vaf_pos = None
-                    break
-    return vaf_pos
+    return (vaf_pos, field)
 
 
 def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
@@ -590,7 +594,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
               file=output_stream)
         headers = [
             "Neoepitope",
-            "Chromsome",
+            "Chromosome",
             "Pos",
             "Ref",
             "Alt",
@@ -675,193 +679,3 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
     finally:
         if output_stream is not sys.stdout:
             output_stream.close()
-
-def parsed_md(md):
-    """ Divides an MD string up by boundaries between ^, letters, and numbers
-
-        md: an MD string (example: 33A^CC).
-
-        Return value: MD string split by boundaries described above.
-    """
-    md_to_parse = []
-    md_group = [md[0]]
-    for i, char in enumerate(md):
-        if i == 0: continue
-        if (re.match('[A-Za-z]', char) is not None) \
-            != (re.match('[A-Za-z]', md[i-1]) is not None) or \
-            (re.match('[0-9]', char) is not None) \
-            != (re.match('[0-9]', md[i-1]) is not None):
-            if md_group:
-                md_to_parse.append(''.join(md_group))
-            md_group = [char]
-        else:
-            md_group.append(char)
-    if md_group:
-        md_to_parse.append(''.join(md_group))
-    return [char for char in md_to_parse if char != '0']
-
-def indels_junctions_exons_mismatches(
-            cigar, md, pos, seq, drop_deletions=False, junctions_only=False
-        ):
-    """ Finds indels, junctions, exons, mismatches from CIGAR, MD string, POS
-    
-        cigar: CIGAR string
-        md: MD:Z string
-        pos: position of first aligned base
-        seq: read sequence
-        drop_deletions: drops deletions from coverage vectors iff True
-        junctions_only: does not populate mismatch list
-
-        Return value: tuple
-            (insertions, deletions, junctions, exons, mismatches).
-        Insertions is a list of tuples (last genomic position before insertion, 
-                                 string of inserted bases). Deletions
-            is a list of tuples (first genomic position of deletion,
-                                 string of deleted bases). Junctions is a list
-            of tuples (intron start position (inclusive),
-                       intron end position (exclusive),
-                       left_diplacement, right_displacement). Exons is a list
-            of tuples (exon start position (inclusive),
-                       exon end position (exclusive)). Mismatches is a list
-            of tuples (genomic position of mismatch, read base)
-    """
-    insertions, deletions, junctions, exons, mismatches = [], [], [], [], []
-    cigar = re.split(r'([MINDS])', cigar)[:-1]
-    md = parsed_md(md)
-    seq_size = len(seq)
-    cigar_chars, cigar_sizes = [], []
-    cigar_index, md_index, seq_index = 0, 0, 0
-    max_cigar_index = len(cigar)
-    while cigar_index != max_cigar_index:
-        if cigar[cigar_index] == 0:
-            cigar_index += 2
-            continue
-        if cigar[cigar_index+1] == 'M':
-            aligned_base_cap = int(cigar[cigar_index])
-            aligned_bases = 0
-            while True:
-                try:
-                    aligned_bases += int(md[md_index])
-                    if aligned_bases <= aligned_base_cap:
-                        md_index += 1
-                except ValueError:
-                    # Not an int, but should not have reached a deletion
-                    assert md[md_index] != '^', '\n'.join(
-                                                ['cigar and md:',
-                                                 ''.join(cigar), ''.join(md)]
-                                            )
-                    if not junctions_only:
-                        mismatches.append(
-                                (pos + aligned_bases,
-                                    seq[seq_index + aligned_bases])
-                            )
-                    correction_length = len(md[md_index])
-                    m_length = aligned_base_cap - aligned_bases
-                    if correction_length > m_length:
-                        md[md_index] = md[md_index][:m_length]
-                        aligned_bases = aligned_base_cap
-                    else:
-                        aligned_bases += correction_length
-                        md_index += 1
-                if aligned_bases > aligned_base_cap:
-                    md[md_index] = aligned_bases - aligned_base_cap
-                    break
-                elif aligned_bases == aligned_base_cap:
-                    break
-            # Add exon
-            exons.append((pos, pos + aligned_base_cap))
-            pos += aligned_base_cap
-            seq_index += aligned_base_cap
-        elif cigar[cigar_index+1] == 'N':
-            skip_increment = int(cigar[cigar_index])
-            # Add junction
-            junctions.append((pos, pos + skip_increment,
-                            seq_index, seq_size - seq_index))
-            # Skip region of reference
-            pos += skip_increment
-        elif cigar[cigar_index+1] == 'I':
-            # Insertion
-            insert_size = int(cigar[cigar_index])
-            insertions.append(
-                    (pos - 1, seq[seq_index:seq_index+insert_size])
-                )
-            seq_index += insert_size
-        elif cigar[cigar_index+1] == 'D':
-            assert md[md_index] == '^', '\n'.join(
-                                                ['cigar and md:',
-                                                 ''.join(cigar), ''.join(md)]
-                                            )
-            # Deletion
-            delete_size = int(cigar[cigar_index])
-            md_delete_size = len(md[md_index+1])
-            assert md_delete_size >= delete_size
-            deletions.append((pos, md[md_index+1][:delete_size]))
-            if not drop_deletions: exons.append((pos, pos + delete_size))
-            if md_delete_size > delete_size:
-                # Deletion contains a junction
-                md[md_index+1] = md[md_index+1][delete_size:]
-            else:
-                md_index += 2
-            # Skip deleted part of reference
-            pos += delete_size
-        else:
-            # Soft clip
-            assert cigar[cigar_index+1] == 'S'
-            # Advance seq_index
-            seq_index += int(cigar[cigar_index])
-        cigar_index += 2
-    '''Merge exonic chunks/deletions; insertions/junctions could have chopped
-    them up.'''
-    new_exons = []
-    last_exon = exons[0]
-    for exon in exons[1:]:
-        if exon[0] == last_exon[1]:
-            # Merge ECs
-            last_exon = (last_exon[0], exon[1])
-        else:
-            # Push last exon to new exon list
-            new_exons.append(last_exon)
-            last_exon = exon
-    new_exons.append(last_exon)
-    return insertions, deletions, junctions, new_exons, mismatches
-
-def rna_support_dict(bam, transcript_to_haplotypes):
-    rna_support = defaultdict(list)
-    BAM_reader = pysam.AlignmentFile(bam, "rb")
-    mutation_dict = {}
-    for tx in transcript_to_haplotypes:
-        for block in transcript_to_haplotypes[tx]:
-            for i in range(0, len(block)):
-                if not block[i][6].endswith('*'):
-                    phased_muts = [x for x in block if x != block[i] and (x[4] == block[i][4] or x[5] == block[i][5])]
-                    mutation_dict[(block[i][0], block[i][1], block[i][2], block[i][3])] = [phased_muts, []]
-    contig_list = list(set([x[0] for x in mutation_dict]))
-    for contig in contig_list:
-        if contig in reference_index.recs.keys():
-            for region in contig_dict[contig]:
-                x = BAM_reader.fetch(contig=contig, start=region[0], stop=region[1])
-                for alignment in x:
-                    tokens = str(alignment).split('\t')
-                    tags = ast.literal_eval(tokens[11])
-                    md = [x[1] for x in tags if x[0] == 'MD'][0]
-                    cigar = tokens[5]
-                    pos = int(tokens[3])
-                    seq = tokens[9]
-                    jx = set()
-                    insertions, deletions, junctions, exons, mismatches = indels_junctions_exons_mismatches(cigar, md, pos, seq)
-                    covered_mutations = set()
-                    for j in junctions:
-                        jx.add((j[0], j[1]))
-                    for ins in insertions:
-                        if (contig, ins[0], '', ins[1]) in mutation_dict:
-                            covered_mutations.add(ins)
-                    for dele in deletions:
-                        if (contig, dele[0], dele[1], len(dele[1])) in mutation_dict:
-                            covered_mutations.add(deletions)
-                    for mm in mismatches:
-                        normal_base = reference_index.get_stretch(contig, mm[0]-1, len(mm[1]))
-                        if (contig, mm[0], normal_base, mm[1]) in mutation_dict:
-                            covered_mutations.add(mm)
-                    if len(covered_mutations) > 0:
-                        rna_support[tuple(covered_mutations)].append([tokens[0], jx])
-    return rna_support

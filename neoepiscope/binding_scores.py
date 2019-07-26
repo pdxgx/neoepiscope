@@ -30,6 +30,8 @@ SOFTWARE.
 """
 
 from __future__ import absolute_import, division, print_function
+from . import paths
+from .file_processing import which
 import os
 import warnings
 import tempfile
@@ -37,6 +39,357 @@ import pickle
 import subprocess
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def get_binding_tools(binding_tool_list):
+    """ Processes user-specified binding tools to ensure usability
+
+        binding_tool_list: nested list of binding affinity tool info
+            where inner lists are [name of tool, version of tool, 
+            comma separated scoring methods]
+
+        Return value: dictionary with binding tool IDs as keys and
+            lists as values, where lists are [program executable,
+            sorted list of scoring methods]
+    """
+    tool_dict = {}
+    if len(binding_tool_list) > 1:
+        binding_tool_list.remove(["mhcflurry", "1", "affinity,rank"])
+    for tool in binding_tool_list:
+        program = tool[0]
+        version = tool[1]
+        scoring = tool[2].split(",")
+        if "mhcflurry" in program.lower():
+            if version == "1" and "mhcflurry1" not in tool_dict:
+                program = "mhcflurry-predict"
+                acceptable_scoring = ["rank", "affinity", "high", "low"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with mhcflurry"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    tool_dict["mhcflurry1"] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                    "for mhcflurry version", version,
+                                    "- will not use this tool for",
+                                    "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "mhcflurry1" in tool_dict:
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of mhcflurry given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of mhcflurry",
+                        ]
+                    )
+                )
+        elif "mhcnuggets" in program.lower():
+            if version == "2" and "mhcnuggets2" not in tool_dict:
+                program = "NA"
+                acceptable_scoring = ["affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join(
+                                [method, "not compatible with mhcnuggets"]
+                            ),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    tool_dict["mhcnuggets2"] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                    "for mhcnuggets version", version,
+                                    "- will not use this tool for",
+                                    "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "mhcnuggets2" in tool_dict:
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of mhcnuggets given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of mhcnuggets",
+                        ]
+                    )
+                )
+        elif "netmhciipan" in program.lower():
+            if version == "3" and "netMHCIIpan3" not in tool_dict:
+                program = paths.netMHCIIpan3
+                if program is None:
+                    program = which("netMHCIIpan3")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            ["No valid install of", "netMHCIIpan available"]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank", "affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join(
+                                [method, "not compatible with netMHCIIpan"]
+                            ),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    tool_dict["netMHCIIpan3"] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for netMHCIIpan version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "netMHCIIpan3" in tool_dict:
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHCIIpan given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHCIIpan",
+                        ]
+                    )
+                )
+        elif "netmhcpan" in program.lower():
+            if ("netMHCpan3" not in tool_dict and version == "3") or (
+                "netMHCpan4" not in tool_dict and version == "4"
+            ):
+                if version == "3":
+                    program = paths.netMHCpan3
+                    if program is None:
+                        program = which("netMHCpan3")
+                    else:
+                        program = which(program)
+                elif version == "4":
+                    program = paths.netMHCpan4
+                    if program is None:
+                        program = which("netMHCpan4")
+                    else:
+                        program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "netMHCpan version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank", "affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with netMHCpan"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "3":
+                        name = "netMHCpan3"
+                    elif version == "4":
+                        name = "netMHCpan4"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for NetMHCpan version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif ("netMHCpan3" in tool_dict and version == "3") or (
+                "netMHCpan4" in tool_dict and version == "4"
+            ):
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHCpan given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHCpan",
+                        ]
+                    )
+                )
+        elif "netmhc" in program.lower():
+            if "netMHC4" not in tool_dict and version == "4":
+                program = paths.netMHC4
+                if program is None:
+                    program = which("netMHC4")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "netMHC version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank", "affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with netMHC"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "4":
+                        name = "netMHC4"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for NetMHC version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "netMHC4" in tool_dict and version == "4":
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHC given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHC",
+                        ]
+                    )
+                )
+        elif "pickpocket" in program.lower():
+            if "pickpocket1" not in tool_dict and version == "1":
+                program = paths.PickPocket1
+                if program is None:
+                    program = which("pickpocket1")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "PickPocket version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with netMHC"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "1":
+                        name = "pickpocket1"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for PickPocket version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "pickpocket1" in tool_dict and version == "1":
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of PickPocket given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of PickPocket",
+                        ]
+                    )
+                )
+        else:
+            raise NotImplementedError(
+                " ".join(
+                    [
+                        "neoepiscope does not support",
+                        program,
+                        "for binding predictions",
+                    ]
+                )
+            )
+    return tool_dict
 
 
 def get_affinity_netMHCIIpan(
@@ -274,6 +627,189 @@ def get_affinity_mhcflurry(peptides, allele, scores, version, remove_files=True)
             affinities.append(nM)
         return affinities
     finally:
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
+def get_affinity_netMHC(
+    peptides, allele, netmhc, version, scores, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        netmhc: path to netMHC executable
+        version: version of netMHC software
+        scores: list of scoring methods
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "").replace(':', '')
+        if allele not in avail_alleles["".join(["netMHC", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for netMHC"]), Warning
+            )
+            if len(scores) == 1:
+                return [(peptides[i], "NA") for i in range(0, len(peptides))]
+            else:
+                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+        # Establish return list and sample id
+        sample_id = ".".join(
+            [peptides[0], str(len(peptides)), allele, "netmhc", version]
+        )
+        affinities = []
+        # Write one peptide per line to a temporary file for input
+        peptide_file = tempfile.mkstemp(
+            suffix=".peptides", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(peptide_file)
+        with open(peptide_file, "w") as f:
+            for sequence in peptides:
+                print(sequence, file=f)
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(
+            suffix=".netMHC.out", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(mhc_out)
+        err_file = tempfile.mkstemp(
+            suffix=".netMHC.err", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(err_file)
+        with open(err_file, "w") as e:
+            # Run netMHC
+            subprocess.check_call(
+                [
+                    netmhc,
+                    "-a",
+                    allele,
+                    "-inptype",
+                    "1",
+                    "-p",
+                    "-xls",
+                    "-xlsfile",
+                    mhc_out,
+                    peptide_file,
+                ],
+                stderr=e,
+            )
+        with open(mhc_out, "r") as f:
+            f.readline()
+            f.readline()
+            for i in range(0, len(peptides)):
+                tokens = f.readline().strip("\n").split("\t")
+                # for v4, tokens[3] is affinty, tokens[4] is rank
+                if sorted(scores) == ["affinity", "rank"]:
+                    nM = (peptides[i], tokens[3], tokens[4])
+                elif sorted(scores) == ["affinity"]:
+                    nM = (peptides[i], tokens[3])
+                elif sorted(scores) == ["rank"]:
+                    nM = (peptides[i], tokens[4])
+                affinities.append(nM)
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
+def get_affinity_pickpocket(
+    peptides, allele, pickpocket, version, scores, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        pickpocket: path to pickpocket executable
+        version: version of pickpocket software
+        scores: list of scoring methods
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    import math
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "")
+        if allele not in avail_alleles["".join(["pickpocket", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for PickPocket"]), Warning
+            )
+            return [(peptides[i], "NA") for i in range(0, len(peptides))]
+        # Establish return list and sample id
+        sample_id = ".".join(
+            [peptides[0], str(len(peptides)), allele, "pickpocket", version]
+        )
+        affinities = []
+        # Write one peptide per line to a temporary file for input
+        peptide_file = tempfile.mkstemp(
+            suffix=".peptides", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(peptide_file)
+        with open(peptide_file, "w") as f:
+            for sequence in peptides:
+                print(sequence, file=f)
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(
+            suffix=".pickpocket.out", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(mhc_out)
+        err_file = tempfile.mkstemp(
+            suffix=".pickpocket.err", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(err_file)
+        with open(err_file, "w"), open(mhc_out, 'w') as e,o:
+            # Run PickPocket
+            subprocess.check_call(
+                [
+                    pickpocket,
+                    "-a",
+                    allele,
+                    "-inptype",
+                    "1",
+                    "-p",
+                    peptide_file
+                ],
+                stderr=e, stdout=o
+            )
+        with open(mhc_out, "r") as f:
+            first_char = "#"
+            while first_char == "#":
+                line = f.readline().strip()
+                try:
+                    first_char = line[0]
+                except IndexError:
+                    first_char = "#"
+            for i in range(2):
+                f.readline()
+            for i in range(0, len(peptides)):
+                tokens = line.strip().split()
+                aff = 50000.0**((-1*float(tokens[4]))+1)
+                nM = (peptides[i], str(aff))
+                affinities.append(nM)
+        return affinities
+    finally:
+        # Remove temporary files
         if remove_files:
             for file_to_remove in files_to_remove:
                 os.remove(file_to_remove)
@@ -546,6 +1082,24 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                     allele,
                     tool_dict[tool][0],
                     "4",
+                    tool_dict[tool][1],
+                    remove_files=True,
+                )
+            elif tool == "netMHC4":
+                binding_scores = get_affinity_netMHC(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "4",
+                    tool_dict[tool][1],
+                    remove_files=True,
+                )
+            elif tool == "pickpocket1":
+                binding_scores = get_affinity_pickpocket(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "1",
                     tool_dict[tool][1],
                     remove_files=True,
                 )
