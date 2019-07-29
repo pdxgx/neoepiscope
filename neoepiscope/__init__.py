@@ -591,7 +591,7 @@ def main():
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes) > 0:
             full_neoepitopes = gather_binding_scores(
-                neoepitopes, tool_dict, hla_alleles
+                neoepitopes, tool_dict, hla_alleles, size_list
             )
             write_results(args.output, hla_alleles, full_neoepitopes, tool_dict)
             if args.fasta:

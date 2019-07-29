@@ -263,6 +263,68 @@ def get_binding_tools(binding_tool_list):
                         ]
                     )
                 )
+        elif "netmhccons" in program.lower():
+            raise NotImplementedError("Binding predictions with netMHCcons "
+                                      "not currently supported due to instability"
+                                      " of predictions - support for netMHCcons "
+                                      "may be included in future releases.")
+            if "netMHCcons1" not in tool_dict and version == "1":
+                program = paths.netMHCcons1
+                if program is None:
+                    program = which("netMHCcons1")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "netMHCcons version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank", "affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with netMHCcons"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "1":
+                        name = "netMHCcons1"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for NetMHCcons version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "netMHCcons1" in tool_dict and version == "1":
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHC given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHCcons",
+                        ]
+                    )
+                )
         elif "netmhc" in program.lower():
             if "netMHC4" not in tool_dict and version == "4":
                 program = paths.netMHC4
@@ -816,6 +878,116 @@ def get_affinity_pickpocket(
                 os.remove(file_to_remove)
 
 
+def get_affinity_netMHCcons(
+    peptides, allele, netmhccons, version, scores, size_list, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        netmhccons: path to netMHCcons executable
+        version: version of netMHCcons software
+        scores: list of scoring methods
+        size_list: list of [min size, ..., max size] of peptide sizes
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "")
+        if allele not in avail_alleles["".join(["netMHCcons", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for netMHCcons"]), Warning
+            )
+            if len(scores) == 1:
+                return [(peptides[i], "NA") for i in range(0, len(peptides))]
+            else:
+                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+        # Establish score dict and return list
+        score_dict = {}
+        affinities = []
+        # Get scores for peptides of each size
+        for i in range(size_list[0], size_list[-1]+1):
+            # Sample id
+            sample_id = ".".join(
+                [peptides[0], str(len(peptides)), allele, "netmhccons", version, str(i)]
+            )
+            # Write one peptide per line to a temporary file for input
+            peptide_file = tempfile.mkstemp(
+                suffix=".peptides", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(peptide_file)
+            # Get peptides of correct size
+            sized_peps = [x for x in peptides if len(x) == i]
+            if len(sized_peps) == 0:
+                continue
+            with open(peptide_file, "w") as f:
+                for sequence in sized_peps:
+                    print(sequence, file=f)
+            # Establish temporary file to hold output
+            mhc_out = tempfile.mkstemp(
+                suffix=".netMHCcons.out", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(mhc_out)
+            err_file = tempfile.mkstemp(
+                suffix=".netMHCcons.err", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(err_file)
+            with open(err_file, "w") as e:
+                # Run netMHC
+                subprocess.check_call(
+                    [
+                        netmhccons,
+                        "-a",
+                        allele,
+                        "-inptype",
+                        "1",
+                        "-xls",
+                        "-xlsfile",
+                        mhc_out,
+                        "-f",
+                        peptide_file,
+                    ],
+                    stderr=e,
+                )
+            with open(mhc_out, "r") as f:
+                f.readline()
+                f.readline()
+                for j in range(0, len(sized_peps)):
+                    tokens = f.readline().strip("\n").split("\t")
+                    # for v4, tokens[4] is affinty, tokens[5] is rank
+                    if sorted(scores) == ["affinity", "rank"]:
+                        score_dict[peptides[j]] = (tokens[4], tokens[5])
+                    elif sorted(scores) == ["affinity"]:
+                        score_dict[peptides[j]] = (tokens[4],)
+                    elif sorted(scores) == ["rank"]:
+                        score_dict[peptides[j]] = (tokens[5],)
+        for i in range(0, len(peptides)):
+            if peptides[i] in score_dict:
+                nM = (peptides[i], ) + score_dict[peptides[i]]
+            else:
+                if len(scores) == 2:
+                    nM = (peptides[i], 'NA', 'NA')
+                else:
+                    nM = (peptides[i], 'NA')
+            affinities.append(nM)
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
 def get_affinity_netMHCpan(
     peptides, allele, netmhcpan, version, scores, remove_files=True
 ):
@@ -1035,12 +1207,13 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
                 os.remove(file_to_remove)
 
 
-def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
+def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
     """ Adds binding scores from desired programs to neoepitope metadata
 
         neoepitopes: dictionary linking neoepitopes to their metadata
         tool_dict: dictionary storing prediction tool data
         hla_alleles: list of HLA alleles used for binding predictions
+        size_list: list of [min size, ..., max size] of peptide sizes
 
         Return value: dictionary linking neoepitopes to their metadata,
             which now includes binding scores
@@ -1102,6 +1275,16 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles):
                     tool_dict[tool][0],
                     "1",
                     tool_dict[tool][1],
+                    remove_files=True,
+                )
+            elif tool == "netMHCcons1":
+                binding_scores = get_affinity_netMHCcons(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "1",
+                    tool_dict[tool][1],
+                    size_list,
                     remove_files=True,
                 )
             for score in binding_scores:

@@ -558,10 +558,11 @@ class TestBindingPrediction(unittest.TestCase):
             "mhcnuggets2": ["NA", ["affinity"]],
         }
         self.alleles = ["HLA-A*02:01", "HLA-B*07:02"]
+        self.size_list = [8]
 
     def test_binding_scores(self):
         new_neoepitopes = gather_binding_scores(
-            self.neoepitopes, self.tools, self.alleles
+            self.neoepitopes, self.tools, self.alleles, self.size_list
         )
         self.assertEqual(
             len(new_neoepitopes["CGCSQKCN"][0]), 13)
