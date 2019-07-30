@@ -580,7 +580,7 @@ class NeoepiscopeDownloader(object):
             bowtie_hg19 = None
         programs = []
         for program in ["netMHCIIpan v3", "netMHCpan v3", "netMHCpan v4", 
-                        "netMHC v4", "netMHCII v2", "PickPocket v1"]:
+                        "netMHC v4", "netMHCII v2", "PickPocket v1", "netMHCstabpan v1"]:
             if self._yes_no_query(
                 (
                     "Do you have an install of {} "
@@ -649,6 +649,7 @@ netMHCpan4 = {netMHCpan4}
 netMHC4 = {netMHC4}
 netMHCII2 = {netMHCII2}
 PickPocket1 = {PickPocket1}
+netMHCstabpan1 = {netMHCstabpan1}
 hapcut2_hairs = {hapcut2_hairs}
 hapcut2 = {hapcut2}
 """
@@ -683,11 +684,14 @@ hapcut2 = {hapcut2}
                     PickPocket1=(
                         "None" if programs[3] is None else self._quote(programs[5])
                     ),
+                    netMHCstabpan1=(
+                        "None" if programs[3] is None else self._quote(programs[6])
+                    ),
                     hapcut2_hairs=(
-                        "None" if programs[4] is None else self._quote(programs[6])
+                        "None" if programs[4] is None else self._quote(programs[7])
                     ),
                     hapcut2=(
-                        "None" if programs[5] is None else self._quote(programs[7])
+                        "None" if programs[5] is None else self._quote(programs[8])
                     ),
                 ),
                 file=paths_stream,

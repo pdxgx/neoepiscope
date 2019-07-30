@@ -366,7 +366,7 @@ def get_binding_tools(binding_tool_list):
                         )
             elif "netMHCcons1" in tool_dict and version == "1":
                 raise RuntimeError(
-                    "Conflicting or repetitive installs of netMHC given"
+                    "Conflicting or repetitive installs of netMHCcons given"
                 )
             else:
                 raise NotImplementedError(
@@ -375,6 +375,65 @@ def get_binding_tools(binding_tool_list):
                             "neoepiscope does not support version",
                             version,
                             "of netMHCcons",
+                        ]
+                    )
+                )
+        elif "netmhcstabpan" in program.lower():
+            if "netMHCstabpan1" not in tool_dict and version == "1":
+                program = paths.netMHCstabpan1
+                if program is None:
+                    program = which("netMHCstabpan1")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "netMHCstabpan version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank_affinity", "affinity", "rank_stability", 
+                                      "stability", "rank_combined", "combined"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with netMHCstabpan"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "1":
+                        name = "netMHCstabpan1"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for NetMHCstabpan version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "netMHCstabpan1" in tool_dict and version == "1":
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHCstabpan given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHCstabpan",
                         ]
                     )
                 )
@@ -541,10 +600,8 @@ def get_affinity_netMHCIIpan(
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHCIIpan"]), Warning
             )
-            if len(scores) == 1:
-                return [(peptides[i], "NA") for i in range(0, len(peptides))]
-            else:
-                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         allele = allele.replace("*", "_").replace(":", "")
         # Establish return list and sample id
         sample_id = ".".join(
@@ -617,10 +674,7 @@ def get_affinity_netMHCIIpan(
             if sequence in score_dict:
                 nM = (sequence,) + score_dict[sequence]
             else:
-                if len(scores) == 1:
-                    nM = (sequence, "NA")
-                else:
-                    nM = (sequence, "NA", "NA")
+                nM = (sequence, ) + tuple(['NA' for i in range(len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -700,45 +754,23 @@ def get_affinity_mhcflurry(peptides, allele, scores, version, remove_files=True)
             # Skip headers
             f.readline()
             for line in f:
-                # token 1 is peptide; token 4 is affinity; token[5] is rank
+                # tokens[2] is affinity; tokens[5] is rank, tokens[4] is high, tokens[3] is low
                 tokens = line.strip("\n").split(",")
-                if sorted(scores) == ["affinity", "rank"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[5])
-                elif sorted(scores) == ["affinity", "high", "low", "rank"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[3], tokens[5])
-                elif sorted(scores) == ["affinity", "high", "low"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[3])
-                elif sorted(scores) == ["affinity", "high", "rank"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[4], tokens[5])
-                elif sorted(scores) == ["affinity", "low", "rank"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[3], tokens[5])
-                elif sorted(scores) == ["high", "low", "rank"]:
-                    score_dict[tokens[1]] = (tokens[4], tokens[3], tokens[3])
-                elif sorted(scores) == ["affinity", "high"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[4])
-                elif sorted(scores) == ["affinity", "low"]:
-                    score_dict[tokens[1]] = (tokens[2], tokens[3])
-                elif sorted(scores) == ["high", "low"]:
-                    score_dict[tokens[1]] = (tokens[4], tokens[3])
-                elif sorted(scores) == ["high", "rank"]:
-                    score_dict[tokens[1]] = (tokens[4], tokens[5])
-                elif sorted(scores) == ["low", "rank"]:
-                    score_dict[tokens[1]] = (tokens[3], tokens[5])
-                elif sorted(scores) == ["affinity"]:
-                    score_dict[tokens[1]] = (tokens[2],)
-                elif sorted(scores) == ["rank"]:
-                    score_dict[tokens[1]] = (tokens[5],)
-                elif sorted(scores) == ["high"]:
-                    score_dict[tokens[1]] = (tokens[4],)
-                elif sorted(scores) == ["low"]:
-                    score_dict[tokens[1]] = (tokens[3],)
+                result_dict = {"affinity": tokens[2],
+                               "high": tokens[4],
+                               "low": tokens[3],
+                               "rank": tokens[5]}
+                stored_results = [tokens[1]]
+                for value in sorted(scores):
+                    stored_results.append(result_dict[value])
+                score_dict[tokens[1]] = tuple(stored_results)
         # Produce list of scores for valid peptides
         # Invalid peptides receive "NA" score
         for sequence in peptides:
             if sequence in score_dict:
-                nM = (sequence,) + score_dict[sequence]
+                nM = score_dict[sequence]
             else:
-                nM = (sequence,) + tuple(["NA" for i in range(0, len(scores))])
+                nM = (sequence,) + tuple(["NA" for i in range(len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -776,10 +808,8 @@ def get_affinity_netMHC(
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHC"]), Warning
             )
-            if len(scores) == 1:
-                return [(peptides[i], "NA") for i in range(0, len(peptides))]
-            else:
-                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netmhc", version]
@@ -824,14 +854,118 @@ def get_affinity_netMHC(
             f.readline()
             for i in range(0, len(peptides)):
                 tokens = f.readline().strip("\n").split("\t")
-                # for v4, tokens[3] is affinty, tokens[4] is rank
-                if sorted(scores) == ["affinity", "rank"]:
-                    nM = (peptides[i], tokens[3], tokens[4])
-                elif sorted(scores) == ["affinity"]:
-                    nM = (peptides[i], tokens[3])
-                elif sorted(scores) == ["rank"]:
-                    nM = (peptides[i], tokens[4])
-                affinities.append(nM)
+                # for v4, tokens[3] is affinity, tokens[4] is rank
+                result_dict = {"affinity": tokens[3],
+                               "rank": tokens[4]}
+                nM = [peptides[i]]
+                for value in sorted(scores):
+                    nM.append(result_dict[value])
+                affinities.append(tuple(nM))
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
+def get_affinity_netMHCstabpan(
+    peptides, allele, netmhcstabpan, version, scores, size_list, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        netmhcstabpan: path to netMHCstabpan executable
+        version: version of netMHCstabpan software
+        scores: list of scoring methods
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "")
+        if allele not in avail_alleles["".join(["netMHCstabpan", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for netMHCstabpan"]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        score_dict = {}
+        affinities = []
+        for i in range(size_list[0], size_list[-1]+1):
+            # Establish return list and sample id
+            sample_id = ".".join(
+                [peptides[0], str(len(peptides)), allele, "netmhcstabpan", version, str(i)]
+            )
+            # Write one peptide per line to a temporary file for input
+            peptide_file = tempfile.mkstemp(
+                suffix=".peptides", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(peptide_file)
+            # Get peptides of correct size
+            sized_peps = [x for x in peptides if len(x) == i]
+            if len(sized_peps) == 0:
+                continue
+            with open(peptide_file, "w") as f:
+                for sequence in sized_peps:
+                    print(sequence, file=f)
+            # Establish temporary file to hold output
+            mhc_out = tempfile.mkstemp(
+                suffix=".netMHCstabpan.out", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(mhc_out)
+            err_file = tempfile.mkstemp(
+                suffix=".netMHCstabpan.err", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(err_file)
+            with open(err_file, "w") as e:
+                # Run netMHCstabpan
+                subprocess.check_call(
+                    [
+                        netmhcstabpan,
+                        "-ia",
+                        "-a",
+                        allele,
+                        "-inptype",
+                        "1",
+                        "-p",
+                        "-xls",
+                        "-xlsfile",
+                        mhc_out,
+                        peptide_file,
+                    ],
+                    stderr=e,
+                )
+            with open(mhc_out, "r") as f:
+                f.readline()
+                f.readline()
+                for j in range(0, len(sized_peps)):
+                    tokens = f.readline().strip("\n").split("\t")
+                    # tokens[4] is stability, tokens[5] is rank_stability
+                    # tokens[7] is affinity, tokens[8] is rank_affinity
+                    # tokens[9] combined, tokens[10] is rank_combined 
+                    result_dict = {"affinity": tokens[7],
+                                  "combined": tokens[9],
+                                  "rank_affinity": tokens[8],
+                                  "rank_combined": tokens[10],
+                                  "rank_stability": tokens[5],
+                                  "stability": tokens[4]}
+                    stored_results = []
+                    for value in sorted(scores):
+                        stored_results.append(result_dict[value])
+                    score_dict[sized_peps[j]] = tuple([sized_peps[j]] + stored_results)
+        for i in range(0, len(peptides)):
+            affinities.append(score_dict[peptides[i]])
         return affinities
     finally:
         # Remove temporary files
@@ -965,7 +1099,8 @@ def get_affinity_netMHCII(
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHCII"]), Warning
             )
-            return [(peptides[i], "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netMHCII", version]
@@ -978,10 +1113,8 @@ def get_affinity_netMHCII(
         files_to_remove.append(peptide_file)
         sized_peps = [x for x in peptides if len(x) > 8]
         if len(sized_peps) == 0:
-            if len(scores) == 1:
-                return [(peptides[i], "NA") for i in range(0, len(peptides))]
-            else:
-                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         with open(peptide_file, "w") as f:
             for sequence in sized_peps:
                 print(sequence, file=f)
@@ -1023,20 +1156,17 @@ def get_affinity_netMHCII(
             for i in range(0, len(sized_peps)):
                 tokens = f.readline().strip().split()
                 # tokens[6] is affinity; tokens[8] is rank
-                if sorted(scores) == ["affinity", "rank"]:
-                    score_dict[sized_peps[i]] = (tokens[6], tokens[8])
-                elif sorted(scores) == ["affinity"]:
-                    score_dict[sized_peps[i]] = (tokens[6], )
-                elif sorted(scores) == ["rank"]:
-                    score_dict[sized_peps[i]] = (tokens[8], )
+                result_dict = {"affinity": tokens[6],
+                               "rank": tokens[8]}
+                stored_results = [sized_peps[i]]
+                for value in sorted(scores):
+                    stored_results.append(result_dict[value])
+                score_dict[sized_peps[i]] = tuple(stored_results)
         for i in range(0, len(peptides)):
             if peptides[i] in score_dict:
-                nM = (peptides[i], ) + score_dict[peptides[i]]
+                nM = score_dict[peptides[i]]
             else:
-                if len(scores) == 1:
-                    nM = (peptides[i], "NA")
-                else:
-                    nM = (peptides[i], "NA", "NA")
+                nM = (peptides[i], ) + tuple(['NA' for i in range(len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -1076,10 +1206,8 @@ def get_affinity_netMHCcons(
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHCcons"]), Warning
             )
-            if len(scores) == 1:
-                return [(peptides[i], "NA") for i in range(0, len(peptides))]
-            else:
-                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish score dict and return list
         score_dict = {}
         affinities = []
@@ -1132,21 +1260,18 @@ def get_affinity_netMHCcons(
                 f.readline()
                 for j in range(0, len(sized_peps)):
                     tokens = f.readline().strip("\n").split("\t")
-                    # for v4, tokens[4] is affinty, tokens[5] is rank
-                    if sorted(scores) == ["affinity", "rank"]:
-                        score_dict[peptides[j]] = (tokens[4], tokens[5])
-                    elif sorted(scores) == ["affinity"]:
-                        score_dict[peptides[j]] = (tokens[4],)
-                    elif sorted(scores) == ["rank"]:
-                        score_dict[peptides[j]] = (tokens[5],)
+                    # for v4, tokens[4] is affinity, tokens[5] is rank
+                    result_dict = {"affinity": tokens[4],
+                                   "rank": tokens[5]}
+                    stored_results = [sized_peps[j]]
+                    for value in sorted(scores):
+                        stored_results.append(result_dict[value])
+                    score_dict[sized_peps[j]] = tuple(stored_results)
         for i in range(0, len(peptides)):
             if peptides[i] in score_dict:
-                nM = (peptides[i], ) + score_dict[peptides[i]]
+                nM = score_dict[peptides[i]]
             else:
-                if len(scores) == 2:
-                    nM = (peptides[i], 'NA', 'NA')
-                else:
-                    nM = (peptides[i], 'NA')
+                nM = (peptides[i], ) + tuple(['NA' for i in range(len(scores))])
             affinities.append(nM)
         return affinities
     finally:
@@ -1185,10 +1310,8 @@ def get_affinity_netMHCpan(
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHCpan"]), Warning
             )
-            if len(scores) == 1:
-                return [(peptides[i], "NA") for i in range(0, len(peptides))]
-            else:
-                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netmhcpan", version]
@@ -1252,23 +1375,17 @@ def get_affinity_netMHCpan(
             for i in range(0, len(peptides)):
                 tokens = f.readline().strip("\n").split("\t")
                 # for v3, tokens[5] is affinity, tokens[6] is rank
-                # for v4, tokens[6] is affinty, tokens[7] is rank
-                if sorted(scores) == ["affinity", "rank"]:
-                    if version == "3":
-                        nM = (peptides[i], tokens[5], tokens[6])
-                    elif version == "4":
-                        nM = (peptides[i], tokens[6], tokens[7])
-                elif sorted(scores) == ["affinity"]:
-                    if version == "3":
-                        nM = (peptides[i], tokens[5])
-                    elif version == "4":
-                        nM = (peptides[i], tokens[6])
-                elif sorted(scores) == ["rank"]:
-                    if version == "3":
-                        nM = (peptides[i], tokens[6])
-                    elif version == "4":
-                        nM = (peptides[i], tokens[7])
-                affinities.append(nM)
+                # for v4, tokens[6] is affinity, tokens[7] is rank
+                if version == "3":
+                    result_dict = {"affinity": tokens[5],
+                                   "rank": tokens[6]}
+                elif version == "4":
+                    result_dict = {"affinity": tokens[6],
+                                   "rank": tokens[7]}
+                nM = [peptides[i]]
+                for value in sorted(scores):
+                    nM.append(result_dict[value])
+                affinities.append(tuple(nM))
         return affinities
     finally:
         # Remove temporary files
@@ -1462,6 +1579,16 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                     tool_dict[tool][0],
                     "2",
                     tool_dict[tool][1],
+                    remove_files=True,
+                )
+            elif tool == "netMHCstabpan1":
+                binding_scores = get_affinity_netMHCstabpan(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "1",
+                    tool_dict[tool][1],
+                    size_list,
                     remove_files=True,
                 )
             for score in binding_scores:
