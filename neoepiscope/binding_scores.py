@@ -192,6 +192,59 @@ def get_binding_tools(binding_tool_list):
                         ]
                     )
                 )
+        elif "netmhcii" in program.lower():
+            if version == "2" and "netMHCII2" not in tool_dict:
+                program = paths.netMHCII2
+                if program is None:
+                    program = which("netMHCII2")
+                else:
+                    program = which(program)
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            ["No valid install of", "netMHCII available"]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["rank", "affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join(
+                                [method, "not compatible with netMHCII"]
+                            ),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    tool_dict["netMHCII2"] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for netMHCII version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "netMHCII2" in tool_dict:
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of netMHCII given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of netMHCII",
+                        ]
+                    )
+                )
         elif "netmhcpan" in program.lower():
             if ("netMHCpan3" not in tool_dict and version == "3") or (
                 "netMHCpan4" not in tool_dict and version == "4"
@@ -866,10 +919,125 @@ def get_affinity_pickpocket(
             for i in range(2):
                 f.readline()
             for i in range(0, len(peptides)):
-                tokens = line.strip().split()
+                tokens = f.readline().strip().split()
                 aff = 50000.0**((-1*float(tokens[4]))+1)
                 nM = (peptides[i], str(aff))
                 affinities.append(nM)
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
+def get_affinity_netMHCII(
+    peptides, allele, netmhcii, version, scores, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        netmhcii: path to netMHCII executable
+        version: version of netMHCII software
+        scores: list of scoring methods
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    import math
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "").replace(':', '')
+        if 'DRB' in allele:
+            allele = allele.replace('-', '').replace('HLA', '')
+            if '_' not in allele:
+                allele = '_'.join([allele[0:4], allele[4:]])
+        if allele not in avail_alleles["".join(["netMHCII", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for netMHCII"]), Warning
+            )
+            return [(peptides[i], "NA") for i in range(0, len(peptides))]
+        # Establish return list and sample id
+        sample_id = ".".join(
+            [peptides[0], str(len(peptides)), allele, "netMHCII", version]
+        )
+        affinities = []
+        # Write one peptide per line to a temporary file for input
+        peptide_file = tempfile.mkstemp(
+            suffix=".peptides", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(peptide_file)
+        sized_peps = [x for x in peptides if len(x) > 8]
+        if len(sized_peps) == 0:
+            if len(scores) == 1:
+                return [(peptides[i], "NA") for i in range(0, len(peptides))]
+            else:
+                return [(peptides[i], "NA", "NA") for i in range(0, len(peptides))]
+        with open(peptide_file, "w") as f:
+            for sequence in sized_peps:
+                print(sequence, file=f)
+        # Establish temporary file to hold output
+        mhc_out = tempfile.mkstemp(
+            suffix=".netMHCII.out", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(mhc_out)
+        err_file = tempfile.mkstemp(
+            suffix=".netMHCII.err", prefix="".join([sample_id, "."]), text=True
+        )[1]
+        files_to_remove.append(err_file)
+        with open(err_file, "w") as e:
+            with open(mhc_out, "w") as o:
+                # Run netMHCII
+                subprocess.check_call(
+                    [
+                        netmhcii,
+                        "-a",
+                        allele,
+                        "-inptype",
+                        "1",
+                        "-p",
+                        peptide_file
+                    ],
+                    stderr=e, stdout=o
+                )
+        score_dict = {}
+        with open(mhc_out, "r") as f:
+            first_char = "."
+            while first_char != "-":
+                line = f.readline().strip()
+                try:
+                    first_char = line[0]
+                except IndexError:
+                    first_char = "."
+            for i in range(2):
+                line = f.readline()
+            for i in range(0, len(sized_peps)):
+                tokens = f.readline().strip().split()
+                # tokens[6] is affinity; tokens[8] is rank
+                if sorted(scores) == ["affinity", "rank"]:
+                    score_dict[sized_peps[i]] = (tokens[6], tokens[8])
+                elif sorted(scores) == ["affinity"]:
+                    score_dict[sized_peps[i]] = (tokens[6], )
+                elif sorted(scores) == ["rank"]:
+                    score_dict[sized_peps[i]] = (tokens[8], )
+        for i in range(0, len(peptides)):
+            if peptides[i] in score_dict:
+                nM = (peptides[i], ) + score_dict[peptides[i]]
+            else:
+                if len(scores) == 1:
+                    nM = (peptides[i], "NA")
+                else:
+                    nM = (peptides[i], "NA", "NA")
+            affinities.append(nM)
         return affinities
     finally:
         # Remove temporary files
@@ -1285,6 +1453,15 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                     "1",
                     tool_dict[tool][1],
                     size_list,
+                    remove_files=True,
+                )
+            elif tool == "netMHCII2":
+                binding_scores = get_affinity_netMHCII(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "2",
+                    tool_dict[tool][1],
                     remove_files=True,
                 )
             for score in binding_scores:

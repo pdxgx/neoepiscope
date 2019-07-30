@@ -39,6 +39,7 @@ netMHCIIpan3 = None
 netMHCpan3 = None
 netMHCpan4 = None
 netMHC4 = None
+netMHCII2 = None
 PickPocket1 = None
 hapcut2_hairs = None
 hapcut2 = None
