@@ -607,6 +607,34 @@ class NeoepiscopeDownloader(object):
             else:
                 programs.append(None)
         if self._yes_no_query(
+                (
+                    "Do you have an install of PSSMHCpan v1 "
+                    "you would like to use for "
+                    "binding score predictions with "
+                    "neoepiscope?"
+                )
+        ):
+            pssmhcpan_dir = self._request_path(
+                                "Please enter the path to your PSSMHCpan-1.0 directory",
+                                use_which=False
+            )
+            if os.path.isfile(os.path.join(pssmhcpan_dir,  "PSSMHCpan-1.0.pl")):
+                if is_exe("perl"):
+                    programs.append(pssmhcpan_dir)
+                else:
+                    self._print_to_screen_and_log(
+                        "You must have perl in your $PATH to run PSSMHCpan v1 with neoepiscope"
+                    )
+                    self._bail()
+            else:
+                self._print_to_screen_and_log(
+                        "This directory does not PSSMHCpan-1.0.pl script - "
+                        "please check that you have entered the correct path."
+                    )
+                self._bail()
+        else:
+            programs.append(None)
+        if self._yes_no_query(
             "Do you have an install of HapCUT2 "
             "you would like to integrate with neoepiscope?"
         ):
@@ -626,8 +654,7 @@ class NeoepiscopeDownloader(object):
                 )
                 self._bail()
         else:
-            for i in range(0, 2):
-                programs.append(None)
+            programs.extend([None, None])
         # Write paths to exe_paths
         with open(os.path.join(temp_install_dir, "paths.py"), "w") as paths_stream:
             print(
@@ -650,6 +677,7 @@ netMHC4 = {netMHC4}
 netMHCII2 = {netMHCII2}
 PickPocket1 = {PickPocket1}
 netMHCstabpan1 = {netMHCstabpan1}
+PSSMHCpan1 = {PSSMHCpan1}
 hapcut2_hairs = {hapcut2_hairs}
 hapcut2 = {hapcut2}
 """
@@ -679,19 +707,22 @@ hapcut2 = {hapcut2}
                         "None" if programs[3] is None else self._quote(programs[3])
                     ),
                     netMHCII2=(
-                        "None" if programs[3] is None else self._quote(programs[4])
+                        "None" if programs[4] is None else self._quote(programs[4])
                     ),
                     PickPocket1=(
-                        "None" if programs[3] is None else self._quote(programs[5])
+                        "None" if programs[5] is None else self._quote(programs[5])
                     ),
                     netMHCstabpan1=(
-                        "None" if programs[3] is None else self._quote(programs[6])
+                        "None" if programs[6] is None else self._quote(programs[6])
+                    ),
+                    PSSMHCpan1=(
+                        "None" if programs[7] is None else self._quote(programs[7])
                     ),
                     hapcut2_hairs=(
-                        "None" if programs[4] is None else self._quote(programs[7])
+                        "None" if programs[8] is None else self._quote(programs[8])
                     ),
                     hapcut2=(
-                        "None" if programs[5] is None else self._quote(programs[8])
+                        "None" if programs[9] is None else self._quote(programs[9])
                     ),
                 ),
                 file=paths_stream,

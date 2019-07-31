@@ -519,7 +519,7 @@ def get_binding_tools(binding_tool_list):
                 for method in scoring:
                     if method not in acceptable_scoring:
                         warnings.warn(
-                            " ".join([method, "not compatible with netMHC"]),
+                            " ".join([method, "not compatible with PickPocket"]),
                             Warning,
                         )
                         scoring.remove(method)
@@ -550,6 +550,72 @@ def get_binding_tools(binding_tool_list):
                             "neoepiscope does not support version",
                             version,
                             "of PickPocket",
+                        ]
+                    )
+                )
+        elif "pssmhcpan" in program.lower():
+            if "pssmhcpan" not in tool_dict and version == "1":
+                program = os.path.join(paths.PSSMHCpan1, "PSSMHCpan-1.0.pl")
+                if program is None:
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "No valid install of",
+                                "PSSMHCpan version",
+                                version,
+                                "available",
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                elif not os.path.isfile(program):
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "Cannot locate perl script PSSMHCpan-1.0.pl",
+                                "for PSSMHCpan version",
+                                version,
+                            ]
+                        ),
+                        Warning,
+                    )
+                    continue
+                acceptable_scoring = ["affinity"]
+                for method in scoring:
+                    if method not in acceptable_scoring:
+                        warnings.warn(
+                            " ".join([method, "not compatible with PSSMHCpan"]),
+                            Warning,
+                        )
+                        scoring.remove(method)
+                if len(scoring) > 0:
+                    if version == "1":
+                        name = "PSSMHCpan1"
+                    tool_dict[name] = [program, sorted(scoring)]
+                else:
+                    warnings.warn(
+                            " ".join(
+                                [
+                                    "No compatible scoring methods given",
+                                      "for PSSMHCpan version", version,
+                                      "- will not use this tool for",
+                                      "binding predictions"
+                                ]
+                            ),
+                            Warning,
+                        )
+            elif "PSSMHCpan1" in tool_dict and version == "1":
+                raise RuntimeError(
+                    "Conflicting or repetitive installs of PSSMHCpan given"
+                )
+            else:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "neoepiscope does not support version",
+                            version,
+                            "of PSSMHCpan",
                         ]
                     )
                 )
@@ -1492,6 +1558,123 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
                 os.remove(file_to_remove)
 
 
+def get_affinity_PSSMHCpan(
+    peptides, allele, pssmhcpan, version, scores, size_list, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        pssmhcpan: path to PSSMHCpan executable
+        version: version of PSSMHCpan software
+        scores: list of scoring methods
+        size_list: list of [min size, ..., max size] of peptide sizes
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    import math
+    pssm_file = os.path.join(paths.PSSMHCpan1, "database", "PSSM", "pssm_file.list")
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "").replace(":", "")
+        if allele not in avail_alleles["".join(["PSSMHCpan", str(version)])]:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for PSSMHCpan"]), Warning
+            )
+            return [(peptides[i], "NA") for i in range(0, len(peptides))]
+        # Get valid sizes
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "PSSMHCpan1Sizes.pickle"),
+            "rb",
+        ) as size_stream:
+            valid_sizes = pickle.load(size_stream)
+        affinities = []
+        score_dict = {}
+        na_count = 0
+        for i in range(size_list[0], size_list[-1]+1):
+            sized_peps = [x for x in peptides if len(x) == i]
+            # Skip not a valid size for the allele
+            if i not in valid_sizes[allele]:
+                na_count += len(sized_peps)
+                continue
+            # Establish return list and sample id
+            sample_id = ".".join(
+                [peptides[0], str(len(peptides)), allele, "PSSMHCpan", version, str(i)]
+            )
+            
+            # Write one peptide per line to a temporary file for input
+            peptide_file = tempfile.mkstemp(
+                suffix=".fasta", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(peptide_file)
+            with open(peptide_file, "w") as f:
+                for sequence in sized_peps:
+                    print(''.join(['>', sequence]), file=f)
+                    print(sequence, file=f)
+            # Establish temporary file to hold output
+            mhc_out = tempfile.mkstemp(
+                suffix=".PSSMHCpan.out", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(mhc_out)
+            err_file = tempfile.mkstemp(
+                suffix=".PSSMHCpan.err", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(err_file)
+            # Change to appropriate directory for command
+            wd = os.getcwd()
+            os.chdir(paths.PSSMHCpan1)
+            with open(err_file, "w") as e:
+                with open(mhc_out, "w") as o:
+                    # Run PSSMHCpan
+                    subprocess.check_call(
+                        [
+                            'perl',
+                            pssmhcpan,
+                            peptide_file,
+                            str(i),
+                            allele,
+                            pssm_file
+                        ],
+                        stderr=e, stdout=o
+                    )
+            os.chdir(wd)
+            with open(mhc_out, "r") as f:
+                f.readline()
+                for i in range(0, len(sized_peps)):
+                    tokens = f.readline().strip().split()
+                    score_dict[sized_peps[i]] = (sized_peps[i], tokens[4])
+        warnings.warn(
+                " ".join(
+                    [
+                        str(na_count),
+                        "peptides not compatible with allele", allele,
+                        "for PSSMHCpan will not receive score",
+                    ]
+                ),
+                Warning,
+            )
+        for i in range(len(peptides)):
+            if peptides[i] in score_dict:
+                affinities.append(score_dict[peptides[i]])
+            else:
+                affinities.append((peptides[i], "NA"))
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
 def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
     """ Adds binding scores from desired programs to neoepitope metadata
 
@@ -1583,6 +1766,16 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                 )
             elif tool == "netMHCstabpan1":
                 binding_scores = get_affinity_netMHCstabpan(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "1",
+                    tool_dict[tool][1],
+                    size_list,
+                    remove_files=True,
+                )
+            elif tool == "PSSMHCpan1":
+                binding_scores = get_affinity_PSSMHCpan(
                     list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][0],
