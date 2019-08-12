@@ -555,8 +555,8 @@ def get_binding_tools(binding_tool_list):
                 )
         elif "pssmhcpan" in program.lower():
             if "pssmhcpan" not in tool_dict and version == "1":
-                program = os.path.join(paths.PSSMHCpan1, "PSSMHCpan-1.0.pl")
-                if program is None:
+                program_dir = paths.PSSMHCpan1
+                if program_dir is None:
                     warnings.warn(
                         " ".join(
                             [
@@ -569,7 +569,8 @@ def get_binding_tools(binding_tool_list):
                         Warning,
                     )
                     continue
-                elif not os.path.isfile(program):
+                program = os.path.join(program_dir, "PSSMHCpan-1.0.pl")
+                if not os.path.isfile(program):
                     warnings.warn(
                         " ".join(
                             [
@@ -1147,7 +1148,6 @@ def get_affinity_netMHCII(
         Return value: affinities (a list of binding affinities
                         as strings)
     """
-    import math
     files_to_remove = []
     try:
         # Check that allele is valid for method
@@ -1473,7 +1473,6 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
                         as strings)
     """
     from mhcnuggets.src.predict import predict
-
     files_to_remove = []
     try:
         # Check that allele is valid for method
@@ -1575,7 +1574,6 @@ def get_affinity_PSSMHCpan(
         Return value: affinities (a list of binding affinities
                         as strings)
     """
-    import math
     pssm_file = os.path.join(paths.PSSMHCpan1, "database", "PSSM", "pssm_file.list")
     files_to_remove = []
     try:
@@ -1658,6 +1656,117 @@ def get_affinity_PSSMHCpan(
                         str(na_count),
                         "peptides not compatible with allele", allele,
                         "for PSSMHCpan will not receive score",
+                    ]
+                ),
+                Warning,
+            )
+        for i in range(len(peptides)):
+            if peptides[i] in score_dict:
+                affinities.append(score_dict[peptides[i]])
+            else:
+                affinities.append((peptides[i], "NA"))
+        return affinities
+    finally:
+        # Remove temporary files
+        if remove_files:
+            for file_to_remove in files_to_remove:
+                os.remove(file_to_remove)
+
+
+def get_affinity_IEDBtools(
+    peptides, allele, iedbtools, method, version, scores, size_list, remove_files=True
+):
+    """ Obtains binding affinities from list of peptides
+
+        peptides: peptides of interest (list of strings)
+        allele: allele to use for binding affinity
+                    (string, format HLA-A02:01)
+        iedbtools: path to IEDBtools executable
+        method: IEDBtools method to use
+        version: version of IEDBtools software
+        scores: list of scoring methods
+        size_list: list of [min size, ..., max size] of peptide sizes
+        remove_files: option to remove intermediate files
+
+        Return value: affinities (a list of binding affinities
+                        as strings)
+    """
+    files_to_remove = []
+    try:
+        # Check that allele is valid for method
+        with open(
+            os.path.join(neoepiscope_dir, "neoepiscope", "availableAlleles.pickle"),
+            "rb",
+        ) as allele_stream:
+            avail_alleles = pickle.load(allele_stream)
+        allele = allele.replace("*", "").replace(":", "")
+        if allele not in avail_alleles["".join(["IEDBtools", str(version), '-', method])]:
+            warnings.warn(
+                "".join([allele, " is not a valid allele for IEDBtools-", method]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        affinities = []
+        score_dict = {}
+        na_count = 0
+        for i in range(size_list[0], size_list[-1]+1):
+            sized_peps = [x for x in peptides if len(x) == i]
+            # Skip not a valid size for the allele
+            if i not in valid_sizes[allele]:
+                na_count += len(sized_peps)
+                continue
+            # Establish return list and sample id
+            sample_id = ".".join(
+                [peptides[0], str(len(peptides)), allele, "IEDBtools", version, method, str(i)]
+            )
+            
+            # Write one peptide per line to a temporary file for input
+            peptide_file = tempfile.mkstemp(
+                suffix=".fasta", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(peptide_file)
+            with open(peptide_file, "w") as f:
+                for sequence in sized_peps:
+                    print(''.join(['>', sequence]), file=f)
+                    print(sequence, file=f)
+            # Establish temporary file to hold output
+            mhc_out = tempfile.mkstemp(
+                suffix=".IEDBtools.out", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(mhc_out)
+            err_file = tempfile.mkstemp(
+                suffix=".IEDBtools.err", prefix="".join([sample_id, "."]), text=True
+            )[1]
+            files_to_remove.append(err_file)
+            # Change to appropriate directory for command
+            wd = os.getcwd()
+            os.chdir(os.path.realpath(iedbtools))
+            with open(err_file, "w") as e:
+                with open(mhc_out, "w") as o:
+                    # Run IEDBtools
+                    subprocess.check_call(
+                        [
+                            'python',
+                            iedbtools,
+                            method,
+                            allele,
+                            str(i),
+                            peptide_file
+                        ],
+                        stderr=e, stdout=o
+                    )
+            os.chdir(wd)
+            with open(mhc_out, "r") as f:
+                f.readline()
+                for i in range(0, len(sized_peps)):
+                    tokens = f.readline().strip().split()
+                    score_dict[sized_peps[i]] = (sized_peps[i], tokens[4])
+        warnings.warn(
+                " ".join(
+                    [
+                        str(na_count),
+                        "peptides not compatible with allele", allele,
+                        "for IEDBtools-", method, " will not receive score",
                     ]
                 ),
                 Warning,
@@ -1780,6 +1889,30 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                     allele,
                     tool_dict[tool][0],
                     "1",
+                    tool_dict[tool][1],
+                    size_list,
+                    remove_files=True,
+                )
+            elif "iedbtools-mhcii" in tool.lower():
+                method = tool.split('-')[2]
+                binding_scores = get_affinity_IEDBtools(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    method,
+                    "2",
+                    tool_dict[tool][1],
+                    size_list,
+                    remove_files=True,
+                )
+            elif "iedbtools-mhci" in tool.lower():
+                method = tool.split('-')[2]
+                binding_scores = get_affinity_IEDBtools(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    method,
+                    "2",
                     tool_dict[tool][1],
                     size_list,
                     remove_files=True,

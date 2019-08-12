@@ -363,7 +363,7 @@ def main():
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
-        cds_dict = gtf_to_cds(args.gtf, args.dicts)
+        cds_dict, tx_data_dict = gtf_to_cds(args.gtf, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
@@ -396,6 +396,10 @@ def main():
                     os.path.join(paths.gencode_v29, "transcript_to_CDS.pickle"), "rb"
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
+                with open(
+                    os.path.join(paths.gencode_v29, "transcript_to_gene_info.pickle"), "rb"
+                ) as info_stream:
+                    info_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
             elif (
                 args.build == "hg19"
@@ -411,6 +415,10 @@ def main():
                     os.path.join(paths.gencode_v19, "transcript_to_CDS.pickle"), "rb"
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
+                with open(
+                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"), "rb"
+                ) as info_stream:
+                    info_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
             else:
                 raise RuntimeError(
@@ -593,7 +601,7 @@ def main():
             full_neoepitopes = gather_binding_scores(
                 neoepitopes, tool_dict, hla_alleles, size_list
             )
-            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict)
+            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, info_dict)
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
                 with open(fasta_file, "w") as f:

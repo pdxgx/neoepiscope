@@ -2507,10 +2507,11 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         Writes cds_dict as a pickled dictionary
         gtf_file: input gtf file to process
         dictdir: path to directory to store pickled dicts
-        Return value: dictionary
+        Return value: dictionaries
     """
     cds_dict = collections.defaultdict(list)
     cds_lines = collections.defaultdict(list)
+    tx_data_dict = collections.defaultdict(list)
     # Parse GTF to obtain CDS/stop codon info
     with xopen(None, gtf_file) as f:
         for line in f:
@@ -2548,6 +2549,27 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                         )
                 elif tokens[2] == "CDS":
                     cds_lines[transcript_id].append(tokens)
+                elif tokens[2] == "transcript":
+                    transcript_id = re.sub(
+                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    transcript_type = re.sub(
+                        r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    gene_id = re.sub(
+                        r".*gene_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    gene_name = re.sub(
+                        r".*gene_name \"([A-Za-z0-9._-]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    if transcript_type in [
+                        "protein_coding",
+                        "nonsense_mediated_decay",
+                        "polymorphic_pseudogene",
+                        "IG_V_gene",
+                        "TR_V_gene",
+                    ]:
+                        tx_data_dict[transcript_id] = [transcript_type, gene_id, gene_name]
     # Sort cds_dict coordinates (left -> right) for each transcript
     delete_txs = []
     for transcript_id, tx_data in cds_dict.items():
@@ -2609,7 +2631,10 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         pickle_dict = os.path.join(dictdir, "transcript_to_CDS.pickle")
         with open(pickle_dict, "wb") as f:
             pickle.dump(cds_dict, f)
-    return cds_dict
+        pickle_dict2 = os.path.join(dictdir, "transcript_to_gene_info.pickle")
+        with open(pickle_dict2, "wb") as f:
+            pickle.dump(tx_data_dict, f)
+    return cds_dict, tx_data_dict
 
 
 def cds_to_tree(cds_dict, dictdir, pickle_it=True):

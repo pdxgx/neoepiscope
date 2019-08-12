@@ -529,7 +529,7 @@ class NeoepiscopeDownloader(object):
                 )
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing Gencode v29...")
-            cds_dict = gtf_to_cds(gencode_v29_gtf, gencode_v29_temp)
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_v29_gtf, gencode_v29_temp)
             cds_to_tree(cds_dict, gencode_v29_temp)
         else:
             gencode_v29 = None
@@ -558,7 +558,7 @@ class NeoepiscopeDownloader(object):
                 )
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing Gencode v19...")
-            cds_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
             cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None

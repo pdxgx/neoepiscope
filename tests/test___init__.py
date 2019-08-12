@@ -56,9 +56,9 @@ class TestGTFprocessing(unittest.TestCase):
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.gtf = os.path.join(self.base_dir, "Ychrom.gtf")
         self.gtf2 = os.path.join(self.base_dir, "Chr11.gtf")
-        self.Ycds = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+        self.Ycds, self.Ytx = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
-        self.cds11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
+        self.cds11, self.tx11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
         self.tree11 = cds_to_tree(self.cds11, "NA", pickle_it=False)
 
     def test_transcript_to_cds(self):
@@ -176,7 +176,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
         self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         self.Chr11gtf = os.path.join(self.base_dir, "Chr11.gtf")
-        self.Chr11cds = gtf_to_cds(self.Chr11gtf, "NA", pickle_it=False)
+        self.Chr11cds, self.Chr11tx = gtf_to_cds(self.Chr11gtf, "NA", pickle_it=False)
         for transcript in self.Chr11cds:
             for cds_block in self.Chr11cds[transcript]:
                 cds_block[0] = cds_block[0].replace("chr", "")
@@ -185,7 +185,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
         self.rbp_ref_prefix = os.path.join(self.base_dir, "chr14_index")
         self.rbp_reference_index = bowtie_index.BowtieIndexReference(self.rbp_ref_prefix)
         self.Chr14gtf = os.path.join(self.base_dir, "Chr14.gtf")
-        self.Chr14cds = gtf_to_cds(self.Chr14gtf, "NA", pickle_it=False)
+        self.Chr14cds, self.Chr14tx = gtf_to_cds(self.Chr14gtf, "NA", pickle_it=False)
         for transcript in self.Chr14cds:
             for cds_block in self.Chr14cds[transcript]:
                 cds_block[0] = cds_block[0].replace("chr", "")
@@ -582,6 +582,8 @@ class TestOutput(unittest.TestCase):
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.out_file = os.path.join(self.base_dir, "neoepiscope.out")
         self.correct_out = os.path.join(self.base_dir, "expected.neoepiscope.out")
+        self.gtf = os.path.join(self.base_dir, "Chr11.gtf")
+        self.cds, self.tx = gtf_to_cds(self.gtf, "NA", pickle_it=False)
         self.tools = {
             "netMHCpan4": ["netMHCpan", ["rank", "affinity"]],
             "netMHCIIpan3": ["netMHCIIpan", ["rank"]],
@@ -607,15 +609,15 @@ class TestOutput(unittest.TestCase):
                     4,
                 ),
                 (
-                    "4",
-                    300000,
+                    "11",
+                    167789,
                     "A",
                     "T",
                     "V",
                     0.102,
                     "CGCSQCNN",
                     "NA",
-                    "ENST00000398554.1_1",
+                    "ENST00000410108.5_1",
                     0.5,
                     100,
                     0.5,
@@ -634,7 +636,7 @@ class TestOutput(unittest.TestCase):
                     0.157,
                     "PVCCQCKI",
                     "NA",
-                    " ENST00000398531.2_2",
+                    "ENST00000398531.2_2",
                     10,
                     50.57,
                     1.2,
@@ -651,7 +653,7 @@ class TestOutput(unittest.TestCase):
                     0.203,
                     "PVCCQCKI",
                     "NA",
-                    "ENST00000398200.3_1",
+                    "ENST00000325113.8_1",
                     10,
                     50.57,
                     1.2,
@@ -666,7 +668,7 @@ class TestOutput(unittest.TestCase):
         """Tests that output file is written correctly"""
 
         from sys import version_info
-        write_results(self.out_file, self.HLA_alleles, self.neoepitopes, self.tools)
+        write_results(self.out_file, self.HLA_alleles, self.neoepitopes, self.tools, self.tx)
         if version_info[0] < 3:
             from itertools import izip, ifilter
             with open(self.out_file) as fh1, open(self.correct_out) as fh2:
