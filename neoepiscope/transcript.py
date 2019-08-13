@@ -2437,6 +2437,12 @@ class Transcript(object):
                         coords[4],
                     ]
                 )
+            genome_coords = [(x[0], x[1]) for x in coordinates] + [(y[0], y[1]) for y in frame_shifts]
+            print(coordinates)
+            print(frame_shifts)
+            print(epitope_coords)
+            print(genome_coords)
+            print('*****')
             for coords in epitope_coords:
                 peptides = kmerize_peptide(
                     protein[coords[0] : coords[1]], min_size=size, max_size=size
