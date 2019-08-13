@@ -1710,6 +1710,7 @@ class Transcript(object):
         ATG_limit = 2
         coding_start, ref_start, coding_stop, ref_stop = -1, -1, -1, -1
         counter, ref_counter = 0, 0  # hold edited transcript level coordinates
+        linker_dict = {}
         seq_previous = []
         new_ATG_upstream = False
         transcript_warnings = []
@@ -1920,6 +1921,8 @@ class Transcript(object):
                         )
                 sequence += seq[0]
                 ref_sequence += seq[0]
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
@@ -2044,6 +2047,8 @@ class Transcript(object):
                         TAA_TGA_TAG = seq
                 sequence += seq[0]
                 counter += len(seq[0])
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3] + (i*strand)
                 if (seq[1] == "G" and include_germline == 2) or (
                     seq[1] == "S" and include_somatic == 2
                 ):
@@ -2414,7 +2419,7 @@ class Transcript(object):
                                 len(protein_ref),
                                 ((coords[5] - coding_start) // 3) + size,
                             ),
-                            coords[6],
+                            coords[6]
                         ]
                     )
                 else:
@@ -2437,7 +2442,6 @@ class Transcript(object):
                         coords[4],
                     ]
                 )
-            genome_coords = [(x[0], x[1]) for x in coordinates] + [(y[0], y[1]) for y in frame_shifts]
             for coords in epitope_coords:
                 peptides = kmerize_peptide(
                     protein[coords[0] : coords[1]], min_size=size, max_size=size
@@ -2449,7 +2453,7 @@ class Transcript(object):
                     if len(paired_peptides) == len(peptides):
                         peptide_pairs = zip(peptides, paired_peptides)
                     else:
-                        peptide_pairs = zip(peptides, ['NA' for i in range(0, len(peptides))])
+                        peptide_pairs = zip(peptides, ['NA' for j in range(0, len(peptides))])
                     for pair in peptide_pairs:
                         if pair[0] not in peptides_ref:
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:

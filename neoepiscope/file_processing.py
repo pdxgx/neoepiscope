@@ -52,6 +52,11 @@ from intervaltree import Interval, IntervalTree
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# From https://stackoverflow.com/questions/30212413/backport-python-3-4s-regular-expression-fullmatch-to-python-2
+def fullmatch(regex, string, flags=0):
+    """Emulate python-3.4 re.fullmatch()."""
+    return re.match("(?:" + regex + r")\Z", string, flags=flags)
+
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
 
@@ -642,7 +647,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
             else:
                 possible_ids = set()
                 for regex in ambiguous_epitope_to_iedb:
-                    if re.fullmatch(regex, epitope) is not None:
+                    if fullmatch(regex, epitope) is not None:
                         possible_ids.update(ambiguous_epitope_to_iedb[regex])
                 if len(possible_ids) > 0:
                     iedb_id = ",".join(list(possible_ids))
