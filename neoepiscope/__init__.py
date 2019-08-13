@@ -479,7 +479,6 @@ def main():
                 )
         # Check affinity predictor(s)
         if args.no_affinity:
-            print('wassup')
             args.affinity_predictor = None
             tool_dict = {}
         if args.affinity_predictor is not None:
