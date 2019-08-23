@@ -1191,6 +1191,7 @@ class Transcript(object):
                         new_edits[-1] = new_edits[intervals[i][0]]
                         del new_edits[intervals[i][0]]"""
                 i += 2
+            # Grab reference sequence to pull from
             seqs = []
             for i in range(0, len(intervals), 2):
                 seqs.append(
@@ -1208,10 +1209,12 @@ class Transcript(object):
             pos_group, final_seq = [], []
             for pos in sorted(new_edits.keys()) + [self.intervals[-1] + 1]:
                 if pos > intervals[i][0]:
+                    # Position is outside of this exon
                     last_index, last_pos = 0, intervals[i - 1][0] + 1
                     for pos_to_add in pos_group:
                         fill = pos_to_add - last_pos
                         if intervals[i - 1][1] != "R":
+                            # Exonic section bounded by deletion on left - add to seq
                             if isinstance(intervals[i - 1][2], list):
                                 genomic_position = min(
                                     [x[1] for x in intervals[i - 1][2]]
@@ -1226,6 +1229,7 @@ class Transcript(object):
                                 genomic_position,
                                 merge=False,
                             )
+                        # Add reference sequence
                         if self.rev_strand:
                             self._seq_append(
                                 final_seq,
@@ -1244,31 +1248,35 @@ class Transcript(object):
                                 seqs[(i - 1) // 2][1][0] + last_index,
                                 merge=False,
                             )
-                        # If no edits, snv is reference and no insertion
-                        try:
-                            snv = (
-                                seqs[(i - 1) // 2][0][last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + fill,
-                            )
-                        except IndexError:
-                            """Should happen only for insertions at beginning
-                            of sequence."""
-                            assert (i - 1) // 2 == 0 and not seqs[0][0]
-                            snv = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
-                        insertion = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
+                        # Add edits
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == "V":
+                                # Edit is a substitution - set snv w/ variant info and insertion w/ placeholder
                                 snv = (edit[0], edit[2], edit[3], edit[3][1])
+                                insertion = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
                             else:
+                                # Edit is an insertion
                                 assert edit[1] == "I"
+                                ins_index = bisect.bisect_left([x[0] for x in intervals], edit[3][1] - 1)
+                                if (ins_index % 2) or (intervals[ins_index][0] == (edit[3][1] - 1)):
+                                    # More reference sequence is needed to fill in - use snv for this
+                                    snv = (
+                                            self.bowtie_reference_index.get_stretch(
+                                                                        self.chrom, 
+                                                                        edit[3][1] - 1, 1
+                                            ), "R", tuple(), edit[3][1]
+
+                                    )
+                                else:
+                                    # No reference sequence needed to fill in - use placeholder snv
+                                    snv = ("", "R", tuple(), edit[3][1])
                                 insertion = (edit[0], edit[2], edit[3], edit[3][1])
                         self._seq_append(final_seq, *snv, merge=False)
                         self._seq_append(final_seq, *insertion, merge=False)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i - 1][1] != "R":
+                        # Exonic section bounded by deletion on left - add to seq
                         if isinstance(intervals[i - 1][2], list):
                             genomic_position = min([x[1] for x in intervals[i - 1][2]])
                         else:
@@ -1282,6 +1290,7 @@ class Transcript(object):
                                 genomic_position,
                                 merge=False,
                             )
+                    # Add reference sequence if necessary
                     ref_to_add = seqs[(i - 1) // 2][0][last_index:]
                     if ref_to_add:
                         if self.rev_strand:
@@ -1303,6 +1312,7 @@ class Transcript(object):
                                 merge=False,
                             )
                     if intervals[i][1] != "R":
+                        # Exonic section bounded by deletion on right - add to seq
                         if isinstance(intervals[i][2], list):
                             genomic_position = min([x[1] for x in intervals[i][2]])
                         else:
@@ -1315,10 +1325,13 @@ class Transcript(object):
                             genomic_position,
                             merge=False,
                         )
+                    # Move to next exonic section
                     i += 2
                     try:
                         while pos > intervals[i][0]:
+                            # Position is still outside of this exon
                             if intervals[i - 1][1] != "R":
+                                # Exonic section bounded by deletion on left - add to seq
                                 if isinstance(intervals[i - 1][2], list):
                                     genomic_position = min(
                                         [x[1] for x in intervals[i - 1][2]]
@@ -1333,6 +1346,7 @@ class Transcript(object):
                                     genomic_position,
                                     merge=False,
                                 )
+                            # Add reference sequence
                             if self.rev_strand:
                                 self._seq_append(
                                     final_seq,
@@ -1352,6 +1366,7 @@ class Transcript(object):
                                     merge=False,
                                 )
                             if intervals[i][1] != "R":
+                                # Exonic section bounded by deletion on right - add to seq
                                 if isinstance(intervals[i][2], list):
                                     genomic_position = min(
                                         [x[1] for x in intervals[i][2]]
@@ -1366,6 +1381,7 @@ class Transcript(object):
                                     genomic_position,
                                     merge=False,
                                 )
+                            # Move to next exonic section
                             i += 2
                     except IndexError:
                         if i > len(intervals) - 1:
@@ -1375,6 +1391,7 @@ class Transcript(object):
                 else:
                     pos_group.append(pos)
             if self.rev_strand:
+                # Reverse complement sequence
                 final_seq = [
                     (
                         seq[::-1].translate(revcomp_translation_table),
