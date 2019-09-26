@@ -37,6 +37,7 @@ import warnings
 import tempfile
 import pickle
 import subprocess
+from sys import version_info
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -60,13 +61,24 @@ def get_binding_tools(binding_tool_list):
         version = tool[1]
         scoring = tool[2].split(",")
         if "mhcflurry" in program.lower():
+            if version_info[0] == 3 and version_info[1] == 7:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "MHCflurry uses TensorFlow, which currently has",
+                            "limited compatibility with python 3.7 - please",
+                            "use an earlier version of python or choose a",
+                            "different binding prediction tool."
+                        ]
+                    )
+                )
             if version == "1" and "mhcflurry1" not in tool_dict:
                 program = "mhcflurry-predict"
                 acceptable_scoring = ["rank", "affinity", "high", "low"]
                 for method in scoring:
                     if method not in acceptable_scoring:
                         warnings.warn(
-                            " ".join([method, "not compatible with mhcflurry"]),
+                            " ".join([method, "not compatible with MHCflurry"]),
                             Warning,
                         )
                         scoring.remove(method)
@@ -77,7 +89,7 @@ def get_binding_tools(binding_tool_list):
                             " ".join(
                                 [
                                     "No compatible scoring methods given",
-                                    "for mhcflurry version", version,
+                                    "for MHCflurry version", version,
                                     "- will not use this tool for",
                                     "binding predictions"
                                 ]
@@ -86,7 +98,7 @@ def get_binding_tools(binding_tool_list):
                         )
             elif "mhcflurry1" in tool_dict:
                 raise RuntimeError(
-                    "Conflicting or repetitive installs of mhcflurry given"
+                    "Conflicting or repetitive installs of MHCflurry given"
                 )
             else:
                 raise NotImplementedError(
@@ -94,11 +106,22 @@ def get_binding_tools(binding_tool_list):
                         [
                             "neoepiscope does not support version",
                             version,
-                            "of mhcflurry",
+                            "of MHCflurry",
                         ]
                     )
                 )
         elif "mhcnuggets" in program.lower():
+            if version_info[0] == 3 and version_info[1] == 7:
+                raise NotImplementedError(
+                    " ".join(
+                        [
+                            "MHCnuggets uses TensorFlow, which currently has",
+                            "limited compatibility with python 3.7 - please",
+                            "use an earlier version of python or choose a",
+                            "different binding prediction tool."
+                        ]
+                    )
+                )
             if version == "2" and "mhcnuggets2" not in tool_dict:
                 program = "NA"
                 acceptable_scoring = ["affinity"]
@@ -106,7 +129,7 @@ def get_binding_tools(binding_tool_list):
                     if method not in acceptable_scoring:
                         warnings.warn(
                             " ".join(
-                                [method, "not compatible with mhcnuggets"]
+                                [method, "not compatible with MHCnuggets"]
                             ),
                             Warning,
                         )
@@ -118,7 +141,7 @@ def get_binding_tools(binding_tool_list):
                             " ".join(
                                 [
                                     "No compatible scoring methods given",
-                                    "for mhcnuggets version", version,
+                                    "for MHCnuggets version", version,
                                     "- will not use this tool for",
                                     "binding predictions"
                                 ]
@@ -127,7 +150,7 @@ def get_binding_tools(binding_tool_list):
                         )
             elif "mhcnuggets2" in tool_dict:
                 raise RuntimeError(
-                    "Conflicting or repetitive installs of mhcnuggets given"
+                    "Conflicting or repetitive installs of MHCnuggets given"
                 )
             else:
                 raise NotImplementedError(
@@ -135,7 +158,7 @@ def get_binding_tools(binding_tool_list):
                         [
                             "neoepiscope does not support version",
                             version,
-                            "of mhcnuggets",
+                            "of MHCnuggets",
                         ]
                     )
                 )
