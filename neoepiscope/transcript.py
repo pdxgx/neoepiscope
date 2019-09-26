@@ -1685,7 +1685,6 @@ class Transcript(object):
                 values equivalent to a list of causal variants [VALUES].
         """
         # if no edits to process, then skip all next steps and return {}
-        print(self.transcript_id)
         if include_somatic == include_germline and include_somatic != 1:
             if not return_protein:
                 return {}
@@ -1921,7 +1920,6 @@ class Transcript(object):
             seq_previous.append(seq)
             # find transcript-relative coordinates of start codons
             # flatten strings from annotated and reference seqs
-            print(seq)
             if seq[1] == "R":
                 if ref_start < 0 and seq[3] * strand + len(seq[0]) > start * strand:
                     coding_start = (
@@ -1941,9 +1939,6 @@ class Transcript(object):
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 for i in range(len(seq[0])):
-                    print(i)
-                    print(counter+i+1)
-                    print(seq[3] + (i*strand))
                     linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
@@ -1980,9 +1975,6 @@ class Transcript(object):
                         TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
                 sequence += seq[2][0][3]
                 for i in range(len(seq[0])):
-                    print(i)
-                    print(counter+i+1)
-                    print(seq[3] + (i*strand))
                     linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[2][0][3])
                 if self.rev_strand:
@@ -2049,9 +2041,6 @@ class Transcript(object):
                 '''
                 sequence += seq[0]
                 for i in range(len(seq[0])):
-                    print(i)
-                    print(counter+i+1)
-                    print(seq[3] + 1)
                     linker_dict[counter+i+1] = seq[3]
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
@@ -2079,9 +2068,6 @@ class Transcript(object):
                         TAA_TGA_TAG = seq
                 sequence += seq[0]
                 for i in range(len(seq[0])):
-                    print(i)
-                    print(counter+i+1)
-                    print(seq[3] + (i*strand))
                     linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
@@ -2399,9 +2385,6 @@ class Transcript(object):
                     break
         protein = seq_to_peptide(sequence[start_codon[0] :], reverse_strand=False)
         protein_ref = seq_to_peptide(ref_sequence[ref_atg[1] :], reverse_strand=False)
-        print(protein)
-        print(protein_ref)
-        print(linker_dict)
         if '?' in protein or '?' in protein_ref:
             unknown_aa = True
         if TAA_TGA_TAG == []:

@@ -149,7 +149,6 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         else:
             tokens = lines.strip().split('\t')
             if len(tokens) == 10:
-                print(0)
                 tumor_first = True
                 warnings.warn(''.join(['Only 1 sample in somatic VCF; '
                                        'treating ', tokens[9], ' column as ',
