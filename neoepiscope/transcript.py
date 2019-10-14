@@ -3234,7 +3234,7 @@ def get_peptides_from_transcripts(
                     mutation_class = "S"
                 # Determine VAF if available
                 vaf = None
-                if vaf_pos is not None:
+                if vaf_pos is not None and mutation_class == "S":
                     vaf_entry = mutation[6].strip("*").split(":")[vaf_pos[0]]
                     if "," in vaf_entry:
                         vaf_entry = [x for x in vaf_entry.split(",") if x != "."]

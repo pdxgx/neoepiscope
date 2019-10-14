@@ -556,6 +556,7 @@ def get_vaf_pos(VCF):
     """
     vaf_check = False
     vaf_pos = None
+    field = None
     with open(VCF) as f:
         for line in f:
             # Check header lines to see if FREQ exits in FORMAT fields
