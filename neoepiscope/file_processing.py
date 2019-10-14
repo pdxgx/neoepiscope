@@ -578,6 +578,8 @@ def get_vaf_pos(VCF):
                         if format_field[i] == field:
                             vaf_pos = i
                             break
+                else:
+                    return(None)
     return (vaf_pos, field)
 
 
