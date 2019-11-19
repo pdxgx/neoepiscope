@@ -1191,6 +1191,7 @@ class Transcript(object):
                         new_edits[-1] = new_edits[intervals[i][0]]
                         del new_edits[intervals[i][0]]"""
                 i += 2
+            # Grab reference sequence to pull from
             seqs = []
             for i in range(0, len(intervals), 2):
                 seqs.append(
@@ -1208,10 +1209,12 @@ class Transcript(object):
             pos_group, final_seq = [], []
             for pos in sorted(new_edits.keys()) + [self.intervals[-1] + 1]:
                 if pos > intervals[i][0]:
+                    # Position is outside of this exon
                     last_index, last_pos = 0, intervals[i - 1][0] + 1
                     for pos_to_add in pos_group:
                         fill = pos_to_add - last_pos
                         if intervals[i - 1][1] != "R":
+                            # Exonic section bounded by deletion on left - add to seq
                             if isinstance(intervals[i - 1][2], list):
                                 genomic_position = min(
                                     [x[1] for x in intervals[i - 1][2]]
@@ -1226,6 +1229,7 @@ class Transcript(object):
                                 genomic_position,
                                 merge=False,
                             )
+                        # Add reference sequence
                         if self.rev_strand:
                             self._seq_append(
                                 final_seq,
@@ -1244,31 +1248,35 @@ class Transcript(object):
                                 seqs[(i - 1) // 2][1][0] + last_index,
                                 merge=False,
                             )
-                        # If no edits, snv is reference and no insertion
-                        try:
-                            snv = (
-                                seqs[(i - 1) // 2][0][last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + fill,
-                            )
-                        except IndexError:
-                            """Should happen only for insertions at beginning
-                            of sequence."""
-                            assert (i - 1) // 2 == 0 and not seqs[0][0]
-                            snv = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
-                        insertion = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
+                        # Add edits
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == "V":
+                                # Edit is a substitution - set snv w/ variant info and insertion w/ placeholder
                                 snv = (edit[0], edit[2], edit[3], edit[3][1])
+                                insertion = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
                             else:
+                                # Edit is an insertion
                                 assert edit[1] == "I"
+                                ins_index = bisect.bisect_left([x[0] for x in intervals], edit[3][1] - 1)
+                                if (ins_index % 2) or (intervals[ins_index][0] == (edit[3][1] - 1)):
+                                    # More reference sequence is needed to fill in - use snv for this
+                                    snv = (
+                                            self.bowtie_reference_index.get_stretch(
+                                                                        self.chrom, 
+                                                                        edit[3][1] - 1, 1
+                                            ), "R", tuple(), edit[3][1]
+
+                                    )
+                                else:
+                                    # No reference sequence needed to fill in - use placeholder snv
+                                    snv = ("", "R", tuple(), edit[3][1])
                                 insertion = (edit[0], edit[2], edit[3], edit[3][1])
                         self._seq_append(final_seq, *snv, merge=False)
                         self._seq_append(final_seq, *insertion, merge=False)
                         last_index += fill + 1
                         last_pos += fill + 1
                     if intervals[i - 1][1] != "R":
+                        # Exonic section bounded by deletion on left - add to seq
                         if isinstance(intervals[i - 1][2], list):
                             genomic_position = min([x[1] for x in intervals[i - 1][2]])
                         else:
@@ -1282,6 +1290,7 @@ class Transcript(object):
                                 genomic_position,
                                 merge=False,
                             )
+                    # Add reference sequence if necessary
                     ref_to_add = seqs[(i - 1) // 2][0][last_index:]
                     if ref_to_add:
                         if self.rev_strand:
@@ -1303,6 +1312,7 @@ class Transcript(object):
                                 merge=False,
                             )
                     if intervals[i][1] != "R":
+                        # Exonic section bounded by deletion on right - add to seq
                         if isinstance(intervals[i][2], list):
                             genomic_position = min([x[1] for x in intervals[i][2]])
                         else:
@@ -1315,10 +1325,13 @@ class Transcript(object):
                             genomic_position,
                             merge=False,
                         )
+                    # Move to next exonic section
                     i += 2
                     try:
                         while pos > intervals[i][0]:
+                            # Position is still outside of this exon
                             if intervals[i - 1][1] != "R":
+                                # Exonic section bounded by deletion on left - add to seq
                                 if isinstance(intervals[i - 1][2], list):
                                     genomic_position = min(
                                         [x[1] for x in intervals[i - 1][2]]
@@ -1333,6 +1346,7 @@ class Transcript(object):
                                     genomic_position,
                                     merge=False,
                                 )
+                            # Add reference sequence
                             if self.rev_strand:
                                 self._seq_append(
                                     final_seq,
@@ -1352,6 +1366,7 @@ class Transcript(object):
                                     merge=False,
                                 )
                             if intervals[i][1] != "R":
+                                # Exonic section bounded by deletion on right - add to seq
                                 if isinstance(intervals[i][2], list):
                                     genomic_position = min(
                                         [x[1] for x in intervals[i][2]]
@@ -1366,6 +1381,7 @@ class Transcript(object):
                                     genomic_position,
                                     merge=False,
                                 )
+                            # Move to next exonic section
                             i += 2
                     except IndexError:
                         if i > len(intervals) - 1:
@@ -1375,6 +1391,7 @@ class Transcript(object):
                 else:
                     pos_group.append(pos)
             if self.rev_strand:
+                # Reverse complement sequence
                 final_seq = [
                     (
                         seq[::-1].translate(revcomp_translation_table),
@@ -1710,6 +1727,7 @@ class Transcript(object):
         ATG_limit = 2
         coding_start, ref_start, coding_stop, ref_stop = -1, -1, -1, -1
         counter, ref_counter = 0, 0  # hold edited transcript level coordinates
+        linker_dict = {}
         seq_previous = []
         new_ATG_upstream = False
         transcript_warnings = []
@@ -1920,6 +1938,8 @@ class Transcript(object):
                         )
                 sequence += seq[0]
                 ref_sequence += seq[0]
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
                 continue
@@ -1954,6 +1974,8 @@ class Transcript(object):
                         )
                         TAA_TGA_TAG = [seq[0], seq[1], seq[2][0][4], seq[3]]
                 sequence += seq[2][0][3]
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[2][0][3])
                 if self.rev_strand:
                     ref_sequence += seq[2][1][3][::-1].translate(
@@ -2018,6 +2040,8 @@ class Transcript(object):
                         TAA_TGA_TAG = seq
                 '''
                 sequence += seq[0]
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3]
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
                     seq[1] == "S" and include_somatic == 2
@@ -2043,6 +2067,8 @@ class Transcript(object):
                         )
                         TAA_TGA_TAG = seq
                 sequence += seq[0]
+                for i in range(len(seq[0])):
+                    linker_dict[counter+i+1] = seq[3] + (i*strand)
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
                     seq[1] == "S" and include_somatic == 2
@@ -2414,7 +2440,7 @@ class Transcript(object):
                                 len(protein_ref),
                                 ((coords[5] - coding_start) // 3) + size,
                             ),
-                            coords[6],
+                            coords[6]
                         ]
                     )
                 else:
@@ -2448,7 +2474,7 @@ class Transcript(object):
                     if len(paired_peptides) == len(peptides):
                         peptide_pairs = zip(peptides, paired_peptides)
                     else:
-                        peptide_pairs = zip(peptides, ['NA' for i in range(0, len(peptides))])
+                        peptide_pairs = zip(peptides, ['NA' for j in range(0, len(peptides))])
                     for pair in peptide_pairs:
                         if pair[0] not in peptides_ref:
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:
@@ -2507,10 +2533,11 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         Writes cds_dict as a pickled dictionary
         gtf_file: input gtf file to process
         dictdir: path to directory to store pickled dicts
-        Return value: dictionary
+        Return value: dictionaries
     """
     cds_dict = collections.defaultdict(list)
     cds_lines = collections.defaultdict(list)
+    tx_data_dict = collections.defaultdict(list)
     # Parse GTF to obtain CDS/stop codon info
     with xopen(None, gtf_file) as f:
         for line in f:
@@ -2548,6 +2575,27 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                         )
                 elif tokens[2] == "CDS":
                     cds_lines[transcript_id].append(tokens)
+                elif tokens[2] == "transcript":
+                    transcript_id = re.sub(
+                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    transcript_type = re.sub(
+                        r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    gene_id = re.sub(
+                        r".*gene_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    gene_name = re.sub(
+                        r".*gene_name \"([A-Za-z0-9._-]+)\"[;].*", r"\1", tokens[8]
+                    )
+                    if transcript_type in [
+                        "protein_coding",
+                        "nonsense_mediated_decay",
+                        "polymorphic_pseudogene",
+                        "IG_V_gene",
+                        "TR_V_gene",
+                    ]:
+                        tx_data_dict[transcript_id] = [transcript_type, gene_id, gene_name]
     # Sort cds_dict coordinates (left -> right) for each transcript
     delete_txs = []
     for transcript_id, tx_data in cds_dict.items():
@@ -2609,7 +2657,10 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
         pickle_dict = os.path.join(dictdir, "transcript_to_CDS.pickle")
         with open(pickle_dict, "wb") as f:
             pickle.dump(cds_dict, f)
-    return cds_dict
+        pickle_dict2 = os.path.join(dictdir, "transcript_to_gene_info.pickle")
+        with open(pickle_dict2, "wb") as f:
+            pickle.dump(tx_data_dict, f)
+    return cds_dict, tx_data_dict
 
 
 def cds_to_tree(cds_dict, dictdir, pickle_it=True):
@@ -2787,7 +2838,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     alternatives = [tokens[6]]
                 for i in range(0, min(len(alternatives), 2)):
                     variants_to_process = []
-                    if alternatives[i] == "<DEL>":
+                    if alternatives[i] == "<DEL>" or alternatives[i] == '*':
                         mutation_type = "D"
                         pos = int(tokens[4])
                         deletion_size = len(tokens[5])
@@ -3183,7 +3234,7 @@ def get_peptides_from_transcripts(
                     mutation_class = "S"
                 # Determine VAF if available
                 vaf = None
-                if vaf_pos is not None:
+                if vaf_pos is not None and mutation_class == "S":
                     vaf_entry = mutation[6].strip("*").split(":")[vaf_pos[0]]
                     if "," in vaf_entry:
                         vaf_entry = [x for x in vaf_entry.split(",") if x != "."]

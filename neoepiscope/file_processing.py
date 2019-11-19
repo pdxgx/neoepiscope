@@ -43,11 +43,19 @@ import subprocess
 import warnings
 import collections
 import sys
+import os
 import re
+import pickle
 import datetime
 from .version import version_number
 from intervaltree import Interval, IntervalTree
 
+neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# From https://stackoverflow.com/questions/30212413/backport-python-3-4s-regular-expression-fullmatch-to-python-2
+def fullmatch(regex, string, flags=0):
+    """Emulate python-3.4 re.fullmatch()."""
+    return re.match("(?:" + regex + r")\Z", string, flags=flags)
 
 def adjust_tumor_column(in_vcf, out_vcf):
     """ Swaps the sample columns in a somatic vcf
@@ -141,10 +149,9 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         else:
             tokens = lines.strip().split('\t')
             if len(tokens) == 10:
-                print(0)
                 tumor_first = True
                 warnings.warn(''.join(['Only 1 sample in somatic VCF; '
-                                       'treating ', tokens[9], 'column as ',
+                                       'treating ', tokens[9], ' column as ',
                                        'the tumor sample']))
             elif len(tokens) == 11:
                 if tokens[9] == "TUMOR" and tokens[10] == "NORMAL":
@@ -549,6 +556,7 @@ def get_vaf_pos(VCF):
     """
     vaf_check = False
     vaf_pos = None
+    field = None
     with open(VCF) as f:
         for line in f:
             # Check header lines to see if FREQ exits in FORMAT fields
@@ -574,21 +582,39 @@ def get_vaf_pos(VCF):
     return (vaf_pos, field)
 
 
-def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
+def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
     """ Writes predicted neoepitopes out to file
 
         output_file: path to output file
         hla_alleles: list of HLA alleles used for binding predictions
         neoepitopes: dictionary linking neoepitopes to their metadata
         tool_dict: dictionary storing prediction tool data
+        tx_dict: dictionary linking transcript ID to list of 
+                    [transcript type, gene ID, gene name]
 
         Return value: None.
     """
+    # Load epitope to IEDB linker dicts
+    with open(
+            os.path.join(
+                os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")
+            ),
+            "rb",
+        ) as epitope_stream:
+            epitope_to_iedb = pickle.load(epitope_stream)
+    with open(
+            os.path.join(
+                os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
+            ),
+            "rb",
+        ) as epitope_stream:
+            ambiguous_epitope_to_iedb = pickle.load(epitope_stream)
     try:
         if output_file == "-":
             output_stream = sys.stdout
         else:
             output_stream = open(output_file, "w")
+        # Write file header info
         print(''.join(['# Neoepiscope version ', version_number, '; run ', 
                        str(datetime.date.today())]), 
               file=output_stream)
@@ -603,14 +629,32 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
             "Paired_normal_epitope",
             "Warnings",
             "Transcript_ID",
+            "Transcript_type",
+            "Gene_ID",
+            "Gene_name",
+            "IEDB_ID"
         ]
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):
                 for score_method in sorted(tool_dict[tool][1]):
                     headers.append("_".join([tool, allele, score_method]))
         print("\t".join(headers), file=output_stream)
+        # Write output for all epitopes
         for epitope in sorted(neoepitopes.keys()):
+            # Find relevant IEDB IDs for epitope
+            if epitope in epitope_to_iedb:
+                iedb_id = ",".join(list(epitope_to_iedb[epitope]))
+            else:
+                possible_ids = set()
+                for regex in ambiguous_epitope_to_iedb:
+                    if fullmatch(regex, epitope) is not None:
+                        possible_ids.update(ambiguous_epitope_to_iedb[regex])
+                if len(possible_ids) > 0:
+                    iedb_id = ",".join(list(possible_ids))
+                else:
+                    iedb_id = "NA"
             if len(neoepitopes[epitope]) == 1:
+                # Epitope only results from 1 transcript - get variant info
                 mutation = neoepitopes[epitope][0]
                 if mutation[2] == "":
                     ref = "*"
@@ -624,6 +668,8 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     vaf = "NA"
                 else:
                     vaf = str(mutation[5])
+                # Get transcript/gene info
+                tx_info = tx_dict[mutation[8]]
                 out_line = [
                     epitope,
                     mutation[0],
@@ -635,15 +681,22 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     mutation[6],
                     mutation[7],
                     mutation[8],
+                    tx_info[0],
+                    tx_info[1],
+                    tx_info[2],
+                    iedb_id
                 ]
                 for i in range(9, len(mutation)):
                     out_line.append(str(mutation[i]))
                 print("\t".join(out_line), file=output_stream)
             else:
+                # Epitope results from multiple transcripts
                 mutation_dict = collections.defaultdict(list)
+                # Get binding score info
                 ep_scores = []
                 for i in range(9, len(neoepitopes[epitope][0])):
                     ep_scores.append(neoepitopes[epitope][0][i])
+                # Get variant info
                 for mut in neoepitopes[epitope]:
                     if mut[2] == "":
                         ref = "*"
@@ -660,7 +713,17 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                     mutation_dict[
                         (mut[0], mut[1], ref, alt, mut[4], vaf, mut[6])
                     ].append([mut[7], mut[8]])
-                for mut in sorted(mutation_dict.keys()):
+                mutation_list = sorted(list(mutation_dict.keys()))
+                # Get transcript/gene info 
+                for mut in mutation_list:
+                    transcripts = [str(x[1]) for x in mutation_dict[mut]]
+                    tx_types = []
+                    gene_ids = []
+                    gene_names = []
+                    for tx in transcripts:
+                        tx_types.append(tx_dict[tx][0])
+                        gene_ids.append(tx_dict[tx][1])
+                        gene_names.append(tx_dict[tx][2])
                     out_line = [
                         epitope,
                         mut[0],
@@ -671,7 +734,11 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict):
                         mut[5],
                         mut[6],
                         ";".join([str(x[0]) for x in mutation_dict[mut]]),
-                        ";".join([str(x[1]) for x in mutation_dict[mut]]),
+                        ";".join(transcripts),
+                        ";".join(tx_types),
+                        ";".join(gene_ids),
+                        ";".join(gene_names),
+                        iedb_id
                     ]
                     for score in ep_scores:
                         out_line.append(str(score))
