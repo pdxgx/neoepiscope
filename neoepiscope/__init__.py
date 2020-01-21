@@ -463,6 +463,20 @@ def main():
                             ]
                         )
                     )
+                info_path = os.path.join(args.dicts, "transcript_to_gene_info.pickle")
+                if os.path.isfile(info_path):
+                    with open(info_path, "rb") as info_stream:
+                        info_dict = pickle.load(cds_stream)
+                else:
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                info_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
                 bowtie_files = [
                     "".join([args.bowtie_index, ".", str(x), ".ebwt"]) for x in range(1, 5)
                 ]
