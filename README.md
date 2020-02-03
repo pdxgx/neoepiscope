@@ -21,7 +21,7 @@ Support
 Installing neoepiscope
 -----
 
-`neoepiscope` is compatible with Python 2.7 and Python 3.4 and higher. To install, run
+`neoepiscope` is compatible with Python 2.7 and Python 3.5 and higher. To install, run
 
 ```pip install neoepiscope```
 
