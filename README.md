@@ -25,7 +25,7 @@ Installing neoepiscope
 
 ```pip install neoepiscope```
 
-To download compatible reference annotation files (hg19, GRCh38, and/or mouse v37) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
+To download compatible reference annotation files (hg19, GRCh38, and/or mouse mm9) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
 
 ```neoepiscope download```
 
@@ -38,9 +38,9 @@ To make sure that the software is running properly, clone this repository, and f
 Using neoepiscope
 -----
 
-##### Preparing reference files (for those using references other than human hg19 or GRCh38 or mouse v37)
+##### Preparing reference files (for those using references other than human hg19 or GRCh38 or mouse mm9)
 
-If you __aren't__ using human hg19 or GRCh38 or mouse v37 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
+If you __aren't__ using human hg19 or GRCh38 or mouse mm9 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
 
 ```neoepiscope index -g <GTF> -d <DIRECTORY TO HOLD PICKLED DICTIONARIES>```
 
@@ -119,7 +119,7 @@ Options:
 
 ```-d, --dicts```                     path to directory containing pickled dictionaries generated in ```index``` mode
 
-```-b, --build```                     which genome build to use (human hg19 or GRCh38 or mouse v37; overrides `-x` and `-d` options)
+```-b, --build```                     which genome build to use (human hg19 or GRCh38 or mouse mm9; overrides `-x` and `-d` options)
 
 ```-c, --merged-hapcut2-output```     path to HapCUT2 output adjusted by ```neoepiscope prep```
 
@@ -157,7 +157,7 @@ Options:
 
 ```--allow-nonstop```                 enumerate neoepitopes from transcripts without annotated stop codons
 
-Using the `--build` option requires use of our `download` functionality to procure and index the required reference files for human hg19, human GRCh38, and/or mouse v37. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
+Using the `--build` option requires use of our `download` functionality to procure and index the required reference files for human hg19, human GRCh38, and/or mouse mm9. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
 
 Haplotype information should be included using ```-c /path/to/haplotype/file```. This in the form of HapCUT2 output, generated either from your somatic VCF or a merged germline/somatic VCF made with our ```neoepiscope merge``` functionality. The HapCUT2 output should be adjusted using our ```neoepiscope prep``` functionality to ensure that mutations that lack phasing data are still included in analysis.
 

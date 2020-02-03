@@ -76,9 +76,9 @@ download = {
         "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/hg19.ebwt.zip",
         "http://verve.webfactional.com/hg19.ebwt.zip",
     ],
-    "Bowtie NCBI v37 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/m_musculus_ncbi37.ebwt.zip",
-        "http://verve.webfactional.com/m_musculus_ncbi37.ebwt.zip",
+    "Bowtie UCSC mm9 index": [
+        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/mm9.ebwt.zip",
+        "http://verve.webfactional.com/mm9.ebwt.zip",
     ],
 }
 
@@ -616,13 +616,13 @@ class NeoepiscopeDownloader(object):
             bowtie_hg19 = os.path.join(self.download_dir, "hg19")
         else:
             bowtie_hg19 = None
-        if self._yes_no_query("Download Bowtie NCBI v37 index?"):
+        if self._yes_no_query("Download Bowtie UCSC mm9 index?"):
             self._grab_and_explode(
-                download["Bowtie NCBI v37 index"], "Bowtie NCBI v37 index"
+                download["Bowtie UCSC mm9 index"], "Bowtie UCSC mm9 index"
             )
-            bowtie_v37 = os.path.join(self.download_dir, "v37")
+            bowtie_mm9 = os.path.join(self.download_dir, "mm9")
         else:
-            bowtie_v37 = None
+            bowtie_mm9 = None
         programs = []
         for program in ["netMHCIIpan v3", "netMHCpan v3", "netMHCpan v4", 
                         "netMHC v4", "netMHCII v2", "PickPocket v1", "netMHCstabpan v1"]:
@@ -716,7 +716,7 @@ gencode_v19 = {gencode_v19}
 gencode_vM1 = {gencode_vM1}
 bowtie_grch38 = {bowtie_grch38}
 bowtie_hg19 = {bowtie_hg19}
-bowtie_v37 = {bowtie_v37}
+bowtie_mm9 = {bowtie_mm9}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
@@ -744,8 +744,8 @@ hapcut2 = {hapcut2}
                     bowtie_hg19=(
                         "None" if bowtie_hg19 is None else self._quote(bowtie_hg19)
                     ),
-                    bowtie_v37=(
-                        "None" if bowtie_v37 is None else self._quote(bowtie_v37)
+                    bowtie_mm9=(
+                        "None" if bowtie_mm9 is None else self._quote(bowtie_mm9)
                     ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])

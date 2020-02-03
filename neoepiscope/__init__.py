@@ -297,7 +297,7 @@ def main():
         "--build",
         type=str,
         required=False,
-        help="which default genome build to use (human hg19 or GRCh38, or mouse v37); "
+        help="which default genome build to use (human hg19 or GRCh38, or mouse mm9); "
         "must have used download.py script to install these",
     )
     call_parser.add_argument(
@@ -421,9 +421,9 @@ def main():
                     info_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
             elif (
-                args.build == "v37"
+                args.build == "mm9"
                 and paths.gencode_vM1 is not None
-                and paths.bowtie_v37 is not None
+                and paths.bowtie_mm9 is not None
             ):
                 with open(
                     os.path.join(paths.gencode_vM1, "intervals_to_transcript.pickle"),
@@ -438,7 +438,7 @@ def main():
                     os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_v37)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
             else:
                 raise RuntimeError(
                     "".join(
@@ -446,7 +446,7 @@ def main():
                             args.build,
                             " is not an available genome build. Please "
                             "check that you have run neoepiscope download and are "
-                            "using 'hg19', 'GRCh38', or 'v37' for this argument.",
+                            "using 'hg19', 'GRCh38', or 'mm9' for this argument.",
                         ]
                     )
                 )
