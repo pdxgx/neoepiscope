@@ -53,16 +53,21 @@ from .transcript import cds_to_tree
 from distutils.core import Command
 
 download = {
-    "Gencode v29 annotation": [
+    "GENCODE v29 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
         "Gencode_human/release_29/"
         "gencode.v29.annotation.gtf.gz"
     ],
-    "Gencode v19 annotation": [
+    "GENCODE v19 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
         "Gencode_human/release_19/"
         "gencode.v19.annotation.gtf.gz"
-    ], 
+    ],
+    "GENCODE vM1 annotation": [
+        "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
+        "Gencode_mouse/release_M1/"
+        "gencode.vM1.annotation.gtf.gz"
+    ],
     "Bowtie NCBI GRCh38 index": [
         "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip",
         "http://verve.webfactional.com/GRCh38_no_alt.zip",
@@ -70,6 +75,10 @@ download = {
     "Bowtie UCSC hg19 index": [
         "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/hg19.ebwt.zip",
         "http://verve.webfactional.com/hg19.ebwt.zip",
+    ],
+    "Bowtie NCBI v37 index": [
+        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/m_musculus_ncbi37.ebwt.zip",
+        "http://verve.webfactional.com/m_musculus_ncbi37.ebwt.zip",
     ],
 }
 
@@ -504,17 +513,17 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        if self._yes_no_query("Download Gencode v29 gtf annotation file?"):
+        if self._yes_no_query("Download GENCODE v29 gtf annotation file?"):
             self._grab_and_explode(
-                download["Gencode v29 annotation"],
-                "Gencode v29 annotation",
+                download["GENCODE v29 annotation"],
+                "GENCODE v29 annotation",
                 explode=False,
             )
             gencode_v29_temp = os.path.join(temp_install_dir, "gencode_v29")
             gencode_v29 = os.path.join(self.download_dir, "gencode_v29")
             gencode_v29_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["Gencode v29 annotation"][0]),
+                os.path.basename(download["GENCODE v29 annotation"][0]),
             )
             try:
                 os.makedirs(gencode_v29_temp)
@@ -528,22 +537,22 @@ class NeoepiscopeDownloader(object):
                     % gencode_v29_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing Gencode v29...")
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v29...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v29_gtf, gencode_v29_temp)
             cds_to_tree(cds_dict, gencode_v29_temp)
         else:
             gencode_v29 = None
-        if self._yes_no_query("Download Gencode v19 gtf annotation file?"):
+        if self._yes_no_query("Download GENCODE v19 gtf annotation file?"):
             self._grab_and_explode(
-                download["Gencode v19 annotation"],
-                "Gencode v19 annotation",
+                download["GENCODE v19 annotation"],
+                "GENCODE v19 annotation",
                 explode=False,
             )
             gencode_v19_temp = os.path.join(temp_install_dir, "gencode_v19")
             gencode_v19 = os.path.join(self.download_dir, "gencode_v19")
             gencode_v19_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["Gencode v19 annotation"][0]),
+                os.path.basename(download["GENCODE v19 annotation"][0]),
             )
             try:
                 os.makedirs(gencode_v19_temp)
@@ -557,11 +566,40 @@ class NeoepiscopeDownloader(object):
                     % gencode_v19_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing Gencode v19...")
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v19...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
             cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None
+        if self._yes_no_query("Download GENCODE vM1 gtf annotation file?"):
+            self._grab_and_explode(
+                download["GENCODE vM1 annotation"],
+                "GENCODE vM1 annotation",
+                explode=False,
+            )
+            gencode_vM1_temp = os.path.join(temp_install_dir, "gencode_vM1")
+            gencode_vM1 = os.path.join(self.download_dir, "gencode_vM1")
+            gencode_vM1_gtf = os.path.join(
+                temp_install_dir,
+                os.path.basename(download["GENCODE vM1 annotation"][0]),
+            )
+            try:
+                os.makedirs(gencode_vM1_temp)
+            except OSError as e:
+                self._print_to_screen_and_log(
+                    (
+                        "Problem encountered trying to create "
+                        "directory %s for installation. May need "
+                        "sudo permissions."
+                    )
+                    % gencode_vM1_temp
+                )
+                self._bail()
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM1...")
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_vM1_gtf, gencode_vM1_temp)
+            cds_to_tree(cds_dict, gencode_vM1_temp)
+        else:
+            gencode_vM1 = None
         if self._yes_no_query("Download Bowtie NCBI GRCh38 index?"):
             self._grab_and_explode(
                 download["Bowtie NCBI GRCh38 index"], "Bowtie NCBI GRCh38 index"
@@ -578,6 +616,13 @@ class NeoepiscopeDownloader(object):
             bowtie_hg19 = os.path.join(self.download_dir, "hg19")
         else:
             bowtie_hg19 = None
+        if self._yes_no_query("Download Bowtie NCBI v37 index?"):
+            self._grab_and_explode(
+                download["Bowtie NCBI v37 index"], "Bowtie NCBI v37 index"
+            )
+            bowtie_v37 = os.path.join(self.download_dir, "v37")
+        else:
+            bowtie_v37 = None
         programs = []
         for program in ["netMHCIIpan v3", "netMHCpan v3", "netMHCpan v4", 
                         "netMHC v4", "netMHCII v2", "PickPocket v1", "netMHCstabpan v1"]:
@@ -668,8 +713,10 @@ None indicates the user didn't install the tool or data
 
 gencode_v29 = {gencode_v29}
 gencode_v19 = {gencode_v19}
+gencode_vM1 = {gencode_vM1}
 bowtie_grch38 = {bowtie_grch38}
 bowtie_hg19 = {bowtie_hg19}
+bowtie_v37 = {bowtie_v37}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
@@ -688,11 +735,17 @@ hapcut2 = {hapcut2}
                     gencode_v19=(
                         "None" if gencode_v19 is None else self._quote(gencode_v19)
                     ),
+                    gencode_vM1=(
+                        "None" if gencode_vM1 is None else self._quote(gencode_vM1)
+                    ),
                     bowtie_grch38=(
                         "None" if bowtie_grch38 is None else self._quote(bowtie_grch38)
                     ),
                     bowtie_hg19=(
                         "None" if bowtie_hg19 is None else self._quote(bowtie_hg19)
+                    ),
+                    bowtie_v37=(
+                        "None" if bowtie_v37 is None else self._quote(bowtie_v37)
                     ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])

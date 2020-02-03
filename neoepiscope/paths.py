@@ -33,8 +33,10 @@ SOFTWARE.
 """
 gencode_v29 = None
 gencode_v19 = None
+gencode_vM1 = None
 bowtie_grch38 = None
 bowtie_hg19 = None
+bowtie_v37 = None
 netMHCIIpan3 = None
 netMHCpan3 = None
 netMHCpan4 = None
