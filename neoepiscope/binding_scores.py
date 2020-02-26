@@ -38,6 +38,7 @@ import tempfile
 import pickle
 import subprocess
 from sys import version_info
+from mhcnames import parse_allele_name
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -681,18 +682,26 @@ def get_affinity_netMHCIIpan(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        # Homogenize format
-        if "DRB" in allele:
-            allele = allele.replace("HLA-", "").replace(":", "").replace("*", "_")
-        elif "DP" in allele or "DQ" in allele:
-            allele = allele.replace(":", "").replace("*", "")
-        if allele not in avail_alleles["".join(["netMHCIIpan", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for netMHCIIpan"]), Warning
-            )
-            score_form = tuple(["NA" for i in range(0, len(scores))])
-            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
-        allele = allele.replace("*", "_").replace(":", "")
+        # Homogenize format if needed
+        if allele != 'DRB5_0108N':
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCIIpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["netMHCIIpan", str(version)])]:
+                allele = avail_alleles["".join(["netMHCIIpan", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCIIpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netmhciipan", version]
@@ -793,7 +802,19 @@ def get_affinity_mhcflurry(peptides, allele, scores, version, remove_files=True)
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        if allele not in avail_alleles["mhcflurry"]:
+        # Parse allele format
+        try:
+            allele_format = parse_allele_name(allele)
+        except:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for mhcflurry"]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Store valid allele format if available
+        if allele_format in avail_alleles['mhcflurry']:
+            allele = avail_alleles['mhcflurry'][allele_format]
+        else:
             warnings.warn(
                 " ".join([allele, "is not a valid allele for mhcflurry"]), Warning
             )
@@ -893,13 +914,26 @@ def get_affinity_netMHC(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "").replace(':', '')
-        if allele not in avail_alleles["".join(["netMHC", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for netMHC"]), Warning
-            )
-            score_form = tuple(["NA" for i in range(0, len(scores))])
-            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Homogenize format if needed
+        if allele not in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2C', 'BoLA-T2a', 'BoLA-T2b']:
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHC"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["netMHC", str(version)])]:
+                allele = avail_alleles["".join(["netMHC", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHC"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netmhc", version]
@@ -983,13 +1017,26 @@ def get_affinity_netMHCstabpan(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "")
-        if allele not in avail_alleles["".join(["netMHCstabpan", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for netMHCstabpan"]), Warning
-            )
-            score_form = tuple(["NA" for i in range(0, len(scores))])
-            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Homogenize format if needed
+        if allele not in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01', 'H-2-Qa2', 'H-2-Qa1']:
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCstabpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["netMHCstabpan", str(version)])]:
+                allele = avail_alleles["".join(["netMHCstabpan", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCstabpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         score_dict = {}
         affinities = []
         for i in range(size_list[0], size_list[-1]+1):
@@ -1089,12 +1136,26 @@ def get_affinity_pickpocket(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "")
-        if allele not in avail_alleles["".join(["pickpocket", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for PickPocket"]), Warning
-            )
-            return [(peptides[i], "NA") for i in range(0, len(peptides))]
+        # Homogenize format if needed
+        if allele not in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01']:
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for PickPocket"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["pickpocket", str(version)])]:
+                allele = avail_alleles["".join(["pickpocket", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for PickPocket"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "pickpocket", version]
@@ -1179,12 +1240,19 @@ def get_affinity_netMHCII(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "").replace(':', '')
-        if 'DRB' in allele:
-            allele = allele.replace('-', '').replace('HLA', '')
-            if '_' not in allele:
-                allele = '_'.join([allele[0:4], allele[4:]])
-        if allele not in avail_alleles["".join(["netMHCII", str(version)])]:
+        # Parse allele format
+        try:
+            allele_format = parse_allele_name(allele)
+        except:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for netMHCII"]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Store valid allele format if available
+        if allele_format in avail_alleles["".join(["netMHCII", str(version)])]:
+            allele = avail_alleles["".join(["netMHCII", str(version)])][allele_format]
+        else:
             warnings.warn(
                 " ".join([allele, "is not a valid allele for netMHCII"]), Warning
             )
@@ -1290,13 +1358,26 @@ def get_affinity_netMHCcons(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "")
-        if allele not in avail_alleles["".join(["netMHCcons", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for netMHCcons"]), Warning
-            )
-            score_form = tuple(["NA" for i in range(0, len(scores))])
-            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Homogenize format if needed
+        if allele not in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2C', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01']:
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCcons"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["netMHCcons", str(version)])]:
+                allele = avail_alleles["".join(["netMHCcons", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCcons"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish score dict and return list
         score_dict = {}
         affinities = []
@@ -1394,13 +1475,32 @@ def get_affinity_netMHCpan(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "")
-        if allele not in avail_alleles["".join(["netMHCpan", str(version)])]:
-            warnings.warn(
-                " ".join([allele, "is not a valid allele for netMHCpan"]), Warning
-            )
-            score_form = tuple(["NA" for i in range(0, len(scores))])
-            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Homogenize format if needed
+        if version == '3' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01',
+                                         'H-2-Qa2', 'H-2-Qa1']:
+            pass
+        elif version == '4' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2C', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 
+                                           'Mamu-AG:01', 'H-2-Qa2', 'H-2-Qa1', 'H2-Qa1', 'H2-Qa2', 'Chi-B0401', 'Chi-B1201', 'Chi-B1501']:
+            pass
+        else:
+            # Parse allele format
+            try:
+                allele_format = parse_allele_name(allele)
+            except:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+            # Store valid allele format if available
+            if allele_format in avail_alleles["".join(["netMHCpan", str(version)])]:
+                allele = avail_alleles["".join(["netMHCpan", str(version)])][allele_format]
+            else:
+                warnings.warn(
+                    " ".join([allele, "is not a valid allele for netMHCpan"]), Warning
+                )
+                score_form = tuple(["NA" for i in range(0, len(scores))])
+                return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Establish return list and sample id
         sample_id = ".".join(
             [peptides[0], str(len(peptides)), allele, "netmhcpan", version]
@@ -1504,12 +1604,22 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
+        # Parse allele format
+        try:
+            allele_format = parse_allele_name(allele)
+        except:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for mhcflurry"]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Check that allele is valid for method
-        allele = allele.replace("*", "")
-        if allele in avail_alleles["mhcnuggets_mhcI"]:
+        if allele_format in avail_alleles["mhcnuggets_mhcI"]:
+            allele = avail_alleles["mhcnuggets_mhcI"][allele]
             allele_class = "I"
             max_length = 15
-        elif allele in avail_alleles["mhcnuggets_mhcII"]:
+        elif allele_format in avail_alleles["mhcnuggets_mhcII"]:
+            allele = avail_alleles["mhcnuggets_mhcII"][allele]
             allele_class = "II"
             max_length = 30
         else:
@@ -1606,8 +1716,19 @@ def get_affinity_PSSMHCpan(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "").replace(":", "")
-        if allele not in avail_alleles["".join(["PSSMHCpan", str(version)])]:
+        # Parse allele format
+        try:
+            allele_format = parse_allele_name(allele)
+        except:
+            warnings.warn(
+                " ".join([allele, "is not a valid allele for PSSMHCpan"]), Warning
+            )
+            score_form = tuple(["NA" for i in range(0, len(scores))])
+            return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Check that allele is valid for method
+        if allele_format in avail_alleles["".join(["PSSMHCpan", str(version)])]:
+            allele = avail_alleles["".join(["PSSMHCpan", str(version)])][allele_format]
+        else:
             warnings.warn(
                 " ".join([allele, "is not a valid allele for PSSMHCpan"]), Warning
             )
@@ -1722,13 +1843,23 @@ def get_affinity_IEDBtools(
             "rb",
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
-        allele = allele.replace("*", "").replace(":", "")
-        if allele not in avail_alleles["".join(["IEDBtools", str(version), '-', method])]:
+        # Parse allele format
+        try:
+            allele_format = parse_allele_name(allele)
+        except:
             warnings.warn(
                 "".join([allele, " is not a valid allele for IEDBtools-", method]), Warning
             )
             score_form = tuple(["NA" for i in range(0, len(scores))])
             return [(peptides[i],) + score_form for i in range(0, len(peptides))]
+        # Check that allele is valid for method
+        if allele_format in avail_alleles["".join(["IEDBtools", str(version), '-', method])]:
+            allele = avail_alleles["".join(["IEDBtools", str(version), '-', method])][allele_format]
+        else:
+            warnings.warn(
+                "".join([allele, " is not a valid allele for IEDBtools-", method]), Warning
+            )
+            return [(peptides[i], "NA") for i in range(0, len(peptides))]
         affinities = []
         score_dict = {}
         na_count = 0

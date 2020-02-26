@@ -81,17 +81,17 @@ def adjust_tumor_column(in_vcf, out_vcf):
             else:
                 tokens = line.strip("\n").split("\t")
                 if line[0] == "#":
-                    warnings.warn(
+                    print(
                         "".join(
                             [
-                                "Reading ",
+                                "NOTE: Reading ",
                                 tokens[9],
                                 " as normal tissue and ",
                                 tokens[10],
                                 " as tumor tissue",
                             ]
                         ),
-                        Warning,
+                        file=sys.stderr
                     )
                 new_line = "\t".join(
                     [
