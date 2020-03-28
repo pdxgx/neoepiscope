@@ -290,7 +290,7 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     # that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, cds, transcript_id):
+    def __init__(self, bowtie_reference_index, cds, transcript_id, rna_editing_dict=None):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -300,8 +300,14 @@ class Transcript(object):
             cds: list of all CDS lines for exactly one transcript from GTF;
                 a line can be a list pre-split by '\t' or not yet split
             transcript_id: transcript ID
+            rna_editing_dict: dictionary linking transcript IDs to RNA editing sites 
         """
         assert len(cds) > 0
+        if rna_editing_dict == None:
+            self.rna_editing_dict = {}
+        else:
+            self.rna_editing_dict = rna_editing_dict
+      
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
         self.intervals = []
@@ -405,6 +411,7 @@ class Transcript(object):
                 is the coordinate of the first base of the transcript to be
                 deleted. Coordinates are always w.r.t. genome.
             mutation_type: V for SNV, I for insertion, D for deletion
+                           R for RNA edit.
             mutation_class: S for somatic, G for germline
             vaf: variant allele frequency (None if not available)
             No return value.
@@ -563,6 +570,26 @@ class Transcript(object):
                         ]
                     )
                 )
+        elif mutation_type == "R":
+            reference_seq = self.bowtie_reference_index.get_stretch(
+                self.chrom, pos - 1, len(seq)
+            )
+            other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
+            print("Inside Mutation Type R")
+            print('reference_seq: ', reference_seq)
+            print("other_snvs: ", other_snvs)
+            print("self.edits: ", self.edits)
+            if mutation_class not in [snv[2] for snv in other_snvs]:
+                self.edits[pos - 1].append(
+                    (
+                        seq,
+                        mutation_type,
+                        mutation_class,
+                        (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
+                    )
+                )
+            else:
+                warnings.warn("RNA Editing Site was disrupted")
         else:
             raise NotImplementedError("Mutation type not yet implemented")
 
