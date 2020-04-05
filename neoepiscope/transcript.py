@@ -290,7 +290,7 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     # that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, cds, transcript_id, rna_editing_dict=None):
+    def __init__(self, bowtie_reference_index, cds, transcript_id, rna_editing_sites=None):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -300,13 +300,13 @@ class Transcript(object):
             cds: list of all CDS lines for exactly one transcript from GTF;
                 a line can be a list pre-split by '\t' or not yet split
             transcript_id: transcript ID
-            rna_editing_dict: dictionary linking transcript IDs to RNA editing sites 
+            rna_editing_sites: dictionary linking transcript IDs to RNA editing sites 
         """
         assert len(cds) > 0
-        if rna_editing_dict == None:
-            self.rna_editing_dict = {}
+        if rna_editing_sites == None:
+            self.rna_editing_sites = []
         else:
-            self.rna_editing_dict = rna_editing_dict
+            self.rna_editing_sites = rna_editing_sites
       
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
@@ -575,10 +575,6 @@ class Transcript(object):
                 self.chrom, pos - 1, len(seq)
             )
             other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
-            print("Inside Mutation Type R")
-            print('reference_seq: ', reference_seq)
-            print("other_snvs: ", other_snvs)
-            print("self.edits: ", self.edits)
             if mutation_class not in [snv[2] for snv in other_snvs]:
                 self.edits[pos - 1].append(
                     (
@@ -595,7 +591,7 @@ class Transcript(object):
 
     def expressed_edits(
         self, start=None, end=None, genome=True, include_somatic=1, include_germline=2
-    ):
+    , include_rna_edits=False):
         """ Gets expressed set of edits and transcript intervals.
             start: start position (1-indexed, inclusive); None means start of
                 transcript
@@ -604,11 +600,12 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            include_rna_edits: whether to include A to I editing (boolean)
             Return value: tuple (defaultdict
                                  mapping edits to lists of
                                  (seq, mutation_type, mutation_class)
                                  tuples, interval list; this is a list of
-                                 tuples (bound, {'R', 'G', or 'S'}), which
+                                 tuples (bound, {'R', 'G', 'I', or 'S'}), which
                                  says whether the bound is due to CDS bound
                                  ("R"), a germline deletion ("G"), or a
                                  somatic deletion ("S"))
@@ -627,6 +624,9 @@ class Transcript(object):
         else:
             end -= 1
         assert end >= start
+        if include_rna_edits:
+            for item in self.rna_editing_sites:
+                self.edit("I", item[1], mutation_type = "R", mutation_class="R")
         # Change start and end intervals of CDS intervals
         start_index = bisect.bisect_left(self.intervals, start)
         if not (start_index % 2):
