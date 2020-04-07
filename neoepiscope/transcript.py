@@ -58,9 +58,9 @@ from sys import version_info
 
 if version_info[0] < 3:
     from string import maketrans
-    revcomp_translation_table = maketrans("ATCG", "TAGC")
+    revcomp_translation_table = maketrans("ATCGI", "TAGCI")
 else:
-    revcomp_translation_table = str.maketrans("ATCG", "TAGC")
+    revcomp_translation_table = str.maketrans("ATCGI", "TAGCI")
 
 
 @contextlib.contextmanager
@@ -290,7 +290,7 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     # that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, cds, transcript_id, rna_editing_sites=None):
+    def __init__(self, bowtie_reference_index, cds, transcript_id, rna_editing_dict=None):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -300,14 +300,16 @@ class Transcript(object):
             cds: list of all CDS lines for exactly one transcript from GTF;
                 a line can be a list pre-split by '\t' or not yet split
             transcript_id: transcript ID
-            rna_editing_sites: dictionary linking transcript IDs to RNA editing sites 
+            rna_editing_dict: dictionary linking transcript IDs to RNA editing sites 
         """
         assert len(cds) > 0
-        if rna_editing_sites == None:
+        if rna_editing_dict == None:
             self.rna_editing_sites = []
         else:
-            self.rna_editing_sites = rna_editing_sites
-      
+            try:
+                self.rna_editing_sites = rna_editing_dict[transcript_id]
+            except:
+                self.rna_editing_sites = []
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
         self.intervals = []
@@ -605,7 +607,7 @@ class Transcript(object):
                                  mapping edits to lists of
                                  (seq, mutation_type, mutation_class)
                                  tuples, interval list; this is a list of
-                                 tuples (bound, {'R', 'G', 'I', or 'S'}), which
+                                 tuples (bound, {'R', 'G', or 'S'}), which
                                  says whether the bound is due to CDS bound
                                  ("R"), a germline deletion ("G"), or a
                                  somatic deletion ("S"))
