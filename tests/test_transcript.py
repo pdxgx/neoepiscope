@@ -56,6 +56,9 @@ class TestTranscript(unittest.TestCase):
             "tests",
             "Chr11.ref",
         )
+        self.atoi = os.path.join(os.path.dirname(os.path.abspath(__file__))
+                , "transcript_to_editing.pickle")
+        rna_dict = pickle.load(open(self.atoi, "rb"))
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         ## All following transcripts from GRCh37 genome build ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
@@ -134,6 +137,27 @@ class TestTranscript(unittest.TestCase):
             ],
             "ENST00000341394.8_1",
         )
+        # ??:?? transcript w/ 2 exon (both non-coding) --> ??
+        self.atoi_transcript = Transcript(
+            self.reference_index,
+            [
+                [
+                    str(chrom).replace("chr", ""),
+                    "N/A",
+                    seq_type,
+                    str(start),
+                    str(end),
+                    ".",
+                    strand,
+                ]
+                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
+                    "ENST00000601917.1"
+                ]
+            ],
+            "ENST00000601917.1",
+            rna_dict,
+        )
+
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
             self.reference_index,
@@ -1120,6 +1144,15 @@ class TestTranscript(unittest.TestCase):
             all_peptides,
             {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", "NA")]},
         )
+
+    def test_expressed_edits_with_rna_edits(self):
+        """check expressed_edit can read and generate edits using
+            rna_editing_sites"""
+        self.atoi_transcript.expressed_edits(include_rna_edits=True)
+        self.assertEqual(self.atoi_transcript.edits[61736745],
+                [('I', 'R', 'R', ('11', 61736746, 'A', 'I', 'R', None))])
+        self.assertEqual(self.atoi_transcript.edits[61736727],
+                [('I', 'R', 'R', ('11', 61736728, 'A', 'I', 'R', None))])
 
 
 if __name__ == "__main__":
