@@ -58,7 +58,7 @@ class TestTranscript(unittest.TestCase):
         )
         self.atoi = os.path.join(os.path.dirname(os.path.abspath(__file__))
                 , "transcript_to_editing.pickle")
-        rna_dict = pickle.load(open(self.atoi, "rb"))
+        self.rna_dict = pickle.load(open(self.atoi, "rb"))
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         ## All following transcripts from GRCh37 genome build ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
@@ -137,7 +137,7 @@ class TestTranscript(unittest.TestCase):
             ],
             "ENST00000341394.8_1",
         )
-        # ??:?? transcript w/ 2 exon (both non-coding) --> ??
+        # AP003733.1: transcript w/ 1 exon (coding)  
         self.atoi_transcript = Transcript(
             self.reference_index,
             [
@@ -155,7 +155,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000601917.1",
-            rna_dict,
+            self.rna_dict,
         )
 
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
