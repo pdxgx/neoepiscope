@@ -84,13 +84,11 @@ If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), m
 
 Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF and your tumor BAM file (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes and flag germline variants if relevant:
 
-```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> [-g <GERMLINE VCF>] -o <ADJUSTED HAPCUT OUTPUT>```
+```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> -o <ADJUSTED HAPCUT OUTPUT>```
 
 Options:
 
 ```-v, --vcf```               path to VCF file used to generate HapCUT2 output
-
-```-g, --germline-vcf```	  path to germline VCF used in neoepiscope merge
 
 ```-c, --hapcut2-output```    path to original HapCUT2 output
 
