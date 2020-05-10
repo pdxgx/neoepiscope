@@ -864,6 +864,9 @@ class Transcript(object):
                                 edits[pos].append(edit)
                         except IndexError:
                             continue
+                elif edit[1] == "R" and edit[2] == "R":
+                    if start_index % 2 and edit[3][2] == "A":
+                        edits[pos].append(edit)
             # If there is more than 1 SNV at the same position, one must be
             # germline and the other somatic, as only 1 mutation per mutation
             # class is allowed at the same position. Favor somatic mutation.
@@ -1152,8 +1155,8 @@ class Transcript(object):
         return ("", "H", [alt, ref], alt[1])
 
     def annotated_seq(
-        self, start=None, end=None, genome=True, include_somatic=1, include_germline=2
-    ):
+        self, start=None, end=None, genome=True, include_somatic=1,
+        include_germline=2, include_rna_edits=False ):
         """ Retrieves transcript sequence between start and end coordinates.
             Includes info on whether edits are somatic or germline and whether
             sequence is reference sequence.
@@ -1164,6 +1167,7 @@ class Transcript(object):
             genome: True iff genome coordinates are specified
             include_somatic: whether to include somatic mutations (boolean)
             include_germline: whether to include germline mutations (boolean)
+            include_rna_edits = whether to include A to I rna edits 
             Return value: list of tuples (sequence, mutation class,
                 mutation information, position),
                 where sequence is a segment of sequence of the (possibly)
@@ -1279,7 +1283,7 @@ class Transcript(object):
                             )
                         # Add edits
                         for edit in new_edits[pos_to_add]:
-                            if edit[1] == "V":
+                            if edit[1] == "V" or edit[1] == "R":
                                 # Edit is a substitution - set snv w/ variant info and insertion w/ placeholder
                                 snv = (edit[0], edit[2], edit[3], edit[3][1])
                                 insertion = ("", "R", tuple(), seqs[(i - 1) // 2][1][0] + fill)
@@ -3102,6 +3106,8 @@ def get_peptides_from_transcripts(
     include_germline=2,
     include_somatic=1,
     protein_fasta=False,
+    include_rna_edits =False,
+    rna_edit_dict=None
 ):
     """ For transcripts that are affected by a mutation, mutations are applied
         and neoepitopes resulting from mutations are called
@@ -3132,9 +3138,13 @@ def get_peptides_from_transcripts(
         pp: whether to include polymorphic pseudogene transcripts (boolean)
         igv: whether to include IGV transcripts (boolean)
         trv: whether to include TRV transcripts (boolean)
+        include_rna_edits: whether to include A-I edit (boolean)
+        rna_edit_dict: dictionary linking chrom,pos to interval
         return value: dictionary linking neoepitopes to their associated
             metadata
         """
+    if include_rna_edits == True:
+        assert rna_edit_dict != None  
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     used_homozygous_variants = set()
@@ -3160,16 +3170,29 @@ def get_peptides_from_transcripts(
         ):
             continue
         # Create transcript object
-        transcript_a = Transcript(
-            reference_index,
-            [
-                [str(chrom), "blah", seq_type, str(start), str(end), ".", strand]
-                for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
-                    affected_transcript
-                ]
-            ],
-            affected_transcript,
-        )
+        if include_rna_edits == False:
+            transcript_a = Transcript(
+                reference_index,
+                [
+                    [str(chrom), "blah", seq_type, str(start), str(end), ".", strand]
+                    for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
+                        affected_transcript
+                    ]
+                ],
+                affected_transcript,
+            )
+        else:
+            transcript_a = Transcript(
+                reference_index,
+                [
+                    [str(chrom), "blah", seq_type, str(start), str(end), ".", strand]
+                    for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
+                        affected_transcript
+                    ]
+                ],
+                affected_transcript,
+                rna_edit_dict
+            )
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
         for ht in haplotypes:
