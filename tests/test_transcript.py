@@ -57,7 +57,7 @@ class TestTranscript(unittest.TestCase):
             "Chr11.ref",
         )
         self.atoi = os.path.join(os.path.dirname(os.path.abspath(__file__))
-                , "transcript_to_editing.pickle")
+                , "transcript_to_editing_hg38.pickle")
         self.rna_dict = pickle.load(open(self.atoi, "rb"))
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         ## All following transcripts from GRCh37 genome build ##
@@ -154,7 +154,7 @@ class TestTranscript(unittest.TestCase):
                     "ENST00000601917.1"
                 ]
             ],
-            "ENST00000601917.1",
+            "ENST00000278612.8",
             self.rna_dict,
         )
 
@@ -1149,10 +1149,8 @@ class TestTranscript(unittest.TestCase):
         """check expressed_edit can read and generate edits using
             rna_editing_sites"""
         self.atoi_transcript.expressed_edits(include_rna_edits=True)
-        self.assertEqual(self.atoi_transcript.edits[61736745],
-                [('I', 'R', 'R', ('11', 61736746, 'A', 'I', 'R', None))])
-        self.assertEqual(self.atoi_transcript.edits[61736727],
-                [('I', 'R', 'R', ('11', 61736728, 'A', 'I', 'R', None))])
+        self.assertEqual(self.atoi_transcript.edits[108043152],
+                [('I', 'R', 'R', ('11', 108043153, 'A', 'I', 'R', None))])
 
 
 if __name__ == "__main__":

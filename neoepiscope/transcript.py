@@ -865,7 +865,7 @@ class Transcript(object):
                         except IndexError:
                             continue
                 elif edit[1] == "R" and edit[2] == "R":
-                    if start_index % 2 and edit[3][2] == "A":
+                    if start_index % 2:
                         edits[pos].append(edit)
             # If there is more than 1 SNV at the same position, one must be
             # germline and the other somatic, as only 1 mutation per mutation
