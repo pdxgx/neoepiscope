@@ -624,8 +624,9 @@ class NeoepiscopeDownloader(object):
         else:
             bowtie_mm9 = None
         programs = []
-        for program in ["netMHCIIpan v3", "netMHCpan v3", "netMHCpan v4", 
-                        "netMHC v4", "netMHCII v2", "PickPocket v1", "netMHCstabpan v1"]:
+        for program in ["netMHCIIpan v3", "netMHCIIpan v4", "netMHCpan v3", "netMHCpan v4.0", 
+                        "netMHCpan v4.1", "netMHC v4", "netMHCII v2", "PickPocket v1", 
+                        "netMHCstabpan v1"]:
             if self._yes_no_query(
                 (
                     "Do you have an install of {} "
@@ -718,8 +719,10 @@ bowtie_grch38 = {bowtie_grch38}
 bowtie_hg19 = {bowtie_hg19}
 bowtie_mm9 = {bowtie_mm9}
 netMHCIIpan3 = {netMHCIIpan3}
+netMHCIIpan4 = {netMHCIIpan4}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
+netMHCpan4_1 = {netMHCpan4_1}
 netMHC4 = {netMHC4}
 netMHCII2 = {netMHCII2}
 PickPocket1 = {PickPocket1}
@@ -750,32 +753,38 @@ hapcut2 = {hapcut2}
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])
                     ),
-                    netMHCpan3=(
+                    netMHCIIpan4=(
                         "None" if programs[1] is None else self._quote(programs[1])
                     ),
-                    netMHCpan4=(
+                    netMHCpan3=(
                         "None" if programs[2] is None else self._quote(programs[2])
                     ),
-                    netMHC4=(
+                    netMHCpan4=(
                         "None" if programs[3] is None else self._quote(programs[3])
                     ),
-                    netMHCII2=(
+                    netMHCpan4=(
                         "None" if programs[4] is None else self._quote(programs[4])
                     ),
-                    PickPocket1=(
+                    netMHC4=(
                         "None" if programs[5] is None else self._quote(programs[5])
                     ),
-                    netMHCstabpan1=(
+                    netMHCII2=(
                         "None" if programs[6] is None else self._quote(programs[6])
                     ),
-                    PSSMHCpan1=(
+                    PickPocket1=(
                         "None" if programs[7] is None else self._quote(programs[7])
                     ),
-                    hapcut2_hairs=(
+                    netMHCstabpan1=(
                         "None" if programs[8] is None else self._quote(programs[8])
                     ),
-                    hapcut2=(
+                    PSSMHCpan1=(
                         "None" if programs[9] is None else self._quote(programs[9])
+                    ),
+                    hapcut2_hairs=(
+                        "None" if programs[10] is None else self._quote(programs[10])
+                    ),
+                    hapcut2=(
+                        "None" if programs[11] is None else self._quote(programs[11])
                     ),
                 ),
                 file=paths_stream,

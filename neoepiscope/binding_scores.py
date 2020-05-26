@@ -164,12 +164,21 @@ def get_binding_tools(binding_tool_list):
                     )
                 )
         elif "netmhciipan" in program.lower():
-            if version == "3" and "netMHCIIpan3" not in tool_dict:
-                program = paths.netMHCIIpan3
-                if program is None:
-                    program = which("netMHCIIpan3")
-                else:
-                    program = which(program)
+            if (version == "3" and "netMHCIIpan3" not in tool_dict) or (
+                version == "4" and "netMHCIIpan4" not in tool_dict
+            ):
+                if version == "3":
+                    program = paths.netMHCIIpan3
+                    if program is None:
+                        program = which("netMHCIIpan3")
+                    else:
+                        program = which(program)
+                elif version == "4":
+                    program = paths.netMHCIIpan4
+                    if program is None:
+                        program = which("netMHCIIpan4")
+                    else:
+                        program = which(program)
                 if program is None:
                     warnings.warn(
                         " ".join(
@@ -189,7 +198,11 @@ def get_binding_tools(binding_tool_list):
                         )
                         scoring.remove(method)
                 if len(scoring) > 0:
-                    tool_dict["netMHCIIpan3"] = [program, sorted(scoring)]
+                    if version == "3":
+                        name = "netMHCIIpan3"
+                    elif version == "4":
+                        name = "netMHCIIpan4"          
+                    tool_dict[name] = [program, sorted(scoring)]
                 else:
                     warnings.warn(
                             " ".join(
@@ -202,7 +215,9 @@ def get_binding_tools(binding_tool_list):
                             ),
                             Warning,
                         )
-            elif "netMHCIIpan3" in tool_dict:
+            elif ("netMHCIIpan3" in tool_dict and version == "3") or (
+                  "netMHCIIpan4" in tool_dict and version == "4"
+            ):
                 raise RuntimeError(
                     "Conflicting or repetitive installs of netMHCIIpan given"
                 )
@@ -271,7 +286,8 @@ def get_binding_tools(binding_tool_list):
                 )
         elif "netmhcpan" in program.lower():
             if ("netMHCpan3" not in tool_dict and version == "3") or (
-                "netMHCpan4" not in tool_dict and version == "4"
+                "netMHCpan4" not in tool_dict and (version == "4" or version == "4.0")) or (
+                "netMHCpan4_1" not in tool_dict and version == "4.1"
             ):
                 if version == "3":
                     program = paths.netMHCpan3
@@ -279,10 +295,16 @@ def get_binding_tools(binding_tool_list):
                         program = which("netMHCpan3")
                     else:
                         program = which(program)
-                elif version == "4":
+                elif version == "4" or version == "4.0":
                     program = paths.netMHCpan4
                     if program is None:
                         program = which("netMHCpan4")
+                    else:
+                        program = which(program)
+                elif version == "4.1":
+                    program = paths.netMHCpan4_1
+                    if program is None:
+                        program = which("netMHCpan4.1")
                     else:
                         program = which(program)
                 if program is None:
@@ -311,6 +333,8 @@ def get_binding_tools(binding_tool_list):
                         name = "netMHCpan3"
                     elif version == "4":
                         name = "netMHCpan4"
+                    elif version == "4.1":
+                        name = "netMHCpan4_1"
                     tool_dict[name] = [program, sorted(scoring)]
                 else:
                     warnings.warn(
@@ -325,7 +349,8 @@ def get_binding_tools(binding_tool_list):
                             Warning,
                         )
             elif ("netMHCpan3" in tool_dict and version == "3") or (
-                "netMHCpan4" in tool_dict and version == "4"
+                  "netMHCpan4" in tool_dict and version == "4") or (
+                  "netMHCpan4_1" in tool_dict and version == "4.1"
             ):
                 raise RuntimeError(
                     "Conflicting or repetitive installs of netMHCpan given"
@@ -738,20 +763,37 @@ def get_affinity_netMHCIIpan(
         )[1]
         files_to_remove.append(mhc_out)
         # Run netMHCIIpan
-        subprocess.check_call(
-            [
-                netmhciipan,
-                "-a",
-                allele,
-                "-inptype",
-                "1",
-                "-xls",
-                "-xlsfile",
-                mhc_out,
-                "-f",
-                peptide_file,
-            ]
-        )
+        if version == "3":
+            subprocess.check_call(
+                [
+                    netmhciipan,
+                    "-a",
+                    allele,
+                    "-inptype",
+                    "1",
+                    "-xls",
+                    "-xlsfile",
+                    mhc_out,
+                    "-f",
+                    peptide_file,
+                ]
+            )
+        elif version == "4":
+            subprocess.check_call(
+                [
+                    netmhciipan,
+                    "-BA",
+                    "-a",
+                    allele,
+                    "-inptype",
+                    "1",
+                    "-xls",
+                    "-xlsfile",
+                    mhc_out,
+                    "-f",
+                    peptide_file,
+                ]
+            )
         # Retrieve scores for valid peptides
         score_dict = {}
         with open(mhc_out, "r") as f:
@@ -761,12 +803,20 @@ def get_affinity_netMHCIIpan(
             for line in f:
                 # token 1 is peptide; token 4 is affinity; token[5] is rank
                 tokens = line.strip("\n").split("\t")
-                if sorted(scores) == ["affinity", "rank"]:
-                    score_dict[tokens[1]] = (tokens[4], tokens[5])
-                elif sorted(scores) == ["affinity"]:
-                    score_dict[tokens[1]] = (tokens[4],)
-                elif sorted(scores) == ["rank"]:
-                    score_dict[tokens[1]] = (tokens[5],)
+                if version == "3":
+                    if sorted(scores) == ["affinity", "rank"]:
+                        score_dict[tokens[1]] = (tokens[4], tokens[5])
+                    elif sorted(scores) == ["affinity"]:
+                        score_dict[tokens[1]] = (tokens[4],)
+                    elif sorted(scores) == ["rank"]:
+                        score_dict[tokens[1]] = (tokens[5],)
+                elif version == "4":
+                    if sorted(scores) == ["affinity", "rank"]:
+                        score_dict[tokens[1]] = (tokens[7], tokens[8])
+                    elif sorted(scores) == ["affinity"]:
+                        score_dict[tokens[1]] = (tokens[7],)
+                    elif sorted(scores) == ["rank"]:
+                        score_dict[tokens[1]] = (tokens[8],)
         # Produce list of scores for valid peptides
         # Invalid peptides receive "NA" score
         for sequence in peptides:
@@ -1476,11 +1526,34 @@ def get_affinity_netMHCpan(
         ) as allele_stream:
             avail_alleles = pickle.load(allele_stream)
         # Homogenize format if needed
-        if version == '3' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01',
-                                         'H-2-Qa2', 'H-2-Qa1']:
+        if version == '3' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 
+                                         'BoLA-T2b', 'Mamu-AG:01', 'H-2-Qa2', 'H-2-Qa1']:
             pass
-        elif version == '4' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2C', 'BoLA-T2c', 'BoLA-T2a', 'BoLA-T2b', 
-                                           'Mamu-AG:01', 'H-2-Qa2', 'H-2-Qa1', 'H2-Qa1', 'H2-Qa2', 'Chi-B0401', 'Chi-B1201', 'Chi-B1501']:
+        elif version == '4' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2C', 'BoLA-T2c', 
+                                           'BoLA-T2a', 'BoLA-T2b', 'Mamu-AG:01', 'H-2-Qa2', 
+                                           'H-2-Qa1', 'H2-Qa1', 'H2-Qa2', 'Chi-B0401', 
+                                           'Chi-B1201', 'Chi-B1501', 'Mamu-A01', 'Mamu-A01',
+                                           'Mamu-A02', 'Mamu-A02', 'Mamu-A03', 'Mamu-A04',
+                                           'Mamu-A06', 'Mamu-A07', 'Mamu-A07', 'Mamu-A11',
+                                           'Mamu-A11', 'Mamu-A19', 'Mamu-A21', 'Mamu-A23',
+                                           'Mamu-A24', 'Mamu-A25', 'Mamu-A26', 'Mamu-A28',
+                                           'Mamu-B01', 'Mamu-B01', 'Mamu-B02', 'Mamu-B03',
+                                           'Mamu-B03', 'Mamu-B04', 'Mamu-B04', 'Mamu-B05',
+                                           'Mamu-B07', 'Mamu-B08', 'Mamu-B08', 'Mamu-B12',
+                                           'Mamu-B17', 'Mamu-B17', 'Mamu-B19', 'Mamu-B20',
+                                           'Mamu-B21', 'Mamu-B22', 'Mamu-B24', 'Mamu-B27',
+                                           'Mamu-B28', 'Mamu-B36', 'Mamu-B37', 'Mamu-B38',
+                                           'Mamu-B39', 'Mamu-B40', 'Mamu-B41', 'Mamu-B43',
+                                           'Mamu-B44', 'Mamu-B45', 'Mamu-B46', 'Mamu-B47',
+                                           'Mamu-B48', 'Mamu-B48', 'Mamu-B49', 'Mamu-B52',
+                                           'Mamu-B53', 'Mamu-B55', 'Mamu-B57', 'Mamu-B61',
+                                           'Mamu-B63', 'Mamu-B64', 'Mamu-B65', 'Mamu-B66',
+                                           'Mamu-B67', 'Mamu-B69', 'Mamu-B70', 'Mamu-B71']:
+            pass
+        elif version == '4.1' and allele in ['BoLA-D18.4', 'BoLA-JSP.1', 'BoLA-T2c', 'BoLA-T2a', 
+                                             'BoLA-T2b', 'BoLA-amani.1', 'BoLA-gb1.7',
+                                             'Mamu-AG:01', 'H-2-Qa2', 'H-2-Qa1', 'H2-Qa1', 
+                                             'H2-Qa2']:
             pass
         else:
             # Parse allele format
@@ -1541,7 +1614,7 @@ def get_affinity_netMHCpan(
                     ],
                     stderr=e,
                 )
-            elif version == "4":
+            elif version == "4" or version == "4_1":
                 subprocess.check_call(
                     [
                         netmhcpan,
@@ -1568,7 +1641,7 @@ def get_affinity_netMHCpan(
                 if version == "3":
                     result_dict = {"affinity": tokens[5],
                                    "rank": tokens[6]}
-                elif version == "4":
+                elif version == "4" or version == "4_1":
                     result_dict = {"affinity": tokens[6],
                                    "rank": tokens[7]}
                 nM = [peptides[i]]
@@ -1972,6 +2045,15 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                     tool_dict[tool][1],
                     remove_files=True,
                 )
+            elif tool == "netMHCIIpan4":
+                binding_scores = get_affinity_netMHCIIpan(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "4",
+                    tool_dict[tool][1],
+                    remove_files=True,
+                )
             elif tool == "netMHCpan3":
                 binding_scores = get_affinity_netMHCpan(
                     list(neoepitopes.keys()),
@@ -1987,6 +2069,15 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
                     allele,
                     tool_dict[tool][0],
                     "4",
+                    tool_dict[tool][1],
+                    remove_files=True,
+                )
+            elif tool == "netMHCpan4_1":
+                binding_scores = get_affinity_netMHCpan(
+                    list(neoepitopes.keys()),
+                    allele,
+                    tool_dict[tool][0],
+                    "4_1",
                     tool_dict[tool][1],
                     remove_files=True,
                 )

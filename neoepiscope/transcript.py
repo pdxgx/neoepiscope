@@ -2574,6 +2574,9 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                             ]
                         )
                 elif tokens[2] == "CDS":
+                    transcript_id = re.sub(
+                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                    )
                     cds_lines[transcript_id].append(tokens)
                 elif tokens[2] == "transcript":
                     transcript_id = re.sub(
