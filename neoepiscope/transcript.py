@@ -1199,6 +1199,7 @@ class Transcript(object):
                 genome=True,
                 include_somatic=include_somatic,
                 include_germline=include_germline,
+                include_rna_edits=include_rna_edits,
             )
             """Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
