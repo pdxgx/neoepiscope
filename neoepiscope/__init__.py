@@ -297,7 +297,7 @@ def main():
         "--build",
         type=str,
         required=False,
-        help="which default genome build to use (human hg19 or GRCh38, or mouse mm9); "
+        help="which default genome build to use (human hg19 or GRCh38, or mouse mm9 or mm10); "
         "must have used download.py script to install these",
     )
     call_parser.add_argument(
@@ -359,7 +359,6 @@ def main():
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
-
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
@@ -384,20 +383,20 @@ def main():
         if args.build is not None:
             if (
                 args.build == "GRCh38"
-                and paths.gencode_v29 is not None
+                and paths.gencode_v34 is not None
                 and paths.bowtie_grch38 is not None
             ):
                 with open(
-                    os.path.join(paths.gencode_v29, "intervals_to_transcript.pickle"),
+                    os.path.join(paths.gencode_v34, "intervals_to_transcript.pickle"),
                     "rb",
                 ) as interval_stream:
                     interval_dict = pickle.load(interval_stream)
                 with open(
-                    os.path.join(paths.gencode_v29, "transcript_to_CDS.pickle"), "rb"
+                    os.path.join(paths.gencode_v34, "transcript_to_CDS.pickle"), "rb"
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_v29, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_v34, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
@@ -439,6 +438,25 @@ def main():
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
+            elif (
+                args.build == "mm10"
+                and paths.gencode_vM25 is not None
+                and paths.bowtie_mm10 is not None
+            ):
+                with open(
+                    os.path.join(paths.gencode_vM25, "intervals_to_transcript.pickle"),
+                    "rb",
+                ) as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(
+                    os.path.join(paths.gencode_vM25, "transcript_to_CDS.pickle"), "rb"
+                ) as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                with open(
+                    os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"), "rb"
+                ) as info_stream:
+                    info_dict = pickle.load(info_stream)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm10)
             else:
                 raise RuntimeError(
                     "".join(
