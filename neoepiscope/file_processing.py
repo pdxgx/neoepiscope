@@ -582,7 +582,7 @@ def get_vaf_pos(VCF):
     return (vaf_pos, field)
 
 
-def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
+def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm_dict, tpm_threshold):
     """ Writes predicted neoepitopes out to file
 
         output_file: path to output file
@@ -591,6 +591,8 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
         tool_dict: dictionary storing prediction tool data
         tx_dict: dictionary linking transcript ID to list of 
                     [transcript type, gene ID, gene name]
+        tpm_dict: dictionary linking feature ID to TPM value
+        tmp_threshold: minimum TPM to retain peptide
 
         Return value: None.
     """
@@ -632,6 +634,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
             "Transcript_type",
             "Gene_ID",
             "Gene_name",
+            "TPM",
             "IEDB_ID"
         ]
         for allele in hla_alleles:
@@ -670,6 +673,24 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
                     vaf = str(mutation[5])
                 # Get transcript/gene info
                 tx_info = tx_dict[mutation[8]]
+                # Get gene expression info
+                if tpm_dict is not None:
+                    try:
+                        # Search transcript TPM first
+                        tpm = tpm_dict[mutation[8]]
+                    except KeyError:
+                        try:
+                            # Next try gene TPM
+                            tpm = tpm_dict[tx_info[1]]
+                        except KeyError:
+                            tpm = 'NA'
+                    if tpm_threshold is not None:
+                        if tpm == 'NA':
+                            continue
+                        elif tpm < tpm_threshold:
+                            continue
+                else:
+                    tpm = "NA"
                 out_line = [
                     epitope,
                     mutation[0],
@@ -684,6 +705,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
                     tx_info[0],
                     tx_info[1],
                     tx_info[2],
+                    str(tpm),
                     iedb_id
                 ]
                 for i in range(9, len(mutation)):
@@ -720,10 +742,36 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
                     tx_types = []
                     gene_ids = []
                     gene_names = []
+                    tpm_values = []
+                    expressed = False
+                    # Get transcript/gene info
                     for tx in transcripts:
                         tx_types.append(tx_dict[tx][0])
                         gene_ids.append(tx_dict[tx][1])
                         gene_names.append(tx_dict[tx][2])
+                        # Get gene expression info
+                        if tpm_dict is not None:
+                            try:
+                                # Try transcript TPM first
+                                tpm = tpm_dict[tx]
+                                if tpm_threshold is not None:
+                                    if tpm >= tpm_threshold:
+                                        expressed = True
+                            except KeyError:
+                                try:
+                                    # Then try gene error
+                                    tpm = tpm_dict[tx_dict[tx][1]]
+                                    if tpm_threshold is not None:
+                                        if tpm >= tpm_threshold:
+                                            expressed = True
+                                except KeyError:
+                                    tpm = 'NA'
+                            tpm_values.append(tpm)
+                        else:
+                            tpm_values.append('NA')
+                    # If no gene for mutation is expressed, filter out
+                    if tpm_threshold is not None and not expressed:
+                        continue
                     out_line = [
                         epitope,
                         mut[0],
@@ -738,6 +786,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict):
                         ";".join(tx_types),
                         ";".join(gene_ids),
                         ";".join(gene_names),
+                        ";".join([str(x) for x in tpm_values]),
                         iedb_id
                     ]
                     for score in ep_scores:

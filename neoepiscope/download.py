@@ -48,8 +48,7 @@ import tempfile
 import sys
 import os
 import subprocess
-from .transcript import gtf_to_cds
-from .transcript import cds_to_tree
+from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree
 from distutils.core import Command
 
 download = {
@@ -547,6 +546,7 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE v34...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v34_gtf, gencode_v34_temp)
+            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v34_temp)
             cds_to_tree(cds_dict, gencode_v34_temp)
         else:
             gencode_v34 = None
@@ -576,6 +576,7 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE v19...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
+            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v19_temp)
             cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None
@@ -605,6 +606,7 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM25...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_vM25_gtf, gencode_vM25_temp)
+            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_vM25_temp)
             cds_to_tree(cds_dict, gencode_vM25_temp)
         else:
             gencode_vM25 = None
@@ -634,6 +636,7 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM1...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_vM1_gtf, gencode_vM1_temp)
+            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_vM1_temp)
             cds_to_tree(cds_dict, gencode_vM1_temp)
         else:
             gencode_vM1 = None

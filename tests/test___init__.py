@@ -60,6 +60,9 @@ class TestGTFprocessing(unittest.TestCase):
         self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
         self.cds11, self.tx11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
         self.tree11 = cds_to_tree(self.cds11, "NA", pickle_it=False)
+        self.lengths11 = cds_to_feature_length(self.cds11, self.tx11, "NA", pickle_it=False)
+        self.counts = {'ENSG00000052850.5_2': 1571.0, 'ENSG00000177951.17_2': 372.0}
+        self.tpm11 = feature_to_tpm_dict(self.counts, self.lengths11)
 
     def test_transcript_to_cds(self):
         """Fails if dictionary was built incorrectly"""
@@ -98,6 +101,15 @@ class TestGTFprocessing(unittest.TestCase):
                 "ENST00000448477.6_2_PAR_Y",
             ],
         )
+
+    def test_feature_lengths(self):
+        """Fails if feature lengths are counted incorrectly"""
+        self.assertEqual(self.lengths11['ENSG00000177951.17_2'], 0.651)
+        self.assertEqual(self.lengths11['ENST00000332865.10_1'], 0.533)
+
+    def test_tpm(self):
+        """Fails if TPM is calculated incorrectly"""
+        self.assertEqual(self.tpm11['ENSG00000052850.5_2'], 323469.7179162867)
 
 
 class TestVCFmerging(unittest.TestCase):
@@ -544,37 +556,6 @@ class TestHaplotypeProcessing(unittest.TestCase):
             ],
         )
 
-'''
-class TestBindingPrediction(unittest.TestCase):
-    """Tests binding prediction functions"""
-
-    def setUp(self):
-        """"""
-        self.neoepitopes = {
-            "CGCSQKCN": [("11", 71277056, "", "AAA", "I", 0.001, "ENST00000398531.2_2")],
-            "PVCCPCKI": [("11", 71277229, "A", "C", "V", 0.157, "ENST00000398531.2_2")],
-        }
-        self.tools = {
-            "mhcflurry1": ["mhcflurry-predict", ["affinity", "rank"]],
-            "mhcnuggets2": ["NA", ["affinity"]],
-        }
-        self.alleles = ["HLA-A*02:01", "HLA-B*07:02"]
-        self.size_list = [8]
-
-    def test_binding_scores(self):
-        new_neoepitopes = gather_binding_scores(
-            self.neoepitopes, self.tools, self.alleles, self.size_list
-        )
-        self.assertEqual(
-            len(new_neoepitopes["CGCSQKCN"][0]), 13)
-        self.assertEqual(
-            len(new_neoepitopes["PVCCPCKI"][0]), 13)
-        for score in new_neoepitopes["CGCSQKCN"][0][7:]:
-            self.assertEqual(type(score), str)
-        for score in new_neoepitopes["PVCCPCKI"][0][7:]:
-            self.assertEqual(type(score), str)
-'''
-
 class TestOutput(unittest.TestCase):
     """Tests function to write output"""
 
@@ -669,7 +650,8 @@ class TestOutput(unittest.TestCase):
         """Tests that output file is written correctly"""
 
         from sys import version_info
-        write_results(self.out_file, self.HLA_alleles, self.neoepitopes, self.tools, self.tx)
+        write_results(self.out_file, self.HLA_alleles, self.neoepitopes, 
+                      self.tools, self.tx, None, None)
         if version_info[0] < 3:
             from itertools import izip, ifilter
             with open(self.out_file) as fh1, open(self.correct_out) as fh2:
@@ -686,7 +668,6 @@ class TestOutput(unittest.TestCase):
     def tearDown(self):
         """Removes test file"""
         os.remove(self.out_file)
-
 
 if __name__ == "__main__":
     unittest.main()

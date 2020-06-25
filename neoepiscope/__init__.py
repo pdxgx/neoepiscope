@@ -47,10 +47,12 @@ from . import paths
 from .transcript import (
     Transcript,
     gtf_to_cds,
+    cds_to_feature_length,
     cds_to_tree,
     get_transcripts_from_tree,
     process_haplotypes,
     get_peptides_from_transcripts,
+    feature_to_tpm_dict,
 )
 from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
@@ -356,6 +358,18 @@ def main():
         default=False,
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
+    call_parser.add_argument(
+        "--feature-counts",
+        type=str,
+        required=False,
+        help="path to file containing per-transcript or per-gene read counts",
+    )
+    call_parser.add_argument(
+        "--tpm-threshold",
+        type=float,
+        required=False,
+        help="minimum TPM to consider gene or transcript expressed",
+    )
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
@@ -363,6 +377,7 @@ def main():
         downloader.run()
     elif args.subparser_name == "index":
         cds_dict, tx_data_dict = gtf_to_cds(args.gtf, args.dicts)
+        gene_lengths = cds_to_feature_length(cds_dict, tx_data_dict, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
@@ -399,6 +414,10 @@ def main():
                     os.path.join(paths.gencode_v34, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_v34, "feature_to_feature_length.pickle"), "rb"
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
             elif (
                 args.build == "hg19"
@@ -418,6 +437,10 @@ def main():
                     os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_v19, "feature_to_feature_length.pickle"), "rb"
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
             elif (
                 args.build == "mm9"
@@ -437,6 +460,10 @@ def main():
                     os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_vM1, "feature_to_feature_length.pickle"), "rb"
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
             elif (
                 args.build == "mm10"
@@ -456,6 +483,10 @@ def main():
                     os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"), "rb"
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_vM25, "feature_to_feature_length.pickle"), "rb"
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm10)
             else:
                 raise RuntimeError(
@@ -464,7 +495,7 @@ def main():
                             args.build,
                             " is not an available genome build. Please "
                             "check that you have run neoepiscope download and are "
-                            "using 'hg19', 'GRCh38', or 'mm9' for this argument.",
+                            "using 'hg19', 'GRCh38', 'mm10', or 'mm9' for this argument.",
                         ]
                     )
                 )
@@ -503,13 +534,27 @@ def main():
                 info_path = os.path.join(args.dicts, "transcript_to_gene_info.pickle")
                 if os.path.isfile(info_path):
                     with open(info_path, "rb") as info_stream:
-                        info_dict = pickle.load(cds_stream)
+                        info_dict = pickle.load(info_stream)
                 else:
                     raise RuntimeError(
                         "".join(
                             [
                                 "Cannot find ",
                                 info_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
+                feature_length_path = os.path.join(args.dicts, "feature_to_feature_length.pickle")
+                if os.path.isfile(feature_length_path):
+                    with open(feature_length_path, "rb") as length_stream:
+                        feature_length_dict = pickle.load(length_stream)
+                else:
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                feature_length_path,
                                 "; have you indexed your GTF with neoepiscope index?",
                             ]
                         )
@@ -619,10 +664,27 @@ def main():
                 "excluded, no epitopes will be returned",
                 Warning,
             )
+        # Determine whether mutations will be phased
         if not args.isolate:
             phase_mutations = True
         else:
             phase_mutations = False
+        # Determine per-feature TPMs if relevant
+        if args.feature_counts:
+            features_to_reads = {}
+            with open(args.feature_counts) as f:
+                for line in f:
+                    tokens = line.strip().split('\t')
+                    features_to_reads[tokens[0]] = float(tokens[1])
+            tpm_dict = feature_to_tpm_dict(features_to_reads, feature_length_dict)
+            if args.tpm_threshold:
+                tpm_threshold = args.tpm_threshold
+            else:
+                tpm_threshold = None
+        else:
+            # Not using expression data
+            tpm_dict = None
+            tpm_threshold = None
         # Find transcripts that haplotypes overlap
         relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations
@@ -653,7 +715,8 @@ def main():
             full_neoepitopes = gather_binding_scores(
                 neoepitopes, tool_dict, hla_alleles, size_list
             )
-            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, info_dict)
+            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, 
+                          info_dict, tpm_dict, tpm_threshold)
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
                 with open(fasta_file, "w") as f:
