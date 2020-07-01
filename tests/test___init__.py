@@ -61,7 +61,7 @@ class TestGTFprocessing(unittest.TestCase):
         self.cds11, self.tx11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
         self.tree11 = cds_to_tree(self.cds11, "NA", pickle_it=False)
         self.lengths11 = cds_to_feature_length(self.cds11, self.tx11, "NA", pickle_it=False)
-        self.counts = {'ENSG00000052850.5_2': 1571.0, 'ENSG00000177951.17_2': 372.0}
+        self.counts = {'ENST00000325207.9_2': 1571.0, 'ENST00000325147.13_1': 372.0}
         self.tpm11 = feature_to_tpm_dict(self.counts, self.lengths11)
 
     def test_transcript_to_cds(self):
@@ -104,12 +104,11 @@ class TestGTFprocessing(unittest.TestCase):
 
     def test_feature_lengths(self):
         """Fails if feature lengths are counted incorrectly"""
-        self.assertEqual(self.lengths11['ENSG00000177951.17_2'], 0.651)
         self.assertEqual(self.lengths11['ENST00000332865.10_1'], 0.533)
 
     def test_tpm(self):
         """Fails if TPM is calculated incorrectly"""
-        self.assertEqual(self.tpm11['ENSG00000052850.5_2'], 323469.7179162867)
+        self.assertEqual(self.tpm11['ENST00000325207.9_2'], 820065.9484656778)
 
 
 class TestVCFmerging(unittest.TestCase):

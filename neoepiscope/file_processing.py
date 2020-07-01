@@ -679,11 +679,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                         # Search transcript TPM first
                         tpm = tpm_dict[mutation[8]]
                     except KeyError:
-                        try:
-                            # Next try gene TPM
-                            tpm = tpm_dict[tx_info[1]]
-                        except KeyError:
-                            tpm = 'NA'
+                        tpm = 'NA'
                     if tpm_threshold is not None:
                         if tpm == 'NA':
                             continue
@@ -758,14 +754,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                                     if tpm >= tpm_threshold:
                                         expressed = True
                             except KeyError:
-                                try:
-                                    # Then try gene error
-                                    tpm = tpm_dict[tx_dict[tx][1]]
-                                    if tpm_threshold is not None:
-                                        if tpm >= tpm_threshold:
-                                            expressed = True
-                                except KeyError:
-                                    tpm = 'NA'
+                                tpm = 'NA'
                             tpm_values.append(tpm)
                         else:
                             tpm_values.append('NA')

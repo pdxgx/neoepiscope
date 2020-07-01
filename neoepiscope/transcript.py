@@ -2685,14 +2685,8 @@ def cds_to_feature_length(cds_dict, tx_data_dict, dictdir, pickle_it=True):
                 # Calculate exon length and add to isoform length
                 block_length = block[3] - block[2] + 1
                 length += block_length
-        # Store isoform length in dict and in list for gene
-        gene_id = tx_data_dict[transcript_id][1]
-        gene_to_isoform_lengths[gene_id].append(length)
+        # Store isoform length in dict
         feature_to_feature_length[transcript_id] = length/1000.0
-    # Get median isoform length for gene
-    for gene in gene_to_isoform_lengths:
-        med_length = median(gene_to_isoform_lengths[gene])
-        feature_to_feature_length[gene] = med_length/1000.0
     # Write to pickled dictionary
     if pickle_it:
         pickle_dict = os.path.join(dictdir, "feature_to_feature_length.pickle")

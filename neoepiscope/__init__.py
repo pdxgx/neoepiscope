@@ -359,16 +359,16 @@ def main():
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
     call_parser.add_argument(
-        "--feature-counts",
+        "--transcript-counts",
         type=str,
         required=False,
-        help="path to file containing per-transcript or per-gene read counts",
+        help="path to file containing per-transcript read counts",
     )
     call_parser.add_argument(
         "--tpm-threshold",
         type=float,
         required=False,
-        help="minimum TPM to consider gene or transcript expressed",
+        help="minimum TPM to consider a transcript expressed",
     )
     args = parser.parse_args()
     if args.subparser_name == "download":
@@ -670,9 +670,9 @@ def main():
         else:
             phase_mutations = False
         # Determine per-feature TPMs if relevant
-        if args.feature_counts:
+        if args.transcript_counts:
             features_to_reads = {}
-            with open(args.feature_counts) as f:
+            with open(args.transcript_counts) as f:
                 for line in f:
                     tokens = line.strip().split('\t')
                     features_to_reads[tokens[0]] = float(tokens[1])
