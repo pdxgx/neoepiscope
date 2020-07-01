@@ -52,8 +52,8 @@ from .transcript import (
     get_transcripts_from_tree,
     process_haplotypes,
     get_peptides_from_transcripts,
-    feature_to_tpm_dict,
 )
+from .transcript_expression import feature_to_tpm_dict
 from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,

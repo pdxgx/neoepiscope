@@ -2694,33 +2694,6 @@ def cds_to_feature_length(cds_dict, tx_data_dict, dictdir, pickle_it=True):
             pickle.dump(feature_to_feature_length, f)
     return feature_to_feature_length
 
-def feature_to_tpm_dict(feature_to_read_count, feature_to_feature_length):
-    """ Calculate TPM values for feature
-
-        feature_to_read_count: dictionary linking features to read counts (float)
-        feature_to_feature_length: dictionary linking features to feature lengths (float)
-
-        Return value: dictionary linking feature ID to TPM value
-    """
-    total_rpk = 0.0
-    feature_to_rpk = {}
-    feature_to_tpm = {}
-    # Get read per kilobase counts for each feature
-    for feature in feature_to_read_count:
-        try:
-            rpk = feature_to_read_count[feature]/feature_to_feature_length[feature]
-        except KeyError:
-            continue
-        feature_to_rpk[feature] = rpk
-        total_rpk += rpk
-    # Calculate scaling factor
-    scaling = total_rpk/1000000.0
-    # Calculate TPM values
-    for feature in feature_to_rpk:
-        tpm = feature_to_rpk[feature]/scaling
-        feature_to_tpm[feature] = tpm
-    return feature_to_tpm
-
 def cds_to_tree(cds_dict, dictdir, pickle_it=True):
     """ Creates searchable tree of chromosome intervals from CDS dictionary
         Each chromosome is stored in the dictionary as an interval tree object
