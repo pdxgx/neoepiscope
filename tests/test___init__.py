@@ -30,6 +30,7 @@ SOFTWARE.
 
 from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
+from collections import defaultdict
 import os.path as path, sys
 
 from neoepiscope import *
@@ -644,13 +645,21 @@ class TestOutput(unittest.TestCase):
                 ),
             ],
         }
+        self.tpm_dict = {"ENST00000325113.8_1": 5.78, "ENST00000398531.2_2": 0.52}
+        self.expressed_vars = defaultdict(int)
+        self.expressed_vars[("11", 71277229, "A", "C", "V")] = 7
+        self.expressed_vars[("11", 167789, "A", "T", "V")] = 5
+        self.covered_vars = defaultdict(int)
+        self.covered_vars[("11", 71277229, "A", "C", "V")] = 10
+        self.covered_vars[("11", 167789, "A", "T", "V")] = 30
 
     def testwrite(self):
         """Tests that output file is written correctly"""
 
         from sys import version_info
         write_results(self.out_file, self.HLA_alleles, self.neoepitopes, 
-                      self.tools, self.tx, None, None)
+                      self.tools, self.tx, self.tpm_dict, None, self.expressed_vars,
+                      self.covered_vars)
         if version_info[0] < 3:
             from itertools import izip, ifilter
             with open(self.out_file) as fh1, open(self.correct_out) as fh2:
