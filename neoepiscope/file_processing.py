@@ -582,7 +582,9 @@ def get_vaf_pos(VCF):
     return (vaf_pos, field)
 
 
-def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm_dict, tpm_threshold):
+def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, 
+                  tpm_dict=None, tpm_threshold=None, expressed_variants=None,
+                  covered_variants=None):
     """ Writes predicted neoepitopes out to file
 
         output_file: path to output file
@@ -593,6 +595,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                     [transcript type, gene ID, gene name]
         tpm_dict: dictionary linking feature ID to TPM value
         tmp_threshold: minimum TPM to retain peptide
+        expressed_variants: dictionary linking variants to count of RNA-seq 
+                            reads supporting them
+        covered_variants: dictionary linking variants to count of RNA-seq 
+                          reads covering their position
 
         Return value: None.
     """
@@ -635,6 +641,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
             "Gene_ID",
             "Gene_name",
             "TPM",
+            "Variant_read_support",
+            "Variant_read_coverage",
+            "Percent_read_support",
             "IEDB_ID"
         ]
         for allele in hla_alleles:
@@ -687,6 +696,17 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                             continue
                 else:
                     tpm = "NA"
+                if expressed_variants is not None:
+                    reads_supporting_variant = expressed_variants[tuple(mutation[0:5])]
+                    reads_covering_variant = covered_variants[tuple(mutation[0:5])]
+                    try:
+                        percent_support = 100*float(reads_supporting_variant)/float(reads_covering_variant)
+                    except ZeroDivisionError:
+                        percent_support = 'NA'
+                else:
+                    reads_supporting_variant = 'NA'
+                    reads_covering_variant = 'NA'
+                    percent_support = 'NA'
                 out_line = [
                     epitope,
                     mutation[0],
@@ -702,6 +722,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                     tx_info[1],
                     tx_info[2],
                     str(tpm),
+                    str(reads_supporting_variant),
+                    str(reads_covering_variant),
+                    str(percent_support),
                     iedb_id
                 ]
                 for i in range(9, len(mutation)):
@@ -728,8 +751,20 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                         vaf = "NA"
                     else:
                         vaf = str(mut[5])
+                    if expressed_variants is not None:
+                        reads_supporting_variant = expressed_variants[tuple(mut[0:5])]
+                        reads_covering_variant = covered_variants[tuple(mut[0:5])]
+                        try:
+                            percent_support = 100*float(reads_supporting_variant)/float(reads_covering_variant)
+                        except ZeroDivisionError:
+                            percent_support = 'NA'
+                    else:
+                        reads_supporting_variant = 'NA'
+                        reads_covering_variant = 'NA'
+                        percent_support = 'NA'
                     mutation_dict[
-                        (mut[0], mut[1], ref, alt, mut[4], vaf, mut[6])
+                        (mut[0], mut[1], ref, alt, mut[4], vaf, mut[6], 
+                         reads_supporting_variant, reads_covering_variant, percent_support)
                     ].append([mut[7], mut[8]])
                 mutation_list = sorted(list(mutation_dict.keys()))
                 # Get transcript/gene info 
@@ -776,6 +811,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, tpm
                         ";".join(gene_ids),
                         ";".join(gene_names),
                         ";".join([str(x) for x in tpm_values]),
+                        str(mut[7]),
+                        str(mut[8]),
+                        str(mut[9]),
                         iedb_id
                     ]
                     for score in ep_scores:

@@ -53,7 +53,10 @@ from .transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from .transcript_expression import feature_to_tpm_dict
+from .transcript_expression import (
+    feature_to_tpm_dict, 
+    get_expressed_variants
+)
 from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,
@@ -715,8 +718,16 @@ def main():
             full_neoepitopes = gather_binding_scores(
                 neoepitopes, tool_dict, hla_alleles, size_list
             )
+            # Find expressed variants if relevant
+            if args.rna_bam:
+                expressed_variants, covered_variants = get_expressed_variants(
+                    args.rna_bam, reference_index, full_neoepitopes
+                )
+            else:
+                expressed_variants, covered_variants = None, None
             write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, 
-                          info_dict, tpm_dict, tpm_threshold)
+                          info_dict, tpm_dict, tpm_threshold, expressed_variants,
+                          covered_variants)
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
                 with open(fasta_file, "w") as f:

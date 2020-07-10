@@ -1688,11 +1688,11 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
             return [(peptides[i],) + score_form for i in range(0, len(peptides))]
         # Check that allele is valid for method
         if allele_format in avail_alleles["mhcnuggets_mhcI"]:
-            allele = avail_alleles["mhcnuggets_mhcI"][allele]
+            allele = avail_alleles["mhcnuggets_mhcI"][allele_format]
             allele_class = "I"
             max_length = 15
         elif allele_format in avail_alleles["mhcnuggets_mhcII"]:
-            allele = avail_alleles["mhcnuggets_mhcII"][allele]
+            allele = avail_alleles["mhcnuggets_mhcII"][allele_format]
             allele_class = "II"
             max_length = 30
         else:
