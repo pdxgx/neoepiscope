@@ -714,5 +714,6 @@ class TestOutput(unittest.TestCase):
         """Removes test file"""
         os.remove(self.out_file)
 
+
 if __name__ == "__main__":
     unittest.main()

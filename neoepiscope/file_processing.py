@@ -700,7 +700,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                     reads_supporting_variant = expressed_variants[tuple(mutation[0:5])]
                     reads_covering_variant = covered_variants[tuple(mutation[0:5])]
                     try:
-                        percent_support = 100*float(reads_supporting_variant)/float(reads_covering_variant)
+                        percent_support = round(
+                            100*float(reads_supporting_variant)/float(reads_covering_variant),
+                            3
+                        )
                     except ZeroDivisionError:
                         percent_support = 'NA'
                 else:
@@ -755,7 +758,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                         reads_supporting_variant = expressed_variants[tuple(mut[0:5])]
                         reads_covering_variant = covered_variants[tuple(mut[0:5])]
                         try:
-                            percent_support = 100*float(reads_supporting_variant)/float(reads_covering_variant)
+                            percent_support = round(
+                                100*float(reads_supporting_variant)/float(reads_covering_variant),
+                                3
+                            )
                         except ZeroDivisionError:
                             percent_support = 'NA'
                     else:
