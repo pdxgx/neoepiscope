@@ -556,6 +556,43 @@ class TestHaplotypeProcessing(unittest.TestCase):
             ],
         )
 
+class TestExpression(unittest.TestCase):
+    """Tests variant-level expression"""
+
+    def setUp(self):
+        """Sets up paths/variables"""
+        self.base_dir = os.path.join(neoepiscope_dir, "tests")
+        self.bam = os.path.join(self.base_dir, "test.rna.bam")
+        self.neoepitopes = {
+            'AAAAAAAAA': [
+                (
+                    '11', 
+                    63401, 
+                    'C', 
+                    'T',
+                    'V',
+                    'NA', 
+                    'AAAACAAAA', 
+                    'NA', 
+                    'NA', 
+                    'TX1.2'
+                )
+            ]
+        }
+        self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
+        self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
+
+    def testSupport(self):
+        """Test read support function"""
+        expressed_vars, covered_vars = transcript_expression.get_expressed_variants(
+                    self.bam, self.reference_index, self.neoepitopes
+        )
+        self.assertEqual(expressed_vars[('11', 63401, 'C', 'T', 'V')], 2)
+        self.assertEqual(covered_vars[('11', 63401, 'C', 'T', 'V')], 4)
+        self.assertEqual(len(expressed_vars.keys()), 1)
+        self.assertEqual(len(covered_vars.keys()), 1)
+
+
 class TestOutput(unittest.TestCase):
     """Tests function to write output"""
 

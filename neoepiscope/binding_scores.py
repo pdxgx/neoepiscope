@@ -1682,7 +1682,7 @@ def get_affinity_mhcnuggets(peptides, allele, version, remove_files=True):
             allele_format = parse_allele_name(allele)
         except:
             warnings.warn(
-                " ".join([allele, "is not a valid allele for mhcflurry"]), Warning
+                " ".join([allele, "is not a valid allele for mhcnuggets"]), Warning
             )
             score_form = tuple(["NA" for i in range(0, len(scores))])
             return [(peptides[i],) + score_form for i in range(0, len(peptides))]

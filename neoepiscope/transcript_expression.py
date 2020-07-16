@@ -253,6 +253,7 @@ def generate_variant_bed(neopeptide_dict, chr_in_contigs):
     with open(bed_path, 'w') as f:
         for mut in all_mutations:
             # Figure out chromosome name structure
+            contig = mut[0]
             if (mut[0].startswith('chr') and chr_in_contigs) or (not mut[0].startswith('chr') and not chr_in_contigs):
                 contig = mut[0]
             elif mut[0].startswith('chr') and not chr_in_contigs:
@@ -273,7 +274,7 @@ def generate_variant_bed(neopeptide_dict, chr_in_contigs):
                 alt = mut[3]
                 end = mut[1] + mut[3]
             out_line = [contig, str(mut[1]), str(end)]
-            var_intervals[contig][mut[1]:end] = (contig, mut[1], ref, alt, mut[4])
+            var_intervals[contig][mut[1]:end] = (mut[0], mut[1], ref, alt, mut[4])
             print('\t'.join(out_line), file=f)
     return bed_path, all_mutations, var_intervals
 
@@ -393,7 +394,7 @@ def get_expressed_variants(bam, reference_index, neopeptides, remove_files=True)
             # Find and store variants that overlap intervals
             var_set = set()
             for i in range(0, len(intervals), 2):
-                overlapping_variants = var_intervals[contig].overlap(intervals[i], intervals[i+1])
+                overlapping_variants = var_intervals[search_contig].overlap(intervals[i], intervals[i+1])
                 for var in [x.data for x in overlapping_variants]:
                     var_set.add(var)
             # Add read counts to all overlapping variants
