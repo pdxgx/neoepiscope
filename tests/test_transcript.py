@@ -50,18 +50,29 @@ class TestTranscript(unittest.TestCase):
             "tests",
             "Chr11.gtf",
         )
+        self.gtf_hg38 = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "tests",
+            "grch38_chr11.gtf",
+        )
         self.cds, self.tx_data = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+        self.cds_hg38, self.tx_data_hg38 = gtf_to_cds(self.gtf_hg38, "NA", pickle_it=False)
         self.ref_prefix = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",
             "Chr11.ref",
         )
-        #self.atoi = os.path.join(os.path.dirname(os.path.abspath(__file__))
-        #        , "transcript_to_editing_hg38.pickle")
-        self.atoi = os.path.join(os.path.dirname(os.path.abspath(__file__))
-                , "transcript_to_editing.pickle")
+        self.ref_prefix_hg38 = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "tests",
+            "grch38_chr11",
+        )
+        self.atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 "neoepiscope",
+                 "transcript_to_editing_hg38.pickle")
         self.rna_dict = pickle.load(open(self.atoi, "rb"))
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
+        self.reference_index_hg38 = bowtie_index.BowtieIndexReference(self.ref_prefix_hg38)
         ## All following transcripts from GRCh37 genome build ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
         self.transcript = Transcript(
@@ -141,7 +152,7 @@ class TestTranscript(unittest.TestCase):
         )
         # AP003733.1: transcript w/ 1 exon (coding)  
         self.atoi_transcript = Transcript(
-            self.reference_index,
+            self.reference_index_hg38,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -152,11 +163,11 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
-                    "ENST00000601917.1"
+                for (chrom, seq_type, start, end, strand, tx_type) in self.cds_hg38[
+                    "ENST00000318950.10"
                 ]
             ],
-            "ENST00000601917.1",
+            "ENST00000318950.10",
             self.rna_dict,
         )
 
@@ -1151,9 +1162,8 @@ class TestTranscript(unittest.TestCase):
         """check expressed_edit can read and generate edits using
             rna_editing_sites"""
         self.atoi_transcript.expressed_edits(include_rna_edits=True)
-        self.assertEqual(self.atoi_transcript.edits[61736745],
-                [('I', 'R', 'R', ('11', 61736746, 'A', 'I', 'R', None))])
-        self.assertEqual(self.atoi_transcript.edits[61736727],
-                [('I', 'R', 'R', ('11', 61736728, 'A', 'I', 'R', None))])
+        self.assertEqual(self.atoi_transcript.edits[9750161],
+                [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
+        self.assertEqual(self.atoi_transcript.edits[9664180], [])
 if __name__ == "__main__":
     unittest.main()

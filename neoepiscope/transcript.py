@@ -313,6 +313,7 @@ class Transcript(object):
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
         self.intervals = []
+        self.all_transcript_warnings = []
         # Internal representation is 0-based
         self._start_codon, self._stop_codon = None, None
         # Public representation is 1-based
@@ -573,11 +574,24 @@ class Transcript(object):
                     )
                 )
         elif mutation_type == "R":
+            if self.rev_strand and self.stop_codon == pos:
+                self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon in %s %s"
+                        %(pos, self.transcript_id))
+                return 0
+
+            if not self.rev_strand and self.start_codon == pos:
+                self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon in %s %s"%(pos, self.transcript_id))
+                return 0
             reference_seq = self.bowtie_reference_index.get_stretch(
                 self.chrom, pos - 1, len(seq)
             )
-            other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
-            if mutation_class not in [snv[2] for snv in other_snvs]:
+            try:
+                assert reference_seq == "A" or reference_seq == "T"
+            except:
+                raise NotImplementedError("Reference nucleotide at RNA edit position is not A or T \
+                        at chromosome %s, %s" %(self.chrom, pos))
+            other_rna_edit = [edit for edit in self.edits[pos - 1] if edit[1] == 'R']
+            if mutation_class not in [snv[2] for snv in other_rna_edit]:
                 self.edits[pos - 1].append(
                     (
                         seq,
@@ -587,7 +601,10 @@ class Transcript(object):
                     )
                 )
             else:
-                warnings.warn("RNA Editing Site was disrupted")
+                warnings.warn("RNA Editing Site was disrupted in %s"%self.transcript_id)
+                self.all_transcript_warnings.append(
+                        "rna_editing_site_disrupted in %s"%self.transcript_id)
+
         else:
             raise NotImplementedError("Mutation type not yet implemented")
 
@@ -1764,7 +1781,7 @@ class Transcript(object):
         linker_dict = {}
         seq_previous = []
         new_ATG_upstream = False
-        transcript_warnings = []
+        transcript_warnings = copy.copy(self.all_transcript_warnings)
         annotated_seq.append([])
         for seq in annotated_seq:
             if self._find_new_start:
