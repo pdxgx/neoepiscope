@@ -1164,6 +1164,12 @@ class TestTranscript(unittest.TestCase):
         self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertEqual(self.atoi_transcript.edits[9750161],
                 [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
+
+    def test_edit_with_rna_edits_at_start_codon(self):
+        """check whether rna editing in start codon is not allowed"""
+        self.atoi_transcript.edit('I',9664180, mutation_type="R", mutation_class="R", vaf=None)
         self.assertEqual(self.atoi_transcript.edits[9664180], [])
+
+
 if __name__ == "__main__":
     unittest.main()
