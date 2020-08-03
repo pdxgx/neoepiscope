@@ -55,14 +55,7 @@ import warnings
 import contextlib
 import networkx as nx
 
-from sys import version_info
-
-if version_info[0] < 3:
-    from string import maketrans
-    revcomp_translation_table = maketrans("ATCG", "TAGC")
-else:
-    revcomp_translation_table = str.maketrans("ATCG", "TAGC")
-
+revcomp_translation_table = str.maketrans("ATCG", "TAGC")
 
 @contextlib.contextmanager
 def xopen(gzipped, *args):

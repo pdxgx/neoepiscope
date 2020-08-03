@@ -465,7 +465,7 @@ class NeoepiscopeDownloader(object):
             else:
                 self.curl_exe = self.curl_exe.replace(" --help", "")
         self._print_to_screen_and_log("[Configuring] Downloading mhcflurry data...")
-        subprocess.call(["mhcflurry-downloads", "fetch"])
+        subprocess.call(["mhcflurry-downloads", "fetch", "models_class1_presentation"])
         if self.download_dir is None:
             self.download_dir = os.path.join(
                 os.path.expanduser("~"), "neoepiscope.data"

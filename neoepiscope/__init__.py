@@ -231,7 +231,7 @@ def main():
         nargs=3,
         required=False,
         action="append",
-        default=[["mhcflurry", "1", "affinity,rank"]],
+        default=[["mhcflurry", "2", "presentation_score"]],
         help="binding affinity prediction software,"
         "associated version number, and scoring method(s) "
         "(e.g. -p netMHCpan 4 rank,affinity); "

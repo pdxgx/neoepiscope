@@ -78,12 +78,11 @@ setup(
     include_package_data=True,
     package_data={"neoepiscope": ["*.py", "*.pickle"]},
     zip_safe=True,
-    install_requires=["intervaltree==3.0.2", "mhcflurry<=1.6.0", "mhcnuggets", "networkx", "pysam"],
+    install_requires=["intervaltree==3.0.2", "mhcflurry>=2.0.0", "mhcnuggets", "networkx", "pysam"],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
     keywords=["neoepitope", "neoantigen", "cancer", "immunotherapy"],
     classifiers=[
-        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Science/Research",

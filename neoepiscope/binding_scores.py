@@ -37,7 +37,6 @@ import warnings
 import tempfile
 import pickle
 import subprocess
-from sys import version_info
 from mhcnames import parse_allele_name
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -56,26 +55,15 @@ def get_binding_tools(binding_tool_list):
     """
     tool_dict = {}
     if len(binding_tool_list) > 1:
-        binding_tool_list.remove(["mhcflurry", "1", "affinity,rank"])
+        binding_tool_list.remove(["mhcflurry", "2", "presentation_score"])
     for tool in binding_tool_list:
         program = tool[0]
         version = tool[1]
         scoring = tool[2].split(",")
         if "mhcflurry" in program.lower():
-            if version_info[0] == 3 and version_info[1] == 7:
-                raise NotImplementedError(
-                    " ".join(
-                        [
-                            "MHCflurry uses TensorFlow, which currently has",
-                            "limited compatibility with python 3.7 - please",
-                            "use an earlier version of python or choose a",
-                            "different binding prediction tool."
-                        ]
-                    )
-                )
-            if version == "1" and "mhcflurry1" not in tool_dict:
+            if version == "2" and "mhcflurry2" not in tool_dict:
                 program = "mhcflurry-predict"
-                acceptable_scoring = ["rank", "affinity", "high", "low"]
+                acceptable_scoring = ["affinity", "affinity_percentile", "presentation_score", "presentation_score_percentile", "processing_score"]
                 for method in scoring:
                     if method not in acceptable_scoring:
                         warnings.warn(
@@ -84,7 +72,7 @@ def get_binding_tools(binding_tool_list):
                         )
                         scoring.remove(method)
                 if len(scoring) > 0:
-                    tool_dict["mhcflurry1"] = [program, sorted(scoring)]
+                    tool_dict["mhcflurry2"] = [program, sorted(scoring)]
                 else:
                     warnings.warn(
                             " ".join(
@@ -97,7 +85,7 @@ def get_binding_tools(binding_tool_list):
                             ),
                             Warning,
                         )
-            elif "mhcflurry1" in tool_dict:
+            elif "mhcflurry2" in tool_dict:
                 raise RuntimeError(
                     "Conflicting or repetitive installs of MHCflurry given"
                 )
@@ -112,17 +100,6 @@ def get_binding_tools(binding_tool_list):
                     )
                 )
         elif "mhcnuggets" in program.lower():
-            if version_info[0] == 3 and version_info[1] == 7:
-                raise NotImplementedError(
-                    " ".join(
-                        [
-                            "MHCnuggets uses TensorFlow, which currently has",
-                            "limited compatibility with python 3.7 - please",
-                            "use an earlier version of python or choose a",
-                            "different binding prediction tool."
-                        ]
-                    )
-                )
             if version == "2" and "mhcnuggets2" not in tool_dict:
                 program = "NA"
                 acceptable_scoring = ["affinity"]
@@ -886,7 +863,7 @@ def get_affinity_mhcflurry(peptides, allele, scores, version, remove_files=True)
         with open(peptide_file, "w") as f:
             f.write("allele,peptide\n")
             for sequence in peptides:
-                if len(sequence) < 8 or len(sequence) > 15:
+                if len(sequence) < 5 or len(sequence) > 15:
                     na_count += 1
                 else:
                     print("".join([allele, ",", sequence, "\n"]), file=f)
@@ -918,9 +895,10 @@ def get_affinity_mhcflurry(peptides, allele, scores, version, remove_files=True)
                 # tokens[2] is affinity; tokens[5] is rank, tokens[4] is high, tokens[3] is low
                 tokens = line.strip("\n").split(",")
                 result_dict = {"affinity": tokens[2],
-                               "high": tokens[4],
-                               "low": tokens[3],
-                               "rank": tokens[5]}
+                               "affinity_percentile": tokens[3],
+                               "presentation_score": tokens[5],
+                               "presentation_score_percentile": tokens[6],
+                               "processing_score": tokens[4]}
                 stored_results = [tokens[1]]
                 for value in sorted(scores):
                     stored_results.append(result_dict[value])
@@ -2024,12 +2002,12 @@ def gather_binding_scores(neoepitopes, tool_dict, hla_alleles, size_list):
     """
     for allele in hla_alleles:
         for tool in sorted(tool_dict.keys()):
-            if tool == "mhcflurry1":
+            if tool == "mhcflurry2":
                 binding_scores = get_affinity_mhcflurry(
                     list(neoepitopes.keys()),
                     allele,
                     tool_dict[tool][1],
-                    "1",
+                    "2",
                     remove_files=True,
                 )
             elif tool == "mhcnuggets2":
