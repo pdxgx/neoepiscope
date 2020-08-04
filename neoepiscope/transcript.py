@@ -591,7 +591,7 @@ class Transcript(object):
                 raise NotImplementedError("Reference nucleotide at RNA edit position is not A or T \
                         at chromosome %s, %s" %(self.chrom, pos))
             other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
-            if mutation_class not in [snv[2] for snv in other_snvs]:
+            if not other_snvs:
                 self.edits[pos - 1].append(
                     (
                         seq,
