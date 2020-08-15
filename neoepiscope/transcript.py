@@ -241,14 +241,18 @@ _codon_table = {
     "GGG": "G",
 }
 
+_ambiguous_codons = ["IAA", "ICC", "IAC", "ICA", "IAI", "ICI", "IIA"]
 
-def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
+def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, return_positions=False):
     """ Translates nucleotide sequence into peptide sequence.
         All codons including and after stop codon are recorded as X's.
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
         require_ATG: True iff search for start codon (ATG)
-        Return value: peptide string
+        return_positions: Choose more detailed return options
+        Return value: If return_positions is true and if there are ambiguous codons
+        ,return editing_positions, ambiguous_positions, and peptide string. Otherwise,
+        return peptide string only. 
     """
     if reverse_strand:
         seq = seq[::-1].translate(_complement_table)
@@ -260,15 +264,35 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
             return ""
     seq_size = len(seq)
     peptide = []
+    editing_positions = []
+    ambiguous_positions = []
     for i in range(0, seq_size - seq_size % 3, 3):
-        if 'N' not in seq[i : i + 3]:
-            codon = _codon_table[seq[i : i + 3]]
-        elif seq[i : i + 3].count('N') == 1 and seq[i+2] == 'N':
-            # Only 1 N in the wobble position
-            codon_options = set(
-                [_codon_table[''.join([seq[i : i + 2], x])] 
-                                        for x in ['A', 'C', 'G', 'T']]
-                )
+        chunk = seq[i : i + 3]
+        protein_pos = round(i/3, 0) - 1
+        if 'N' not in chunk and "I" not in chunk:
+            codon = _codon_table[chunk]
+        elif "I" in chunk and "N" not in chunk:
+            editing_positions.append(protein_pos)
+            if  chunk in _ambiguous_codons:
+                ambiguous_positions.append(protein_pos)
+            codon = _codon_table[chunk.replace("I", "G")]
+        elif chunk.count('N') == 1 and seq[i+2] == 'N':
+            if "I" not in chunk:
+                # Only 1 N in the wobble position
+                codon_options = set(
+                    [_codon_table[''.join([seq[i : i + 2], x])]
+                                            for x in ['A', 'C', 'G', 'T']]
+                    )
+            else:
+                chunk_options = [''.join([seq[i:i+2], x])
+                    for x in ['A', 'C', 'G', 'T']]
+                codon_options = set([_codon_table[x.replace('I', 'G')]
+                    for x in chunk_options])
+                editing_positions.append(protein_pos)
+                if chunk_options in _ambiguous_codons:
+                    ambiguous_positions.append(protein_pos)
+                if len(set(chunk_options).intersection(set(_ambiguous_codons))) > 0:
+                    ambiguous_positions.append(protein_pos)
             if len(codon_options) == 1:
                 codon = list(codon_options)[0]
             else:
@@ -280,7 +304,10 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
             break
     # for j in range(i + 3, seq_size - seq_size % 3, 3):
     # peptide.append('X')
-    return "".join(peptide)
+    if return_positions:
+        return editing_positions, ambiguous_positions, "".join(peptide)
+    else:
+        return "".join(peptide)
 
 
 class Transcript(object):
