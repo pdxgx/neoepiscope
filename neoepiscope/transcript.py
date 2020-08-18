@@ -249,9 +249,10 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, return_position
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
         require_ATG: True iff search for start codon (ATG)
-        return_positions: Choose more detailed return options
+        return_positions: If True, return peptide string, editing_positions
+        , and ambiguous_positions.
         Return value: If return_positions is true and if there are ambiguous codons
-        ,return editing_positions, ambiguous_positions, and peptide string. Otherwise,
+        ,return peptide string, editing_positions, and ambiguous_positions. Otherwise,
         return peptide string only. 
     """
     if reverse_strand:
@@ -268,7 +269,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, return_position
     ambiguous_positions = []
     for i in range(0, seq_size - seq_size % 3, 3):
         chunk = seq[i : i + 3]
-        protein_pos = round(i/3, 0) - 1
+        protein_pos = round(i/3, 0)
         if 'N' not in chunk and "I" not in chunk:
             codon = _codon_table[chunk]
         elif "I" in chunk and "N" not in chunk:
@@ -289,10 +290,8 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, return_position
                 codon_options = set([_codon_table[x.replace('I', 'G')]
                     for x in chunk_options])
                 editing_positions.append(protein_pos)
-                if chunk_options in _ambiguous_codons:
-                    ambiguous_positions.append(protein_pos)
-                if len(set(chunk_options).intersection(set(_ambiguous_codons))) > 0:
-                    ambiguous_positions.append(protein_pos)
+            if [x for x in chunk_options if x in _ambiguous_codons]:
+                ambiguous_positions.append(protein_pos)
             if len(codon_options) == 1:
                 codon = list(codon_options)[0]
             else:
@@ -305,7 +304,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, return_position
     # for j in range(i + 3, seq_size - seq_size % 3, 3):
     # peptide.append('X')
     if return_positions:
-        return editing_positions, ambiguous_positions, "".join(peptide)
+        return "".join(peptide), editing_positions, ambiguous_positions
     else:
         return "".join(peptide)
 
