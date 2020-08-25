@@ -235,8 +235,74 @@ _codon_table = {
     "GGG": "G",
 }
 
+_mitochondrial_codon_table = {
+    "TTT": "F",
+    "TTC": "F",
+    "TTA": "L",
+    "TTG": "L",
+    "TCT": "S",
+    "TCC": "S",
+    "TCA": "S",
+    "TCG": "S",
+    "TAT": "Y",
+    "TAC": "Y",
+    "TAA": "X",
+    "TAG": "X",
+    "TGT": "C",
+    "TGC": "C",
+    "TGA": "W",
+    "TGG": "W",
+    "CTT": "L",
+    "CTC": "L",
+    "CTA": "L",
+    "CTG": "L",
+    "CCT": "P",
+    "CCC": "P",
+    "CCA": "P",
+    "CCG": "P",
+    "CAT": "H",
+    "CAC": "H",
+    "CAA": "Q",
+    "CAG": "Q",
+    "CGT": "R",
+    "CGC": "R",
+    "CGA": "R",
+    "CGG": "R",
+    "ATT": "I",
+    "ATC": "I",
+    "ATA": "M",
+    "ATG": "M",
+    "ACT": "T",
+    "ACC": "T",
+    "ACA": "T",
+    "ACG": "T",
+    "AAT": "N",
+    "AAC": "N",
+    "AAA": "K",
+    "AAG": "K",
+    "AGT": "S",
+    "AGC": "S",
+    "AGA": "X",
+    "AGG": "X",
+    "GTT": "V",
+    "GTC": "V",
+    "GTA": "V",
+    "GTG": "V",
+    "GCT": "A",
+    "GCC": "A",
+    "GCA": "A",
+    "GCG": "A",
+    "GAT": "D",
+    "GAC": "D",
+    "GAA": "E",
+    "GAG": "E",
+    "GGT": "G",
+    "GGC": "G",
+    "GGA": "G",
+    "GGG": "G",
+}
 
-def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
+def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, mitochondrial=False):
     """ Translates nucleotide sequence into peptide sequence.
         All codons including and after stop codon are recorded as X's.
         seq: nucleotide sequence
@@ -255,14 +321,24 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
     seq_size = len(seq)
     peptide = []
     for i in range(0, seq_size - seq_size % 3, 3):
-        if 'N' not in seq[i : i + 3]:
-            codon = _codon_table[seq[i : i + 3]]
-        elif seq[i : i + 3].count('N') == 1 and seq[i+2] == 'N':
+        chunk = seq[i : i + 3]
+        if 'N' not in chunk:
+            if not mitochondrial:
+                codon = _codon_table[chunk]
+            else:
+                codon = _mitochondrial_codon_table[chunk]
+        elif chunk.count('N') == 1 and seq[i+2] == 'N':
             # Only 1 N in the wobble position
-            codon_options = set(
-                [_codon_table[''.join([seq[i : i + 2], x])] 
-                                        for x in ['A', 'C', 'G', 'T']]
-                )
+            if not mitochondrial:
+                codon_options = set(
+                    [_codon_table[''.join([seq[i : i + 2], x])] 
+                                            for x in ['A', 'C', 'G', 'T']]
+                    )
+            else:
+                codon_options = set(
+                    [_mitochondrial_codon_table[''.join([seq[i : i + 2], x])] 
+                                            for x in ['A', 'C', 'G', 'T']]
+                    )
             if len(codon_options) == 1:
                 codon = list(codon_options)[0]
             else:
@@ -270,10 +346,10 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False):
         else:
             codon = '?'
         peptide.append(codon)
+        if mitochondrial and peptide[0] != 'M':
+            peptide[0] = 'M'
         if codon == "X":
             break
-    # for j in range(i + 3, seq_size - seq_size % 3, 3):
-    # peptide.append('X')
     return "".join(peptide)
 
 
@@ -342,6 +418,11 @@ class Transcript(object):
         self.edits = collections.defaultdict(list)
         self.deletion_intervals = []
         self.chrom = last_chrom
+        # Determine whether transcript on mitochondrial DNA
+        if self.chrom not in ['chrM', 'M', 'chrMT', 'MT']:
+            self.mitochondrial = False
+        else:
+            self.mitochondrial = True
         # Flag to indicate if there is a deletion that spans intron-exon boundary
         self.boundary_spanning_deletion = False
         self.rev_strand = True if last_strand == "-" else False
@@ -2340,8 +2421,8 @@ class Transcript(object):
                 A2 = 3 * ((ref_counter - ref_start) // 3) + ref_start
                 C = 3 * ((seq[3] - coding_start) // 3) + coding_start
                 for i in range(0, B1 - A1, 3):
-                    A = seq_to_peptide(sequence[(i + A1) : (i + A1 + 3)])
-                    B = seq_to_peptide(ref_sequence[(i + A2) : (i + A2 + 3)])
+                    A = seq_to_peptide(sequence[(i + A1) : (i + A1 + 3)], mitochondrial=self.mitochondrial)
+                    B = seq_to_peptide(ref_sequence[(i + A2) : (i + A2 + 3)], mitochondrial=self.mitochondrial)
                     if A != B:
                         if frame_shifts == []:
                             coordinates.append(
@@ -2377,14 +2458,17 @@ class Transcript(object):
                     frame_shifts[i - 1][3] = counter
                 else:
                     break
-        protein = seq_to_peptide(sequence[start_codon[0] :], reverse_strand=False)
-        protein_ref = seq_to_peptide(ref_sequence[ref_atg[1] :], reverse_strand=False)
+        protein = seq_to_peptide(sequence[start_codon[0] :], reverse_strand=False, mitochondrial=self.mitochondrial)
+        protein_ref = seq_to_peptide(ref_sequence[ref_atg[1] :], reverse_strand=False, mitochondrial=self.mitochondrial)
         if '?' in protein or '?' in protein_ref:
             unknown_aa = True
         if TAA_TGA_TAG == []:
             if "X" in protein:
                 for i in range(coding_start, len(sequence), 3):
-                    if sequence[i : i + 3] in ["TAA", "TGA", "TAG"]:
+                    if not self.mitochondrial and sequence[i : i + 3] in ["TAA", "TGA", "TAG"]:
+                        coding_stop = i + 3
+                        break
+                    elif self.mitochondrial and sequence[i : i + 3] in ["TAA", "TAG", "AGA", "AGG"]:
                         coding_stop = i + 3
                         break
             else:
