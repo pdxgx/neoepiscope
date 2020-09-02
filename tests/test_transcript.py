@@ -762,7 +762,7 @@ class TestTranscript(unittest.TestCase):
         peptides = self.all_coding_transcript.neopeptides()
         for pep in peptides:
             for mutation_data in peptides[pep]:
-                self.assertEqual(mutation_data[7], "nonstop")
+                self.assertEqual(mutation_data[7], "annotated_stop_codon_disrupted;nonstop")
 
     def test_split_start(self):
         """Fails if split start codon is handled improperly"""
@@ -815,7 +815,7 @@ class TestTranscript(unittest.TestCase):
         self.fwd_transcript.edit("ATG", 450446, mutation_type="I")
         self.fwd_transcript.edit("T", 450456)
         peptides = self.fwd_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False
+            only_novel_upstream=True, only_downstream=False,
         ).keys()
         self.assertEqual(len(peptides), 20)
         self.transcript.edit("CAT", 5248263, mutation_type="I")
@@ -837,7 +837,7 @@ class TestTranscript(unittest.TestCase):
         self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
         self.fwd_transcript.edit("T", 450456)
         peptides = self.fwd_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False
+            only_novel_upstream=True, only_downstream=False,
         ).keys()
         self.assertEqual(len(peptides), 98)
         self.transcript.edit("CAT", 5248280, mutation_type="I")
@@ -855,7 +855,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_skipping_new_start(self):
         """Fails if peptides are returned from a new upstream start codon
-            when the original is retained"""
+            when only searching downstream"""
         self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides(only_downstream=True)
         self.assertFalse(peptides)
@@ -870,6 +870,18 @@ class TestTranscript(unittest.TestCase):
         self.non_coding_transcript.edit("ATG", 65190565, mutation_type="I")
         noncoding_peptides = self.non_coding_transcript.neopeptides()
         self.assertEqual(noncoding_peptides, {})
+
+    def test_translation_lost_and_restored(self):
+        """Fails if germline start lost with somatic restore returns
+            incorrect peptides"""
+        self.fwd_transcript.edit("C", 450458, mutation_class="G")
+        self.fwd_transcript.edit("G", 450458)
+        peptides = self.fwd_transcript.neopeptides().keys()
+        self.assertEqual(len(peptides), 1914)
+        self.all_coding_transcript.edit("C", 5810042, mutation_class="G")
+        self.all_coding_transcript.edit("G", 5810042)
+        coding_peptides = self.all_coding_transcript.neopeptides().keys()
+        self.assertEqual(len(coding_peptides), 1246)
 
     def test_compound_indel_peptides(self):
         """Fails if incorrect peptides are returned with complementary
