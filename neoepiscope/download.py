@@ -52,10 +52,10 @@ from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree
 from distutils.core import Command
 
 download = {
-    "GENCODE v34 annotation": [
+    "GENCODE v35 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
-        "Gencode_human/release_34/"
-        "gencode.v34.annotation.gtf.gz"
+        "Gencode_human/release_35/"
+        "gencode.v35.annotation.gtf.gz"
     ],
     "GENCODE v19 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
@@ -72,20 +72,17 @@ download = {
         "Gencode_mouse/release_M1/"
         "gencode.vM1.annotation.gtf.gz"
     ],
-    "Bowtie NCBI GRCh38 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip",
-        "http://verve.webfactional.com/GRCh38_no_alt.zip",
+    "Bowtie GRCh38 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCh38.p13.zip",
     ],
-    "Bowtie UCSC hg19 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/hg19.ebwt.zip",
-        "http://verve.webfactional.com/hg19.ebwt.zip",
+    "Bowtie GRCh37 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCh37.p13.zip",
     ],
-    "Bowtie UCSC mm10 index": [
-        "http://verve.webfactional.com/misc/mm10_bowtie_index.zip",
+    "Bowtie mm10 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCm38.p6.zip",
     ],
-    "Bowtie UCSC mm9 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/mm9.ebwt.zip",
-        "http://verve.webfactional.com/mm9.ebwt.zip",
+    "Bowtie mm9 index": [
+        "https://recount.bio/data/bowtie_indexes/NCBIM37.zip",
     ],
 }
 
@@ -520,20 +517,20 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        if self._yes_no_query("Download GENCODE v34 gtf annotation file?"):
+        if self._yes_no_query("Download GENCODE v35 gtf annotation file?"):
             self._grab_and_explode(
-                download["GENCODE v34 annotation"],
-                "GENCODE v34 annotation",
+                download["GENCODE v35 annotation"],
+                "GENCODE v35 annotation",
                 explode=False,
             )
-            gencode_v34_temp = os.path.join(temp_install_dir, "gencode_v34")
-            gencode_v34 = os.path.join(self.download_dir, "gencode_v34")
-            gencode_v34_gtf = os.path.join(
+            gencode_v35_temp = os.path.join(temp_install_dir, "gencode_v35")
+            gencode_v35 = os.path.join(self.download_dir, "gencode_v35")
+            gencode_v35_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["GENCODE v34 annotation"][0]),
+                os.path.basename(download["GENCODE v35 annotation"][0]),
             )
             try:
-                os.makedirs(gencode_v34_temp)
+                os.makedirs(gencode_v35_temp)
             except OSError as e:
                 self._print_to_screen_and_log(
                     (
@@ -541,15 +538,15 @@ class NeoepiscopeDownloader(object):
                         "directory %s for installation. May need "
                         "sudo permissions."
                     )
-                    % gencode_v34_temp
+                    % gencode_v35_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v34...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_v34_gtf, gencode_v34_temp)
-            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v34_temp)
-            cds_to_tree(cds_dict, gencode_v34_temp)
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v35...")
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_v35_gtf, gencode_v35_temp)
+            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v35_temp)
+            cds_to_tree(cds_dict, gencode_v35_temp)
         else:
-            gencode_v34 = None
+            gencode_v35 = None
         if self._yes_no_query("Download GENCODE v19 gtf annotation file?"):
             self._grab_and_explode(
                 download["GENCODE v19 annotation"],
@@ -759,7 +756,7 @@ Defines default paths of neoepiscope's dependencies
 None indicates the user didn't install the tool or data
 \"""
 
-gencode_v34 = {gencode_v34}
+gencode_v35 = {gencode_v35}
 gencode_v19 = {gencode_v19}
 gencode_vM25 = {gencode_vM25}
 gencode_vM1 = {gencode_vM1}
@@ -781,8 +778,8 @@ hapcut2_hairs = {hapcut2_hairs}
 hapcut2 = {hapcut2}
 """
                 ).format(
-                    gencode_v34=(
-                        "None" if gencode_v34 is None else self._quote(gencode_v34)
+                    gencode_v35=(
+                        "None" if gencode_v35 is None else self._quote(gencode_v35)
                     ),
                     gencode_v19=(
                         "None" if gencode_v19 is None else self._quote(gencode_v19)
