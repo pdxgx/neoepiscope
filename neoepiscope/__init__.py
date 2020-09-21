@@ -698,6 +698,7 @@ def main():
             homozygous_variants,
             vaf_pos,
             cds_dict,
+            info_dict,
             only_novel_upstream,
             only_downstream,
             only_reference,

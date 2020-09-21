@@ -492,6 +492,7 @@ class TestHaplotypeProcessing(unittest.TestCase):
             homozygous_vars,
             (5, 'FREQ'),
             self.Chr11cds,
+            self.Chr11tx,
             True,
             False,
             False,

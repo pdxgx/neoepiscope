@@ -76,6 +76,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000335295.4_1",
+            False,
         )
         # PTDSS2-001: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
         self.fwd_transcript = Transcript(
@@ -95,6 +96,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000308020.5_1",
+            False,
         )
         # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
         self.all_coding_transcript = Transcript(
@@ -114,6 +116,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000317078.1_1",
+            False,
         )
         # CAPRIN1-001: 4108bp transcript w/ 19 exons (18/19 coding) --> 709aa peptide
         self.partial_coding_transcript = Transcript(
@@ -133,6 +136,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000341394.8_1",
+            False,
         )
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
@@ -153,6 +157,7 @@ class TestTranscript(unittest.TestCase):
                 ]
             ],
             "ENST00000499732.2_1",
+            False,
         )
 
     def test_transcript_structure(self):

@@ -357,7 +357,7 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     # that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, cds, transcript_id):
+    def __init__(self, bowtie_reference_index, cds, transcript_id, seleno):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -366,6 +366,7 @@ class Transcript(object):
                 reference genome sequence
             cds: list of all CDS lines for exactly one transcript from GTF;
                 a line can be a list pre-split by '\t' or not yet split
+            seleno: whether translated transcript contains a selenocysteine (boolean)
             transcript_id: transcript ID
         """
         '''
@@ -377,6 +378,7 @@ class Transcript(object):
         assert len(cds) > 0
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
+        self.seleno = seleno
         self.intervals = []
         # Internal representation is 0-based
         self._start_codon, self._stop_codon = None, None
@@ -2888,10 +2890,16 @@ class Transcript(object):
                                 data_set = coords[4]
                             for mutation_data in data_set:
                                 if unknown_aa and '?' in pair[0] or '?' in pair[1] or 'X' in pair[0] or 'X' in pair[1]:
-                                    mutation_data = (
-                                        mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
-                                                                                'unknown_amino_acid']),)
-                                )
+                                    if self.seleno:
+                                        mutation_data = (
+                                            mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
+                                                                                    'unknown_amino_acid', 'may_contain_selenocysteine']),)
+                                        )
+                                    else:
+                                        mutation_data = (
+                                            mutation_data + (pair[1],) + (';'.join([transcript_warnings[0], 
+                                                                                    'unknown_amino_acid']),)
+                                        )
                                 else:
                                     mutation_data = (
                                         mutation_data + (pair[1],) + transcript_warnings
@@ -2909,10 +2917,16 @@ class Transcript(object):
                             data_set = coords[4]
                         for mutation_data in data_set:
                             if unknown_aa and '?' in pep or 'X' in pep:
-                                mutation_data = (
-                                    mutation_data + ("NA",) + (';'.join([transcript_warnings[0], 
-                                                                         'unknown_amino_acid']),)
-                                )
+                                if self.seleno:
+                                    mutation_data = (
+                                        mutation_data + ("NA",) + (';'.join([transcript_warnings[0], 
+                                                                                'unknown_amino_acid', 'may_contain_selenocysteine']),)
+                                    )
+                                else:
+                                    mutation_data = (
+                                        mutation_data + ("NA",) + (';'.join([transcript_warnings[0], 
+                                                                                'unknown_amino_acid']),)
+                                    )
                             else:
                                 mutation_data = (
                                     mutation_data + ("NA",) + transcript_warnings
@@ -3525,6 +3539,7 @@ def get_peptides_from_transcripts(
     homozygous_variants,
     vaf_pos,
     cds_dict,
+    info_dict,
     only_novel_upstream,
     only_downstream,
     only_reference,
@@ -3548,6 +3563,7 @@ def get_peptides_from_transcripts(
         vaf_pos: position of VAF in VCF mutation data from HapCUT2
         cds_dict: dictionary linking transcript IDs, to lists of
             relevant CDS/stop codon data; output from gtf_to_cds()
+        info_dict: dictionary linking transcript IDs to transcript information
         only_novel_upstream: whether to start translation from novel upstream
             start codons (boolean)
         only_downstream: whether to start translation from only downstream of
@@ -3569,6 +3585,10 @@ def get_peptides_from_transcripts(
         pp: whether to include polymorphic pseudogene transcripts (boolean)
         igv: whether to include IGV transcripts (boolean)
         trv: whether to include TRV transcripts (boolean)
+        allow_nonstart: whether to allow transcripts w/o start codons
+        allow_nonstop: wheather to allow transcripts w/o stop codons
+        protein_fasta: wheather to generate full-length protein sequences
+            for fasta file
         return value: dictionary linking neoepitopes to their associated
             metadata
         """
@@ -3597,6 +3617,9 @@ def get_peptides_from_transcripts(
         ):
             continue
         # Create transcript object
+        seleno = False
+        if 'seleno' in info_dict[affected_transcript][3]:
+            seleno = True
         transcript_a = Transcript(
             reference_index,
             [
@@ -3606,6 +3629,7 @@ def get_peptides_from_transcripts(
                 ]
             ],
             affected_transcript,
+            seleno
         )
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
@@ -3681,6 +3705,9 @@ def get_peptides_from_transcripts(
             continue
         elif cds_dict[affected_transcript][0][5] == "TR_V_gene" and not trv:
             continue
+        seleno = False
+        if 'seleno' in info_dict[transcript][3]:
+            seleno = True
         transcript_a = Transcript(
             reference_index,
             [
@@ -3690,6 +3717,7 @@ def get_peptides_from_transcripts(
                 ]
             ],
             transcript,
+            seleno
         )
         for mutation in homozygous_variants[transcript]:
             if tuple(mutation) not in used_homozygous_variants:
