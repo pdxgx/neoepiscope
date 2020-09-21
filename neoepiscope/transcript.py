@@ -343,10 +343,33 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, mitochondrial=F
             else:
                 codon = '?'
         else:
+            # More than 1 N or N not in wobble position
             codon = '?'
         peptide.append(codon)
-        if mitochondrial and peptide[0] != 'M':
-            peptide[0] = 'M'
+    if seq_size % 3:
+        # 1-2 nucleotides remaining
+        if seq_size % 3 == 2:
+            # 2 nucleotides remaining - check if amino acid can be determined
+            if not mitochondrial:
+                codon_options = set(
+                    [_codon_table[''.join([seq[-2:], x])] 
+                                            for x in ['A', 'C', 'G', 'T']]
+                    )
+            else:
+                codon_options = set(
+                    [_mitochondrial_codon_table[''.join([seq[-2:], x])] 
+                                            for x in ['A', 'C', 'G', 'T']]
+                    )
+            if len(codon_options) == 1:
+                codon = list(codon_options)[0]
+            else:
+                codon = '?'
+        else:
+            # Only 1 amino acid left - can't determine amino acid
+            codon = '?'
+        peptide.append(codon)
+    if mitochondrial and peptide[0] != 'M':
+        peptide[0] = 'M'
     return "".join(peptide)
 
 
