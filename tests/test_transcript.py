@@ -921,7 +921,7 @@ class TestTranscript(unittest.TestCase):
         # Reverse transcript
         self.transcript.edit(5, 5248211, mutation_type="D", mutation_class="G")
         self.transcript.edit(5, 5248208, mutation_type="D")
-        rev_peptides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(print_it=True).keys()
         self.assertEqual(len(rev_peptides), 28)
 
     def test_germline_vs_somatic(self):

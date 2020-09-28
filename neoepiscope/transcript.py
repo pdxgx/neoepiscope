@@ -407,8 +407,7 @@ class Transcript(object):
         self._start_codon, self._stop_codon = None, None
         # Public representation is 1-based
         self.start_codon, self.stop_codon = None, None
-        # Store whether start/stop are split across exons
-        self.split_start, self.split_stop = False, False
+        self.faux_stop = False
         last_chrom, last_strand = None, None
         for line in cds:
             if type(line) is str:
@@ -433,13 +432,11 @@ class Transcript(object):
             elif line[2].startswith("start_codon"):
                 self.start_codon = int(line[3])
                 self._start_codon = self.start_codon - 1
-                if int(line[3]) != int(line[4]) - 2:
-                    self.split_start = True
             elif line[2].startswith("stop_codon"):
                 self.stop_codon = int(line[3])
                 self._stop_codon = self.stop_codon - 1
-                if int(line[3]) != int(line[4]) - 2:
-                    self.split_stop = True
+                if line[2] == "stop_codon_faux":
+                    self.faux_stop = True
             else:
                 raise NotImplementedError("GTF sequence type not currently supported")
             last_chrom, last_strand = line[0], line[6]
@@ -2055,19 +2052,9 @@ class Transcript(object):
             print('Alt tree:')
             print(alt_tree)
             print()
-
-        '''
-        # Get reference genome start codon sequence
-        if self.rev_strand:
-            genomic_start_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in self.start_coordinates]
-                )[::-1].translate(revcomp_translation_table)
-        else:
-            genomic_start_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in self.start_coordinates])
-        '''
-
-        if print_it:
             print('ANNOTATED START CODON:', self.start_codon)
             print("START SEQ:", self.start_codon_seq)
+            print("START COORDINATES:", self.start_coordinates)
 
         # Assign possible start codon sequences
         # May want to update to include 'ATA', 'ATT' for mitochondrial transcripts
@@ -2330,6 +2317,7 @@ class Transcript(object):
         if print_it:
             print('ANNOTATED_STOP_CODON:', self.stop_codon)
             print('STOP SEQ:', self.stop_codon_seq)
+            print('STOP COORDINATES:', self.stop_coordinates)
 
         # Assign valid stop codon sequences
         if not self.mitochondrial:
@@ -2341,14 +2329,17 @@ class Transcript(object):
         if self.stop_codon is not None:
             # Check ref transcript stop codon sequence if translation occurs
             if ref_atg is not None:
-                ref_tx_stop = genome_to_ref[self.stop_codon] - 2*self.rev_strand
+                ref_tx_stop = genome_to_ref[self.stop_coordinates[0]] - 2*self.rev_strand
                 if ref_sequence[ref_tx_stop:ref_tx_stop+3] not in stop_seqs:
                     # Mutation disrupted stop codon
                     ref_stop_disrupted = True
                 elif ref_atg[1] > ref_tx_stop:
                     # Translation starts downstream of annotated stop codon
                     ref_stop_disrupted = True
-            if ref_stop_disrupted:
+                elif (ref_tx_stop - ref_atg[1]) % 3:
+                    # Annotated stop is out of frame of reference tx start
+                    ref_stop_disrupted = True
+            if ref_stop_disrupted and not (not ref_start_disrupted and (ref_tx_stop - ref_atg[1]) % 3):
                 warnings.warn(
                     "".join(
                         [
@@ -2361,14 +2352,17 @@ class Transcript(object):
                 )
                 transcript_warnings.append("annotated_stop_codon_disrupted_background")
             # Check alt transcript start codon sequence
-            alt_tx_stop = genome_to_alt[self.stop_codon] - 2*self.rev_strand
+            alt_tx_stop = genome_to_alt[self.stop_coordinates[0]] - 2*self.rev_strand
             if sequence[alt_tx_stop:alt_tx_stop+3] not in stop_seqs:
                 # Mutation disrupted stop codon
                 alt_stop_disrupted = True
             elif start_codon[0] > alt_tx_stop:
                 # Translation starts downstream of annotated stop codon
                 alt_stop_disrupted = True
-            if alt_stop_disrupted and not ref_stop_disrupted:
+            elif (alt_tx_stop - start_codon[0]) % 3:
+                # Annotated stop is out of frame of alt tx start
+                alt_stop_disrupted = True
+            if alt_stop_disrupted and not ref_stop_disrupted and not (not alt_start_disrupted and (alt_tx_stop - start_codon[0]) % 3):
                 warnings.warn(
                     "".join(
                         [
@@ -2386,31 +2380,19 @@ class Transcript(object):
             if print_it:
                 print('ALT TX STOP:', alt_tx_stop)
                 print(alt_stop_disrupted)
-        '''
         else:
-            warnings.warn(
-                "".join(
-                    [
-                        "No annotated stop codon for transcript ",
-                        self.transcript_id,
-                        ".",
-                    ]
-                ),
-                Warning,
-            )
             transcript_warnings.append("no_annotated_stop_codon")
-        '''
 
         # Set up reference stop
         ref_stop = None
         muts = set()
         if ref_atg is not None and self.stop_codon is not None:
             # Check for reference tx stop codon if translation occurs
-            if not ref_stop_disrupted and not (ref_tx_stop - ref_atg[1]) % 3:
+            if not ref_stop_disrupted:
                 # Annotated stop codon could be valid - not disrupted and in-frame
                 alt_equiv = genome_to_alt[ref_to_genome[ref_tx_stop]]
                 ref_stop = [alt_equiv, ref_tx_stop, []]
-            elif self.stop_codon is not None:
+            else:
                 # Find variants disrupting stop codon if applicable
                 for pos in self.stop_coordinates:
                     muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
@@ -2426,24 +2408,34 @@ class Transcript(object):
             print('current ref stop:', ref_stop)
 
         for stop in stop_positions:
-            if stop > (ref_atg[1] + 2) and not (stop - ref_atg[1]) % 3:
+            if stop > (ref_atg[1] + 2) and not ((stop - ref_atg[1]) % 3):
                 # stop is after start and in frame
                 genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
-                if ref_stop is not None and stop < ref_stop[1]:
-                    # reference stop exists, but this may be an novel upstream one
-                    ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x, 1) for x in genome_pos])
-                    genomic_start = genome_pos[0+2*self.rev_strand]
-                    if self.rev_strand:
-                        ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
-                    if ref_sequence[stop:stop+3] != ref_genome_seq or (self.start_codon - genomic_start) % 3:
-                        # Novel stop codon introducted! (new seq or new frame)
-                        alt_equiv = genome_to_alt[genome_pos[0]]
-                        for pos in genome_pos:
-                            muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-                        ref_stop = [alt_equiv, stop, list(muts)]
-                        break
-                elif ref_stop is None:
-                    # Don't have a stop yet - use this one
+                # Check novelty
+                ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
+                if self.rev_strand:
+                    ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
+                novel = False
+                if ref_sequence[stop:stop+3] != ref_genome_seq or ((stop - ref_tx_start) % 3):
+                    novel = True
+                # Check whether to use stop
+                use_stop = False
+                if ref_stop is not None and stop < ref_stop[1] and novel:
+                    # Stop codon is before intact reference stop and novel
+                    use_stop = True
+                elif ref_stop is None and self.stop_codon is not None:
+                    # Reference stop is disrupted
+                    if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
+                        # Reverse strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                    elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
+                        # Forward strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                elif ref_stop is None and self.stop_codon is None and novel:
+                    # No reference stop codon, this stop is novel
+                    use_stop = True
+                if use_stop:
+                    # This is the stop codon to use
                     alt_equiv = genome_to_alt[genome_pos[0]]
                     for pos in genome_pos:
                         muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
@@ -2453,11 +2445,11 @@ class Transcript(object):
         stop_codon = None
         muts = set()
         if self.stop_codon is not None:
-            if not alt_stop_disrupted and not (alt_tx_stop - start_codon[0]) % 3:
+            if not alt_stop_disrupted:
                 # Annotated stop codon could be valid - not disrupted and in-frame
                 ref_equiv = genome_to_ref[alt_to_genome[alt_tx_stop]]
                 stop_codon = [alt_tx_stop, ref_equiv, []]
-            elif self.stop_codon is not None:
+            else:
                 # Find variants disrupting stop codon if applicable
                 for pos in self.stop_coordinates:
                     muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
@@ -2473,21 +2465,32 @@ class Transcript(object):
             print('current stop codon:', stop_codon)
 
         for stop in stop_positions:
-            if stop > (start_codon[0] + 2) and not (stop - start_codon[0]) % 3:
+            if stop > (start_codon[0] + 2) and not ((stop - start_codon[0]) % 3):
                 # stop is after start and in frame
                 genome_pos = [alt_to_genome[stop], alt_to_genome[stop+1], alt_to_genome[stop+2]]
-                if stop_codon is not None and stop < stop_codon[0]:
-                    # alt stop exists, but this may be an novel upstream one
-                    ref_tx_seq = ref_sequence[genome_to_ref[genome_pos[0]]:genome_to_ref[genome_pos[0]]+3]
-                    if sequence[stop:stop+3] != ref_tx_seq or (genome_to_ref[genome_pos[0]] - start_codon[1]) % 3:
-                        # Novel stop codon introduced! (new seq or new frame)
-                        ref_equiv = genome_to_ref[genome_pos[0]]
-                        for pos in genome_pos:
-                            muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
-                        stop_codon = [stop, ref_equiv, list(muts)]
-                        break
-                elif stop_codon is None:
-                    # Don't have a stop yet - use this one
+                # Check novelty
+                ref_tx_seq = ref_sequence[genome_to_ref[genome_pos[0]]:genome_to_ref[genome_pos[0]]+3]
+                novel = False
+                if sequence[stop:stop+3] != ref_tx_seq or (ref_atg is not None and ((genome_to_ref[genome_pos[0]] - ref_atg[1]) % 3)):
+                    novel = True
+                # Check whether to use stop
+                use_stop = False
+                if stop_codon is not None and stop < stop_codon[0] and novel:
+                    # Stop codon is before intact reference stop and novel
+                    use_stop = True
+                elif stop_codon is None and self.stop_codon is not None:
+                    # Reference stop is disrupted
+                    if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
+                        # Reverse strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                    elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
+                        # Forward strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                elif stop_codon is None and self.stop_codon is None and novel:
+                    # No reference stop codon, this stop is novel
+                    use_stop = True
+                if use_stop:
+                    # This is the stop codon to use
                     ref_equiv = genome_to_ref[genome_pos[0]]
                     for pos in genome_pos:
                         muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
@@ -3067,11 +3070,12 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 # Remove incompletely annotated transcript
                 delete_txs.add(transcript_id)
             else:
-                intervals = []
-                for seq in [x for x in cds_dict[transcript_id] if x[1] == 'exon']:
-                    intervals.extend([seq[2] - 1, seq[3]])
-                intervals.sort()
                 if reverse_strand:
+                    # Get transcript intervals
+                    intervals = []
+                    for seq in [x for x in cds_dict[transcript_id] if x[1] == 'exon']:
+                        intervals.extend([seq[2] - 1, seq[3]])
+                    intervals.sort()
                     current_cds.sort(key=lambda x: int(x[4]), reverse=True)
                     pos = int(current_cds[0][4]) - int(current_cds[0][7])
                     if bisect.bisect_left(intervals, pos) == bisect.bisect_left(intervals, pos-2):
@@ -3119,13 +3123,111 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 for block in start_codon_blocks:
                     if int(block[2]) != min_start:
                         cds_dict[transcript_id].remove(block)
-        # Assign stop codon if annotated
-        stop_codon_blocks = [block for block in cds_dict[transcript_id] if block[1] == 'stop_codon']
-        if len(stop_codon_blocks) > 1:
-            min_stop = min([int(block[2]) for block in stop_codon_blocks])
-            for block in stop_codon_blocks:
-                if int(block[2]) != min_stop:
-                    cds_dict[transcript_id].remove(block)
+        if "stop_codon" not in seq_types:
+            # Fake a start codon if we have strand info
+            try:
+                reverse_strand = current_cds[0][6] == "-"
+            except IndexError:
+                # Remove incompletely annotated transcript
+                delete_txs.add(transcript_id)
+            else:
+                # Get transcript intervals
+                intervals = []
+                for seq in [x for x in cds_dict[transcript_id] if x[1] == 'exon']:
+                    intervals.extend([seq[2] - 1, seq[3]])
+                intervals.sort()
+                # Determine faux stop
+                if reverse_strand:
+                    # Reverse strand transcript
+                    current_cds.sort(key=lambda x: int(x[3]))
+                    cds_hang = ((int(current_cds[0][4]) - int(current_cds[0][3]) + 1) - int(current_cds[0][7])) % 3
+                    pos = int(current_cds[0][3])
+                    if cds_hang:
+                        pos -= (3 - cds_hang)
+                    index = bisect.bisect_left(intervals, pos+2)
+                    if (index == bisect.bisect_left(intervals, pos)) and (index % 2):
+                        # Start and end of stop codon are in the same exon
+                        cds_dict[transcript_id].append(
+                            [
+                                current_cds[0][0],
+                                "stop_codon_faux",
+                                pos,
+                                pos + 2,
+                                "-",
+                                cds_dict[transcript_id][0][5],
+                            ]
+                        )
+                    elif (index != bisect.bisect_left(intervals, pos)) and (index % 2) and (pos > intervals[0]):
+                        # Stop codon exists partially in an exon and partially in an intron that occurs before the last exon of the transcript
+                        dif = (intervals[index-1]+1) - pos # number of bases we need from previous exon
+                        cds_dict[transcript_id].append(
+                            [
+                                current_cds[0][0],
+                                "stop_codon_faux",
+                                intervals[index-2] - dif + 1,
+                                intervals[index-2],
+                                "-",
+                                cds_dict[transcript_id][0][5],
+                            ]
+                        )
+                    else:
+                        # Stop codon overlaps the end of the transcript, so just translate to end
+                        continue
+                else:
+                    # Forward strand transcript
+                    current_cds.sort(key=lambda x: int(x[3]), reverse=True)
+                    cds_hang = ((int(current_cds[0][4]) - int(current_cds[0][3]) + 1) - int(current_cds[0][7])) % 3
+                    pos = int(current_cds[0][4]) - 2
+                    if cds_hang:
+                        pos += (3 - cds_hang)
+                    index = bisect.bisect_left(intervals, pos)
+                    if (index == bisect.bisect_left(intervals, pos+2)) and (index % 2):
+                        # Start and end of stop codon are in the same exon
+                        cds_dict[transcript_id].append(
+                            [
+                                current_cds[0][0],
+                                "stop_codon_faux",
+                                pos,
+                                pos + 2,
+                                "+",
+                                cds_dict[transcript_id][0][5],
+                            ]
+                        )
+                    elif (index == bisect.bisect_left(intervals, pos+2)) and (not index % 2) and (index != len(intervals)):
+                        # Stop codon has been shifted into an intron that occurs before the last exon of the transcript
+                        cds_dict[transcript_id].append(
+                            [
+                                current_cds[0][0],
+                                "stop_codon_faux",
+                                intervals[index+1]+1,
+                                min(intervals[index+1]+3, intervals[index+2]),
+                                "+",
+                                cds_dict[transcript_id][0][5],
+                            ]
+                        )
+                    elif (index != bisect.bisect_left(intervals, pos+2)) and (index % 2) and (index != len(intervals)-1):
+                        # Stop codon exists partially in an exon and partially in an intron that occurs before the last exon of the transcript
+                        cds_dict[transcript_id].append(
+                            [
+                                current_cds[0][0],
+                                "stop_codon_faux",
+                                pos,
+                                intervals[index],
+                                "+",
+                                cds_dict[transcript_id][0][5],
+                            ]
+                        )
+                    else:
+                        # Stop codon overlaps the end of the transcript, so just translate to end
+                        continue
+        else:
+            # Assign stop codon if annotated
+            stop_codon_blocks = [block for block in cds_dict[transcript_id] if block[1] == 'stop_codon']
+            if len(stop_codon_blocks) > 1:
+                min_stop = min([int(block[2]) for block in stop_codon_blocks])
+                for block in stop_codon_blocks:
+                    if int(block[2]) != min_stop:
+                        cds_dict[transcript_id].remove(block)
     for transcript_id in delete_txs:
         del cds_dict[transcript_id]
     # Write to pickled dictionary
