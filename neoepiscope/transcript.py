@@ -301,13 +301,18 @@ _mitochondrial_codon_table = {
     "GGG": "G",
 }
 
-def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, mitochondrial=False):
+def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, 
+                   mitochondrial=False, allow_partial_codons=False):
     """ Translates nucleotide sequence into peptide sequence.
         All codons including and after stop codon are recorded as X's.
         seq: nucleotide sequence
         reverse_strand: True iff strand is -
         require_ATG: True iff search for start codon (ATG)
-        Return value: peptide string
+        mitochondrial: True iff use mitochondrial codon table
+        allow_partial_codons: True iff attempt to translate partial 
+            codons at end of sequence
+
+        Return value: peptide string, list of peptide warnings
     """
     if reverse_strand:
         seq = seq[::-1].translate(_complement_table)
@@ -319,6 +324,7 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, mitochondrial=F
             return ""
     seq_size = len(seq)
     peptide = []
+    peptide_warnings = []
     for i in range(0, seq_size - seq_size % 3, 3):
         chunk = seq[i : i + 3]
         if 'N' not in chunk:
@@ -347,30 +353,32 @@ def seq_to_peptide(seq, reverse_strand=False, require_ATG=False, mitochondrial=F
             codon = '?'
         peptide.append(codon)
     if seq_size % 3:
-        # 1-2 nucleotides remaining
-        if seq_size % 3 == 2:
-            # 2 nucleotides remaining - check if amino acid can be determined
-            if not mitochondrial:
-                codon_options = set(
-                    [_codon_table[''.join([seq[-2:], x])] 
-                                            for x in ['A', 'C', 'G', 'T']]
-                    )
+        peptide_warnings.append('incomplete_CDS')
+        if allow_partial_codons:
+            # 1-2 nucleotides remaining
+            if seq_size % 3 == 2:
+                # 2 nucleotides remaining - check if amino acid can be determined
+                if not mitochondrial:
+                    codon_options = set(
+                        [_codon_table[''.join([seq[-2:], x])] 
+                                                for x in ['A', 'C', 'G', 'T']]
+                        )
+                else:
+                    codon_options = set(
+                        [_mitochondrial_codon_table[''.join([seq[-2:], x])] 
+                                                for x in ['A', 'C', 'G', 'T']]
+                        )
+                if len(codon_options) == 1:
+                    codon = list(codon_options)[0]
+                else:
+                    codon = '?'
             else:
-                codon_options = set(
-                    [_mitochondrial_codon_table[''.join([seq[-2:], x])] 
-                                            for x in ['A', 'C', 'G', 'T']]
-                    )
-            if len(codon_options) == 1:
-                codon = list(codon_options)[0]
-            else:
+                # Only 1 amino acid left - can't determine amino acid
                 codon = '?'
-        else:
-            # Only 1 amino acid left - can't determine amino acid
-            codon = '?'
-        peptide.append(codon)
+            peptide.append(codon)
     if mitochondrial and peptide[0] != 'M':
         peptide[0] = 'M'
-    return "".join(peptide)
+    return "".join(peptide), peptide_warnings
 
 
 class Transcript(object):
@@ -1969,6 +1977,7 @@ class Transcript(object):
         only_reference=False,
         return_protein=False,
         allow_no_edits = False,
+        allow_partial_codons = False,
         print_it=False
     ):
         """ Retrieves dict of predicted peptide fragments from transcript that
@@ -2445,7 +2454,17 @@ class Transcript(object):
         stop_codon = None
         muts = set()
         if self.stop_codon is not None:
-            if not alt_stop_disrupted:
+            '''
+            if not alt_stop_disrupted and not ref_stop_disrupted:
+                # Annotated stop codon could be valid - not disrupted and in-frame
+                ref_equiv = genome_to_ref[alt_to_genome[alt_tx_stop]]
+                stop_codon = [alt_tx_stop, ref_equiv, []]
+            elif ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
+                stop_codon = [ref_stop[0], ref_stop[1], []]
+            '''
+            if ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
+                stop_codon = [ref_stop[0], ref_stop[1], []]
+            elif not alt_stop_disrupted:
                 # Annotated stop codon could be valid - not disrupted and in-frame
                 ref_equiv = genome_to_ref[alt_to_genome[alt_tx_stop]]
                 stop_codon = [alt_tx_stop, ref_equiv, []]
@@ -2762,8 +2781,16 @@ class Transcript(object):
                 A2 = 3 * ((ref_counter - ref_start) // 3) + ref_start
                 C = 3 * ((seq[3] - coding_start) // 3) + coding_start
                 for i in range(0, B1 - A1, 3):
-                    A = seq_to_peptide(sequence[(i + A1) : (i + A1 + 3)], mitochondrial=self.mitochondrial)
-                    B = seq_to_peptide(ref_sequence[(i + A2) : (i + A2 + 3)], mitochondrial=self.mitochondrial)
+                    A, A_warnings = seq_to_peptide(
+                            sequence[(i + A1) : (i + A1 + 3)], 
+                            mitochondrial=self.mitochondrial, 
+                            allow_partial_codons=allow_partial_codons
+                    )
+                    B, B_warnings = seq_to_peptide(
+                            ref_sequence[(i + A2) : (i + A2 + 3)], 
+                            mitochondrial=self.mitochondrial, 
+                            allow_partial_codons=allow_partial_codons
+                    )
                     if A != B:
                         # Missense variant
                         if frame_shifts == []:
@@ -2809,29 +2836,33 @@ class Transcript(object):
                     break
         # Translate sequences
         try:
-            protein = seq_to_peptide(
+            protein, protein_warnings = seq_to_peptide(
                 sequence[start_codon[0] : stop_codon[0]], 
                 reverse_strand=False, 
-                mitochondrial=self.mitochondrial
+                mitochondrial=self.mitochondrial, 
+                allow_partial_codons=allow_partial_codons
             )
         except TypeError:
-            protein = seq_to_peptide(
+            protein, protein_warnings = seq_to_peptide(
                 sequence[start_codon[0] : ], 
                 reverse_strand=False, 
-                mitochondrial=self.mitochondrial
+                mitochondrial=self.mitochondrial, 
+                allow_partial_codons=allow_partial_codons
             )
         try:
-            protein_ref = seq_to_peptide(
+            protein_ref, ref_warnings = seq_to_peptide(
                 ref_sequence[ref_atg[1] : ref_stop[1]], 
                 reverse_strand=False, 
-                mitochondrial=self.mitochondrial
+                mitochondrial=self.mitochondrial, 
+                allow_partial_codons=allow_partial_codons
             )
         except TypeError:
             try:
-                protein_ref = seq_to_peptide(
+                protein_ref, ref_warnings = seq_to_peptide(
                     ref_sequence[ref_atg[1] : ], 
                     reverse_strand=False, 
-                    mitochondrial=self.mitochondrial
+                    mitochondrial=self.mitochondrial, 
+                    allow_partial_codons=allow_partial_codons
                 )
             except TypeError:
                 protein_ref = ''
@@ -2839,9 +2870,10 @@ class Transcript(object):
         if '?' in protein or '?' in protein_ref or 'X' in protein or 'X' in protein_ref:
             unknown_aa = True
         # Turn transcript warnings to tuple of single string
-        if not transcript_warnings:
+        if not transcript_warnings and not protein_warnings:
             transcript_warnings = ("NA",)
         else:
+            transcript_warnings.extend(protein_warnings)
             transcript_warnings = (";".join(transcript_warnings),)
 
         if print_it:
@@ -3676,6 +3708,7 @@ def get_peptides_from_transcripts(
     trv,
     allow_nonstart,
     allow_nonstop,
+    allow_partial_codons=False,
     include_germline=2,
     include_somatic=1,
     protein_fasta=False,
@@ -3712,6 +3745,7 @@ def get_peptides_from_transcripts(
         trv: whether to include TRV transcripts (boolean)
         allow_nonstart: whether to allow transcripts w/o start codons
         allow_nonstop: wheather to allow transcripts w/o stop codons
+        allow_partial_codons: attempt to translate partial codons at ends of transcripts
         protein_fasta: wheather to generate full-length protein sequences
             for fasta file
         return value: dictionary linking neoepitopes to their associated
@@ -3808,6 +3842,7 @@ def get_peptides_from_transcripts(
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,
+                    allow_partial_codons=allow_partial_codons,
                     return_protein=True,
                 )
                 # Store neoepitopes and their metadata
@@ -3885,6 +3920,7 @@ def get_peptides_from_transcripts(
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,
+                    allow_partial_codons=allow_partial_codons,
                     return_protein=True,
                     )
                 # Store neoepitopes and their metadata

@@ -881,7 +881,7 @@ class TestTranscript(unittest.TestCase):
             incorrect peptides"""
         self.fwd_transcript.edit("C", 450458, mutation_class="G")
         self.fwd_transcript.edit("G", 450458)
-        peptides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(print_it=True).keys()
         self.assertEqual(len(peptides), 1914)
         self.all_coding_transcript.edit("C", 5810042, mutation_class="G")
         self.all_coding_transcript.edit("G", 5810042)
@@ -921,7 +921,7 @@ class TestTranscript(unittest.TestCase):
         # Reverse transcript
         self.transcript.edit(5, 5248211, mutation_type="D", mutation_class="G")
         self.transcript.edit(5, 5248208, mutation_type="D")
-        rev_peptides = self.transcript.neopeptides(print_it=True).keys()
+        rev_peptides = self.transcript.neopeptides().keys()
         self.assertEqual(len(rev_peptides), 28)
 
     def test_germline_vs_somatic(self):

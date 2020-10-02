@@ -362,6 +362,13 @@ def main():
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
     call_parser.add_argument(
+        "--allow-partial-codons",
+        required=False,
+        action="store_true",
+        default=False,
+        help="attempt translation of partial codons at end of coding region",
+    )
+    call_parser.add_argument(
         "--transcript-counts",
         type=str,
         required=False,
@@ -710,6 +717,7 @@ def main():
             args.trv,
             args.allow_nonstart,
             args.allow_nonstop,
+            args.allow_partial_codons,
             include_germline,
             include_somatic,
             protein_fasta=args.fasta,
