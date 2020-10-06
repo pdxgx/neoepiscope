@@ -832,7 +832,7 @@ class TestTranscript(unittest.TestCase):
         self.partial_coding_transcript.edit("T", 34073968)
         self.partial_coding_transcript.edit("ATG", 34073397, mutation_type="I")
         partial_peptides = self.partial_coding_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False
+            only_novel_upstream=True, only_downstream=False, print_it=True
         ).keys()
         self.assertEqual(len(partial_peptides), 36)
 
@@ -881,7 +881,7 @@ class TestTranscript(unittest.TestCase):
             incorrect peptides"""
         self.fwd_transcript.edit("C", 450458, mutation_class="G")
         self.fwd_transcript.edit("G", 450458)
-        peptides = self.fwd_transcript.neopeptides(print_it=True).keys()
+        peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 1914)
         self.all_coding_transcript.edit("C", 5810042, mutation_class="G")
         self.all_coding_transcript.edit("G", 5810042)

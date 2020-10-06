@@ -1127,7 +1127,7 @@ class Transcript(object):
                     return None
                 return (self._start_codon + 2 - pos) % 3
             else:
-                if pos > self._start_codon or pos < self._stop_codon:
+                if pos > self._start_codon or (self.stop_codon is not None and pos < self._stop_codon):
                     return None
                 seq_length = (
                     (self.intervals[pos_index] - pos + 1)
@@ -1150,7 +1150,7 @@ class Transcript(object):
                     return None
                 return (pos - self._start_codon) % 3
             else:
-                if pos < self._start_codon or pos > self._stop_codon:
+                if pos < self._start_codon or (self.stop_codon is not None and pos > self._stop_codon):
                     return None
                 seq_length = (
                     (pos - self.intervals[pos_index - 1])
@@ -2038,8 +2038,16 @@ class Transcript(object):
             print(self.deletion_intervals)
 
         # Build alt/ref transcript sequences and generate position dictionaries/trees
-        (sequence, ref_sequence, genome_to_ref, genome_to_alt, ref_to_genome, alt_to_genome, ref_tree, alt_tree) = self._build_sequences(
-                annotated_seq, strand=strand, include_somatic=include_somatic, include_germline=include_germline, print_it=print_it
+        (
+            sequence, ref_sequence, 
+            genome_to_ref, genome_to_alt, 
+            ref_to_genome, alt_to_genome, 
+            ref_tree, alt_tree
+        ) = self._build_sequences(
+                annotated_seq, strand=strand, 
+                include_somatic=include_somatic, 
+                include_germline=include_germline, 
+                print_it=print_it
         )
         
         if print_it:
