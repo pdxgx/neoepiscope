@@ -129,6 +129,11 @@ def xopen(gzipped, *args):
             gzip.GzipFile._read_eof = old_read_eof
 
 
+# From https://stackoverflow.com/questions/21222506/multiple-assignments-into-a-python-dictionary
+def multiassign(d, keys, values):
+    d.update(zip(keys, values))
+
+
 def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     """ Same as bisect.bisect_left, but compares only index "getter"
         See bisect_left source for more info.
@@ -550,19 +555,6 @@ class Transcript(object):
             self.stop_codon_index = None
         #self.stop_past_tx = False
         if self.stop_codon is not None:
-            '''
-            if self.rev_strand and self.intervals[0]+1 > self._stop_codon:
-                # Reverse strand transcript with stop codon overlapping or before transcription start
-                self.stop_codon_seq = None
-                self.stop_coordinates = []
-                self.stop_past_tx = True
-            elif not self.rev_strand and self.intervals[-1] < self._stop_codon+2:
-                # Forward strand transcript with stop codon overlapping or after transcript end
-                self.stop_codon_seq = None
-                self.stop_coordinates = None
-                self.stop_past_tx = True
-            else:
-            '''
             # Find stop codon sequence
             if bisect.bisect_left(self.intervals, self.stop_codon+1) == self.stop_codon_index:
                 # Entire stop codon contained within same exon
@@ -1773,7 +1765,6 @@ class Transcript(object):
             "yet fully supported."
         )
 
-    # CHANGE DICTIONARY NAMES
     def _build_sequences(self, annotated_sequence, strand, include_somatic, include_germline, print_it=False):
         """ Builds alternative and reference sequences and dictionaries linking their
             transcript-level coordinates to genomic coordinates
@@ -1790,7 +1781,8 @@ class Transcript(object):
                 coordinates (0-based), to genomic coordinates (1-based)
         """
         counter, ref_counter = 0, 0  # hold edited transcript level coordinates
-        genome_to_alt, genome_to_ref, alt_to_genome, ref_to_genome = {}, {}, {}, {}
+        genome_to_alt, genome_to_ref, alt_to_genome, ref_to_genome  = {}, {}, {}, {} # hold coordinate linkers
+        mut_to_ref_counter, mut_to_alt_counter = {}, {} # hold mut to transcript position info
         sequence, ref_sequence = "", ""  # hold flattened nucleotide sequence
         ref_tree, alt_tree = IntervalTree(), IntervalTree()
         # Process through sequence chunks to build reference/edited sequences
@@ -1810,14 +1802,13 @@ class Transcript(object):
                 sequence += seq[0]
                 ref_sequence += seq[0]
                 # Link coordinates
-                for i in range(len(seq[0])):
-                    genomic_position = seq[3] + (i*strand)
-                    transcriptomic_position = counter+i
-                    ref_transcriptomic_position = ref_counter+i
-                    genome_to_ref[genomic_position] = ref_transcriptomic_position
-                    genome_to_alt[genomic_position] = transcriptomic_position
-                    ref_to_genome[ref_transcriptomic_position] = genomic_position
-                    alt_to_genome[transcriptomic_position] = genomic_position
+                genomic_positions = [seq[3] + (i*strand) for i in range(len(seq[0]))]
+                transcriptomic_positions = [counter+i for i in range(len(seq[0]))]
+                ref_transcriptomic_positions = [ref_counter+i for i in range(len(seq[0]))]
+                multiassign(genome_to_ref, genomic_positions, ref_transcriptomic_positions)
+                multiassign(genome_to_alt, genomic_positions, transcriptomic_positions)
+                multiassign(ref_to_genome, ref_transcriptomic_positions, genomic_positions)
+                multiassign(alt_to_genome, transcriptomic_positions, genomic_positions)
                 # Update counters
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
@@ -1832,9 +1823,8 @@ class Transcript(object):
                     ref_sequence += seq[2][1][3]                
                 # Link ref and genomic coordinates
                 deleted_length = len(''.join([x[2] for x in seq[2][1][4]]))
-                for i in range(deleted_length):
-                    genomic_position = seq[3] + (i*strand)
-                    genome_to_ref[genomic_position] = ref_counter
+                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                multiassign(genome_to_ref, genomic_positions, [ref_counter for i in range(deleted_length)])
                 # Add variants to ref tree
                 if self.rev_strand:
                     ref_tree[seq[3]-deleted_length:seq[3]] = seq[2][1][4]
@@ -1842,14 +1832,15 @@ class Transcript(object):
                     ref_tree[seq[3]:seq[3]+deleted_length] = seq[2][1][4]
                 # Link alt and genomic coordinates
                 deleted_length = len(seq[2][0][2])
-                for i in range(deleted_length):
-                    genomic_position = seq[3] + (i*strand)
-                    genome_to_alt[genomic_position] = counter
+                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                 # Add variants to alt tree
                 if self.rev_strand:
                     alt_tree[seq[3]-deleted_length:seq[3]] = seq[2][0][4]
                 else:
                     alt_tree[seq[3]:seq[3]+deleted_length] = seq[2][0][4]
+                # Add info to alt counter dict
+                multiassign(mut_to_alt_counter, seq[2][0][4], [(counter, seq) for i in range(len(seq[2][0][4]))])
                 # Update counters
                 counter += len(seq[2][0][3])
                 ref_counter += len(seq[2][1][3])
@@ -1872,44 +1863,41 @@ class Transcript(object):
                         else:
                             ref_sequence += var[2]
                         # Link coordinates
-                        for i in range(len(var[2])):
-                            genomic_position = var[1] + (i*strand)
-                            transcriptomic_position = ref_counter+i
-                            genome_to_ref[genomic_position] = transcriptomic_position
-                            ref_to_genome[transcriptomic_position] = genomic_position
-                        # Update ref tree
-                        if self.rev_strand:
-                            ref_tree[seq[3]-deleted_length:seq[3]] = variants
-                        else:
-                            ref_tree[seq[3]:seq[3]+deleted_length] = variants
+                        genomic_positions = [var[1] + (i*strand) for i in range(len(var[2]))]
+                        transcriptomic_positions = [ref_counter+i for i in range(len(var[2]))]
+                        multiassign(genome_to_ref, genomic_positions, transcriptomic_positions)
+                        multiassign(ref_to_genome, transcriptomic_positions, genomic_positions)
                         # Update counter
                         ref_counter += len(var[2])
                 else:
                     # Update ref coordinates only
-                    transcriptomic_position = ref_counter
-                    for i in range(deleted_length):
-                        genomic_position = seq[3] + (i*strand)
-                        genome_to_ref[genomic_position] = transcriptomic_position
+                    genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                    multiassign(genome_to_ref, genomic_positions, [ref_counter for i in range(deleted_length)])
+                    # Update ref tree
+                    if self.rev_strand:
+                        ref_tree[seq[3]-deleted_length:seq[3]] = seq[2]
+                    else:
+                        ref_tree[seq[3]:seq[3]+deleted_length] = seq[2]
                 # Update alternative coordinates
-                transcriptomic_position = counter
-                for i in range(deleted_length):
-                    genomic_position = seq[3] + (i*strand)
-                    genome_to_alt[genomic_position] = transcriptomic_position
+                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                 # Update alt tree
                 if self.rev_strand:
                     alt_tree[seq[3]-deleted_length:seq[3]] = seq[2]
                 else:
                     alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
+                # Update alt counter info
+                multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
             elif seq[2][0][4] == "I":
                 # Add sequence to new transcript
                 sequence += seq[0]
                 # Link coordinates
-                for i in range(len(seq[0])):
-                    genomic_position = seq[3]
-                    transcriptomic_position = counter+i
-                    alt_to_genome[transcriptomic_position] = genomic_position
+                transcriptomic_positions = [counter+i for i in range(len(seq[0]))]
+                multiassign(alt_to_genome, transcriptomic_positions, [seq[3] for i in range(len(seq[0]))])
                 # Update alt tree
                 alt_tree[seq[3]:seq[3]+1] = seq[2]
+                # Update alt counter info
+                multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
                 # Update counter
                 counter += len(seq[0])
                 if (seq[1] == "G" and include_germline == 2) or (
@@ -1918,10 +1906,8 @@ class Transcript(object):
                     # Add sequence to reference transcript
                     ref_sequence += seq[0]
                     # Link coordinates
-                    for i in range(len(seq[0])):
-                        genomic_position = seq[3]
-                        transcriptomic_position = ref_counter+i
-                        ref_to_genome[transcriptomic_position] = genomic_position
+                    transcriptomic_positions = [ref_counter+i for i in range(len(seq[0]))]
+                    multiassign(ref_to_genome, transcriptomic_positions, [seq[3] for i in range(len(seq[0]))])
                     # Update ref tree
                     ref_tree[seq[3]:seq[3]+1] = seq[2]
                     # Update counter
@@ -1947,23 +1933,29 @@ class Transcript(object):
                         for i in seq[2]:
                             ref_sequence += i[2]
                 # Link coordinates
-                for i in range(len(seq[0])):
-                    genomic_position = seq[3] + (i*strand)
-                    transcriptomic_position = counter + i
-                    ref_transcriptomic_position = ref_counter + i
-                    genome_to_ref[genomic_position] = ref_transcriptomic_position
-                    genome_to_alt[genomic_position] = transcriptomic_position
-                    ref_to_genome[ref_transcriptomic_position] = genomic_position
-                    alt_to_genome[transcriptomic_position] = genomic_position
+                genomic_positions = [seq[3] + (i*strand) for i in range(len(seq[0]))]
+                transcriptomic_positions = [counter + i for i in range(len(seq[0]))]
+                ref_transcriptomic_positions = [ref_counter + i for i in range(len(seq[0]))]
+                multiassign(genome_to_ref, genomic_positions, ref_transcriptomic_positions)
+                multiassign(genome_to_alt, genomic_positions, transcriptomic_positions)
+                multiassign(ref_to_genome, ref_transcriptomic_positions, genomic_positions)
+                multiassign(alt_to_genome, transcriptomic_positions, genomic_positions)
                 # Update alt trees
                 if self.rev_strand:
                     alt_tree[seq[3]-len(seq[0]):seq[3]] = seq[2]
                 else:
                     alt_tree[seq[3]:seq[3]+len(seq[0])] = seq[2]
+                # Update alt counter info
+                multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
+                multiassign(mut_to_ref_counter, seq[2], [ref_counter for i in range(len(seq[2]))])
                 # Update counters
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
-        return sequence, ref_sequence, genome_to_ref, genome_to_alt, ref_to_genome, alt_to_genome, ref_tree, alt_tree
+        return (
+                    sequence, ref_sequence, genome_to_ref, genome_to_alt, 
+                    ref_to_genome, alt_to_genome, ref_tree, alt_tree, 
+                    mut_to_ref_counter, mut_to_alt_counter
+        )
 
 
     def neopeptides(
@@ -2042,7 +2034,9 @@ class Transcript(object):
             sequence, ref_sequence, 
             genome_to_ref, genome_to_alt, 
             ref_to_genome, alt_to_genome, 
-            ref_tree, alt_tree
+            ref_tree, alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
         ) = self._build_sequences(
                 annotated_seq, strand=strand, 
                 include_somatic=include_somatic, 
@@ -2068,6 +2062,10 @@ class Transcript(object):
             print()
             print('Alt tree:')
             print(alt_tree)
+            print()
+            print(mut_to_ref_counter)
+            print()
+            print(mut_to_alt_counter)
             print()
             print('ANNOTATED START CODON:', self.start_codon)
             print("START SEQ:", self.start_codon_seq)
@@ -2144,21 +2142,22 @@ class Transcript(object):
 
         # First check for upstream ATGs if relevant
         if not only_reference and not only_downstream:
-            for atg in atg_positions:
-                if atg < ref_tx_start:
-                    # Start codon is before annotated start - get reference genome seq
-                    genome_pos = [ref_to_genome[atg], ref_to_genome[atg+1], ref_to_genome[atg+2]]
-                    ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
-                    if self.rev_strand:
-                        ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
-                    if not only_novel_upstream or (only_novel_upstream and ref_sequence[atg:atg+3] != ref_genome_seq):
-                        # Valid start codon for user settings
-                        alt_equiv = genome_to_alt[genome_pos[0]]
-                        muts = set()
-                        for pos in genome_pos:
-                            muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-                        ref_atg = [alt_equiv, atg, list(muts)]
-                        break
+            # find start index
+            index = bisect.bisect_left(atg_positions, ref_tx_start)
+            for atg in atg_positions[0:index]:
+                # Start codon is before annotated start - get reference genome seq
+                genome_pos = [ref_to_genome[atg], ref_to_genome[atg+1], ref_to_genome[atg+2]]
+                ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
+                if self.rev_strand:
+                    ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
+                if not only_novel_upstream or (only_novel_upstream and ref_sequence[atg:atg+3] != ref_genome_seq):
+                    # Valid start codon for user settings
+                    alt_equiv = genome_to_alt[genome_pos[0]]
+                    muts = set()
+                    for pos in genome_pos:
+                        muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
+                    ref_atg = [alt_equiv, atg, list(muts)]
+                    break
         # Check for annotated start if not using upstream start
         if not ref_start_disrupted and ref_atg is None:
             # Annotated start undisrupted
@@ -2170,15 +2169,15 @@ class Transcript(object):
             for pos in self.start_coordinates:
                 muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
             # Find new start if available
-            for atg in atg_positions:
+            index = bisect.bisect_left(atg_positions, ref_tx_start) # find start index
+            for atg in atg_positions[index:]:
                 genome_pos = [ref_to_genome[atg], ref_to_genome[atg+1], ref_to_genome[atg+2]]
-                if atg > ref_tx_start:
-                    # Downstream start
-                    alt_equiv = genome_to_alt[genome_pos[0]]
-                    for pos in genome_pos:
-                        muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-                    ref_atg = [alt_equiv, atg, list(muts)]
-                    break
+                # Downstream start
+                alt_equiv = genome_to_alt[genome_pos[0]]
+                for pos in genome_pos:
+                    muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
+                ref_atg = [alt_equiv, atg, list(muts)]
+                break
         # Set alternative atg
         start_codon = None
         atg_positions = [m.start() for m in re.finditer('ATG', sequence)]
@@ -2189,55 +2188,56 @@ class Transcript(object):
 
         # First check for upstream ATGs if relevant
         if not only_downstream and not only_reference:
-            for atg in atg_positions:
-                if atg < alt_tx_start:
-                    # Start codon is before annotated start - get reference tx seq
-                    genome_pos = [alt_to_genome[atg], alt_to_genome[atg+1], alt_to_genome[atg+2]]
-                    ref_tx_pos = genome_to_ref[genome_pos[0]]
-                    ref_tx_seq = ref_sequence[ref_tx_pos:ref_tx_pos+3]
-                    if not only_novel_upstream or (only_novel_upstream and sequence[atg:atg+3] != ref_tx_seq):
-                        # Valid start codon for user settings
-                        muts = set()
-                        for pos in genome_pos:
-                            muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
-                        start_codon = [atg, ref_tx_pos, list(muts)]
-                        # Assess reading frame offset to reference tx
-                        try:
-                            reading_frame = (start_codon[0] - ref_atg[0]) % 3
-                        except TypeError:
-                            reading_frame = None
-                        # Give warning
-                        if sequence[atg:atg+3] != ref_tx_seq:
-                            novelty = 'novel'
-                        else:
-                            novelty = 'preexisting'
-                        warnings.warn(
-                            " ".join(
-                                [
-                                    "Using",
-                                    novelty,
-                                    "start codon",
-                                    "upstream of",
-                                    "reference start codon for",
-                                    self.transcript_id,
-                                ]
-                            )
+            # find start index
+            index = bisect.bisect_left(atg_positions, alt_tx_start)
+            for atg in atg_positions[0:index]:
+                # Start codon is before annotated start - get reference tx seq
+                genome_pos = [alt_to_genome[atg], alt_to_genome[atg+1], alt_to_genome[atg+2]]
+                ref_tx_pos = genome_to_ref[genome_pos[0]]
+                ref_tx_seq = ref_sequence[ref_tx_pos:ref_tx_pos+3]
+                if not only_novel_upstream or (only_novel_upstream and sequence[atg:atg+3] != ref_tx_seq):
+                    # Valid start codon for user settings
+                    muts = set()
+                    for pos in genome_pos:
+                        muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
+                    start_codon = [atg, ref_tx_pos, list(muts)]
+                    # Assess reading frame offset to reference tx
+                    try:
+                        reading_frame = (start_codon[0] - ref_atg[0]) % 3
+                    except TypeError:
+                        reading_frame = None
+                    # Give warning
+                    if sequence[atg:atg+3] != ref_tx_seq:
+                        novelty = 'novel'
+                    else:
+                        novelty = 'preexisting'
+                    warnings.warn(
+                        " ".join(
+                            [
+                                "Using",
+                                novelty,
+                                "start codon",
+                                "upstream of",
+                                "reference start codon for",
+                                self.transcript_id,
+                            ]
                         )
-                        transcript_warnings.append(
-                            "_".join(
-                                [
-                                    novelty,
-                                    "start",
-                                    "codon",
-                                    "upstream",
-                                    "of",
-                                    "reference",
-                                    "start",
-                                    "codon",
-                                ]
-                            )
+                    )
+                    transcript_warnings.append(
+                        "_".join(
+                            [
+                                novelty,
+                                "start",
+                                "codon",
+                                "upstream",
+                                "of",
+                                "reference",
+                                "start",
+                                "codon",
+                            ]
                         )
-                        break
+                    )
+                    break
         # Check for annotated start if not using upstream start
         if not alt_start_disrupted and start_codon is None:
             ref_equiv = genome_to_ref[alt_to_genome[alt_tx_start]]
@@ -2252,7 +2252,8 @@ class Transcript(object):
             for pos in self.start_coordinates:
                 muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
             # Find new start if available
-            for atg in atg_positions:
+            index = bisect.bisect_left(atg_positions, alt_tx_start) # find start index
+            for atg in atg_positions[index:]:
                 genome_pos = [alt_to_genome[atg], alt_to_genome[atg+1], alt_to_genome[atg+2]]
                 if atg > alt_tx_start:
                     # Downstream start
@@ -2416,7 +2417,8 @@ class Transcript(object):
         # Find new stop codon if relevant
         stop_positions = []
         for seq in stop_seqs[1:]:
-            stop_positions.extend([m.start() for m in re.finditer(seq, ref_sequence)])
+            # Save all possible stop positions that are in frame
+            stop_positions.extend([m.start() for m in re.finditer(seq, ref_sequence) if m.start() > (ref_atg[1] + 2) and not ((m.start() - ref_atg[1]) % 3)])
         stop_positions.sort()
 
         if print_it:
@@ -2425,51 +2427,41 @@ class Transcript(object):
             print('current ref stop:', ref_stop)
 
         for stop in stop_positions:
-            if stop > (ref_atg[1] + 2) and not ((stop - ref_atg[1]) % 3):
-                # stop is after start and in frame
-                genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
-                # Check novelty
-                ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
-                if self.rev_strand:
-                    ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
-                novel = False
-                if ref_sequence[stop:stop+3] != ref_genome_seq or ((stop - ref_tx_start) % 3):
-                    novel = True
-                # Check whether to use stop
-                use_stop = False
-                if ref_stop is not None and stop < ref_stop[1] and novel:
-                    # Stop codon is before intact reference stop and novel
+            genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
+            # Check novelty
+            ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
+            if self.rev_strand:
+                ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
+            novel = False
+            if ref_sequence[stop:stop+3] != ref_genome_seq or ((stop - ref_tx_start) % 3):
+                novel = True
+            # Check whether to use stop
+            use_stop = False
+            if ref_stop is not None and stop < ref_stop[1] and novel:
+                # Stop codon is before intact reference stop and novel
+                use_stop = True
+            elif ref_stop is None and self.stop_codon is not None:
+                # Reference stop is disrupted
+                if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
+                    # Reverse strand - stop is after annotated stop or before and novel
                     use_stop = True
-                elif ref_stop is None and self.stop_codon is not None:
-                    # Reference stop is disrupted
-                    if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
-                        # Reverse strand - stop is after annotated stop or before and novel
-                        use_stop = True
-                    elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
-                        # Forward strand - stop is after annotated stop or before and novel
-                        use_stop = True
-                elif ref_stop is None and self.stop_codon is None and novel:
-                    # No reference stop codon, this stop is novel
+                elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
+                    # Forward strand - stop is after annotated stop or before and novel
                     use_stop = True
-                if use_stop:
-                    # This is the stop codon to use
-                    alt_equiv = genome_to_alt[genome_pos[0]]
-                    for pos in genome_pos:
-                        muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-                    ref_stop = [alt_equiv, stop, list(muts)]
-                    break
+            elif ref_stop is None and self.stop_codon is None and novel:
+                # No reference stop codon, this stop is novel
+                use_stop = True
+            if use_stop:
+                # This is the stop codon to use
+                alt_equiv = genome_to_alt[genome_pos[0]]
+                for pos in genome_pos:
+                    muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
+                ref_stop = [alt_equiv, stop, list(muts)]
+                break
         # Set up alternative stop
         stop_codon = None
         muts = set()
         if self.stop_codon is not None:
-            '''
-            if not alt_stop_disrupted and not ref_stop_disrupted:
-                # Annotated stop codon could be valid - not disrupted and in-frame
-                ref_equiv = genome_to_ref[alt_to_genome[alt_tx_stop]]
-                stop_codon = [alt_tx_stop, ref_equiv, []]
-            elif ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
-                stop_codon = [ref_stop[0], ref_stop[1], []]
-            '''
             if ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
                 stop_codon = [ref_stop[0], ref_stop[1], []]
             elif not alt_stop_disrupted:
@@ -2483,7 +2475,8 @@ class Transcript(object):
         # Find new stop codon if relevant
         stop_positions = []
         for seq in stop_seqs[1:]:
-            stop_positions.extend([m.start() for m in re.finditer(seq, sequence)])
+            # save all possible stop positions that are in frame
+            stop_positions.extend([m.start() for m in re.finditer(seq, sequence) if m.start() > (start_codon[0] + 2) and not ((m.start() - start_codon[0]) % 3)])
         stop_positions.sort()
         
         if print_it:
@@ -2492,37 +2485,35 @@ class Transcript(object):
             print('current stop codon:', stop_codon)
 
         for stop in stop_positions:
-            if stop > (start_codon[0] + 2) and not ((stop - start_codon[0]) % 3):
-                # stop is after start and in frame
-                genome_pos = [alt_to_genome[stop], alt_to_genome[stop+1], alt_to_genome[stop+2]]
-                # Check novelty
-                ref_tx_seq = ref_sequence[genome_to_ref[genome_pos[0]]:genome_to_ref[genome_pos[0]]+3]
-                novel = False
-                if sequence[stop:stop+3] != ref_tx_seq or (ref_atg is not None and ((genome_to_ref[genome_pos[0]] - ref_atg[1]) % 3)):
-                    novel = True
-                # Check whether to use stop
-                use_stop = False
-                if stop_codon is not None and stop < stop_codon[0] and novel:
-                    # Stop codon is before intact reference stop and novel
+            genome_pos = [alt_to_genome[stop], alt_to_genome[stop+1], alt_to_genome[stop+2]]
+            # Check novelty
+            ref_tx_seq = ref_sequence[genome_to_ref[genome_pos[0]]:genome_to_ref[genome_pos[0]]+3]
+            novel = False
+            if sequence[stop:stop+3] != ref_tx_seq or (ref_atg is not None and ((genome_to_ref[genome_pos[0]] - ref_atg[1]) % 3)):
+                novel = True
+            # Check whether to use stop
+            use_stop = False
+            if stop_codon is not None and stop < stop_codon[0] and novel:
+                # Stop codon is before intact reference stop and novel
+                use_stop = True
+            elif stop_codon is None and self.stop_codon is not None:
+                # Reference stop is disrupted
+                if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
+                    # Reverse strand - stop is after annotated stop or before and novel
                     use_stop = True
-                elif stop_codon is None and self.stop_codon is not None:
-                    # Reference stop is disrupted
-                    if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
-                        # Reverse strand - stop is after annotated stop or before and novel
-                        use_stop = True
-                    elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
-                        # Forward strand - stop is after annotated stop or before and novel
-                        use_stop = True
-                elif stop_codon is None and self.stop_codon is None and novel:
-                    # No reference stop codon, this stop is novel
+                elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
+                    # Forward strand - stop is after annotated stop or before and novel
                     use_stop = True
-                if use_stop:
-                    # This is the stop codon to use
-                    ref_equiv = genome_to_ref[genome_pos[0]]
-                    for pos in genome_pos:
-                        muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
-                    stop_codon = [stop, ref_equiv, list(muts)]
-                    break
+            elif stop_codon is None and self.stop_codon is None and novel:
+                # No reference stop codon, this stop is novel
+                use_stop = True
+            if use_stop:
+                # This is the stop codon to use
+                ref_equiv = genome_to_ref[genome_pos[0]]
+                for pos in genome_pos:
+                    muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
+                stop_codon = [stop, ref_equiv, list(muts)]
+                break
 
         if print_it:
             print(ref_stop)
@@ -2571,28 +2562,37 @@ class Transcript(object):
             if stop_codon[0] > ref_stop[0] and same_start_frame:
                 # Stop codons in same frame, but new one occurs later than ref
                 frame_shifts.append([alt_to_genome[ref_stop[0]], alt_to_genome[stop_codon[0]], ref_stop[0], stop_codon[0], ref_stop[2]])
-        # Reset counters
-        counter, ref_counter = 0, 0
-        for seq in annotated_seq:
-            # skip sequence fragments that are not to be reported
-            if seq[1] == "R":
-                # Reference sequence - modify counters only
-                counter += len(seq[0])
-                ref_counter += len(seq[0])
-                continue
-            elif (seq[1] == "S" and include_somatic == 2) or (
-                seq[1] == "G" and include_germline == 2
-            ):
-                # Background variant - only update counters
-                if seq[2][0][4] == "V":
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
-                elif seq[2][0][4] == "I":
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
-                continue
-            # skip sequence fragments that occur prior to start codon
-            # handle cases where variant involves start codon
+        # Get coordinates for epitope enumeration
+        if self.rev_strand:
+            try:
+                relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[stop_codon[0]]:alt_to_genome[start_codon[0]]+1]]
+            except TypeError:
+                relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[len(sequence)-1]:alt_to_genome[start_codon[0]]+1]]
+        else:
+            try:
+                relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[start_codon[0]]:alt_to_genome[stop_codon[0]]]]
+            except TypeError:
+                relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[start_codon[0]]:alt_to_genome[len(sequence)-1]+1]]
+
+        if print_it:
+            print('RELEVANT VARIANTS:')
+            print(relevant_variants)
+
+        for var in relevant_variants:
+            # Get alt transcript counter position at variant and full annotated seq chunk
+            counter, seq = mut_to_alt_counter[var]
+
+            if print_it:
+                print(var)
+                print(counter)
+                print(seq)
+
+            try:
+                # Get ref counter at variant
+                ref_counter = mut_to_ref_counter[var]
+            except KeyError:
+                # Not relevant for variant
+                ref_counter = None
             if counter < coding_start + 2:
                 if seq[1] == "H":
                     # Hybrid deletion overlapping start
@@ -2608,12 +2608,9 @@ class Transcript(object):
                                 seq[2][0][4],
                             ]
                         )
-                    counter += len(seq[2][0][3])
-                    ref_counter += len(seq[2][1][3])
                     continue
                 elif seq[2][0][4] == "D":
                     # Deletion overlapping start
-                    ref_counter += len(seq[2][0][2])
                     if counter + len(seq[0]) >= coding_start:
                         coordinates.append(
                             [
@@ -2641,11 +2638,6 @@ class Transcript(object):
                                 seq[2],
                             ]
                         )
-                    counter += len(seq[0])
-                    if (seq[1] == "G" and include_germline == 2) or (
-                        seq[1] == "S" and include_somatic == 2
-                    ):
-                        ref_counter += len(seq[0])
                     continue
                 elif seq[2][0][4] == "V":
                     # SNV overlapping start
@@ -2661,14 +2653,7 @@ class Transcript(object):
                                 seq[2],
                             ]
                         )
-                    counter += len(seq[0])
-                    ref_counter += len(seq[0])
                     continue
-                else:
-                    # other variant types not handled at this time
-                    break
-            # log variants
-            # handle potential frame shifts from indels
             if seq[1] == "H":
                 # Hybrid deletion downstream of start
                 coordinates.append(
@@ -2746,7 +2731,6 @@ class Transcript(object):
                     else:
                         frame_shifts.append([seq[2][0][1], -1, counter, -1, seq[2]])
                         reading_frame = (reading_frame + read_frame1 - read_frame2) % 3
-                ref_counter += len(seq[2][0][2])
             elif seq[2][0][4] == "I":
                 # Insertion downstream of start
                 coordinates.append(
@@ -2776,7 +2760,6 @@ class Transcript(object):
                     else:
                         frame_shifts.append([seq[2][0][1], -1, counter, -1, seq[2]])
                         reading_frame = (reading_frame + len(seq[0])) % 3
-                counter += len(seq[0])
             # handle a collection of one or more single nucleotide variants
             elif seq[2][0][4] == "V":
                 # only document neopeptides corresponding to missense SNVs
@@ -2827,22 +2810,18 @@ class Transcript(object):
                                     seq[2],
                                 ]
                             )
-                counter += len(seq[0])
-                ref_counter += len(seq[0])
-    
+
         if print_it:
             print(reading_frame)
             print(frame_shifts)
 
-        # frame shifts (if they exist) continue to end of transcript
         if reading_frame != 0:
             for i in range(len(frame_shifts), 0, -1):
                 if frame_shifts[i - 1][1] < 0:
-                    frame_shifts[i - 1][1] = seq[3] + len(seq[0])
-                    frame_shifts[i - 1][3] = counter
+                    frame_shifts[i - 1][1] = annotated_seq[-1][3] + len(annotated_seq[-1][0])
+                    frame_shifts[i - 1][3] = len(sequence)
                 else:
                     break
-        # Translate sequences
         try:
             protein, protein_warnings = seq_to_peptide(
                 sequence[start_codon[0] : stop_codon[0]], 

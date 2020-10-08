@@ -832,7 +832,7 @@ class TestTranscript(unittest.TestCase):
         self.partial_coding_transcript.edit("T", 34073968)
         self.partial_coding_transcript.edit("ATG", 34073397, mutation_type="I")
         partial_peptides = self.partial_coding_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False, print_it=True
+            only_novel_upstream=True, only_downstream=False
         ).keys()
         self.assertEqual(len(partial_peptides), 36)
 
