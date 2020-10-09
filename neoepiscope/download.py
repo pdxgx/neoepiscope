@@ -637,34 +637,34 @@ class NeoepiscopeDownloader(object):
             cds_to_tree(cds_dict, gencode_vM1_temp)
         else:
             gencode_vM1 = None
-        if self._yes_no_query("Download Bowtie NCBI GRCh38 index?"):
+        if self._yes_no_query("Download Bowtie GRCh38 index?"):
             self._grab_and_explode(
-                download["Bowtie NCBI GRCh38 index"], "Bowtie NCBI GRCh38 index"
+                download["Bowtie GRCh38 index"], "Bowtie GRCh38 index"
             )
             bowtie_grch38 = os.path.join(
-                self.download_dir, "GCA_000001405.15_GRCh38_no_alt_analysis_set"
+                self.download_dir, "GRCh38.p13"
             )
         else:
             bowtie_grch38 = None
-        if self._yes_no_query("Download Bowtie UCSC hg19 index?"):
+        if self._yes_no_query("Download Bowtie GRCh37 index?"):
             self._grab_and_explode(
-                download["Bowtie UCSC hg19 index"], "Bowtie UCSC hg19 index"
+                download["Bowtie GRCh38 index"], "Bowtie GRCh37 index"
             )
-            bowtie_hg19 = os.path.join(self.download_dir, "hg19")
+            bowtie_hg19 = os.path.join(self.download_dir, "GRCh37.p13")
         else:
             bowtie_hg19 = None
-        if self._yes_no_query("Download Bowtie UCSC mm10 index?"):
+        if self._yes_no_query("Download Bowtie mm10 index?"):
             self._grab_and_explode(
-                download["Bowtie UCSC mm10 index"], "Bowtie UCSC mm10 index"
+                download["Bowtie mm10 index"], "Bowtie mm10 index"
             )
-            bowtie_mm10 = os.path.join(self.download_dir, "mm10")
+            bowtie_mm10 = os.path.join(self.download_dir, "GRCm38.p6")
         else:
             bowtie_mm10 = None
-        if self._yes_no_query("Download Bowtie UCSC mm9 index?"):
+        if self._yes_no_query("Download Bowtie mm9 index?"):
             self._grab_and_explode(
-                download["Bowtie UCSC mm9 index"], "Bowtie UCSC mm9 index"
+                download["Bowtie mm9 index"], "Bowtie mm9 index"
             )
-            bowtie_mm9 = os.path.join(self.download_dir, "mm9")
+            bowtie_mm9 = os.path.join(self.download_dir, "NCBIM37")
         else:
             bowtie_mm9 = None
         programs = []
