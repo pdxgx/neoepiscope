@@ -420,7 +420,7 @@ class Transcript(object):
         self._start_codon, self._stop_codon = None, None
         # Public representation is 1-based
         self.start_codon, self.stop_codon = None, None
-        self.faux_stop = False
+        self.truncation = False
         last_chrom, last_strand = None, None
         for line in cds:
             if type(line) is str:
@@ -448,8 +448,6 @@ class Transcript(object):
             elif line[2].startswith("stop_codon"):
                 self.stop_codon = int(line[3])
                 self._stop_codon = self.stop_codon - 1
-                if line[2] == "stop_codon_faux":
-                    self.faux_stop = True
             else:
                 raise NotImplementedError("GTF sequence type not currently supported")
             last_chrom, last_strand = line[0], line[6]
@@ -609,6 +607,7 @@ class Transcript(object):
                 reference.
             No return value.
         """
+        self.truncation = False
         if reference:
             self.edits = collections.defaultdict(list)
             self.deletion_intervals = []
@@ -1746,6 +1745,7 @@ class Transcript(object):
                                            self.transcript_id, ';\nContributing deletions: ',
                                            str(triggering_mutations), ';\nMutations excluded from trancript: ',
                                            str(skipped_mutations)]))
+                    self.truncation = True
                 except UnboundLocalError:
                     truncated_seq = [x for x in adj_seq]
                 for i in range(0, len(truncated_seq)):
@@ -2076,58 +2076,92 @@ class Transcript(object):
         start_seqs = [self.start_codon_seq, 'ATG']
         # Check ref transcript start codon sequence
         ref_start_disrupted = False
-        ref_tx_start = genome_to_ref[self.start_codon] - 2*self.rev_strand
-
-        if print_it:
-            print('ref start seq:', ref_sequence[ref_tx_start:ref_tx_start+3])
-
-        if ref_sequence[ref_tx_start:ref_tx_start+3] not in start_seqs:
-            warnings.warn(
-                "".join(
-                    [
-                        "Annotated start codon disrupted for transcript ",
-                        self.transcript_id,
-                        " by background mutation",
-                    ]
-                ),
-                Warning,
-            )
-            # A mutation disrupted the annotated start codon
-            if only_reference:
-                # Not compatible with user settings
-                if not return_protein:
-                    return {}
-                else:
-                    return {}, ""
-            ref_start_disrupted = True
-            transcript_warnings.append("annotated_start_codon_disrupted_background")
-        # Check alt transcript start codon sequence
-        alt_start_disrupted = False
-        alt_tx_start = genome_to_alt[self.start_codon] - 2*self.rev_strand
-
-        if print_it:
-            print('alt start seq:', sequence[alt_tx_start:alt_tx_start+3])
-
-        if sequence[alt_tx_start:alt_tx_start+3] not in start_seqs:
-            # A mutation disrupted the annotated start codon
-            if not ref_start_disrupted:
+        try:
+            ref_tx_start = genome_to_ref[self.start_codon] - 2*self.rev_strand
+        except KeyError:
+            if self.truncation and not only_reference:
+                ref_start_disrupted = True
                 warnings.warn(
                     "".join(
                         [
                             "Annotated start codon disrupted for transcript ",
                             self.transcript_id,
+                            " by background mutation",
                         ]
                     ),
                     Warning,
                 )
+                transcript_warnings.append("annotated_start_codon_disrupted_background")
+            else:
+                sys.exit(''.join(['Reference transcript build error for transcript ', self.transcript_id]))
+        else:
+            if print_it:
+                print('ref start seq:', ref_sequence[ref_tx_start:ref_tx_start+3])
+
+            if ref_sequence[ref_tx_start:ref_tx_start+3] not in start_seqs:
+                warnings.warn(
+                    "".join(
+                        [
+                            "Annotated start codon disrupted for transcript ",
+                            self.transcript_id,
+                            " by background mutation",
+                        ]
+                    ),
+                    Warning,
+                )
+                # A mutation disrupted the annotated start codon
+                if only_reference:
+                    # Not compatible with user settings
+                    if not return_protein:
+                        return {}
+                    else:
+                        return {}, ""
+                ref_start_disrupted = True
+                transcript_warnings.append("annotated_start_codon_disrupted_background")
+        # Check alt transcript start codon sequence
+        alt_start_disrupted = False
+        try:
+            alt_tx_start = genome_to_alt[self.start_codon] - 2*self.rev_strand
+        except KeyError:
+            if self.truncation and not only_reference:
+                alt_start_disrupted = True
+                warnings.warn(
+                        "".join(
+                            [
+                                "Annotated start codon disrupted for transcript ",
+                                self.transcript_id,
+                            ]
+                        ),
+                        Warning,
+                    )
                 transcript_warnings.append("annotated_start_codon_disrupted")
-            if only_reference:
-                # Not compatible with user settings
-                if not return_protein:
-                    return {}
-                else:
-                    return {}, ""
-            alt_start_disrupted = True
+            else:
+                sys.exit(''.join(['Transcript build error for transcript ', self.transcript_id]))
+        else:
+
+            if print_it:
+                print('alt start seq:', sequence[alt_tx_start:alt_tx_start+3])
+
+            if sequence[alt_tx_start:alt_tx_start+3] not in start_seqs:
+                # A mutation disrupted the annotated start codon
+                if not ref_start_disrupted:
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Annotated start codon disrupted for transcript ",
+                                self.transcript_id,
+                            ]
+                        ),
+                        Warning,
+                    )
+                    transcript_warnings.append("annotated_start_codon_disrupted")
+                if only_reference:
+                    # Not compatible with user settings
+                    if not return_protein:
+                        return {}
+                    else:
+                        return {}, ""
+                alt_start_disrupted = True
             
         if print_it:
             print(ref_tx_start, alt_tx_start)
@@ -2347,57 +2381,92 @@ class Transcript(object):
         if self.stop_codon is not None:
             # Check ref transcript stop codon sequence if translation occurs
             if ref_atg is not None:
-                ref_tx_stop = genome_to_ref[self.stop_coordinates[0]] - 2*self.rev_strand
-                if ref_sequence[ref_tx_stop:ref_tx_stop+3] not in stop_seqs:
-                    # Mutation disrupted stop codon
-                    ref_stop_disrupted = True
-                elif ref_atg[1] > ref_tx_stop:
-                    # Translation starts downstream of annotated stop codon
-                    ref_stop_disrupted = True
-                elif (ref_tx_stop - ref_atg[1]) % 3:
-                    # Annotated stop is out of frame of reference tx start
-                    ref_stop_disrupted = True
-            if ref_stop_disrupted and not (not ref_start_disrupted and (ref_tx_stop - ref_atg[1]) % 3):
-                warnings.warn(
-                    "".join(
-                        [
-                            "Annotated stop codon disrupted for transcript ",
-                            self.transcript_id,
-                            " by background mutation",
-                        ]
-                    ),
-                    Warning,
-                )
-                transcript_warnings.append("annotated_stop_codon_disrupted_background")
+                try:
+                    ref_tx_stop = genome_to_ref[self.stop_coordinates[0]] - 2*self.rev_strand
+                except KeyError:
+                    if self.truncation:
+                        ref_stop_disrupted = True
+                        warnings.warn(
+                            "".join(
+                                [
+                                    "Annotated stop codon disrupted for transcript ",
+                                    self.transcript_id,
+                                    " by background mutation",
+                                ]
+                            ),
+                            Warning,
+                        )
+                        transcript_warnings.append("annotated_stop_codon_disrupted_background")
+                    else:
+                        sys.exit(''.join(['Transcript build error for transcript ', self.transcript_id]))
+                else:
+                    if ref_sequence[ref_tx_stop:ref_tx_stop+3] not in stop_seqs:
+                        # Mutation disrupted stop codon
+                        ref_stop_disrupted = True
+                    elif ref_atg[1] > ref_tx_stop:
+                        # Translation starts downstream of annotated stop codon
+                        ref_stop_disrupted = True
+                    elif (ref_tx_stop - ref_atg[1]) % 3:
+                        # Annotated stop is out of frame of reference tx start
+                        ref_stop_disrupted = True
+                    if ref_stop_disrupted and not (not ref_start_disrupted and (ref_tx_stop - ref_atg[1]) % 3):
+                        warnings.warn(
+                            "".join(
+                                [
+                                    "Annotated stop codon disrupted for transcript ",
+                                    self.transcript_id,
+                                    " by background mutation",
+                                ]
+                            ),
+                            Warning,
+                        )
+                        transcript_warnings.append("annotated_stop_codon_disrupted_background")
             # Check alt transcript start codon sequence
-            alt_tx_stop = genome_to_alt[self.stop_coordinates[0]] - 2*self.rev_strand
-            if sequence[alt_tx_stop:alt_tx_stop+3] not in stop_seqs:
-                # Mutation disrupted stop codon
-                alt_stop_disrupted = True
-            elif start_codon[0] > alt_tx_stop:
-                # Translation starts downstream of annotated stop codon
-                alt_stop_disrupted = True
-            elif (alt_tx_stop - start_codon[0]) % 3:
-                # Annotated stop is out of frame of alt tx start
-                alt_stop_disrupted = True
-            if alt_stop_disrupted and not ref_stop_disrupted and not (not alt_start_disrupted and (alt_tx_stop - start_codon[0]) % 3):
-                warnings.warn(
-                    "".join(
-                        [
-                            "Annotated stop codon disrupted for transcript ",
-                            self.transcript_id,
-                        ]
-                    ),
-                    Warning,
-                )
-                transcript_warnings.append("annotated_stop_codon_disrupted")
+            try:
+                alt_tx_stop = genome_to_alt[self.stop_coordinates[0]] - 2*self.rev_strand
+            except KeyError:
+                if self.truncation:
+                    alt_stop_disrupted = True
+                    transcript_warnings.append("annotated_stop_codon_disrupted")
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Annotated stop codon disrupted for transcript ",
+                                self.transcript_id,
+                            ]
+                        ),
+                        Warning,
+                    )
+                else:
+                    sys.exit(''.join(['Transcript build error for transcript ', self.transcript_id]))
+            else:
+                if sequence[alt_tx_stop:alt_tx_stop+3] not in stop_seqs:
+                    # Mutation disrupted stop codon
+                    alt_stop_disrupted = True
+                elif start_codon[0] > alt_tx_stop:
+                    # Translation starts downstream of annotated stop codon
+                    alt_stop_disrupted = True
+                elif (alt_tx_stop - start_codon[0]) % 3:
+                    # Annotated stop is out of frame of alt tx start
+                    alt_stop_disrupted = True
+                if alt_stop_disrupted and not ref_stop_disrupted and not (not alt_start_disrupted and (alt_tx_stop - start_codon[0]) % 3):
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Annotated stop codon disrupted for transcript ",
+                                self.transcript_id,
+                            ]
+                        ),
+                        Warning,
+                    )
+                    transcript_warnings.append("annotated_stop_codon_disrupted")
 
             if print_it:
                 print('REF TX STOP:', ref_tx_stop)
                 print(ref_stop_disrupted)
-            if print_it:
                 print('ALT TX STOP:', alt_tx_stop)
                 print(alt_stop_disrupted)
+
         else:
             transcript_warnings.append("no_annotated_stop_codon")
 
