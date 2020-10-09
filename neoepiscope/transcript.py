@@ -1823,22 +1823,16 @@ class Transcript(object):
                     ref_sequence += seq[2][1][3]                
                 # Link ref and genomic coordinates
                 deleted_length = len(''.join([x[2] for x in seq[2][1][4]]))
-                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                genomic_positions = [(seq[3] + (deleted_length*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
                 multiassign(genome_to_ref, genomic_positions, [ref_counter for i in range(deleted_length)])
                 # Add variants to ref tree
-                if self.rev_strand:
-                    ref_tree[seq[3]-deleted_length:seq[3]] = seq[2][1][4]
-                else:
-                    ref_tree[seq[3]:seq[3]+deleted_length] = seq[2][1][4]
+                ref_tree[seq[3]:seq[3]+deleted_length] = seq[2][1][4]
                 # Link alt and genomic coordinates
                 deleted_length = len(seq[2][0][2])
-                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                genomic_positions = [(seq[3] + (deleted_length*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
                 multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                 # Add variants to alt tree
-                if self.rev_strand:
-                    alt_tree[seq[3]-deleted_length:seq[3]] = seq[2][0][4]
-                else:
-                    alt_tree[seq[3]:seq[3]+deleted_length] = seq[2][0][4]
+                alt_tree[seq[3]:seq[3]+deleted_length] = seq[2][0][4]
                 # Add info to alt counter dict
                 multiassign(mut_to_alt_counter, seq[2][0][4], [(counter, seq) for i in range(len(seq[2][0][4]))])
                 # Update counters
@@ -1863,7 +1857,8 @@ class Transcript(object):
                         else:
                             ref_sequence += var[2]
                         # Link coordinates
-                        genomic_positions = [var[1] + (i*strand) for i in range(len(var[2]))]
+                        #genomic_positions = [var[1] + (i*strand) for i in range(len(var[2]))]
+                        genomic_positions = [(var[1] + (len(var[2])*self.rev_strand)) + (i*strand) for i in range(len(var[2]))]
                         transcriptomic_positions = [ref_counter+i for i in range(len(var[2]))]
                         multiassign(genome_to_ref, genomic_positions, transcriptomic_positions)
                         multiassign(ref_to_genome, transcriptomic_positions, genomic_positions)
@@ -1874,18 +1869,13 @@ class Transcript(object):
                     genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
                     multiassign(genome_to_ref, genomic_positions, [ref_counter for i in range(deleted_length)])
                     # Update ref tree
-                    if self.rev_strand:
-                        ref_tree[seq[3]-deleted_length:seq[3]] = seq[2]
-                    else:
-                        ref_tree[seq[3]:seq[3]+deleted_length] = seq[2]
+                    ref_tree[seq[3]:seq[3]+deleted_length] = seq[2]
                 # Update alternative coordinates
-                genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                #genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
+                genomic_positions = [(seq[3] + (deleted_length*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
                 multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                 # Update alt tree
-                if self.rev_strand:
-                    alt_tree[seq[3]-deleted_length:seq[3]] = seq[2]
-                else:
-                    alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
+                alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
                 # Update alt counter info
                 multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
             elif seq[2][0][4] == "I":
@@ -2382,7 +2372,7 @@ class Transcript(object):
             # Check ref transcript stop codon sequence if translation occurs
             if ref_atg is not None:
                 try:
-                    ref_tx_stop = genome_to_ref[self.stop_coordinates[0]] - 2*self.rev_strand
+                    ref_tx_stop = genome_to_ref[self.stop_codon] - 2*self.rev_strand
                 except KeyError:
                     if self.truncation:
                         ref_stop_disrupted = True
@@ -2398,7 +2388,7 @@ class Transcript(object):
                         )
                         transcript_warnings.append("annotated_stop_codon_disrupted_background")
                     else:
-                        sys.exit(''.join(['Transcript build error for transcript ', self.transcript_id]))
+                        sys.exit(''.join(['Reference transcript build error for transcript ', self.transcript_id]))
                 else:
                     if ref_sequence[ref_tx_stop:ref_tx_stop+3] not in stop_seqs:
                         # Mutation disrupted stop codon
@@ -2423,7 +2413,7 @@ class Transcript(object):
                         transcript_warnings.append("annotated_stop_codon_disrupted_background")
             # Check alt transcript start codon sequence
             try:
-                alt_tx_stop = genome_to_alt[self.stop_coordinates[0]] - 2*self.rev_strand
+                alt_tx_stop = genome_to_alt[self.stop_codon] - 2*self.rev_strand
             except KeyError:
                 if self.truncation:
                     alt_stop_disrupted = True
