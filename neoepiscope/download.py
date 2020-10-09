@@ -648,7 +648,7 @@ class NeoepiscopeDownloader(object):
             bowtie_grch38 = None
         if self._yes_no_query("Download Bowtie GRCh37 index?"):
             self._grab_and_explode(
-                download["Bowtie GRCh38 index"], "Bowtie GRCh37 index"
+                download["Bowtie GRCh37 index"], "Bowtie GRCh37 index"
             )
             bowtie_hg19 = os.path.join(self.download_dir, "GRCh37.p13")
         else:
