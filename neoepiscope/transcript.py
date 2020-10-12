@@ -2079,8 +2079,9 @@ class Transcript(object):
                     Warning,
                 )
                 transcript_warnings.append("annotated_start_codon_disrupted_background")
-                coords = list(genome_to_ref.keys()).sort(reverse=self.rev_strand)
-                start_index = bisect.bisect_left(coords, self.start_codon)
+                coords = list(genome_to_ref.keys())
+                coords.sort(reverse=self.rev_strand)
+                start_index = min(bisect.bisect_left(coords, self.start_codon), len(coords)-1)
                 ref_tx_start = coords[start_index]
             else:
                 if not return_protein:
@@ -2128,8 +2129,9 @@ class Transcript(object):
                         Warning,
                     )
                 transcript_warnings.append("annotated_start_codon_disrupted")
-                coords = list(genome_to_alt.keys()).sort(reverse=self.rev_strand)
-                start_index = bisect.bisect_left(coords, self.start_codon)
+                coords = list(genome_to_alt.keys())
+                coords.sort(reverse=self.rev_strand)
+                start_index = min(bisect.bisect_left(coords, self.start_codon), len(coords)-1)
                 alt_tx_start = coords[start_index]
             else:
                 if not return_protein:
@@ -2417,6 +2419,8 @@ class Transcript(object):
                             Warning,
                         )
                         transcript_warnings.append("annotated_stop_codon_disrupted_background")
+                    if print_it:
+                        print('REF TX STOP:', ref_tx_stop)
             # Check alt transcript start codon sequence
             try:
                 alt_tx_stop = genome_to_alt[self.stop_codon] - 2*self.rev_strand
@@ -2455,13 +2459,15 @@ class Transcript(object):
                     transcript_warnings.append("annotated_stop_codon_disrupted")
 
                 if print_it:
-                    print('REF TX STOP:', ref_tx_stop)
-                    print(ref_stop_disrupted)
                     print('ALT TX STOP:', alt_tx_stop)
-                    print(alt_stop_disrupted)
+                    
 
         else:
             transcript_warnings.append("no_annotated_stop_codon")
+
+        if print_it:
+            print(ref_stop_disrupted)
+            print(alt_stop_disrupted)
 
         # Set up reference stop
         ref_stop = None
