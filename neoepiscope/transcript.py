@@ -2471,61 +2471,62 @@ class Transcript(object):
 
         # Set up reference stop
         ref_stop = None
-        muts = set()
-        if ref_atg is not None and self.stop_codon is not None:
-            # Check for reference tx stop codon if translation occurs
-            if not ref_stop_disrupted:
-                # Annotated stop codon could be valid - not disrupted and in-frame
-                alt_equiv = genome_to_alt[ref_to_genome[ref_tx_stop]]
-                ref_stop = [alt_equiv, ref_tx_stop, []]
-            else:
-                # Find variants disrupting stop codon if applicable
-                for pos in self.stop_coordinates:
-                    muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-        # Find new stop codon if relevant
-        stop_positions = []
-        for seq in stop_seqs[1:]:
-            # Save all possible stop positions that are in frame
-            stop_positions.extend([m.start() for m in re.finditer(seq, ref_sequence) if m.start() > (ref_atg[1] + 2) and not ((m.start() - ref_atg[1]) % 3)])
-        stop_positions.sort()
+        if ref_atg is not None:
+            muts = set()
+            if self.stop_codon is not None:
+                # Check for reference tx stop codon if translation occurs
+                if not ref_stop_disrupted:
+                    # Annotated stop codon could be valid - not disrupted and in-frame
+                    alt_equiv = genome_to_alt[ref_to_genome[ref_tx_stop]]
+                    ref_stop = [alt_equiv, ref_tx_stop, []]
+                else:
+                    # Find variants disrupting stop codon if applicable
+                    for pos in self.stop_coordinates:
+                        muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
+            # Find new stop codon if relevant
+            stop_positions = []
+            for seq in stop_seqs[1:]:
+                # Save all possible stop positions that are in frame
+                stop_positions.extend([m.start() for m in re.finditer(seq, ref_sequence) if m.start() > (ref_atg[1] + 2) and not ((m.start() - ref_atg[1]) % 3)])
+            stop_positions.sort()
 
-        if print_it:
-            print('REF STOP POSITIONS:')
-            print(stop_positions)
-            print('current ref stop:', ref_stop)
+            if print_it:
+                print('REF STOP POSITIONS:')
+                print(stop_positions)
+                print('current ref stop:', ref_stop)
 
-        for stop in stop_positions:
-            genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
-            # Check novelty
-            ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
-            if self.rev_strand:
-                ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
-            novel = False
-            if ref_sequence[stop:stop+3] != ref_genome_seq or ((stop - ref_atg[1]) % 3):
-                novel = True
-            # Check whether to use stop
-            use_stop = False
-            if ref_stop is not None and stop < ref_stop[1] and novel:
-                # Stop codon is before intact reference stop and novel
-                use_stop = True
-            elif ref_stop is None and self.stop_codon is not None:
-                # Reference stop is disrupted
-                if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
-                    # Reverse strand - stop is after annotated stop or before and novel
+            for stop in stop_positions:
+                genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
+                # Check novelty
+                ref_genome_seq = ''.join([self.bowtie_reference_index.get_stretch(self.chrom, x-1, 1) for x in genome_pos])
+                if self.rev_strand:
+                    ref_genome_seq = ref_genome_seq[::-1].translate(revcomp_translation_table)
+                novel = False
+                if ref_sequence[stop:stop+3] != ref_genome_seq or ((stop - ref_atg[1]) % 3):
+                    novel = True
+                # Check whether to use stop
+                use_stop = False
+                if ref_stop is not None and stop < ref_stop[1] and novel:
+                    # Stop codon is before intact reference stop and novel
                     use_stop = True
-                elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
-                    # Forward strand - stop is after annotated stop or before and novel
+                elif ref_stop is None and self.stop_codon is not None:
+                    # Reference stop is disrupted
+                    if self.rev_strand and ((genome_pos[0] < self.stop_codon+2) or (genome_pos[0] > self.stop_codon+2 and novel)):
+                        # Reverse strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                    elif not self.rev_strand and ((genome_pos[0] > self.stop_codon) or (genome_pos[0] < self.stop_codon and novel)):
+                        # Forward strand - stop is after annotated stop or before and novel
+                        use_stop = True
+                elif ref_stop is None and self.stop_codon is None and novel:
+                    # No reference stop codon, this stop is novel
                     use_stop = True
-            elif ref_stop is None and self.stop_codon is None and novel:
-                # No reference stop codon, this stop is novel
-                use_stop = True
-            if use_stop:
-                # This is the stop codon to use
-                alt_equiv = genome_to_alt[genome_pos[0]]
-                for pos in genome_pos:
-                    muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
-                ref_stop = [alt_equiv, stop, list(muts)]
-                break
+                if use_stop:
+                    # This is the stop codon to use
+                    alt_equiv = genome_to_alt[genome_pos[0]]
+                    for pos in genome_pos:
+                        muts.update([x.data[0] for x in ref_tree[pos:pos+1]])
+                    ref_stop = [alt_equiv, stop, list(muts)]
+                    break
         # Set up alternative stop
         stop_codon = None
         muts = set()
