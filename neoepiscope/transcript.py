@@ -1762,7 +1762,7 @@ class Transcript(object):
             "yet fully supported."
         )
 
-    def _build_sequences(self, annotated_sequence, strand, include_somatic, include_germline, print_it=False):
+    def _build_sequences(self, annotated_sequence, strand, include_somatic, include_germline):
         """ Builds alternative and reference sequences and dictionaries linking their
             transcript-level coordinates to genomic coordinates
 
@@ -1784,16 +1784,7 @@ class Transcript(object):
         ref_tree, alt_tree = IntervalTree(), IntervalTree()
         # Process through sequence chunks to build reference/edited sequences
         # Link transcriptomic and genomic coordinates
-        
-        if print_it:
-            print('Building sequence...')
-        
         for seq in annotated_sequence:
-
-            if print_it:
-                print(seq)
-                print(counter, ref_counter)
-
             if seq[1] == "R":
                 # Add sequence to both transcript versions
                 sequence += seq[0]
@@ -1875,15 +1866,6 @@ class Transcript(object):
                     multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                     # Update ref tree
                     ref_tree[seq[3]:seq[3]+deleted_length] = seq[2]
-                '''
-                # Update alternative coordinates
-                genomic_positions = [(seq[3] + ((deleted_length-1)*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
-                multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
-                # Update alt tree
-                alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
-                # Update alt counter info
-                multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
-                '''
             elif seq[2][0][4] == "I":
                 # Add sequence to new transcript
                 sequence += seq[0]
@@ -1965,8 +1947,7 @@ class Transcript(object):
         only_reference=False,
         return_protein=False,
         allow_no_edits = False,
-        allow_partial_codons = False,
-        print_it=False
+        allow_partial_codons = False
     ):
         """ Retrieves dict of predicted peptide fragments from transcript that
             arise from one or more variants.
@@ -2018,13 +1999,6 @@ class Transcript(object):
         transcript_warnings = []
         unknown_aa = False
         strand = 1 - self.rev_strand * 2 # +1 is + strand, -1 is - strand
-
-        if print_it:
-            print()
-            print(self.transcript_id)
-            print(self.edits)
-            print(self.deletion_intervals)
-
         # Build alt/ref transcript sequences and generate position dictionaries/trees
         (
             sequence, ref_sequence, 
@@ -2037,36 +2011,7 @@ class Transcript(object):
                 annotated_seq, strand=strand, 
                 include_somatic=include_somatic, 
                 include_germline=include_germline, 
-                print_it=print_it
         )
-        
-        if print_it:
-            print("ALT SEQ:", sequence)
-            print("REF_SEQ:", ref_sequence)
-            print('Ref tx dicts:')
-            print(genome_to_ref)
-            print()
-            print(ref_to_genome)
-            print()
-            print('Alt tx dicts:')
-            print(genome_to_alt)
-            print()
-            print(alt_to_genome)
-            print()
-            print('Ref tree:')
-            print(ref_tree)
-            print()
-            print('Alt tree:')
-            print(alt_tree)
-            print()
-            print(mut_to_ref_counter)
-            print()
-            print(mut_to_alt_counter)
-            print()
-            print('ANNOTATED START CODON:', self.start_codon)
-            print("START SEQ:", self.start_codon_seq)
-            print("START COORDINATES:", self.start_coordinates)
-
         # Assign possible start codon sequences
         # May want to update to include 'ATA', 'ATT' for mitochondrial transcripts
         start_seqs = [self.start_codon_seq, 'ATG']
@@ -2098,9 +2043,6 @@ class Transcript(object):
                 else:
                     return {}, ""
         else:
-            if print_it:
-                print('ref start seq:', ref_sequence[ref_tx_start:ref_tx_start+3])
-
             if ref_sequence[ref_tx_start:ref_tx_start+3] not in start_seqs:
                 warnings.warn(
                     "".join(
@@ -2148,10 +2090,6 @@ class Transcript(object):
                 else:
                     return {}, ""
         else:
-
-            if print_it:
-                print('alt start seq:', sequence[alt_tx_start:alt_tx_start+3])
-
             if sequence[alt_tx_start:alt_tx_start+3] not in start_seqs:
                 # A mutation disrupted the annotated start codon
                 if not ref_start_disrupted:
@@ -2172,18 +2110,9 @@ class Transcript(object):
                     else:
                         return {}, ""
                 alt_start_disrupted = True
-            
-        if print_it:
-            print(ref_tx_start, alt_tx_start)
-
         # Set reference for atg sequences
         ref_atg = None
         atg_positions = [m.start() for m in re.finditer('ATG', ref_sequence)]
-
-        if print_it:
-            print('REF START POSITIONS:')
-            print(atg_positions)
-
         # First check for upstream ATGs if relevant
         if not only_reference and not only_downstream:
             # find start index
@@ -2225,11 +2154,6 @@ class Transcript(object):
         # Set alternative atg
         start_codon = None
         atg_positions = [m.start() for m in re.finditer('ATG', sequence)]
-
-        if print_it:
-            print('START POSITIONS:')
-            print(atg_positions)
-
         # First check for upstream ATGs if relevant
         if not only_downstream and not only_reference:
             # find start index
@@ -2342,11 +2266,6 @@ class Transcript(object):
                         )
                     )
                     break
-
-        if print_it:
-            print(ref_atg)
-            print(start_codon)
-
         # Check whether we have valid start codon for alt sequence - if not, return nothing
         if start_codon is None:
             warnings.warn(
@@ -2375,12 +2294,6 @@ class Transcript(object):
         else:
             # No translation from ref transcript - "new" reading frame
             same_start_frame = False
-
-        if print_it:
-            print('ANNOTATED_STOP_CODON:', self.stop_codon)
-            print('STOP SEQ:', self.stop_codon_seq)
-            print('STOP COORDINATES:', self.stop_coordinates)
-
         # Assign valid stop codon sequences
         if not self.mitochondrial:
             stop_seqs = [self.stop_codon_seq, 'TAA', 'TGA', 'TAG']
@@ -2428,8 +2341,6 @@ class Transcript(object):
                             Warning,
                         )
                         transcript_warnings.append("annotated_stop_codon_disrupted_background")
-                    if print_it:
-                        print('REF TX STOP:', ref_tx_stop)
             # Check alt transcript start codon sequence
             try:
                 alt_tx_stop = genome_to_alt[self.stop_codon] - 2*self.rev_strand
@@ -2466,18 +2377,8 @@ class Transcript(object):
                         Warning,
                     )
                     transcript_warnings.append("annotated_stop_codon_disrupted")
-
-                if print_it:
-                    print('ALT TX STOP:', alt_tx_stop)
-                    
-
         else:
             transcript_warnings.append("no_annotated_stop_codon")
-
-        if print_it:
-            print(ref_stop_disrupted)
-            print(alt_stop_disrupted)
-
         # Set up reference stop
         ref_stop = None
         if ref_atg is not None:
@@ -2498,12 +2399,6 @@ class Transcript(object):
                 # Save all possible stop positions that are in frame
                 stop_positions.extend([m.start() for m in re.finditer(seq, ref_sequence) if m.start() > (ref_atg[1] + 2) and not ((m.start() - ref_atg[1]) % 3)])
             stop_positions.sort()
-
-            if print_it:
-                print('REF STOP POSITIONS:')
-                print(stop_positions)
-                print('current ref stop:', ref_stop)
-
             annotated_start = self.start_coordinates[0+2*self.rev_strand]
             indels = False
             if [x for x in annotated_seq if x[1] != 'R' and (x[0] == '' or x[2][0][4] == 'I')]:
@@ -2584,12 +2479,6 @@ class Transcript(object):
             # save all possible stop positions that are in frame
             stop_positions.extend([m.start() for m in re.finditer(seq, sequence) if m.start() > (start_codon[0] + 2) and not ((m.start() - start_codon[0]) % 3)])
         stop_positions.sort()
-        
-        if print_it:
-            print('STOP POSITIONS:')
-            print(stop_positions)
-            print('current stop codon:', stop_codon)
-
         for stop in stop_positions:
             genome_pos = [alt_to_genome[stop], alt_to_genome[stop+1], alt_to_genome[stop+2]]
             # Check novelty
@@ -2620,11 +2509,6 @@ class Transcript(object):
                     muts.update([x.data[0] for x in alt_tree[pos:pos+1]])
                 stop_codon = [stop, ref_equiv, list(muts)]
                 break
-
-        if print_it:
-            print(ref_stop)
-            print(stop_codon)
-
         # Create shortcuts to translation start positions
         ref_start = start_codon[1]
         coding_start = start_codon[0]
@@ -2679,20 +2563,9 @@ class Transcript(object):
                 relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[start_codon[0]]:alt_to_genome[stop_codon[0]]]]
             except TypeError:
                 relevant_variants = [x.data[0] for x in alt_tree[alt_to_genome[start_codon[0]]:alt_to_genome[len(sequence)-1]+1]]
-
-        if print_it:
-            print('RELEVANT VARIANTS:')
-            print(relevant_variants)
-
         for var in relevant_variants:
             # Get alt transcript counter position at variant and full annotated seq chunk
             counter, seq = mut_to_alt_counter[var]
-
-            if print_it:
-                print(var)
-                print(counter)
-                print(seq)
-
             try:
                 # Get ref counter at variant
                 ref_counter = mut_to_ref_counter[var]
@@ -2916,11 +2789,6 @@ class Transcript(object):
                                     seq[2],
                                 ]
                             )
-
-        if print_it:
-            print(reading_frame)
-            print(frame_shifts)
-
         if reading_frame != 0:
             for i in range(len(frame_shifts), 0, -1):
                 if frame_shifts[i - 1][1] < 0:
@@ -2968,15 +2836,6 @@ class Transcript(object):
         else:
             transcript_warnings.extend(protein_warnings)
             transcript_warnings = (";".join(transcript_warnings),)
-
-        if print_it:
-            print(coordinates)
-            print(frame_shifts)
-            print(same_start_frame)
-            print(protein)
-            print()
-            print(protein_ref)
-
         # Enumerate peptides
         peptide_seqs = collections.defaultdict(list)
         # get amino acid ranges for kmerization
@@ -3084,10 +2943,6 @@ class Transcript(object):
                                 )
                             peptide_seqs[pep].append(mutation_data)
                         peptide_seqs[pep] = list(set(peptide_seqs[pep]))
-        
-        if print_it:
-            print('---------')
-
         if not return_protein:
             # return list of unique neoepitope sequences
             return peptide_seqs
