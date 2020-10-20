@@ -2505,6 +2505,9 @@ class Transcript(object):
                 print('current ref stop:', ref_stop)
 
             annotated_start = self.start_coordinates[0+2*self.rev_strand]
+            indels = False
+            if [x for x in annotated_seq if x[1] != 'R' and (x[0] == '' or x[2][0][4] == 'I')]:
+                indels = True
             for stop in stop_positions:
                 genome_pos = [ref_to_genome[stop], ref_to_genome[stop+1], ref_to_genome[stop+2]]
                 # Check novelty
@@ -2515,7 +2518,7 @@ class Transcript(object):
                 if ref_sequence[stop:stop+3] != ref_genome_seq:
                     # Novel sequence via mutation
                     novel = True
-                elif ref_start_disrupted or [x for x in annotated_seq if x[1] != 'R' and (x[0] == '' or x[2][0][4] == 'I')]:
+                elif ref_start_disrupted or indels:
                     # Reading frame may be different - compare to annotated sequence
                     if bisect.bisect_left(self.intervals, genome_pos[0]) == bisect.bisect_left(self.intervals, annotated_start):
                         # potential stop is in same exon as annotated start codon
@@ -2527,12 +2530,12 @@ class Transcript(object):
                         start_index = bisect.bisect_left(self.intervals, annotated_start-1)
                         if stop_index > start_index:
                             seq_length = self.intervals[start_index] - annotated_start + 2
-                            seq_length += genome_pos[0] - self.intervals[stop_index] - 1
+                            seq_length += genome_pos[0] - self.intervals[stop_index-1] - 2
                             for i in range(start_index+1, stop_index-1, 2):
                                 seq_length += self.intervals[i+1] - self.intervals[i]
                         else:
                             seq_length = self.intervals[stop_index] - genome_pos[0] + 2
-                            seq_length += annotated_start - self.intervals[start_index] - 1
+                            seq_length += annotated_start - self.intervals[start_index-1] - 2
                             for i in range(stop_index+1, start_index-1, 2):
                                 seq_length += self.intervals[i+1] - self.intervals[i]
                         if seq_length % 3:
