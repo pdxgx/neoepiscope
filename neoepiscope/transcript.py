@@ -1861,20 +1861,29 @@ class Transcript(object):
                         multiassign(ref_to_genome, transcriptomic_positions, genomic_positions)
                         # Update counter
                         ref_counter += len(var[2])
+                    # Update alternative coordinates
+                    genomic_positions = [(seq[3] + ((deleted_length-1)*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
+                    multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
+                    # Update alt tree
+                    alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
+                    # Update alt counter info
+                    multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
                 else:
                     # Update ref coordinates only
                     genomic_positions = [seq[3] + ((deleted_length-1)*self.rev_strand) + (i*strand) for i in range(deleted_length)]
                     multiassign(genome_to_ref, genomic_positions, [ref_counter for i in range(deleted_length)])
+                    multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                     # Update ref tree
                     ref_tree[seq[3]:seq[3]+deleted_length] = seq[2]
+                '''
                 # Update alternative coordinates
-                #genomic_positions = [seq[3] + (i*strand) for i in range(deleted_length)]
                 genomic_positions = [(seq[3] + ((deleted_length-1)*self.rev_strand)) + (i*strand) for i in range(deleted_length)]
                 multiassign(genome_to_alt, genomic_positions, [counter for i in range(deleted_length)])
                 # Update alt tree
                 alt_tree[seq[3]:seq[3]+deleted_length] = seq[2]
                 # Update alt counter info
                 multiassign(mut_to_alt_counter, seq[2], [(counter, seq) for i in range(len(seq[2]))])
+                '''
             elif seq[2][0][4] == "I":
                 # Add sequence to new transcript
                 sequence += seq[0]
@@ -2555,10 +2564,10 @@ class Transcript(object):
         # Set up alternative stop
         stop_codon = None
         muts = set()
-        if self.stop_codon is not None:
-            if ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
-                stop_codon = [ref_stop[0], ref_stop[1], []]
-            elif not alt_stop_disrupted:
+        if ref_stop is not None and (not (ref_stop[0] - start_codon[0]) % 3) and sequence[ref_stop[0]:ref_stop[0]+3] in stop_seqs:
+            stop_codon = [ref_stop[0], ref_stop[1], []]
+        elif self.stop_codon is not None:
+            if not alt_stop_disrupted:
                 # Annotated stop codon could be valid - not disrupted and in-frame
                 ref_equiv = genome_to_ref[alt_to_genome[alt_tx_stop]]
                 stop_codon = [alt_tx_stop, ref_equiv, []]
@@ -3938,13 +3947,13 @@ def get_peptides_from_transcripts(
                 transcript_a.reset(reference=True)
     for transcript in homozygous_variants:
         # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
-        if cds_dict[affected_transcript][0][5] == "nonsense_mediated_decay" and not nmd:
+        if cds_dict[transcript][0][5] == "nonsense_mediated_decay" and not nmd:
             continue
-        elif cds_dict[affected_transcript][0][5] == "polymorphic_pseudogene" and not pp:
+        elif cds_dict[transcript][0][5] == "polymorphic_pseudogene" and not pp:
             continue
-        elif cds_dict[affected_transcript][0][5] == "IG_V_gene" and not igv:
+        elif cds_dict[transcript][0][5] == "IG_V_gene" and not igv:
             continue
-        elif cds_dict[affected_transcript][0][5] == "TR_V_gene" and not trv:
+        elif cds_dict[transcript][0][5] == "TR_V_gene" and not trv:
             continue
         seleno = False
         if 'seleno' in info_dict[transcript][3]:
