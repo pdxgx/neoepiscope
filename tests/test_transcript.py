@@ -248,11 +248,15 @@ class TestTranscript(unittest.TestCase):
         )
         # Insertion in an intron, only fetching a portion of annotated seq
         self.transcript.reset()
-        self.assertEqual(self.transcript.annotated_seq(5246947, 5247012), 
-                         [('CTCCTGGGCA', 'R', [()], 5246956)])
+        self.assertEqual(
+            self.transcript.annotated_seq(5246947, 5247012),
+            [("CTCCTGGGCA", "R", [()], 5246956)],
+        )
         self.transcript.edit("ATGCGGGG", 5246980, mutation_type="I")
-        self.assertEqual(self.transcript.annotated_seq(5246947, 5247012), 
-                         [('CTCCTGGGCA', 'R', [()], 5246956)])
+        self.assertEqual(
+            self.transcript.annotated_seq(5246947, 5247012),
+            [("CTCCTGGGCA", "R", [()], 5246956)],
+        )
         # In a transcript with no coding exons
         self.non_coding_transcript.edit("A", 65190856)
         relevant_edits = self.non_coding_transcript.expressed_edits()
@@ -446,7 +450,14 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(
             self.transcript.deletion_intervals,
-            [(5246948, 5246958, "S", ("11", 5246950, "CCAGGAGCTG", "", "D", None, True))],
+            [
+                (
+                    5246948,
+                    5246958,
+                    "S",
+                    ("11", 5246950, "CCAGGAGCTG", "", "D", None, True),
+                )
+            ],
         )
         seq = self.transcript.annotated_seq()
         self.assertEqual(len(seq), 2)
@@ -459,7 +470,14 @@ class TestTranscript(unittest.TestCase):
         self.transcript.edit("G", 5247943)
         self.assertEqual(
             self.transcript.deletion_intervals,
-            [(5247802, 5247812, "S", ("11", 5247804, "CACCCTGAAG", "", "D", None, True))],
+            [
+                (
+                    5247802,
+                    5247812,
+                    "S",
+                    ("11", 5247804, "CACCCTGAAG", "", "D", None, True),
+                )
+            ],
         )
         seq = self.transcript.annotated_seq()
         self.assertEqual(len(seq), 1)
@@ -516,7 +534,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_hybrid_deletions(self):
         """Fails if overlapping germline and somatic deletions are hybridized
-            incorrectly"""
+        incorrectly"""
         # Forward transcript
         self.fwd_transcript.edit(5, 450550, mutation_type="D")
         self.fwd_transcript.edit(5, 450552, mutation_type="D", mutation_class="G")
@@ -578,11 +596,11 @@ class TestTranscript(unittest.TestCase):
     def test_complex_indel(self):
         """Fails if adjacent deletion and insertion are handled incorrectly"""
         self.transcript.edit(4, 5247824, mutation_type="D")
-        self.transcript.edit('TT', 5247827, mutation_type="I")
+        self.transcript.edit("TT", 5247827, mutation_type="I")
         seq = self.transcript.annotated_seq()
         self.assertEqual(len(seq), 7)
         self.fwd_transcript.edit(4, 473916, mutation_type="D")
-        self.fwd_transcript.edit('AA', 473919, mutation_type="I")
+        self.fwd_transcript.edit("AA", 473919, mutation_type="I")
         seq = self.fwd_transcript.annotated_seq()
         self.assertEqual(len(seq), 16)
 
@@ -637,7 +655,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_noncoding_mutation_peptides(self):
         """Fails if peptides are returned for mutation in noncoding
-            sequence"""
+        sequence"""
         self.fwd_transcript.edit("G", 450286)
         peptides = self.fwd_transcript.neopeptides()
         self.assertFalse(peptides)
@@ -673,7 +691,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_in_frame_insertion_peptides(self):
         """Fails if incorrect peptides are returned for in-frame
-            insertion"""
+        insertion"""
         self.fwd_transcript.edit("AAA", 450551, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides().keys()
         k_peptides = [pep for pep in peptides if "K" in pep]
@@ -691,7 +709,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_synonymous_inframe_insertion_peptides(self):
         """Fails if incorrect peptides are returned for an insertion into
-            a codon that maintains the AA sequence of that codon"""
+        a codon that maintains the AA sequence of that codon"""
         self.fwd_transcript.edit("AAA", 450502, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 38)
@@ -701,7 +719,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_frameshift_insertion(self):
         """Fails if incorrect peptides are returned for frameshift
-            insertion"""
+        insertion"""
         self.fwd_transcript.edit("AAAAA", 473925, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 108)
@@ -727,7 +745,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_synonymous_inframe_deletion_peptides(self):
         """Fails if incorrect peptides are returned for a deletion of
-            a codon that maintains the AA sequence of that codon"""
+        a codon that maintains the AA sequence of that codon"""
         self.fwd_transcript.edit(3, 473918, mutation_type="D")
         peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 34)
@@ -737,7 +755,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_frameshift_deletion(self):
         """Fails if incorrect peptides are returned for frameshift
-            deletion"""
+        deletion"""
         self.fwd_transcript.edit(5, 473912, mutation_type="D")
         peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 40)
@@ -751,7 +769,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_nonstop_mutation_peptides(self):
         """Fails if mutation altering stop codon does not return peptides
-            past the end of the original peptide to the new stop"""
+        past the end of the original peptide to the new stop"""
         self.fwd_transcript.edit("A", 490580)
         peptides = self.fwd_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 768)
@@ -767,7 +785,9 @@ class TestTranscript(unittest.TestCase):
         peptides = self.all_coding_transcript.neopeptides()
         for pep in peptides:
             for mutation_data in peptides[pep]:
-                self.assertEqual(mutation_data[7], "annotated_stop_codon_disrupted;nonstop")
+                self.assertEqual(
+                    mutation_data[7], "annotated_stop_codon_disrupted;nonstop"
+                )
 
     def test_split_start(self):
         """Fails if split start codon is handled improperly"""
@@ -795,7 +815,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_start_lost_peptides(self):
         """Fails if mutation altering start codon does not return peptides
-           from a new start codon"""
+        from a new start codon"""
         self.fwd_transcript.edit("T", 450456)
         peptides = self.fwd_transcript.neopeptides()
         self.assertFalse(peptides)
@@ -816,11 +836,12 @@ class TestTranscript(unittest.TestCase):
 
     def test_start_lost_and_new_inframe_start(self):
         """Fails if peptides aren't returned from a new in frame start
-           codon when the original is disrupted"""
+        codon when the original is disrupted"""
         self.fwd_transcript.edit("ATG", 450446, mutation_type="I")
         self.fwd_transcript.edit("T", 450456)
         peptides = self.fwd_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False,
+            only_novel_upstream=True,
+            only_downstream=False,
         ).keys()
         self.assertEqual(len(peptides), 20)
         self.transcript.edit("CAT", 5248263, mutation_type="I")
@@ -838,11 +859,12 @@ class TestTranscript(unittest.TestCase):
 
     def test_start_lost_and_new_out_of_frame_start(self):
         """Fails if peptides aren't returned from a new out of frame start
-            codon when the original is disrupted"""
+        codon when the original is disrupted"""
         self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
         self.fwd_transcript.edit("T", 450456)
         peptides = self.fwd_transcript.neopeptides(
-            only_novel_upstream=True, only_downstream=False,
+            only_novel_upstream=True,
+            only_downstream=False,
         ).keys()
         self.assertEqual(len(peptides), 98)
         self.transcript.edit("CAT", 5248280, mutation_type="I")
@@ -860,7 +882,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_skipping_new_start(self):
         """Fails if peptides are returned from a new upstream start codon
-            when only searching downstream"""
+        when only searching downstream"""
         self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides(only_downstream=True)
         self.assertFalse(peptides)
@@ -878,7 +900,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_translation_lost_and_restored(self):
         """Fails if germline start lost with somatic restore returns
-            incorrect peptides"""
+        incorrect peptides"""
         self.fwd_transcript.edit("C", 450458, mutation_class="G")
         self.fwd_transcript.edit("G", 450458)
         peptides = self.fwd_transcript.neopeptides().keys()
@@ -890,7 +912,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_compound_indel_peptides(self):
         """Fails if incorrect peptides are returned with complementary
-            indels are introduced (i.e. frameshift then return to frame)"""
+        indels are introduced (i.e. frameshift then return to frame)"""
         self.fwd_transcript.edit(4, 473924, mutation_type="D")
         self.fwd_transcript.edit("AAAA", 473952, mutation_type="I")
         peptides = self.fwd_transcript.neopeptides().keys()
@@ -904,7 +926,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_all_coding_tx(self):
         """Fails if transcript that is all coding sequence is
-            handled improperly"""
+        handled improperly"""
         self.all_coding_transcript.edit("C", 5810036)
         peptides = self.all_coding_transcript.neopeptides().keys()
         self.assertEqual(len(peptides), 16)
@@ -925,8 +947,8 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(len(rev_peptides), 28)
 
     def test_germline_vs_somatic(self):
-        """"Fails if incorrect peptides are returned for different
-            germline/somatic mutation inclusion decisions"""
+        """ "Fails if incorrect peptides are returned for different
+        germline/somatic mutation inclusion decisions"""
         self.fwd_transcript.edit("T", 450502)
         self.fwd_transcript.edit("T", 450503, mutation_class="G")
         self.assertEqual(
@@ -1078,7 +1100,7 @@ class TestTranscript(unittest.TestCase):
 
     def test_compound_all(self):
         """Fails if incorrect peptides are returned when multiple
-            germline/somatic mutations are introduced"""
+        germline/somatic mutations are introduced"""
         # Forward transcript
         self.fwd_transcript.edit("AAA", 490579, mutation_type="I", mutation_class="G")
         self.fwd_transcript.edit("C", 490580, mutation_type="V")

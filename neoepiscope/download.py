@@ -88,19 +88,19 @@ download = {
 
 
 def is_exe(fpath):
-    """ Tests whether a file is executable.
-        fpath: path to file
-        Return value: True iff file exists and is executable.
+    """Tests whether a file is executable.
+    fpath: path to file
+    Return value: True iff file exists and is executable.
     """
     return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
 
 def remove_temporary_directories(temp_dir_paths):
-    """ Deletes temporary directory.
+    """Deletes temporary directory.
 
-        temp_dir_paths: iterable of paths of temporary directories
+    temp_dir_paths: iterable of paths of temporary directories
 
-        No return value.
+    No return value.
     """
     for temp_dir_path in temp_dir_paths:
         try:
@@ -118,17 +118,17 @@ def sig_handler(signum, frame):
 
 
 def register_cleanup(handler, *args, **kwargs):
-    """ Registers cleanup on normal and signal-induced program termination.
+    """Registers cleanup on normal and signal-induced program termination.
 
-        Executes previously registered handler as well as new handler.
+    Executes previously registered handler as well as new handler.
 
-        handler: function to execute on program termination
-        args: named arguments of handler
-        kwargs includes keyword args of handler as well as:
-            signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
-                signal.SIGHUP]
+    handler: function to execute on program termination
+    args: named arguments of handler
+    kwargs includes keyword args of handler as well as:
+        signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
+            signal.SIGHUP]
 
-        No return value.
+    No return value.
     """
     if "signals_to_handle" in kwargs:
         signals_to_handle = kwargs["signals_to_handle"]
@@ -156,14 +156,14 @@ def register_cleanup(handler, *args, **kwargs):
 
 
 def print_to_screen(message, newline=True, carriage_return=False):
-    """ Prints message to stdout as well as stderr if stderr is redirected.
+    """Prints message to stdout as well as stderr if stderr is redirected.
 
-        message: message to print
-        newline: True iff newline should be printed
-        carriage_return: True iff carriage return should be printed; also
-            clears line with ANSI escape code
+    message: message to print
+    newline: True iff newline should be printed
+    carriage_return: True iff carriage return should be printed; also
+        clears line with ANSI escape code
 
-        No return value.
+    No return value.
     """
     full_message = (
         "\x1b[K"
@@ -195,15 +195,15 @@ def print_to_screen(message, newline=True, carriage_return=False):
 
 
 class NeoepiscopeDownloader(object):
-    """ Convenience class for downloading files so neoepiscope is ready to use.
+    """Convenience class for downloading files so neoepiscope is ready to use.
 
-        Init vars
-        -------------
-        curl_exe: path to cURL executable; if None, use 'curl'
-        download_dir: where to put files; if None, use home directory
-            + 'neoepiscope.data'
-        yes: if True, answer yes to all questions automatically
-        print_log_on_error: print log on error
+    Init vars
+    -------------
+    curl_exe: path to cURL executable; if None, use 'curl'
+    download_dir: where to put files; if None, use home directory
+        + 'neoepiscope.data'
+    yes: if True, answer yes to all questions automatically
+    print_log_on_error: print log on error
     """
 
     def __init__(
@@ -256,13 +256,13 @@ class NeoepiscopeDownloader(object):
         sys.exit(1)
 
     def _yes_no_query(self, question, answer=None):
-        """ Gets a yes/no answer from the user if self.yes is not True.
+        """Gets a yes/no answer from the user if self.yes is not True.
 
-            question: string with question to be printed to console
-            answer: boolean that overrides self.yes if an answer should
-                be forced
+        question: string with question to be printed to console
+        answer: boolean that overrides self.yes if an answer should
+            be forced
 
-            Return value: boolean
+        Return value: boolean
         """
         from distutils.util import strtobool
 
@@ -288,12 +288,12 @@ class NeoepiscopeDownloader(object):
                 sys.stdout.write("Please enter 'y' or 'n'.\n")
 
     def _request_path(self, request, program="", use_which=True):
-        """ Gets a path from a user to an installed software
+        """Gets a path from a user to an installed software
 
-            request: string with request to be printed to console
-            use_which: whether to use the which function to verify a path
+        request: string with request to be printed to console
+        use_which: whether to use the which function to verify a path
 
-            Return value: string with response to request
+        Return value: string with response to request
         """
         if use_which:
             which_function = lambda x: which(x)
@@ -312,10 +312,10 @@ class NeoepiscopeDownloader(object):
                 sys.exit(0)
 
     def check_exe(self, program):
-        """ Tests whether an executable is in PATH.
-            program: executable to search for
-            Return value: path to executable or None if the executable is not
-                found.
+        """Tests whether an executable is in PATH.
+        program: executable to search for
+        Return value: path to executable or None if the executable is not
+            found.
         """
 
         def ext_candidates(fpath):
@@ -336,16 +336,16 @@ class NeoepiscopeDownloader(object):
         return None
 
     def _grab_and_explode(self, urls, name, explode=True):
-        """ Special method for grabbing and exploding a package, if necessary.
+        """Special method for grabbing and exploding a package, if necessary.
 
-            Does not verify URLs since these are preverified. Package is
-            downloaded to current directory.
+        Does not verify URLs since these are preverified. Package is
+        downloaded to current directory.
 
-            url: list of urls to grab
-            name: name of download
-            explode: True iff downloaded file should be decompressed
+        url: list of urls to grab
+        name: name of download
+        explode: True iff downloaded file should be decompressed
 
-            No return value
+        No return value
         """
         from collections import deque
 
@@ -431,12 +431,12 @@ class NeoepiscopeDownloader(object):
                 break
 
     def _quote(self, path=None):
-        """ Decks path with single quotes if it's not None
+        """Decks path with single quotes if it's not None
 
-            path: path or None
+        path: path or None
 
-            Return value: None if path is None, else path decked by single
-                quotes
+        Return value: None if path is None, else path decked by single
+            quotes
         """
         if path is None:
             return "None"
@@ -543,7 +543,9 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE v35...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v35_gtf, gencode_v35_temp)
-            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v35_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_v35_temp
+            )
             cds_to_tree(cds_dict, gencode_v35_temp)
         else:
             gencode_v35 = None
@@ -573,7 +575,9 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE v19...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
-            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_v19_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_v19_temp
+            )
             cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None
@@ -603,7 +607,9 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM25...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_vM25_gtf, gencode_vM25_temp)
-            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_vM25_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_vM25_temp
+            )
             cds_to_tree(cds_dict, gencode_vM25_temp)
         else:
             gencode_vM25 = None
@@ -633,7 +639,9 @@ class NeoepiscopeDownloader(object):
                 self._bail()
             self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM1...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_vM1_gtf, gencode_vM1_temp)
-            feature_lengths = cds_to_feature_length(cds_dict, tx_data_dict, gencode_vM1_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_vM1_temp
+            )
             cds_to_tree(cds_dict, gencode_vM1_temp)
         else:
             gencode_vM1 = None
@@ -641,9 +649,7 @@ class NeoepiscopeDownloader(object):
             self._grab_and_explode(
                 download["Bowtie GRCh38 index"], "Bowtie GRCh38 index"
             )
-            bowtie_grch38 = os.path.join(
-                self.download_dir, "GRCh38.p13"
-            )
+            bowtie_grch38 = os.path.join(self.download_dir, "GRCh38.p13")
         else:
             bowtie_grch38 = None
         if self._yes_no_query("Download Bowtie GRCh37 index?"):
@@ -654,23 +660,27 @@ class NeoepiscopeDownloader(object):
         else:
             bowtie_hg19 = None
         if self._yes_no_query("Download Bowtie mm10 index?"):
-            self._grab_and_explode(
-                download["Bowtie mm10 index"], "Bowtie mm10 index"
-            )
+            self._grab_and_explode(download["Bowtie mm10 index"], "Bowtie mm10 index")
             bowtie_mm10 = os.path.join(self.download_dir, "GRCm38.p6")
         else:
             bowtie_mm10 = None
         if self._yes_no_query("Download Bowtie mm9 index?"):
-            self._grab_and_explode(
-                download["Bowtie mm9 index"], "Bowtie mm9 index"
-            )
+            self._grab_and_explode(download["Bowtie mm9 index"], "Bowtie mm9 index")
             bowtie_mm9 = os.path.join(self.download_dir, "NCBIM37")
         else:
             bowtie_mm9 = None
         programs = []
-        for program in ["netMHCIIpan v3", "netMHCIIpan v4", "netMHCpan v3", "netMHCpan v4.0", 
-                        "netMHCpan v4.1", "netMHC v4", "netMHCII v2", "PickPocket v1", 
-                        "netMHCstabpan v1"]:
+        for program in [
+            "netMHCIIpan v3",
+            "netMHCIIpan v4",
+            "netMHCpan v3",
+            "netMHCpan v4.0",
+            "netMHCpan v4.1",
+            "netMHC v4",
+            "netMHCII v2",
+            "PickPocket v1",
+            "netMHCstabpan v1",
+        ]:
             if self._yes_no_query(
                 (
                     "Do you have an install of {} "
@@ -697,18 +707,17 @@ class NeoepiscopeDownloader(object):
             else:
                 programs.append(None)
         if self._yes_no_query(
-                (
-                    "Do you have an install of PSSMHCpan v1 "
-                    "you would like to use for "
-                    "binding score predictions with "
-                    "neoepiscope?"
-                )
+            (
+                "Do you have an install of PSSMHCpan v1 "
+                "you would like to use for "
+                "binding score predictions with "
+                "neoepiscope?"
+            )
         ):
             pssmhcpan_dir = self._request_path(
-                                "Please enter the path to your PSSMHCpan-1.0 directory",
-                                use_which=False
+                "Please enter the path to your PSSMHCpan-1.0 directory", use_which=False
             )
-            if os.path.isfile(os.path.join(pssmhcpan_dir,  "PSSMHCpan-1.0.pl")):
+            if os.path.isfile(os.path.join(pssmhcpan_dir, "PSSMHCpan-1.0.pl")):
                 if is_exe("perl"):
                     programs.append(pssmhcpan_dir)
                 else:
@@ -718,9 +727,9 @@ class NeoepiscopeDownloader(object):
                     self._bail()
             else:
                 self._print_to_screen_and_log(
-                        "This directory does not PSSMHCpan-1.0.pl script - "
-                        "please check that you have entered the correct path."
-                    )
+                    "This directory does not PSSMHCpan-1.0.pl script - "
+                    "please check that you have entered the correct path."
+                )
                 self._bail()
         else:
             programs.append(None)

@@ -57,17 +57,18 @@ def fullmatch(regex, string, flags=0):
     """Emulate python-3.4 re.fullmatch()."""
     return re.match("(?:" + regex + r")\Z", string, flags=flags)
 
+
 def adjust_tumor_column(in_vcf, out_vcf):
-    """ Swaps the sample columns in a somatic vcf
+    """Swaps the sample columns in a somatic vcf
 
-        HAPCUT2 only takes data from the first VCF sample column, so if the
-            tumor sample data is in the second VCF sample column, it must be
-            swapped prior to optional germline merging or running HAPCUT2
+    HAPCUT2 only takes data from the first VCF sample column, so if the
+        tumor sample data is in the second VCF sample column, it must be
+        swapped prior to optional germline merging or running HAPCUT2
 
-        in_vcf: input vcf that needs the tumor sample data flipped
-        out_vcf: output vcf to have the correct columns
+    in_vcf: input vcf that needs the tumor sample data flipped
+    out_vcf: output vcf to have the correct columns
 
-        No return value.
+    No return value.
     """
     header_lines = []
     other_lines = []
@@ -91,7 +92,7 @@ def adjust_tumor_column(in_vcf, out_vcf):
                                 " as tumor tissue",
                             ]
                         ),
-                        file=sys.stderr
+                        file=sys.stderr,
                     )
                 new_line = "\t".join(
                     [
@@ -125,14 +126,14 @@ def adjust_tumor_column(in_vcf, out_vcf):
 
 
 def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
-    """ Combines VCFs
+    """Combines VCFs
 
-        vcf1: path to germline VCF file
-        vcf2: path to tumor VCF file
-        outfile: path to write merged VCF file
-        tumor_id: identifier of tumor sample listed in VCF header
+    vcf1: path to germline VCF file
+    vcf2: path to tumor VCF file
+    outfile: path to write merged VCF file
+    tumor_id: identifier of tumor sample listed in VCF header
 
-        No return value.
+    No return value.
     """
     vcffile = open(vcf2, "r")
     temp = open(vcf2 + ".tumortemp", "w+")
@@ -147,12 +148,19 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
             else:
                 print(lines.strip(), file=header)
         else:
-            tokens = lines.strip().split('\t')
+            tokens = lines.strip().split("\t")
             if len(tokens) == 10:
                 tumor_first = True
-                warnings.warn(''.join(['Only 1 sample in somatic VCF; '
-                                       'treating ', tokens[9], ' column as ',
-                                       'the tumor sample']))
+                warnings.warn(
+                    "".join(
+                        [
+                            "Only 1 sample in somatic VCF; " "treating ",
+                            tokens[9],
+                            " column as ",
+                            "the tumor sample",
+                        ]
+                    )
+                )
             elif len(tokens) == 11:
                 if tokens[9] == "TUMOR" and tokens[10] == "NORMAL":
                     tumor_first = True
@@ -166,40 +174,74 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
                     tumor_first = True
                 elif tokens[10] == tumor_id:
                     tumor_first = False
-                elif tokens[9] == 'TUMOR':
-                    warnings.warn(''.join(['Irregular sample identifiers; '
-                                       'treating ', tokens[9], 'column as ',
-                                       'the tumor sample']))
+                elif tokens[9] == "TUMOR":
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Irregular sample identifiers; " "treating ",
+                                tokens[9],
+                                "column as ",
+                                "the tumor sample",
+                            ]
+                        )
+                    )
                     tumor_first = True
-                elif tokens[10] == 'TUMOR':
-                    warnings.warn(''.join(['Irregular sample identifiers; '
-                                       'treating ', tokens[10], 'column as ',
-                                       'the tumor sample']))
+                elif tokens[10] == "TUMOR":
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Irregular sample identifiers; " "treating ",
+                                tokens[10],
+                                "column as ",
+                                "the tumor sample",
+                            ]
+                        )
+                    )
                     tumor_first = False
-                elif tokens[9] == 'NORMAL':
-                    warnings.warn(''.join(['Irregular sample identifiers; '
-                                       'treating ', tokens[10], 'column as ',
-                                       'the tumor sample']))
+                elif tokens[9] == "NORMAL":
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Irregular sample identifiers; " "treating ",
+                                tokens[10],
+                                "column as ",
+                                "the tumor sample",
+                            ]
+                        )
+                    )
                     tumor_first = False
-                elif tokens[10] == 'NORMAL':
-                    warnings.warn(''.join(['Irregular sample identifiers; '
-                                       'treating ', tokens[9], 'column as ',
-                                       'the tumor sample']))
+                elif tokens[10] == "NORMAL":
+                    warnings.warn(
+                        "".join(
+                            [
+                                "Irregular sample identifiers; " "treating ",
+                                tokens[9],
+                                "column as ",
+                                "the tumor sample",
+                            ]
+                        )
+                    )
                     tumor_first = True
                 else:
                     raise RuntimeError(
-                                        ''.join(["Can't identify tumor sample",
-                                                 " in somatic VCF; please ",
-                                                 "provide tumor identifier ",
-                                                 "using -t ", tokens[9],
-                                                 " or -t ", tokens[10]])
+                        "".join(
+                            [
+                                "Can't identify tumor sample",
+                                " in somatic VCF; please ",
+                                "provide tumor identifier ",
+                                "using -t ",
+                                tokens[9],
+                                " or -t ",
+                                tokens[10],
+                            ]
+                        )
                     )
             elif len(tokens) > 11:
                 raise RuntimeError(
-                                    "Somatic VCF contains more than two "
-                                    "samples, please use a VCF that contains "
-                                    "only 1 tumor and 1 normal sample or only "
-                                    "1 tumor sample."
+                    "Somatic VCF contains more than two "
+                    "samples, please use a VCF that contains "
+                    "only 1 tumor and 1 normal sample or only "
+                    "1 tumor sample."
                 )
             else:
                 raise RuntimeError("Somatic VCF is missing sample data.")
@@ -216,12 +258,12 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
             else:
                 print(lines.strip(), file=header)
         else:
-            tokens = lines.strip().split('\t')
+            tokens = lines.strip().split("\t")
             if len(tokens) > 10:
                 raise RuntimeError(
-                                    "Germline VCF contains more than one "
-                                    "sample, please use a VCF that contains "
-                                    "only  1 normal sample."
+                    "Germline VCF contains more than one "
+                    "sample, please use a VCF that contains "
+                    "only  1 normal sample."
                 )
             elif len(tokens) < 10:
                 raise RuntimeError("Germline VCF is missing sample data.")
@@ -229,26 +271,56 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
     temp.close()
     for line in sorted(list(info_lines)):
         print(line, file=header)
-    print('##FORMAT=<ID=VT,Number=1,Type=String,Description="Variant type, SOMATIC or GERMLINE">',
-            file=header)
-    print('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", 
-                     "FILTER", "INFO", "FORMAT", tumor_id]), 
-                    file=header
+    print(
+        '##FORMAT=<ID=VT,Number=1,Type=String,Description="Variant type, SOMATIC or GERMLINE">',
+        file=header,
+    )
+    print(
+        "\t".join(
+            [
+                "#CHROM",
+                "POS",
+                "ID",
+                "REF",
+                "ALT",
+                "QUAL",
+                "FILTER",
+                "INFO",
+                "FORMAT",
+                tumor_id,
+            ]
+        ),
+        file=header,
     )
     header.close()
     markgermline = "".join(
-        ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":GERMLINE"}' """, 
-         vcf2, ".germlinetemp > ", vcf2, ".germline"]
+        [
+            """awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":GERMLINE"}' """,
+            vcf2,
+            ".germlinetemp > ",
+            vcf2,
+            ".germline",
+        ]
     )
     if tumor_first:
         marktumor = "".join(
-            ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":SOMATIC"}' """, 
-             vcf2, ".tumortemp > ", vcf2, ".tumor"]
+            [
+                """awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$10":SOMATIC"}' """,
+                vcf2,
+                ".tumortemp > ",
+                vcf2,
+                ".tumor",
+            ]
         )
     else:
         marktumor = "".join(
-            ["""awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$11":SOMATIC"}' """, 
-             vcf2, ".tumortemp > ", vcf2, ".tumor"]
+            [
+                """awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9":VT\t"$11":SOMATIC"}' """,
+                vcf2,
+                ".tumortemp > ",
+                vcf2,
+                ".tumor",
+            ]
         )
     subprocess.call(markgermline, shell=True)
     subprocess.call(marktumor, shell=True)
@@ -277,16 +349,17 @@ def combine_vcf(vcf1, vcf2, outfile="combined.vcf", tumor_id="TUMOR"):
         cleanup = "".join(["rm ", vcf2, file])
         subprocess.call(cleanup, shell=True)
 
+
 def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
-    """ Adds unphased mutations to HapCUT2 output as their own haplotypes
+    """Adds unphased mutations to HapCUT2 output as their own haplotypes
 
-        output: path to output file to write adjusted haplotypes
-        hapcut2_output: path to original output from HapCUT2 with only
-            phased mutations, or None if using unphased mutations
-        vcf: path to vcf used to generate original HapCUT2 output
-        phased: vcf file is a phased vcf from GATK ReadBackedPhasing
+    output: path to output file to write adjusted haplotypes
+    hapcut2_output: path to original output from HapCUT2 with only
+        phased mutations, or None if using unphased mutations
+    vcf: path to vcf used to generate original HapCUT2 output
+    phased: vcf file is a phased vcf from GATK ReadBackedPhasing
 
-        Return value: None
+    Return value: None
     """
     phased = collections.defaultdict(set)
     try:
@@ -299,10 +372,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                 for line in hapcut2_stream:
                     if line[0] != "*" and not line.startswith("BLOCK"):
                         tokens = line.strip().split("\t")
-                        if ':GERMLINE' in tokens[7]:
-                            gen_end = '*'
+                        if ":GERMLINE" in tokens[7]:
+                            gen_end = "*"
                         else:
-                            gen_end = ''
+                            gen_end = ""
                         if tokens[1] == "-" or tokens[2] == "-":
                             continue
                         elif "," in tokens[6]:
@@ -328,7 +401,9 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                 )
                             for i in range(0, 2):
                                 allele = alt_alleles[i]
-                                phased[(tokens[3], int(tokens[4]))].add((tokens[5], allele))
+                                phased[(tokens[3], int(tokens[4]))].add(
+                                    (tokens[5], allele)
+                                )
                                 if i == 0:
                                     if tokens[1] == "1":
                                         gen1 = "1"
@@ -353,7 +428,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                             tokens[4],
                                             tokens[5],
                                             alt_alleles[i],
-                                            ''.join([tokens[7], gen_end]),
+                                            "".join([tokens[7], gen_end]),
                                             tokens[8],
                                             tokens[9],
                                             tokens[10],
@@ -362,25 +437,27 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                     file=output_stream,
                                 )
                         else:
-                            phased[(tokens[3], int(tokens[4]))].add((tokens[5], tokens[6]))
+                            phased[(tokens[3], int(tokens[4]))].add(
+                                (tokens[5], tokens[6])
+                            )
                             print(
-                                    "\t".join(
-                                        [
-                                            tokens[0],
-                                            tokens[1],
-                                            tokens[2],
-                                            tokens[3],
-                                            tokens[4],
-                                            tokens[5],
-                                            tokens[6],
-                                            ''.join([tokens[7], gen_end]),
-                                            tokens[8],
-                                            tokens[9],
-                                            tokens[10],
-                                        ]
-                                    ),
-                                    file=output_stream,
-                                )
+                                "\t".join(
+                                    [
+                                        tokens[0],
+                                        tokens[1],
+                                        tokens[2],
+                                        tokens[3],
+                                        tokens[4],
+                                        tokens[5],
+                                        tokens[6],
+                                        "".join([tokens[7], gen_end]),
+                                        tokens[8],
+                                        tokens[9],
+                                        tokens[10],
+                                    ]
+                                ),
+                                file=output_stream,
+                            )
                     else:
                         print(line.strip(), file=output_stream)
             print("********", file=output_stream)
@@ -399,31 +476,35 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                 while line:
                     tokens = line.strip().split("\t")
                     tokens[9] = tokens[9].strip()
-                    if ':GERMLINE' in tokens[9]:
-                        gen_end = '*'
+                    if ":GERMLINE" in tokens[9]:
+                        gen_end = "*"
                     else:
-                        gen_end = ''
+                        gen_end = ""
                     pos = int(tokens[1])
-                    if 'HP' in tokens[8]:
-                        hp_index = tokens[8].split(':').index('HP')
-                        hap = tuple(tokens[9].split(':')[hp_index].split(','))
-                        haplotype_id = (tokens[0], hap[0].split('-')[0])
-                        current_haplotype = (int(hap[0].split('-')[1])-1, int(hap[1].split('-')[1])-1)
-                        hap_entry = ("{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
-                                    "{pos}\t{ref}\t{alt}\t"
-                                    "{genotype}\tNA\tNA\tNA"
-                                    ).format(
-                                        vcf_line=counter,
-                                        hap1=str(current_haplotype[0]),
-                                        hap2=str(current_haplotype[1]),
-                                        chrom=tokens[0],
-                                        pos=pos,
-                                        ref=tokens[3],
-                                        alt=tokens[4],
-                                        genotype=''.join([tokens[9], gen_end]),
-                                    )
+                    if "HP" in tokens[8]:
+                        hp_index = tokens[8].split(":").index("HP")
+                        hap = tuple(tokens[9].split(":")[hp_index].split(","))
+                        haplotype_id = (tokens[0], hap[0].split("-")[0])
+                        current_haplotype = (
+                            int(hap[0].split("-")[1]) - 1,
+                            int(hap[1].split("-")[1]) - 1,
+                        )
+                        hap_entry = (
+                            "{vcf_line}\t{hap1}\t{hap2}\t{chrom}\t"
+                            "{pos}\t{ref}\t{alt}\t"
+                            "{genotype}\tNA\tNA\tNA"
+                        ).format(
+                            vcf_line=counter,
+                            hap1=str(current_haplotype[0]),
+                            hap2=str(current_haplotype[1]),
+                            chrom=tokens[0],
+                            pos=pos,
+                            ref=tokens[3],
+                            alt=tokens[4],
+                            genotype="".join([tokens[9], gen_end]),
+                        )
                         haplotype_dict[haplotype_id].append(hap_entry)
-                    elif '1/1' in tokens[9]:
+                    elif "1/1" in tokens[9]:
                         print("BLOCK: unphased", file=output_stream)
                         print(
                             (
@@ -436,7 +517,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                 pos=pos,
                                 ref=tokens[3],
                                 alt=tokens[4],
-                                genotype=''.join([tokens[9], gen_end]),
+                                genotype="".join([tokens[9], gen_end]),
                             ),
                             file=output_stream,
                         )
@@ -456,7 +537,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                     pos=pos,
                                     ref=tokens[3],
                                     alt=allele,
-                                    genotype=''.join([tokens[9], gen_end]),
+                                    genotype="".join([tokens[9], gen_end]),
                                 ),
                                 file=output_stream,
                             )
@@ -482,10 +563,10 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                     tokens = line.strip().split("\t")
                     pos = int(tokens[1])
                     tokens[9] = tokens[9].strip()
-                    if ':GERMLINE' in tokens[9]:
-                        gen_end = '*'
+                    if ":GERMLINE" in tokens[9]:
+                        gen_end = "*"
                     else:
-                        gen_end = ''
+                        gen_end = ""
                     alt_alleles = tokens[4].split(",")
                     for allele in alt_alleles:
                         if (tokens[3], allele) not in phased[(tokens[0], pos)]:
@@ -502,7 +583,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                         pos=pos,
                                         ref=tokens[3],
                                         alt=allele,
-                                        genotype=''.join([tokens[9], gen_end]),
+                                        genotype="".join([tokens[9], gen_end]),
                                     ),
                                     file=output_stream,
                                 )
@@ -518,7 +599,7 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
                                         pos=pos,
                                         ref=tokens[3],
                                         alt=allele,
-                                        genotype=''.join([tokens[9], gen_end]),
+                                        genotype="".join([tokens[9], gen_end]),
                                     ),
                                     file=output_stream,
                                 )
@@ -531,12 +612,12 @@ def prep_hapcut_output(output, hapcut2_output, vcf, phased_vcf=False):
 
 
 def which(path):
-    """ Searches for whether executable is present and returns version
+    """Searches for whether executable is present and returns version
 
-        path: path to executable
+    path: path to executable
 
-        Return value: None if executable not found, else string with software
-            name and version number
+    Return value: None if executable not found, else string with software
+        name and version number
     """
     try:
         subprocess.check_call([path])
@@ -547,12 +628,12 @@ def which(path):
 
 
 def get_vaf_pos(VCF):
-    """ Obtains position in VCF format/genotype fields of VAF
+    """Obtains position in VCF format/genotype fields of VAF
 
-        VCF: path to input VCF
+    VCF: path to input VCF
 
-        Return value: None if VCF does not contain VAF,
-                        otherwise position of VAF
+    Return value: None if VCF does not contain VAF,
+                    otherwise position of VAF
     """
     vaf_check = False
     vaf_pos = None
@@ -582,50 +663,64 @@ def get_vaf_pos(VCF):
     return (vaf_pos, field)
 
 
-def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict, 
-                  tpm_dict=None, tpm_threshold=None, expressed_variants=None,
-                  covered_variants=None):
-    """ Writes predicted neoepitopes out to file
+def write_results(
+    output_file,
+    hla_alleles,
+    neoepitopes,
+    tool_dict,
+    tx_dict,
+    tpm_dict=None,
+    tpm_threshold=None,
+    expressed_variants=None,
+    covered_variants=None,
+):
+    """Writes predicted neoepitopes out to file
 
-        output_file: path to output file
-        hla_alleles: list of HLA alleles used for binding predictions
-        neoepitopes: dictionary linking neoepitopes to their metadata
-        tool_dict: dictionary storing prediction tool data
-        tx_dict: dictionary linking transcript ID to list of 
-                    [transcript type, gene ID, gene name]
-        tpm_dict: dictionary linking feature ID to TPM value
-        tmp_threshold: minimum TPM to retain peptide
-        expressed_variants: dictionary linking variants to count of RNA-seq 
-                            reads supporting them
-        covered_variants: dictionary linking variants to count of RNA-seq 
-                          reads covering their position
+    output_file: path to output file
+    hla_alleles: list of HLA alleles used for binding predictions
+    neoepitopes: dictionary linking neoepitopes to their metadata
+    tool_dict: dictionary storing prediction tool data
+    tx_dict: dictionary linking transcript ID to list of
+                [transcript type, gene ID, gene name]
+    tpm_dict: dictionary linking feature ID to TPM value
+    tmp_threshold: minimum TPM to retain peptide
+    expressed_variants: dictionary linking variants to count of RNA-seq
+                        reads supporting them
+    covered_variants: dictionary linking variants to count of RNA-seq
+                      reads covering their position
 
-        Return value: None.
+    Return value: None.
     """
     # Load epitope to IEDB linker dicts
     with open(
-            os.path.join(
-                os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")
-            ),
-            "rb",
-        ) as epitope_stream:
-            epitope_to_iedb = pickle.load(epitope_stream)
+        os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")),
+        "rb",
+    ) as epitope_stream:
+        epitope_to_iedb = pickle.load(epitope_stream)
     with open(
-            os.path.join(
-                os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
-            ),
-            "rb",
-        ) as epitope_stream:
-            ambiguous_epitope_to_iedb = pickle.load(epitope_stream)
+        os.path.join(
+            os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
+        ),
+        "rb",
+    ) as epitope_stream:
+        ambiguous_epitope_to_iedb = pickle.load(epitope_stream)
     try:
         if output_file == "-":
             output_stream = sys.stdout
         else:
             output_stream = open(output_file, "w")
         # Write file header info
-        print(''.join(['# Neoepiscope version ', version_number, '; run ', 
-                       str(datetime.date.today())]), 
-              file=output_stream)
+        print(
+            "".join(
+                [
+                    "# Neoepiscope version ",
+                    version_number,
+                    "; run ",
+                    str(datetime.date.today()),
+                ]
+            ),
+            file=output_stream,
+        )
         headers = [
             "Neoepitope",
             "Chromosome",
@@ -644,7 +739,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
             "Variant_read_support",
             "Variant_read_coverage",
             "Percent_read_support",
-            "IEDB_ID"
+            "IEDB_ID",
         ]
         for allele in hla_alleles:
             for tool in sorted(tool_dict.keys()):
@@ -688,9 +783,9 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                         # Search transcript TPM first
                         tpm = tpm_dict[mutation[8]]
                     except KeyError:
-                        tpm = 'NA'
+                        tpm = "NA"
                     if tpm_threshold is not None:
-                        if tpm == 'NA':
+                        if tpm == "NA":
                             continue
                         elif tpm < tpm_threshold:
                             continue
@@ -701,15 +796,17 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                     reads_covering_variant = covered_variants[tuple(mutation[0:5])]
                     try:
                         percent_support = round(
-                            100*float(reads_supporting_variant)/float(reads_covering_variant),
-                            3
+                            100
+                            * float(reads_supporting_variant)
+                            / float(reads_covering_variant),
+                            3,
                         )
                     except ZeroDivisionError:
-                        percent_support = 'NA'
+                        percent_support = "NA"
                 else:
-                    reads_supporting_variant = 'NA'
-                    reads_covering_variant = 'NA'
-                    percent_support = 'NA'
+                    reads_supporting_variant = "NA"
+                    reads_covering_variant = "NA"
+                    percent_support = "NA"
                 out_line = [
                     epitope,
                     mutation[0],
@@ -728,7 +825,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                     str(reads_supporting_variant),
                     str(reads_covering_variant),
                     str(percent_support),
-                    iedb_id
+                    iedb_id,
                 ]
                 for i in range(9, len(mutation)):
                     out_line.append(str(mutation[i]))
@@ -759,21 +856,33 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                         reads_covering_variant = covered_variants[tuple(mut[0:5])]
                         try:
                             percent_support = round(
-                                100*float(reads_supporting_variant)/float(reads_covering_variant),
-                                3
+                                100
+                                * float(reads_supporting_variant)
+                                / float(reads_covering_variant),
+                                3,
                             )
                         except ZeroDivisionError:
-                            percent_support = 'NA'
+                            percent_support = "NA"
                     else:
-                        reads_supporting_variant = 'NA'
-                        reads_covering_variant = 'NA'
-                        percent_support = 'NA'
+                        reads_supporting_variant = "NA"
+                        reads_covering_variant = "NA"
+                        percent_support = "NA"
                     mutation_dict[
-                        (mut[0], mut[1], ref, alt, mut[4], vaf, mut[6], 
-                         reads_supporting_variant, reads_covering_variant, percent_support)
+                        (
+                            mut[0],
+                            mut[1],
+                            ref,
+                            alt,
+                            mut[4],
+                            vaf,
+                            mut[6],
+                            reads_supporting_variant,
+                            reads_covering_variant,
+                            percent_support,
+                        )
                     ].append([mut[7], mut[8]])
                 mutation_list = sorted(list(mutation_dict.keys()))
-                # Get transcript/gene info 
+                # Get transcript/gene info
                 for mut in mutation_list:
                     transcripts = [str(x[1]) for x in mutation_dict[mut]]
                     tx_types = []
@@ -795,10 +904,10 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                                     if tpm >= tpm_threshold:
                                         expressed = True
                             except KeyError:
-                                tpm = 'NA'
+                                tpm = "NA"
                             tpm_values.append(tpm)
                         else:
-                            tpm_values.append('NA')
+                            tpm_values.append("NA")
                     # If no gene for mutation is expressed, filter out
                     if tpm_threshold is not None and not expressed:
                         continue
@@ -820,7 +929,7 @@ def write_results(output_file, hla_alleles, neoepitopes, tool_dict, tx_dict,
                         str(mut[7]),
                         str(mut[8]),
                         str(mut[9]),
-                        iedb_id
+                        iedb_id,
                     ]
                     for score in ep_scores:
                         out_line.append(str(score))

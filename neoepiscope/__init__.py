@@ -53,10 +53,7 @@ from .transcript import (
     process_haplotypes,
     get_peptides_from_transcripts,
 )
-from .transcript_expression import (
-    feature_to_tpm_dict, 
-    get_expressed_variants
-)
+from .transcript_expression import feature_to_tpm_dict, get_expressed_variants
 from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,
@@ -164,7 +161,7 @@ def main():
         required=False,
         default="TUMOR",
         help="tumor ID (matching the sample in your tumor BAM file "
-             "if using GATK ReadBackedPhasing)",
+        "if using GATK ReadBackedPhasing)",
     )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
@@ -318,7 +315,8 @@ def main():
         "--rna-bam",
         type=str,
         required=False,
-        help="path to tumor RNA-seq BAM alignment file")
+        help="path to tumor RNA-seq BAM alignment file",
+    )
     call_parser.add_argument(
         "--nmd",
         required=False,
@@ -383,6 +381,7 @@ def main():
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
+
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
@@ -392,8 +391,9 @@ def main():
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
-        combine_vcf(args.germline, args.somatic, outfile=args.output, 
-                    tumor_id=args.tumor_id)
+        combine_vcf(
+            args.germline, args.somatic, outfile=args.output, tumor_id=args.tumor_id
+        )
     elif args.subparser_name == "prep":
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)
     elif args.subparser_name == "call":
@@ -421,11 +421,13 @@ def main():
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_v35, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_v35, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 with open(
-                    os.path.join(paths.gencode_v35, "feature_to_feature_length.pickle"), "rb"
+                    os.path.join(paths.gencode_v35, "feature_to_feature_length.pickle"),
+                    "rb",
                 ) as info_stream:
                     feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
@@ -444,11 +446,13 @@ def main():
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 with open(
-                    os.path.join(paths.gencode_v19, "feature_to_feature_length.pickle"), "rb"
+                    os.path.join(paths.gencode_v19, "feature_to_feature_length.pickle"),
+                    "rb",
                 ) as info_stream:
                     feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
@@ -467,11 +471,13 @@ def main():
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 with open(
-                    os.path.join(paths.gencode_vM1, "feature_to_feature_length.pickle"), "rb"
+                    os.path.join(paths.gencode_vM1, "feature_to_feature_length.pickle"),
+                    "rb",
                 ) as info_stream:
                     feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
@@ -490,11 +496,15 @@ def main():
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
                 with open(
-                    os.path.join(paths.gencode_vM25, "feature_to_feature_length.pickle"), "rb"
+                    os.path.join(
+                        paths.gencode_vM25, "feature_to_feature_length.pickle"
+                    ),
+                    "rb",
                 ) as info_stream:
                     feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm10)
@@ -555,7 +565,9 @@ def main():
                             ]
                         )
                     )
-                feature_length_path = os.path.join(args.dicts, "feature_to_feature_length.pickle")
+                feature_length_path = os.path.join(
+                    args.dicts, "feature_to_feature_length.pickle"
+                )
                 if os.path.isfile(feature_length_path):
                     with open(feature_length_path, "rb") as length_stream:
                         feature_length_dict = pickle.load(length_stream)
@@ -570,7 +582,8 @@ def main():
                         )
                     )
                 bowtie_files = [
-                    "".join([args.bowtie_index, ".", str(x), ".ebwt"]) for x in range(1, 5)
+                    "".join([args.bowtie_index, ".", str(x), ".ebwt"])
+                    for x in range(1, 5)
                 ]
                 if list(set([os.path.isfile(x) for x in bowtie_files])) == [True]:
                     reference_index = bowtie_index.BowtieIndexReference(
@@ -684,7 +697,7 @@ def main():
             features_to_reads = {}
             with open(args.transcript_counts) as f:
                 for line in f:
-                    tokens = line.strip().split('\t')
+                    tokens = line.strip().split("\t")
                     features_to_reads[tokens[0]] = float(tokens[1])
             tpm_dict = feature_to_tpm_dict(features_to_reads, feature_length_dict)
             if args.tpm_threshold:
@@ -734,9 +747,17 @@ def main():
                 )
             else:
                 expressed_variants, covered_variants = None, None
-            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, 
-                          info_dict, tpm_dict, tpm_threshold, expressed_variants,
-                          covered_variants)
+            write_results(
+                args.output,
+                hla_alleles,
+                full_neoepitopes,
+                tool_dict,
+                info_dict,
+                tpm_dict,
+                tpm_threshold,
+                expressed_variants,
+                covered_variants,
+            )
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
                 with open(fasta_file, "w") as f:
