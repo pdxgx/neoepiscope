@@ -2650,7 +2650,7 @@ class Transcript(object):
                 if read_frame2 is None:
                     # this case NOT addressed at present
                     # (e.g. deletion involves all or part of intron)
-                    break
+                    continue
                 read_frame1 = (read_frame2 + len(seq[2][1][3])) % 3
                 if read_frame1 != read_frame2:
                     # splicing variation (e.g. deletion of part of intron/exon)
@@ -2666,7 +2666,7 @@ class Transcript(object):
                                 frame_shifts[i - 1][1] = seq[3] + len(seq[2][0][2])
                                 frame_shifts[i - 1][3] = counter + len(seq[2][0][2])
                             else:
-                                break
+                                continue
                         reading_frame = 0
                     else:
                         frame_shifts.append(
@@ -2692,7 +2692,7 @@ class Transcript(object):
                 if read_frame1 is None or read_frame2 is None:
                     # these cases NOT addressed at present
                     # (e.g. deletion involves all or part of intron)
-                    break
+                    continue
                 if read_frame1 != read_frame2:
                     # splicing variation (e.g. deletion of part of intron/exon)
                     if reading_frame == 0:
@@ -2705,7 +2705,7 @@ class Transcript(object):
                                 frame_shifts[i - 1][1] = seq[3] + len(seq[0])
                                 frame_shifts[i - 1][3] = counter + len(seq[0])
                             else:
-                                break
+                                continue
                         reading_frame = 0
                     else:
                         frame_shifts.append([seq[2][0][1], -1, counter, -1, seq[2]])
@@ -2734,7 +2734,7 @@ class Transcript(object):
                                 frame_shifts[i - 1][1] = seq[3] + len(seq[0])
                                 frame_shifts[i - 1][3] = counter + len(seq[0])
                             else:
-                                break
+                                continue
                         reading_frame = 0
                     else:
                         frame_shifts.append([seq[2][0][1], -1, counter, -1, seq[2]])
