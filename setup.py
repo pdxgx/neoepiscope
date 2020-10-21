@@ -56,7 +56,7 @@ class DownloadDependencies(Command):
 
 setup(
     name="neoepiscope",
-    version="0.4.1",
+    version="0.5.0",
     description="comprehensive neoepitope prediction software",
     long_description=(
         "neoepiscope is software for predicting neoepitopes "
@@ -70,7 +70,7 @@ setup(
         "personalizing the reference transcriptome using germline variants."
     ),
     url="http://github.com/ohsu-comp-bio/neoepiscope",
-    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.4.1",
+    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.5.0",
     author="Mary A. Wood, Austin Nguyen, Abhinav Nellore, Reid F. Thompson",
     author_email="thompsre@ohsu.edu",
     license="MIT",
