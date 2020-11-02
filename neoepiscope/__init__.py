@@ -47,11 +47,13 @@ from . import paths
 from .transcript import (
     Transcript,
     gtf_to_cds,
+    cds_to_feature_length,
     cds_to_tree,
     get_transcripts_from_tree,
     process_haplotypes,
     get_peptides_from_transcripts,
 )
+from .transcript_expression import feature_to_tpm_dict, get_expressed_variants
 from .binding_scores import get_binding_tools, gather_binding_scores
 from .file_processing import (
     adjust_tumor_column,
@@ -159,7 +161,7 @@ def main():
         required=False,
         default="TUMOR",
         help="tumor ID (matching the sample in your tumor BAM file "
-             "if using GATK ReadBackedPhasing)",
+        "if using GATK ReadBackedPhasing)",
     )
     # Prep parser options (adds unphased mutations as their own haplotype)
     prep_parser.add_argument("-v", "--vcf", type=str, required=True, help="input VCF")
@@ -226,7 +228,7 @@ def main():
         nargs=3,
         required=False,
         action="append",
-        default=[["mhcflurry", "1", "affinity,rank"]],
+        default=[["mhcflurry", "2", "presentation_score"]],
         help="binding affinity prediction software,"
         "associated version number, and scoring method(s) "
         "(e.g. -p netMHCpan 4 rank,affinity); "
@@ -297,7 +299,7 @@ def main():
         "--build",
         type=str,
         required=False,
-        help="which default genome build to use (hg19 or GRCh38); "
+        help="which default genome build to use (human hg19 or GRCh38, or mouse mm9 or mm10); "
         "must have used download.py script to install these",
     )
     call_parser.add_argument(
@@ -313,7 +315,8 @@ def main():
         "--rna-bam",
         type=str,
         required=False,
-        help="path to tumor RNA-seq BAM alignment file")
+        help="path to tumor RNA-seq BAM alignment file",
+    )
     call_parser.add_argument(
         "--nmd",
         required=False,
@@ -356,6 +359,25 @@ def main():
         default=False,
         help="enumerate neoepitopes from transcripts without annotated stop codons",
     )
+    call_parser.add_argument(
+        "--allow-partial-codons",
+        required=False,
+        action="store_true",
+        default=False,
+        help="attempt translation of partial codons at end of coding region",
+    )
+    call_parser.add_argument(
+        "--transcript-counts",
+        type=str,
+        required=False,
+        help="path to file containing per-transcript read counts",
+    )
+    call_parser.add_argument(
+        "--tpm-threshold",
+        type=float,
+        required=False,
+        help="minimum TPM to consider a transcript expressed",
+    )
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
@@ -364,12 +386,14 @@ def main():
         downloader.run()
     elif args.subparser_name == "index":
         cds_dict, tx_data_dict = gtf_to_cds(args.gtf, args.dicts)
+        gene_lengths = cds_to_feature_length(cds_dict, tx_data_dict, args.dicts)
         tree = cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
-        combine_vcf(args.germline, args.somatic, outfile=args.output, 
-                    tumor_id=args.tumor_id)
+        combine_vcf(
+            args.germline, args.somatic, outfile=args.output, tumor_id=args.tumor_id
+        )
     elif args.subparser_name == "prep":
         prep_hapcut_output(args.output, args.hapcut2_output, args.vcf, args.phased)
     elif args.subparser_name == "call":
@@ -384,22 +408,28 @@ def main():
         if args.build is not None:
             if (
                 args.build == "GRCh38"
-                and paths.gencode_v29 is not None
+                and paths.gencode_v35 is not None
                 and paths.bowtie_grch38 is not None
             ):
                 with open(
-                    os.path.join(paths.gencode_v29, "intervals_to_transcript.pickle"),
+                    os.path.join(paths.gencode_v35, "intervals_to_transcript.pickle"),
                     "rb",
                 ) as interval_stream:
                     interval_dict = pickle.load(interval_stream)
                 with open(
-                    os.path.join(paths.gencode_v29, "transcript_to_CDS.pickle"), "rb"
+                    os.path.join(paths.gencode_v35, "transcript_to_CDS.pickle"), "rb"
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_v29, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_v35, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_v35, "feature_to_feature_length.pickle"),
+                    "rb",
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
             elif (
                 args.build == "hg19"
@@ -416,10 +446,68 @@ def main():
                 ) as cds_stream:
                     cds_dict = pickle.load(cds_stream)
                 with open(
-                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"), "rb"
+                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"),
+                    "rb",
                 ) as info_stream:
                     info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_v19, "feature_to_feature_length.pickle"),
+                    "rb",
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
                 reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
+            elif (
+                args.build == "mm9"
+                and paths.gencode_vM1 is not None
+                and paths.bowtie_mm9 is not None
+            ):
+                with open(
+                    os.path.join(paths.gencode_vM1, "intervals_to_transcript.pickle"),
+                    "rb",
+                ) as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(
+                    os.path.join(paths.gencode_vM1, "transcript_to_CDS.pickle"), "rb"
+                ) as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                with open(
+                    os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"),
+                    "rb",
+                ) as info_stream:
+                    info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(paths.gencode_vM1, "feature_to_feature_length.pickle"),
+                    "rb",
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
+            elif (
+                args.build == "mm10"
+                and paths.gencode_vM25 is not None
+                and paths.bowtie_mm10 is not None
+            ):
+                with open(
+                    os.path.join(paths.gencode_vM25, "intervals_to_transcript.pickle"),
+                    "rb",
+                ) as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+                with open(
+                    os.path.join(paths.gencode_vM25, "transcript_to_CDS.pickle"), "rb"
+                ) as cds_stream:
+                    cds_dict = pickle.load(cds_stream)
+                with open(
+                    os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"),
+                    "rb",
+                ) as info_stream:
+                    info_dict = pickle.load(info_stream)
+                with open(
+                    os.path.join(
+                        paths.gencode_vM25, "feature_to_feature_length.pickle"
+                    ),
+                    "rb",
+                ) as info_stream:
+                    feature_length_dict = pickle.load(info_stream)
+                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm10)
             else:
                 raise RuntimeError(
                     "".join(
@@ -427,7 +515,7 @@ def main():
                             args.build,
                             " is not an available genome build. Please "
                             "check that you have run neoepiscope download and are "
-                            "using 'hg19' or 'GRCh38' for this argument.",
+                            "using 'hg19', 'GRCh38', 'mm10', or 'mm9' for this argument.",
                         ]
                     )
                 )
@@ -463,8 +551,39 @@ def main():
                             ]
                         )
                     )
+                info_path = os.path.join(args.dicts, "transcript_to_gene_info.pickle")
+                if os.path.isfile(info_path):
+                    with open(info_path, "rb") as info_stream:
+                        info_dict = pickle.load(info_stream)
+                else:
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                info_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
+                feature_length_path = os.path.join(
+                    args.dicts, "feature_to_feature_length.pickle"
+                )
+                if os.path.isfile(feature_length_path):
+                    with open(feature_length_path, "rb") as length_stream:
+                        feature_length_dict = pickle.load(length_stream)
+                else:
+                    raise RuntimeError(
+                        "".join(
+                            [
+                                "Cannot find ",
+                                feature_length_path,
+                                "; have you indexed your GTF with neoepiscope index?",
+                            ]
+                        )
+                    )
                 bowtie_files = [
-                    "".join([args.bowtie_index, ".", str(x), ".ebwt"]) for x in range(1, 5)
+                    "".join([args.bowtie_index, ".", str(x), ".ebwt"])
+                    for x in range(1, 5)
                 ]
                 if list(set([os.path.isfile(x) for x in bowtie_files])) == [True]:
                     reference_index = bowtie_index.BowtieIndexReference(
@@ -568,10 +687,27 @@ def main():
                 "excluded, no epitopes will be returned",
                 Warning,
             )
+        # Determine whether mutations will be phased
         if not args.isolate:
             phase_mutations = True
         else:
             phase_mutations = False
+        # Determine per-feature TPMs if relevant
+        if args.transcript_counts:
+            features_to_reads = {}
+            with open(args.transcript_counts) as f:
+                for line in f:
+                    tokens = line.strip().split("\t")
+                    features_to_reads[tokens[0]] = float(tokens[1])
+            tpm_dict = feature_to_tpm_dict(features_to_reads, feature_length_dict)
+            if args.tpm_threshold:
+                tpm_threshold = args.tpm_threshold
+            else:
+                tpm_threshold = None
+        else:
+            # Not using expression data
+            tpm_dict = None
+            tpm_threshold = None
         # Find transcripts that haplotypes overlap
         relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations
@@ -582,6 +718,7 @@ def main():
             homozygous_variants,
             vaf_pos,
             cds_dict,
+            info_dict,
             only_novel_upstream,
             only_downstream,
             only_reference,
@@ -593,6 +730,7 @@ def main():
             args.trv,
             args.allow_nonstart,
             args.allow_nonstop,
+            args.allow_partial_codons,
             include_germline,
             include_somatic,
             protein_fasta=args.fasta,
@@ -602,7 +740,24 @@ def main():
             full_neoepitopes = gather_binding_scores(
                 neoepitopes, tool_dict, hla_alleles, size_list
             )
-            write_results(args.output, hla_alleles, full_neoepitopes, tool_dict, info_dict)
+            # Find expressed variants if relevant
+            if args.rna_bam:
+                expressed_variants, covered_variants = get_expressed_variants(
+                    args.rna_bam, reference_index, full_neoepitopes
+                )
+            else:
+                expressed_variants, covered_variants = None, None
+            write_results(
+                args.output,
+                hla_alleles,
+                full_neoepitopes,
+                tool_dict,
+                info_dict,
+                tpm_dict,
+                tpm_threshold,
+                expressed_variants,
+                covered_variants,
+            )
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
                 with open(fasta_file, "w") as f:

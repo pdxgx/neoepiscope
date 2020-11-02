@@ -1,4 +1,4 @@
-neoepiscope [![Build Status](https://travis-ci.org/pdxgx/neoepiscope.svg?branch=master)](https://travis-ci.org/pdxgx/neoepiscope) [![DOI](https://zenodo.org/badge/93569486.svg)](https://zenodo.org/badge/latestdoi/93569486)
+neoepiscope [![Build Status](https://travis-ci.org/pdxgx/neoepiscope.svg?branch=master)](https://travis-ci.org/pdxgx/neoepiscope) [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing) [![DOI](https://zenodo.org/badge/93569486.svg)](https://zenodo.org/badge/latestdoi/93569486)
 -----
 `neoepiscope` is peer-reviewed open-source software for predicting neoepitopes from DNA sequencing (DNA-seq) data. Where most neoepitope prediction software confines attention to neoepitopes arising from at most one somatic mutation, often just an SNV, `neoepiscope` uses assembled haplotype output of [HapCUT2](https://github.com/vibansal/HapCUT2) to also enumerate neoepitopes arising from more than one somatic mutation. `neoepiscope` also takes into account frameshifting from indels and permits personalizing the reference transcriptome using germline variants.
 
@@ -21,11 +21,11 @@ Support
 Installing neoepiscope
 -----
 
-`neoepiscope` is compatible with Python 2.7 and Python 3.4 and higher. To install, run
+`neoepiscope` is compatible with Python 3.6 and higher. To install, run
 
 ```pip install neoepiscope```
 
-To download compatible reference annotation files (hg19 and/or GRCh38) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
+To download compatible reference annotation files (hg19, GRCh38, and/or mouse mm9) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
 
 ```neoepiscope download```
 
@@ -38,9 +38,9 @@ To make sure that the software is running properly, clone this repository, and f
 Using neoepiscope
 -----
 
-##### Preparing reference files (for those using references other than hg19 or GRCh38)
+##### Preparing reference files (for those using references other than human hg19 or GRCh38 or mouse mm9)
 
-If you __aren't__ using hg19 or GRCh38 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
+If you __aren't__ using human hg19 or GRCh38 or mouse mm9 reference builds from our download functionality, you will need to download and prepare your own annotation files. Before calling any neoepitopes, run neoepiscope in ```index``` mode to prepare dictionaries of transcript data used in neoepitope prediction:
 
 ```neoepiscope index -g <GTF> -d <DIRECTORY TO HOLD PICKLED DICTIONARIES>```
 
@@ -82,15 +82,13 @@ If you plan to use GATK's ReadBackedPhasing for haplotype phasing (see below), m
 
 ##### Predict haplotype phasing
 
-Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes and flag germline variants if relevant:
+Next, [run HapCUT2](https://github.com/vibansal/HapCUT2#to-run) with your merged or somatic VCF and your tumor BAM file (make sure to use ```--indels 1``` when running `extractHAIRS` if you wish to predict neoepitopes resulting from insertions and deletions). Before calling neoepitopes, ```prep``` your HapCUT2 output to included unphased mutations as their own haplotypes and flag germline variants if relevant:
 
-```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> [-g <GERMLINE VCF>] -o <ADJUSTED HAPCUT OUTPUT>```
+```neoepiscope prep -v <VCF> -c <HAPCUT2 OUTPUT> -o <ADJUSTED HAPCUT OUTPUT>```
 
 Options:
 
 ```-v, --vcf```               path to VCF file used to generate HapCUT2 output
-
-```-g, --germline-vcf```	  path to germline VCF used in neoepiscope merge
 
 ```-c, --hapcut2-output```    path to original HapCUT2 output
 
@@ -119,7 +117,7 @@ Options:
 
 ```-d, --dicts```                     path to directory containing pickled dictionaries generated in ```index``` mode
 
-```-b, --build```                     which genome build to use (hg19 or GRCh38; overrides `-x` and `-d` options)
+```-b, --build```                     which genome build to use (human hg19 or GRCh38 or mouse mm9; overrides `-x` and `-d` options)
 
 ```-c, --merged-hapcut2-output```     path to HapCUT2 output adjusted by ```neoepiscope prep```
 
@@ -157,7 +155,13 @@ Options:
 
 ```--allow-nonstop```                 enumerate neoepitopes from transcripts without annotated stop codons
 
-Using the `--build` option requires use of our download functionality to procure and index the required reference files for hg19 and/or GRCh38. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
+```--rna-bam```						  path to paired end RNA-seq alignment file
+
+```--transcript-counts```			  path to file containing per-transcript read counts
+
+```--tpm-threshold```				  minimum transcript TPM required to retain neoepitope
+
+Using the `--build` option requires use of our `download` functionality to procure and index the required reference files for human hg19, human GRCh38, and/or mouse mm9. If using an alternate genome build, you will need to download your own bowtie index and GTF files for that build and use the `neoepiscope index` mode to prepare them for use with the `--dicts` and `--bowtie-index` options.
 
 Haplotype information should be included using ```-c /path/to/haplotype/file```. This in the form of HapCUT2 output, generated either from your somatic VCF or a merged germline/somatic VCF made with our ```neoepiscope merge``` functionality. The HapCUT2 output should be adjusted using our ```neoepiscope prep``` functionality to ensure that mutations that lack phasing data are still included in analysis.
 
@@ -177,9 +181,11 @@ The choice of start codon for a transcript can also be handled with flexibility.
 
 By default, `neoepiscope` only enumerates neoepitopes from protein coding transcripts with annotated start and stop codons. However, by specifying the `--nmd`, `--pp`, `--igv`, and/or `--trv` flags, you can additionally enumerate neoepitopes from nonsense mediated decay transcripts, polymorphic pseudogene transcripts, immunoglobulin variable transcripts, and/or T cell receptor variable transcripts, respectively. For further flexibility, you can add the `--allow-nonstart` and/or `--allow-nonstop` to enumerate neoepitopes from transcripts without annotated start and/or stop codons, respectively.
 
+Two options exist for quantifying expression of neoepitopes: 1) providing transcript read counts to calculate transcript-level expression in TPM or 2) providing an RNA alignment to calculate direct read-level support of the source mutation. Both options may be used simultaneously. To calculate transcript-level expression, use the `--transcript-counts` option and provide the path to a tab-seperated file with transcript identifiers in the first column and read counts in the second column (e.g. the output from `HTseq`'s `htseq-count` program). This will provide the TPM value(s) for the transcript(s) a neoepitope is associated with. To additionally filter out neoepitopes from poorly expressed transcripts, you can use the `--tpm-threshold`option to set a minimum TPM requirement. To calculate mutation-level expression, you can provide a paired-end RNA-seq BAM alignment file. This will provide the number of reads supporting the mutation, the number of reads covering the position of the mutation, and the percent of reads covering the mutation which support that mutation. **NOTE: mutation-level expression requires [`samtools`](http://www.htslib.org/) to be installed and in your PATH.**
+
 ##### Neoepitope calling output
 
-`neoepiscope` output is a TSV file, either written to standard out by default, or the file named with the `--output` option. The 1st column lists the neoepitope sequence. The 2nd column lists the chromosome on which the source mutation occurs, and the 3rd column lists the position of the mutation on that chromosome. The 4th column lists the reference nucleotide sequence at that position (`*` for insertions), and the 5th column lists the alternative nucleotide sequence at that position (`*` for deletions). The 6th column lists the type of variant - `V` for SNVs/MNVs, `I` for insertions, and `D` for deletions. The 7th column lists the VAF for that mutation (if available), and the 8th column lists the paired normal epitope for neoepitopes resulting from SNVs/MNVs. The 9th column lists any warnings associated with the neoepitope or its transcript(s) of origin (e.g. if the reference start codon was disrupted and an alternative start codon was used), the 10th column lists the Ensembl identifier(s) of the transcript(s) of origin for the neoepitope, and the 11th column lists the transcript type(s) of the transcript(s) of origin. The 12th column lists the Ensembl identifier(s) of any genes associated with the transcript(s) of origin, and the 13th column lists the gene name(s). The 14th column lists the IEDB identifier(s) associated with the epitope if it is a known sequence, with any relevant peptide modifications listed. If any MHC binding predictions were run for neoepitopes, the following columns list the binding affinities of the neoepitope for that HLA allele/binding prediction tool combination as labeled (e.g. `mhcnuggets_HLA-A*02:01_affinity` represents the binding affinity in nM of that neoepitope for the allele HLA-A\*02:01 as predicted by `MHCnuggets`).
+`neoepiscope` output is a TSV file, either written to standard out by default, or the file named with the `--output` option. The 1st column lists the neoepitope sequence. The 2nd column lists the chromosome on which the source mutation occurs, and the 3rd column lists the position of the mutation on that chromosome. The 4th column lists the reference nucleotide sequence at that position (`*` for insertions), and the 5th column lists the alternative nucleotide sequence at that position (`*` for deletions). The 6th column lists the type of variant - `V` for SNVs/MNVs, `I` for insertions, and `D` for deletions. The 7th column lists the VAF for that mutation (if available), and the 8th column lists the paired normal epitope for neoepitopes resulting from SNVs/MNVs. The 9th column lists any warnings associated with the neoepitope or its transcript(s) of origin (e.g. if the reference start codon was disrupted and an alternative start codon was used), the 10th column lists the Ensembl identifier(s) of the transcript(s) of origin for the neoepitope, and the 11th column lists the transcript type(s) of the transcript(s) of origin. The 12th column lists the Ensembl identifier(s) of any genes associated with the transcript(s) of origin, and the 13th column lists the gene name(s). The 14th column lists the TPM(s) expression levels for the transcript(s) associated with that epitope. The 15th column lists the number of RNA-seq reads supporting the source mutation The 16th column lists the number of RNA-seq reads covering the position of the source mutation. The 17th column lists the percentage of reads covering the position of the source mutation which support that mutation. The 18th column lists the IEDB identifier(s) associated with the epitope if it is a known sequence, with any relevant peptide modifications listed. If any MHC binding predictions were run for neoepitopes, the following columns list the binding affinities of the neoepitope for that HLA allele/binding prediction tool combination as labeled (e.g. `mhcnuggets_HLA-A*02:01_affinity` represents the binding affinity in nM of that neoepitope for the allele HLA-A\*02:01 as predicted by `MHCnuggets`).
 
-If the `--fasta` option was specified, a fasta file will also be written to the file specified with the `--output` option, with the additional extension `.fasta`. Sequence names will be transcript identifiers followed by `_vX`, where `X` is a version number. Sequences are the amino acid sequences derived from that transcript.
+If the `--fasta` option was specified, a fasta file will also be written to the file specified with the `--output` option, with the additional extension `.fasta`. Sequence names will be transcript identifiers followed by `_vX`, where `X` is a version number. Sequences are the amino acid sequences derived from translation of that transcript.
 

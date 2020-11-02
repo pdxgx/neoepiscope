@@ -31,13 +31,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-gencode_v29 = None
+gencode_v35 = None
 gencode_v19 = None
+gencode_vM25 = None
+gencode_vM1 = None
 bowtie_grch38 = None
 bowtie_hg19 = None
+bowtie_mm10 = None
+bowtie_mm9 = None
 netMHCIIpan3 = None
+netMHCIIpan4 = None
 netMHCpan3 = None
 netMHCpan4 = None
+netMHCpan4_1 = None
 netMHC4 = None
 netMHCII2 = None
 PickPocket1 = None

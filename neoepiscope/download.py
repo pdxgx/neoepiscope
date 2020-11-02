@@ -48,46 +48,59 @@ import tempfile
 import sys
 import os
 import subprocess
-from .transcript import gtf_to_cds
-from .transcript import cds_to_tree
+from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree
 from distutils.core import Command
 
 download = {
-    "Gencode v29 annotation": [
+    "GENCODE v35 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
-        "Gencode_human/release_29/"
-        "gencode.v29.annotation.gtf.gz"
+        "Gencode_human/release_35/"
+        "gencode.v35.annotation.gtf.gz"
     ],
-    "Gencode v19 annotation": [
+    "GENCODE v19 annotation": [
         "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
         "Gencode_human/release_19/"
         "gencode.v19.annotation.gtf.gz"
-    ], 
-    "Bowtie NCBI GRCh38 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip",
-        "http://verve.webfactional.com/GRCh38_no_alt.zip",
     ],
-    "Bowtie UCSC hg19 index": [
-        "ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/hg19.ebwt.zip",
-        "http://verve.webfactional.com/hg19.ebwt.zip",
+    "GENCODE vM25 annotation": [
+        "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
+        "Gencode_mouse/release_M25/"
+        "gencode.vM25.annotation.gtf.gz"
+    ],
+    "GENCODE vM1 annotation": [
+        "ftp://ftp.ebi.ac.uk/pub/databases/gencode/"
+        "Gencode_mouse/release_M1/"
+        "gencode.vM1.annotation.gtf.gz"
+    ],
+    "Bowtie GRCh38 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCh38.p13.zip",
+    ],
+    "Bowtie GRCh37 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCh37.p13.zip",
+    ],
+    "Bowtie mm10 index": [
+        "https://recount.bio/data/bowtie_indexes/GRCm38.p6.zip",
+    ],
+    "Bowtie mm9 index": [
+        "https://recount.bio/data/bowtie_indexes/NCBIM37.zip",
     ],
 }
 
 
 def is_exe(fpath):
-    """ Tests whether a file is executable.
-        fpath: path to file
-        Return value: True iff file exists and is executable.
+    """Tests whether a file is executable.
+    fpath: path to file
+    Return value: True iff file exists and is executable.
     """
     return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
 
 def remove_temporary_directories(temp_dir_paths):
-    """ Deletes temporary directory.
+    """Deletes temporary directory.
 
-        temp_dir_paths: iterable of paths of temporary directories
+    temp_dir_paths: iterable of paths of temporary directories
 
-        No return value.
+    No return value.
     """
     for temp_dir_path in temp_dir_paths:
         try:
@@ -105,17 +118,17 @@ def sig_handler(signum, frame):
 
 
 def register_cleanup(handler, *args, **kwargs):
-    """ Registers cleanup on normal and signal-induced program termination.
+    """Registers cleanup on normal and signal-induced program termination.
 
-        Executes previously registered handler as well as new handler.
+    Executes previously registered handler as well as new handler.
 
-        handler: function to execute on program termination
-        args: named arguments of handler
-        kwargs includes keyword args of handler as well as:
-            signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
-                signal.SIGHUP]
+    handler: function to execute on program termination
+    args: named arguments of handler
+    kwargs includes keyword args of handler as well as:
+        signals_to_handle: list of signals to handle, e.g. [signal.SIGTERM,
+            signal.SIGHUP]
 
-        No return value.
+    No return value.
     """
     if "signals_to_handle" in kwargs:
         signals_to_handle = kwargs["signals_to_handle"]
@@ -143,14 +156,14 @@ def register_cleanup(handler, *args, **kwargs):
 
 
 def print_to_screen(message, newline=True, carriage_return=False):
-    """ Prints message to stdout as well as stderr if stderr is redirected.
+    """Prints message to stdout as well as stderr if stderr is redirected.
 
-        message: message to print
-        newline: True iff newline should be printed
-        carriage_return: True iff carriage return should be printed; also
-            clears line with ANSI escape code
+    message: message to print
+    newline: True iff newline should be printed
+    carriage_return: True iff carriage return should be printed; also
+        clears line with ANSI escape code
 
-        No return value.
+    No return value.
     """
     full_message = (
         "\x1b[K"
@@ -182,15 +195,15 @@ def print_to_screen(message, newline=True, carriage_return=False):
 
 
 class NeoepiscopeDownloader(object):
-    """ Convenience class for downloading files so neoepiscope is ready to use.
+    """Convenience class for downloading files so neoepiscope is ready to use.
 
-        Init vars
-        -------------
-        curl_exe: path to cURL executable; if None, use 'curl'
-        download_dir: where to put files; if None, use home directory
-            + 'neoepiscope.data'
-        yes: if True, answer yes to all questions automatically
-        print_log_on_error: print log on error
+    Init vars
+    -------------
+    curl_exe: path to cURL executable; if None, use 'curl'
+    download_dir: where to put files; if None, use home directory
+        + 'neoepiscope.data'
+    yes: if True, answer yes to all questions automatically
+    print_log_on_error: print log on error
     """
 
     def __init__(
@@ -243,13 +256,13 @@ class NeoepiscopeDownloader(object):
         sys.exit(1)
 
     def _yes_no_query(self, question, answer=None):
-        """ Gets a yes/no answer from the user if self.yes is not True.
+        """Gets a yes/no answer from the user if self.yes is not True.
 
-            question: string with question to be printed to console
-            answer: boolean that overrides self.yes if an answer should
-                be forced
+        question: string with question to be printed to console
+        answer: boolean that overrides self.yes if an answer should
+            be forced
 
-            Return value: boolean
+        Return value: boolean
         """
         from distutils.util import strtobool
 
@@ -275,12 +288,12 @@ class NeoepiscopeDownloader(object):
                 sys.stdout.write("Please enter 'y' or 'n'.\n")
 
     def _request_path(self, request, program="", use_which=True):
-        """ Gets a path from a user to an installed software
+        """Gets a path from a user to an installed software
 
-            request: string with request to be printed to console
-            use_which: whether to use the which function to verify a path
+        request: string with request to be printed to console
+        use_which: whether to use the which function to verify a path
 
-            Return value: string with response to request
+        Return value: string with response to request
         """
         if use_which:
             which_function = lambda x: which(x)
@@ -299,10 +312,10 @@ class NeoepiscopeDownloader(object):
                 sys.exit(0)
 
     def check_exe(self, program):
-        """ Tests whether an executable is in PATH.
-            program: executable to search for
-            Return value: path to executable or None if the executable is not
-                found.
+        """Tests whether an executable is in PATH.
+        program: executable to search for
+        Return value: path to executable or None if the executable is not
+            found.
         """
 
         def ext_candidates(fpath):
@@ -323,16 +336,16 @@ class NeoepiscopeDownloader(object):
         return None
 
     def _grab_and_explode(self, urls, name, explode=True):
-        """ Special method for grabbing and exploding a package, if necessary.
+        """Special method for grabbing and exploding a package, if necessary.
 
-            Does not verify URLs since these are preverified. Package is
-            downloaded to current directory.
+        Does not verify URLs since these are preverified. Package is
+        downloaded to current directory.
 
-            url: list of urls to grab
-            name: name of download
-            explode: True iff downloaded file should be decompressed
+        url: list of urls to grab
+        name: name of download
+        explode: True iff downloaded file should be decompressed
 
-            No return value
+        No return value
         """
         from collections import deque
 
@@ -418,12 +431,12 @@ class NeoepiscopeDownloader(object):
                 break
 
     def _quote(self, path=None):
-        """ Decks path with single quotes if it's not None
+        """Decks path with single quotes if it's not None
 
-            path: path or None
+        path: path or None
 
-            Return value: None if path is None, else path decked by single
-                quotes
+        Return value: None if path is None, else path decked by single
+            quotes
         """
         if path is None:
             return "None"
@@ -449,7 +462,7 @@ class NeoepiscopeDownloader(object):
             else:
                 self.curl_exe = self.curl_exe.replace(" --help", "")
         self._print_to_screen_and_log("[Configuring] Downloading mhcflurry data...")
-        subprocess.call(["mhcflurry-downloads", "fetch"])
+        subprocess.call(["mhcflurry-downloads", "fetch", "models_class1_presentation"])
         if self.download_dir is None:
             self.download_dir = os.path.join(
                 os.path.expanduser("~"), "neoepiscope.data"
@@ -504,20 +517,20 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        if self._yes_no_query("Download Gencode v29 gtf annotation file?"):
+        if self._yes_no_query("Download GENCODE v35 gtf annotation file?"):
             self._grab_and_explode(
-                download["Gencode v29 annotation"],
-                "Gencode v29 annotation",
+                download["GENCODE v35 annotation"],
+                "GENCODE v35 annotation",
                 explode=False,
             )
-            gencode_v29_temp = os.path.join(temp_install_dir, "gencode_v29")
-            gencode_v29 = os.path.join(self.download_dir, "gencode_v29")
-            gencode_v29_gtf = os.path.join(
+            gencode_v35_temp = os.path.join(temp_install_dir, "gencode_v35")
+            gencode_v35 = os.path.join(self.download_dir, "gencode_v35")
+            gencode_v35_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["Gencode v29 annotation"][0]),
+                os.path.basename(download["GENCODE v35 annotation"][0]),
             )
             try:
-                os.makedirs(gencode_v29_temp)
+                os.makedirs(gencode_v35_temp)
             except OSError as e:
                 self._print_to_screen_and_log(
                     (
@@ -525,25 +538,28 @@ class NeoepiscopeDownloader(object):
                         "directory %s for installation. May need "
                         "sudo permissions."
                     )
-                    % gencode_v29_temp
+                    % gencode_v35_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing Gencode v29...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_v29_gtf, gencode_v29_temp)
-            cds_to_tree(cds_dict, gencode_v29_temp)
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v35...")
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_v35_gtf, gencode_v35_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_v35_temp
+            )
+            cds_to_tree(cds_dict, gencode_v35_temp)
         else:
-            gencode_v29 = None
-        if self._yes_no_query("Download Gencode v19 gtf annotation file?"):
+            gencode_v35 = None
+        if self._yes_no_query("Download GENCODE v19 gtf annotation file?"):
             self._grab_and_explode(
-                download["Gencode v19 annotation"],
-                "Gencode v19 annotation",
+                download["GENCODE v19 annotation"],
+                "GENCODE v19 annotation",
                 explode=False,
             )
             gencode_v19_temp = os.path.join(temp_install_dir, "gencode_v19")
             gencode_v19 = os.path.join(self.download_dir, "gencode_v19")
             gencode_v19_gtf = os.path.join(
                 temp_install_dir,
-                os.path.basename(download["Gencode v19 annotation"][0]),
+                os.path.basename(download["GENCODE v19 annotation"][0]),
             )
             try:
                 os.makedirs(gencode_v19_temp)
@@ -557,30 +573,114 @@ class NeoepiscopeDownloader(object):
                     % gencode_v19_temp
                 )
                 self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing Gencode v19...")
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v19...")
             cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_v19_temp
+            )
             cds_to_tree(cds_dict, gencode_v19_temp)
         else:
             gencode_v19 = None
-        if self._yes_no_query("Download Bowtie NCBI GRCh38 index?"):
+        if self._yes_no_query("Download GENCODE vM25 gtf annotation file?"):
             self._grab_and_explode(
-                download["Bowtie NCBI GRCh38 index"], "Bowtie NCBI GRCh38 index"
+                download["GENCODE vM25 annotation"],
+                "GENCODE vM25 annotation",
+                explode=False,
             )
-            bowtie_grch38 = os.path.join(
-                self.download_dir, "GCA_000001405.15_GRCh38_no_alt_analysis_set"
+            gencode_vM25_temp = os.path.join(temp_install_dir, "gencode_vM25")
+            gencode_vM25 = os.path.join(self.download_dir, "gencode_vM25")
+            gencode_vM25_gtf = os.path.join(
+                temp_install_dir,
+                os.path.basename(download["GENCODE vM25 annotation"][0]),
             )
+            try:
+                os.makedirs(gencode_vM25_temp)
+            except OSError as e:
+                self._print_to_screen_and_log(
+                    (
+                        "Problem encountered trying to create "
+                        "directory %s for installation. May need "
+                        "sudo permissions."
+                    )
+                    % gencode_vM25_temp
+                )
+                self._bail()
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM25...")
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_vM25_gtf, gencode_vM25_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_vM25_temp
+            )
+            cds_to_tree(cds_dict, gencode_vM25_temp)
+        else:
+            gencode_vM25 = None
+        if self._yes_no_query("Download GENCODE vM1 gtf annotation file?"):
+            self._grab_and_explode(
+                download["GENCODE vM1 annotation"],
+                "GENCODE vM1 annotation",
+                explode=False,
+            )
+            gencode_vM1_temp = os.path.join(temp_install_dir, "gencode_vM1")
+            gencode_vM1 = os.path.join(self.download_dir, "gencode_vM1")
+            gencode_vM1_gtf = os.path.join(
+                temp_install_dir,
+                os.path.basename(download["GENCODE vM1 annotation"][0]),
+            )
+            try:
+                os.makedirs(gencode_vM1_temp)
+            except OSError as e:
+                self._print_to_screen_and_log(
+                    (
+                        "Problem encountered trying to create "
+                        "directory %s for installation. May need "
+                        "sudo permissions."
+                    )
+                    % gencode_vM1_temp
+                )
+                self._bail()
+            self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM1...")
+            cds_dict, tx_data_dict = gtf_to_cds(gencode_vM1_gtf, gencode_vM1_temp)
+            feature_lengths = cds_to_feature_length(
+                cds_dict, tx_data_dict, gencode_vM1_temp
+            )
+            cds_to_tree(cds_dict, gencode_vM1_temp)
+        else:
+            gencode_vM1 = None
+        if self._yes_no_query("Download Bowtie GRCh38 index?"):
+            self._grab_and_explode(
+                download["Bowtie GRCh38 index"], "Bowtie GRCh38 index"
+            )
+            bowtie_grch38 = os.path.join(self.download_dir, "GRCh38.p13")
         else:
             bowtie_grch38 = None
-        if self._yes_no_query("Download Bowtie UCSC hg19 index?"):
+        if self._yes_no_query("Download Bowtie GRCh37 index?"):
             self._grab_and_explode(
-                download["Bowtie UCSC hg19 index"], "Bowtie UCSC hg19 index"
+                download["Bowtie GRCh37 index"], "Bowtie GRCh37 index"
             )
-            bowtie_hg19 = os.path.join(self.download_dir, "hg19")
+            bowtie_hg19 = os.path.join(self.download_dir, "GRCh37.p13")
         else:
             bowtie_hg19 = None
+        if self._yes_no_query("Download Bowtie mm10 index?"):
+            self._grab_and_explode(download["Bowtie mm10 index"], "Bowtie mm10 index")
+            bowtie_mm10 = os.path.join(self.download_dir, "GRCm38.p6")
+        else:
+            bowtie_mm10 = None
+        if self._yes_no_query("Download Bowtie mm9 index?"):
+            self._grab_and_explode(download["Bowtie mm9 index"], "Bowtie mm9 index")
+            bowtie_mm9 = os.path.join(self.download_dir, "NCBIM37")
+        else:
+            bowtie_mm9 = None
         programs = []
-        for program in ["netMHCIIpan v3", "netMHCpan v3", "netMHCpan v4", 
-                        "netMHC v4", "netMHCII v2", "PickPocket v1", "netMHCstabpan v1"]:
+        for program in [
+            "netMHCIIpan v3",
+            "netMHCIIpan v4",
+            "netMHCpan v3",
+            "netMHCpan v4.0",
+            "netMHCpan v4.1",
+            "netMHC v4",
+            "netMHCII v2",
+            "PickPocket v1",
+            "netMHCstabpan v1",
+        ]:
             if self._yes_no_query(
                 (
                     "Do you have an install of {} "
@@ -607,18 +707,17 @@ class NeoepiscopeDownloader(object):
             else:
                 programs.append(None)
         if self._yes_no_query(
-                (
-                    "Do you have an install of PSSMHCpan v1 "
-                    "you would like to use for "
-                    "binding score predictions with "
-                    "neoepiscope?"
-                )
+            (
+                "Do you have an install of PSSMHCpan v1 "
+                "you would like to use for "
+                "binding score predictions with "
+                "neoepiscope?"
+            )
         ):
             pssmhcpan_dir = self._request_path(
-                                "Please enter the path to your PSSMHCpan-1.0 directory",
-                                use_which=False
+                "Please enter the path to your PSSMHCpan-1.0 directory", use_which=False
             )
-            if os.path.isfile(os.path.join(pssmhcpan_dir,  "PSSMHCpan-1.0.pl")):
+            if os.path.isfile(os.path.join(pssmhcpan_dir, "PSSMHCpan-1.0.pl")):
                 if is_exe("perl"):
                     programs.append(pssmhcpan_dir)
                 else:
@@ -628,9 +727,9 @@ class NeoepiscopeDownloader(object):
                     self._bail()
             else:
                 self._print_to_screen_and_log(
-                        "This directory does not PSSMHCpan-1.0.pl script - "
-                        "please check that you have entered the correct path."
-                    )
+                    "This directory does not PSSMHCpan-1.0.pl script - "
+                    "please check that you have entered the correct path."
+                )
                 self._bail()
         else:
             programs.append(None)
@@ -666,13 +765,19 @@ Defines default paths of neoepiscope's dependencies
 None indicates the user didn't install the tool or data
 \"""
 
-gencode_v29 = {gencode_v29}
+gencode_v35 = {gencode_v35}
 gencode_v19 = {gencode_v19}
+gencode_vM25 = {gencode_vM25}
+gencode_vM1 = {gencode_vM1}
 bowtie_grch38 = {bowtie_grch38}
 bowtie_hg19 = {bowtie_hg19}
+bowtie_mm10 = {bowtie_mm10}
+bowtie_mm9 = {bowtie_mm9}
 netMHCIIpan3 = {netMHCIIpan3}
+netMHCIIpan4 = {netMHCIIpan4}
 netMHCpan3 = {netMHCpan3}
 netMHCpan4 = {netMHCpan4}
+netMHCpan4_1 = {netMHCpan4_1}
 netMHC4 = {netMHC4}
 netMHCII2 = {netMHCII2}
 PickPocket1 = {PickPocket1}
@@ -682,11 +787,17 @@ hapcut2_hairs = {hapcut2_hairs}
 hapcut2 = {hapcut2}
 """
                 ).format(
-                    gencode_v29=(
-                        "None" if gencode_v29 is None else self._quote(gencode_v29)
+                    gencode_v35=(
+                        "None" if gencode_v35 is None else self._quote(gencode_v35)
                     ),
                     gencode_v19=(
                         "None" if gencode_v19 is None else self._quote(gencode_v19)
+                    ),
+                    gencode_vM25=(
+                        "None" if gencode_vM1 is None else self._quote(gencode_vM25)
+                    ),
+                    gencode_vM1=(
+                        "None" if gencode_vM1 is None else self._quote(gencode_vM1)
                     ),
                     bowtie_grch38=(
                         "None" if bowtie_grch38 is None else self._quote(bowtie_grch38)
@@ -694,35 +805,47 @@ hapcut2 = {hapcut2}
                     bowtie_hg19=(
                         "None" if bowtie_hg19 is None else self._quote(bowtie_hg19)
                     ),
+                    bowtie_mm10=(
+                        "None" if bowtie_mm10 is None else self._quote(bowtie_mm10)
+                    ),
+                    bowtie_mm9=(
+                        "None" if bowtie_mm9 is None else self._quote(bowtie_mm9)
+                    ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])
                     ),
-                    netMHCpan3=(
+                    netMHCIIpan4=(
                         "None" if programs[1] is None else self._quote(programs[1])
                     ),
-                    netMHCpan4=(
+                    netMHCpan3=(
                         "None" if programs[2] is None else self._quote(programs[2])
                     ),
-                    netMHC4=(
+                    netMHCpan4=(
                         "None" if programs[3] is None else self._quote(programs[3])
                     ),
-                    netMHCII2=(
+                    netMHCpan4_1=(
                         "None" if programs[4] is None else self._quote(programs[4])
                     ),
-                    PickPocket1=(
+                    netMHC4=(
                         "None" if programs[5] is None else self._quote(programs[5])
                     ),
-                    netMHCstabpan1=(
+                    netMHCII2=(
                         "None" if programs[6] is None else self._quote(programs[6])
                     ),
-                    PSSMHCpan1=(
+                    PickPocket1=(
                         "None" if programs[7] is None else self._quote(programs[7])
                     ),
-                    hapcut2_hairs=(
+                    netMHCstabpan1=(
                         "None" if programs[8] is None else self._quote(programs[8])
                     ),
-                    hapcut2=(
+                    PSSMHCpan1=(
                         "None" if programs[9] is None else self._quote(programs[9])
+                    ),
+                    hapcut2_hairs=(
+                        "None" if programs[10] is None else self._quote(programs[10])
+                    ),
+                    hapcut2=(
+                        "None" if programs[11] is None else self._quote(programs[11])
                     ),
                 ),
                 file=paths_stream,

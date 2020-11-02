@@ -56,7 +56,7 @@ class DownloadDependencies(Command):
 
 setup(
     name="neoepiscope",
-    version="0.3.7",
+    version="0.5.0",
     description="comprehensive neoepitope prediction software",
     long_description=(
         "neoepiscope is software for predicting neoepitopes "
@@ -70,7 +70,7 @@ setup(
         "personalizing the reference transcriptome using germline variants."
     ),
     url="http://github.com/ohsu-comp-bio/neoepiscope",
-    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.2.1",
+    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.5.0",
     author="Mary A. Wood, Austin Nguyen, Abhinav Nellore, Reid F. Thompson",
     author_email="thompsre@ohsu.edu",
     license="MIT",
@@ -78,12 +78,17 @@ setup(
     include_package_data=True,
     package_data={"neoepiscope": ["*.py", "*.pickle"]},
     zip_safe=True,
-    install_requires=["intervaltree==3.0.2", "mhcflurry", "mhcnuggets", "networkx", "numpy==1.14.5"],
+    install_requires=[
+        "intervaltree==3.0.2",
+        "mhcflurry>=2.0.0",
+        "mhcnuggets",
+        "networkx",
+        "pysam",
+    ],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
     keywords=["neoepitope", "neoantigen", "cancer", "immunotherapy"],
     classifiers=[
-        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Science/Research",
