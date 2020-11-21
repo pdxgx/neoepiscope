@@ -155,24 +155,26 @@ def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     return lo
 
 
-def kmerize_peptide(peptide, min_size=8, max_size=11):
+def kmerize_peptide(peptide, min_size=8, max_size=11, editing_positions=[], ambiguous_positions=[]):
     """Obtains subsequences of a peptide.
     normal_peptide: normal peptide seq
     min_size: minimum subsequence size
     max_size: maximum subsequence size
-    Return value: list of all possible subsequences of size between
-        min_size and max_size
+    editing_positions: positions where edits are made
+    ambiguous_positions: positions where edits are ambiguous 
+    Return value: a list of tuples of peptide substrings and
+        Booleans indicating whether they contain RNA-editing and ambiguous
+        RNA-editing
     """
     peptide_size = len(peptide)
     return [
         item
         for sublist in [
-            [peptide[i : i + size] for i in range(peptide_size - size + 1)]
+            [(peptide[i : i + size], True if [x for x in editing_positions if x in range(i, i+size)] else False, True if [x for x in ambiguous_positions if x in range(i, i+size)] else False) for i in range(peptide_size - size + 1)]
             for size in range(min_size, max_size + 1)
         ]
         for item in sublist
     ]
-
 
 # X below denotes a stop codon
 _codon_table = {
@@ -2316,6 +2318,7 @@ class Transcript(object):
         return_protein=False,
         allow_no_edits=False,
         allow_partial_codons=False,
+        include_rna_edits=False
     ):
         """Retrieves dict of predicted peptide fragments from transcript that
         arise from one or more variants.
@@ -2355,7 +2358,8 @@ class Transcript(object):
             max_size = min_size
         # Pull nucleotide sequence
         annotated_seq = self.annotated_seq(
-            include_somatic=include_somatic, include_germline=include_germline
+            include_somatic=include_somatic, include_germline=include_germline,
+            include_rna_edits=include_rna_edits
         )
         # Check whether transcript is missing start codon
         if self.start_codon is None or "".join([seq[0] for seq in annotated_seq]) == "":
@@ -3333,12 +3337,14 @@ class Transcript(object):
                 else:
                     break
         try:
-            protein, protein_warnings = seq_to_peptide(
-                sequence[start_codon[0] : stop_codon[0]],
-                reverse_strand=False,
-                mitochondrial=self.mitochondrial,
-                allow_partial_codons=allow_partial_codons,
-            )
+            protein, editing_positions, ambiguous_positions, protein_warnings = seq_to_peptide(
+                    sequence[start_codon[0] : stop_codon[0]],
+                    reverse_strand=False,
+                    return_positions=True,
+                    mitochondrial=self.mitochondrial,
+                    allow_partial_codons=allow_partial_codons
+                    )
+
         except TypeError:
             protein, protein_warnings = seq_to_peptide(
                 sequence[start_codon[0] :],
@@ -3347,12 +3353,12 @@ class Transcript(object):
                 allow_partial_codons=allow_partial_codons,
             )
         try:
-            protein_ref, ref_warnings = seq_to_peptide(
+           protein_ref, ref_editing_positions, ref_ambiguous_positions, ref_warnings = seq_to_peptide(
                 ref_sequence[ref_atg[1] : ref_stop[1]],
-                reverse_strand=False,
+                reverse_strand=False, return_positions=True,
                 mitochondrial=self.mitochondrial,
-                allow_partial_codons=allow_partial_codons,
-            )
+                allow_partial_codons=allow_partial_codons
+                )
         except TypeError:
             try:
                 protein_ref, ref_warnings = seq_to_peptide(
@@ -3429,25 +3435,31 @@ class Transcript(object):
                             peptides, ["NA" for j in range(0, len(peptides))]
                         )
                     for pair in peptide_pairs:
-                        if pair[0] not in peptides_ref:
+                        if pair[0][0] not in peptides_ref:
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:
                                 # Dealing with peptide resulting from hybrid interval
                                 data_set = coords[4][0][4]
                             else:
                                 # Dealing with regular peptide
                                 data_set = coords[4]
+                            if len(paired_peptides) == len(peptides):
+                                if pair[0][1]==True or pair[1][1]==True:
+                                    transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
+                                if pair[0][2]==True or pair[1][2]==True:
+                                    transcript_warnings[0] = ';'.join([transcript_warnings[0],"ambiguous_inosine_codon"])
+
                             for mutation_data in data_set:
                                 if (
                                     unknown_aa
-                                    and "?" in pair[0]
-                                    or "?" in pair[1]
-                                    or "X" in pair[0]
-                                    or "X" in pair[1]
+                                    and "?" in pair[0][0]
+                                    or "?" in pair[1][0]
+                                    or "X" in pair[0][0]
+                                    or "X" in pair[1][0]
                                 ):
                                     if self.seleno:
                                         mutation_data = (
                                             mutation_data
-                                            + (pair[1],)
+                                            + (pair[1][0],)
                                             + (
                                                 ";".join(
                                                     [
@@ -3461,7 +3473,7 @@ class Transcript(object):
                                     else:
                                         mutation_data = (
                                             mutation_data
-                                            + (pair[1],)
+                                            + (pair[1][0],)
                                             + (
                                                 ";".join(
                                                     [
@@ -3473,10 +3485,10 @@ class Transcript(object):
                                         )
                                 else:
                                     mutation_data = (
-                                        mutation_data + (pair[1],) + transcript_warnings
+                                        mutation_data + (pair[1][0],) + transcript_warnings
                                     )
-                                peptide_seqs[pair[0]].append(mutation_data)
-                            peptide_seqs[pair[0]] = list(set(peptide_seqs[pair[0]]))
+                                peptide_seqs[pair[0][0]].append(mutation_data)
+                            peptide_seqs[pair[0][0]] = list(set(peptide_seqs[pair[0][0]]))
                 else:
                     peptides = list(set(peptides).difference(peptides_ref))
                     for pep in peptides:
@@ -3486,8 +3498,14 @@ class Transcript(object):
                         else:
                             # Dealing with regular peptide
                             data_set = coords[4]
+
+                        if pep[1]==True:
+                            transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
+
+                        if pep[2]==True:
+                            transcript_warnings[0] = ';'.join([transcript_warnings[0], "ambiguous_inosine_codon"])
                         for mutation_data in data_set:
-                            if unknown_aa and "?" in pep or "X" in pep:
+                            if unknown_aa and "?" in pep[0] or "X" in pep[0]:
                                 if self.seleno:
                                     mutation_data = (
                                         mutation_data
@@ -3519,8 +3537,8 @@ class Transcript(object):
                                 mutation_data = (
                                     mutation_data + ("NA",) + transcript_warnings
                                 )
-                            peptide_seqs[pep].append(mutation_data)
-                        peptide_seqs[pep] = list(set(peptide_seqs[pep]))
+                            peptide_seqs[pep[0]].append(mutation_data)
+                        peptide_seqs[pep[0]] = list(set(peptide_seqs[pep[0]]))
         if not return_protein:
             # return list of unique neoepitope sequences
             return peptide_seqs
