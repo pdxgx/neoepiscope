@@ -3435,7 +3435,7 @@ class Transcript(object):
                             peptides, ["NA" for j in range(0, len(peptides))]
                         )
                     for pair in peptide_pairs:
-                        if pair[0][0] not in peptides_ref:
+                        if pair[0] not in peptides_ref:
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:
                                 # Dealing with peptide resulting from hybrid interval
                                 data_set = coords[4][0][4]
