@@ -25,6 +25,8 @@ Installing neoepiscope
 
 ```pip install neoepiscope```
 
+Note: if this fails on macOS 10 (Catalina) or newer, the required pysam installation may be unable to find the C compiler. To solve this, you can try either 1) running `xcode-select --install` or 2) [installing pysam via conda](https://anaconda.org/bioconda/pysam) (e.g. `conda install -c bioconda pysam`) before trying `pip install neoepiscope` again.
+
 To download compatible reference annotation files (hg19, GRCh38, and/or mouse mm9) and link installations of relevant optional softwares to `neoepiscope` (e.g. netMHCpan), you will need to use our download functionality. Run the command:
 
 ```neoepiscope download```
