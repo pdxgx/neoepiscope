@@ -1,4 +1,4 @@
-This is original neoepiscope README. I forked project form pdxgx/neoepiscope(https://github.com/pdxgx/neoepiscope) and updated code for RNA editting. It is on going projects. So far I've modified original code to afford RNA editing extra capability. I also prepared pickle database for transcript to A to I site mapping. See more detail on how I create those input database in [Eric's bioinformatics code](https://github.com/ericjiyun03/Bioinformatics)
+I forked the project from pdxgx/neoepiscope(https://github.com/pdxgx/neoepiscope) and updated my code for RNA editing. I have modified the original code to include RNA editing capabilities. I also mapped the pickle database for transcript ID's to A-I sites. My specific code updates are on [Eric's bioinformatics code](https://github.com/ericjiyun03/Bioinformatics)
 
 neoepiscope [![Build Status](https://travis-ci.org/pdxgx/neoepiscope.svg?branch=master)](https://travis-ci.org/pdxgx/neoepiscope) [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing) [![DOI](https://zenodo.org/badge/93569486.svg)](https://zenodo.org/badge/latestdoi/93569486)
 -----
