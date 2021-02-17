@@ -91,7 +91,7 @@ def main():
         "index",
         help=(
             "produces pickled dictionaries "
-            "linking transcripts to intervals and "
+            "linking transcripts tointervals_to_transcript intervals and "
             " CDS lines in a GTF"
         ),
     )
@@ -377,6 +377,12 @@ def main():
         type=float,
         required=False,
         help="minimum TPM to consider a transcript expressed",
+    )
+    call_parser.add_argument(
+        "--rna-edit",
+        type=str,
+        required=False,
+        help="path to pickle rna A-I dictionary",
     )
     args = parser.parse_args()
     if args.subparser_name == "download":
@@ -708,6 +714,14 @@ def main():
             # Not using expression data
             tpm_dict = None
             tpm_threshold = None
+        if args.rna_edit:
+            include_rna_edits = True
+            rna_edit_dict = None
+            with open(args.rna_edit, "rb") as rna_pickle:
+                rna_edit_dict = pickle.load(rna_pickle)
+        else:
+            include_rna_edits = False
+            rna_edit_dict = None
         # Find transcripts that haplotypes overlap
         relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations
@@ -734,6 +748,8 @@ def main():
             include_germline,
             include_somatic,
             protein_fasta=args.fasta,
+            include_rna_edits=include_rna_edits,
+            rna_edit_dict=rna_edit_dict,
         )
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes) > 0:

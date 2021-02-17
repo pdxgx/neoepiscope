@@ -55,7 +55,6 @@ import warnings
 import contextlib
 import networkx as nx
 
-
 revcomp_translation_table = str.maketrans("ATCGI", "TAGCI")
 
 
@@ -4484,6 +4483,7 @@ def get_peptides_from_transcripts(
                     only_reference=only_reference,
                     allow_partial_codons=allow_partial_codons,
                     return_protein=True,
+                    include_rna_edits=include_rna_edits,
                 )
                 # Store neoepitopes and their metadata
                 for pep in peptides:
@@ -4531,6 +4531,7 @@ def get_peptides_from_transcripts(
                 ],
                 transcript,
                 seleno,
+                rna_edit_dict
             )
         for mutation in homozygous_variants[transcript]:
             if tuple(mutation) not in used_homozygous_variants:
@@ -4575,6 +4576,7 @@ def get_peptides_from_transcripts(
                     only_reference=only_reference,
                     allow_partial_codons=allow_partial_codons,
                     return_protein=True,
+                    include_rna_edits=include_rna_edits,
                 )
                 # Store neoepitopes and their metadata
                 for pep in peptides:
