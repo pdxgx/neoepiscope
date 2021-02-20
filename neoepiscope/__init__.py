@@ -715,13 +715,9 @@ def main():
             tpm_dict = None
             tpm_threshold = None
         if args.rna_edit:
-            include_rna_edits = True
             rna_edit_dict = None
             with open(args.rna_edit, "rb") as rna_pickle:
                 rna_edit_dict = pickle.load(rna_pickle)
-        else:
-            include_rna_edits = False
-            rna_edit_dict = None
         # Find transcripts that haplotypes overlap
         relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations
@@ -748,7 +744,6 @@ def main():
             include_germline,
             include_somatic,
             protein_fasta=args.fasta,
-            include_rna_edits=include_rna_edits,
             rna_edit_dict=rna_edit_dict,
         )
         # If neoepitopes are found, get binding scores and write results

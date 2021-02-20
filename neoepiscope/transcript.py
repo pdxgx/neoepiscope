@@ -4369,13 +4369,14 @@ def get_peptides_from_transcripts(
     allow_partial_codons: attempt to translate partial codons at ends of transcripts
     protein_fasta: wheather to generate full-length protein sequences
         for fasta file
-    include_rna_edits: whether to include A-I edit (boolean)
-        rna_edit_dict: dictionary linking chrom,pos to interval
+    rna_edit_dict: dictionary linking chrom,pos to interval
     return value: dictionary linking neoepitopes to their associated
         metadata
     """
-    if include_rna_edits == True:
-        assert rna_edit_dict != None 
+    if rna_edit_dict:
+        include_rna_edits = True
+    else:
+        include_rna_edits = False
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     used_homozygous_variants = set()
