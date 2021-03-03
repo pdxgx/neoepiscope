@@ -491,7 +491,7 @@ def main():
                     os.path.join(rna_edits_path, "transcript_to_rna_edits.pickle"),
                     "rb",
                 ) as rna_edits_stream:
-                rna_edit_dict = pickle.load(rna_edits_stream)
+                    rna_edit_dict = pickle.load(rna_edits_stream)
             except IOError as e:
                 if e.errno == 2:
                     # No RNA edits available because picked dictionary not found
