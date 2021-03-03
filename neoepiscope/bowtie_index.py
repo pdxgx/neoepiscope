@@ -231,7 +231,12 @@ class BowtieIndexReference(object):
         @param count: # of characters
         @return: string extracted from reference
         """
-        assert ref_id in self.recs
+        try:
+            assert ref_id in self.recs
+        except:
+            ref_id = "chr" + ref_id
+            assert ref_id in self.recs
+
         # Account for negative reference offsets by padding with Ns
         N_count = min(abs(min(ref_off, 0)), count)
         stretch = ["N"] * N_count

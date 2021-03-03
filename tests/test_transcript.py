@@ -50,13 +50,29 @@ class TestTranscript(unittest.TestCase):
             "tests",
             "Chr11.gtf",
         )
+        self.gtf_hg38 = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "tests",
+            "grch38_chr11.gtf",
+        )
         self.cds, self.tx_data = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+        self.cds_hg38, self.tx_data_hg38 = gtf_to_cds(self.gtf_hg38, "NA", pickle_it=False)
         self.ref_prefix = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",
             "Chr11.ref",
         )
+        self.ref_prefix_hg38 = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "tests",
+            "grch38_chr11",
+        )
+        self.atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 "neoepiscope",
+                 "transcript_to_editing_hg38.pickle")
+        self.rna_dict = pickle.load(open(self.atoi, "rb"))
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
+        self.reference_index_hg38 = bowtie_index.BowtieIndexReference(self.ref_prefix_hg38)
         ## All following transcripts from GRCh37 genome build ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
         self.transcript = Transcript(
@@ -138,6 +154,28 @@ class TestTranscript(unittest.TestCase):
             "ENST00000341394.8_1",
             False,
         )
+        # AP003733.1: transcript w/ 1 exon (coding)  
+        self.atoi_transcript = Transcript(
+            self.reference_index_hg38,
+            [
+                [
+                    str(chrom).replace("chr", ""),
+                    "N/A",
+                    seq_type,
+                    str(start),
+                    str(end),
+                    ".",
+                    strand,
+                ]
+                for (chrom, seq_type, start, end, strand, tx_type) in self.cds_hg38[
+                    "ENST00000318950.10"
+                ]
+            ],
+            "ENST00000318950.10",
+            False,
+            self.rna_dict,
+        )
+
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
             self.reference_index,
@@ -1160,6 +1198,26 @@ class TestTranscript(unittest.TestCase):
             {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", "NA")]},
         )
 
+    def test_expressed_edits_with_rna_edits(self):
+        """check expressed_edit can read and generate edits using
+            rna_editing_sites"""
+        self.atoi_transcript.expressed_edits(include_rna_edits=True)
+        self.assertEqual(self.atoi_transcript.edits[9750161],
+                [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
+
+    def test_edit_with_rna_edits_at_start_codon(self):
+        """check whether rna editing in start codon is not allowed"""
+        self.atoi_transcript.edit('I', 9664180, mutation_type="R", mutation_class="R", vaf=None)
+        self.assertEqual(self.atoi_transcript.edits[9664180], [])
+        self.assertEqual(self.atoi_transcript.all_transcript_warnings, ["rna_editing_may_disrupt_start_codon"])
+    
+    def test_seq_to_peptide_with_I_N(self):
+        """checks whether sseq_to_peptide function can properly handle N and I"""
+        seq = "AAIATIIGNIAA"
+        pep, editing_positions, ambiguous_positions, peptide_warnings = transcript.seq_to_peptide(seq, return_positions=True)
+        self.assertEqual(editing_positions, [0, 1.0, 2.0, 3.0])
+        self.assertEqual(ambiguous_positions, [3.0])
+        self.assertEqual(pep, "KMGE")
 
 if __name__ == "__main__":
     unittest.main()
