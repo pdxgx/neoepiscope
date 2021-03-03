@@ -382,6 +382,7 @@ def main():
         "--rna-edit",
         type=str,
         required=False,
+        default=None,
         help="path to pickle rna A-I dictionary",
     )
     args = parser.parse_args()
