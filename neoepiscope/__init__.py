@@ -383,6 +383,13 @@ def main():
         required=False,
         help="minimum TPM to consider a transcript expressed",
     )
+    call_parser.add_argument(
+        "-e",
+        "--rna-edits",
+        required=False,
+        default=False,
+        help="account for RNA editing"
+    )
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
@@ -720,7 +727,7 @@ def main():
             include_germline,
             include_somatic,
             protein_fasta=args.fasta,
-            rna_edit_dict=rna_edit_dict,
+            rna_edit_dict=(rna_edit_dict if args.rna_edits else None),
         )
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes) > 0:
