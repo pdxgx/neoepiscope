@@ -55,8 +55,8 @@ class TestTranscript(unittest.TestCase):
             "tests",
             "grch38_chr11.gtf",
         )
-        self.cds, self.tx_data = gtf_to_cds(self.gtf, "NA", pickle_it=False)
-        self.cds_hg38, self.tx_data_hg38 = gtf_to_cds(self.gtf_hg38, "NA", pickle_it=False)
+        self.cds, self.tx_data = gtf_to_cds(self.gtf)
+        self.cds_hg38, self.tx_data_hg38 = gtf_to_cds(self.gtf_hg38)
         self.ref_prefix = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",

@@ -562,11 +562,13 @@ class NeoepiscopeDownloader(object):
                         "[Configuring] Indexing GENCODE {}...".format(gencode)
                     )
                 cds_dict, tx_data_dict = gtf_to_cds(eval("gencode_" + gencode + "_gtf"),
-                                                    eval("gencode_" + gencode + "_temp"))
+                                                    dict_dir=eval("gencode_" + gencode + "_temp"))
                 cds_to_feature_length(
-                    cds_dict, tx_data_dict, eval("gencode_" + gencode + "_temp")
+                    cds_dict, tx_data_dict, dict_dir=eval("gencode_" + gencode + "_temp")
                 )
-                cds_to_tree(cds_dict, eval("gencode_" + gencode + "_temp"))
+                searchable_tree = cds_to_tree(
+                        cds_dict, dict_dir=eval("gencode_" + gencode + "_temp")
+                    )
                 # Download Bowtie index
                 self._grab_and_explode(
                     download["Bowtie " + build + " index"], "Bowtie " + build + " index"
@@ -576,14 +578,37 @@ class NeoepiscopeDownloader(object):
                 if rediportal is not None:
                     self._grab_and_explode(
                         download["REDIportal " + build + " database"], "REDIportal "
-                        + build + " database"
+                        + build + " database",
+                        explode=False
                     )
-                    exec(
-                        "rediportal_" + build + " = os.path.join(self.download_dir, 'TABLE1_"
-                        + build + ".txt')"
+                    exec("rediportal_" + build 
+                         + "_temp = os.path.join(temp_install_dir, 'rediportal_"
+                         + build + "')")
+                    exec("rna_edits_" + build
+                         + " = os.path.join(self.download_dir, 'rediportal_" + build + "')")
+                    exec("rediportal_" + build 
+                         + "_file = os.path.join(temp_install_dir, "
+                         + "os.path.basename(download['REDIportal " + build + " database'][0]))")
+                    try:
+                        exec("os.makedirs(rediportal_" + build + " _temp)")
+                    except OSError as e:
+                        self._print_to_screen_and_log(
+                            (
+                                'Problem encountered trying to create '
+                                'directory "{}" for installation. May need '
+                                'sudo permissions.'.format(eval("rediportal_" + build + "_temp"))
+                            )
+                        )   
+                    self._bail()
+                    self._print_to_screen_and_log(
+                        "[Configuring] Indexing REDIportal RNA edits for {}...".format(build)
                     )
+                    transcripts_to_rna_edits(eval("rediportal_" + build + "_file"),
+                            searchable_tree, cds_dict,
+                            dict_dir=eval("rediportal_" + build + "_temp")
+                        )
                 else:
-                    exec("rediportal_" + build + " = None")
+                    exec("rna_edits_" + build + " = None")
                     self._print_to_screen_and_log(
                         "[Configuring] No RNA edits available for {}; continuing...".format(
                                 build
@@ -592,7 +617,7 @@ class NeoepiscopeDownloader(object):
             else:
                 exec("gencode_" + gencode + " = None")
                 exec("bowtie_" + build + " = None")
-                exec("rediportal_" + build + " = None")
+                exec("rna_edits_" + build + " = None")
         programs = []
         for program in [
             "netMHCIIpan v3",
@@ -697,6 +722,10 @@ bowtie_hg38 = {bowtie_hg38}
 bowtie_hg19 = {bowtie_hg19}
 bowtie_mm10 = {bowtie_mm10}
 bowtie_mm9 = {bowtie_mm9}
+rna_edits_hg38 = {rna_edits_hg38}
+rna_edits_hg19 = {rna_edits_hg19}
+rna_edits_mm10 = {rna_edits_mm10}
+rna_edits_mm9 = {rna_edits_mm9}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCIIpan4 = {netMHCIIpan4}
 netMHCpan3 = {netMHCpan3}
@@ -734,6 +763,18 @@ hapcut2 = {hapcut2}
                     ),
                     bowtie_mm9=(
                         "None" if bowtie_mm9 is None else self._quote(bowtie_mm9)
+                    ),
+                    rna_edits_hg38=(
+                        "None" if rna_edits_hg38 is None else self._quote(rna_edits_hg38)
+                    ),
+                    rna_edits_hg19=(
+                        "None" if rna_edits_hg19 is None else self._quote(rna_edits_hg19)
+                    ),
+                    rna_edits_mm10=(
+                        "None" if rna_edits_mm10 is None else self._quote(rna_edits_mm10)
+                    ),
+                    rna_edits_mm9=(
+                        "None" if rna_edits_mm9 is None else self._quote(rna_edits_mm9)
                     ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])

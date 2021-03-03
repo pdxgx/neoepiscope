@@ -121,6 +121,11 @@ def main():
         "-g", "--gtf", type=str, required=True, help="input path to GTF file"
     )
     index_parser.add_argument(
+        "-e", "--rna-edits", type=str, required=False,
+        default=None,
+        help="input path to REDIportal-formatted file containing RNA edits"
+    )
+    index_parser.add_argument(
         "-d",
         "--dicts",
         type=str,
@@ -378,22 +383,18 @@ def main():
         required=False,
         help="minimum TPM to consider a transcript expressed",
     )
-    call_parser.add_argument(
-        "--rna-edit",
-        type=str,
-        required=False,
-        default=None,
-        help="input path to pickled RNA A-I dictionary",
-    )
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
-        cds_dict, tx_data_dict = gtf_to_cds(args.gtf, args.dicts)
-        cds_to_feature_length(cds_dict, tx_data_dict, args.dicts)
-        cds_to_tree(cds_dict, args.dicts)
+        cds_dict, tx_data_dict = gtf_to_cds(args.gtf, dict_dir=args.dicts)
+        cds_to_feature_length(cds_dict, tx_data_dict, dict_dir=args.dicts)
+        cds_tree = cds_to_tree(cds_dict, dict_dir=args.dicts)
+        if args.rna_edits is not None:
+            transcript_to_rna_edits(args.rna_edits, cds_tree, cds_dict,
+                                    dict_dir=args.dicts)
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
@@ -413,33 +414,41 @@ def main():
         # Load pickled dictionaries and prepare bowtie index
         if args.build is not None:
             if (
-                args.build == "GRCh38"
+                args.build == "GRCh38" # CHANGE THIS TO hg38 at some pt
                 and paths.gencode_v35 is not None
                 and paths.bowtie_hg38 is not None
+                and paths.rna_edits_hg38 is not None
             ):
                 gencode_path = paths.gencode_v35
                 bowtie_index_path = paths.bowtie_hg38
+                rna_edits_path = paths.rna_edits_hg38
             elif (
                 args.build == "hg19"
                 and paths.gencode_v19 is not None
                 and paths.bowtie_hg19 is not None
+                and paths.rna_edits_hg19 is not None
             ):
                 gencode_path = paths.gencode_v19
                 bowtie_index_path = paths.bowtie_hg19
+                rna_edits_path = paths.rna_edits_hg19
             elif (
                 args.build == "mm9"
                 and paths.gencode_vM1 is not None
                 and paths.bowtie_mm9 is not None
+                and paths.rna_edits_mm9 is not None
             ):
                 gencode_path = paths.gencode_vM1
                 bowtie_index_path = paths.bowtie_mm9
+                rna_edits_path = paths.rna_edits_mm9
             elif (
                 args.build == "mm10"
                 and paths.gencode_vM25 is not None
                 and paths.bowtie_mm10 is not None
+                and paths.rna_edits_mm10 is not None
             ):
                 gencode_path = paths.gencode_vM25
                 bowtie_index_path = paths.bowtie_mm10
+                rna_edits_path = paths.rna_edits_mm10
             else:
                 raise RuntimeError(
                     "".join(
@@ -470,6 +479,18 @@ def main():
                     "rb",
                 ) as info_stream:
                 feature_length_dict = pickle.load(info_stream)
+            try:
+                with open(
+                    os.path.join(rna_edits_path, "transcript_to_rna_edits.pickle"),
+                    "rb",
+                ) as rna_edits_stream:
+                rna_edit_dict = pickle.load(rna_edits_stream)
+            except IOError as e:
+                if e.errno == 2:
+                    # No RNA edits available because picked dictionary not found
+                    rna_edit_dict = None
+                else:
+                    raise
             reference_index = bowtie_index.BowtieIndexReference(bowtie_index_path)
         else:
             if args.bowtie_index is not None and args.dicts is not None:
@@ -532,6 +553,19 @@ def main():
                                 "; have you indexed your GTF with `neoepiscope index`?",
                             ]
                         )
+                    )
+                rna_edits_path = os.path.join(
+                    args.dicts, "transcript_to_rna_edits.pickle"
+                )
+                if os.path.isfile(rna_edits_path):
+                    with open(rna_edits_path, "rb") as rna_edit_stream:
+                        rna_edit_dict = pickle.load(rna_edit_stream)
+                else:
+                    rna_edit_dict = None
+                    warnings.warn(
+                        "No dictionary with RNA edits provided; "
+                        "will proceed without accounting for RNA editing",
+                        Warning
                     )
                 bowtie_files = [
                     "".join([args.bowtie_index, ".", str(x), ".ebwt"])
@@ -660,10 +694,6 @@ def main():
             # Not using expression data
             tpm_dict = None
             tpm_threshold = None
-        rna_edit_dict = None    
-        if args.rna_edit:
-            with open(args.rna_edit, "rb") as rna_pickle:
-                rna_edit_dict = pickle.load(rna_pickle)
         # Find transcripts that haplotypes overlap
         relevant_transcripts, homozygous_variants = process_haplotypes(
             args.merged_hapcut2_output, interval_dict, phase_mutations

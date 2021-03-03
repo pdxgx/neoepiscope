@@ -59,13 +59,11 @@ class TestGTFprocessing(unittest.TestCase):
         self.base_dir = os.path.join(neoepiscope_dir, "tests")
         self.gtf = os.path.join(self.base_dir, "Ychrom.gtf")
         self.gtf2 = os.path.join(self.base_dir, "Chr11.gtf")
-        self.Ycds, self.Ytx = gtf_to_cds(self.gtf, "NA", pickle_it=False)
-        self.Ytree = cds_to_tree(self.Ycds, "NA", pickle_it=False)
-        self.cds11, self.tx11 = gtf_to_cds(self.gtf2, "NA", pickle_it=False)
-        self.tree11 = cds_to_tree(self.cds11, "NA", pickle_it=False)
-        self.lengths11 = cds_to_feature_length(
-            self.cds11, self.tx11, "NA", pickle_it=False
-        )
+        self.Ycds, self.Ytx = gtf_to_cds(self.gtf)
+        self.Ytree = cds_to_tree(self.Ycds)
+        self.cds11, self.tx11 = gtf_to_cds(self.gtf2)
+        self.tree11 = cds_to_tree(self.cds11)
+        self.lengths11 = cds_to_feature_length(self.cds11, self.tx11)
         self.counts = {"ENST00000325207.9_2": 1571.0, "ENST00000325147.13_1": 372.0}
         self.tpm11 = feature_to_tpm_dict(self.counts, self.lengths11)
 
@@ -193,22 +191,22 @@ class TestHaplotypeProcessing(unittest.TestCase):
         self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
         self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
         self.Chr11gtf = os.path.join(self.base_dir, "Chr11.gtf")
-        self.Chr11cds, self.Chr11tx = gtf_to_cds(self.Chr11gtf, "NA", pickle_it=False)
+        self.Chr11cds, self.Chr11tx = gtf_to_cds(self.Chr11gtf)
         for transcript in self.Chr11cds:
             for cds_block in self.Chr11cds[transcript]:
                 cds_block[0] = cds_block[0].replace("chr", "")
-        self.Chr11tree = cds_to_tree(self.Chr11cds, "NA", pickle_it=False)
+        self.Chr11tree = cds_to_tree(self.Chr11cds)
         self.Chr11hapcut = os.path.join(self.base_dir, "Chr11.hapcut.out")
         self.rbp_ref_prefix = os.path.join(self.base_dir, "chr14_index")
         self.rbp_reference_index = bowtie_index.BowtieIndexReference(
             self.rbp_ref_prefix
         )
         self.Chr14gtf = os.path.join(self.base_dir, "Chr14.gtf")
-        self.Chr14cds, self.Chr14tx = gtf_to_cds(self.Chr14gtf, "NA", pickle_it=False)
+        self.Chr14cds, self.Chr14tx = gtf_to_cds(self.Chr14gtf)
         for transcript in self.Chr14cds:
             for cds_block in self.Chr14cds[transcript]:
                 cds_block[0] = cds_block[0].replace("chr", "")
-        self.Chr14tree = cds_to_tree(self.Chr14cds, "NA", pickle_it=False)
+        self.Chr14tree = cds_to_tree(self.Chr14cds)
         self.phased_hapcut = os.path.join(self.base_dir, "rbp.haplotypes")
 
     def test_hap_processing(self):
@@ -800,7 +798,7 @@ class TestOutput(unittest.TestCase):
         self.out_file = os.path.join(self.base_dir, "neoepiscope.out")
         self.correct_out = os.path.join(self.base_dir, "expected.neoepiscope.out")
         self.gtf = os.path.join(self.base_dir, "Chr11.gtf")
-        self.cds, self.tx = gtf_to_cds(self.gtf, "NA", pickle_it=False)
+        self.cds, self.tx = gtf_to_cds(self.gtf)
         self.tools = {
             "netMHCpan4": ["netMHCpan", ["rank", "affinity"]],
             "netMHCIIpan3": ["netMHCIIpan", ["rank"]],

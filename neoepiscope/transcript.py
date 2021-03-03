@@ -370,17 +370,17 @@ def seq_to_peptide(
                 if not mitochondrial:
                     codon_options = set(
                         [_codon_table[''.join([seq[i : i + 2], x])]
-                                                for x in ['A', 'C', 'G', 'T']]
+                                                for x in 'ACGT']
                         )
                 else:
                     codon_options = set(
                         [_mitochondrial_codon_table[''.join([seq[i : i + 2], x])]
-                                                for x in ['A', 'C', 'G', 'T']]
+                                                for x in 'ACGT']
                         )
             else:
                 # Editing
                 chunk_options = [''.join([seq[i:i+2], x])
-                    for x in ['A', 'C', 'G', 'T']]
+                    for x in 'ACGT']
                 if not mitochondrial:
                     codon_options = set([_codon_table[x.replace('I', 'G')]
                         for x in chunk_options])
@@ -411,20 +411,20 @@ def seq_to_peptide(
                         codon_options = set(
                             [
                                 _codon_table["".join([seq[-2:], x])]
-                                for x in ["A", "C", "G", "T"]
+                                for x in 'ACGT'
                             ]
                         )
                     else:
                         codon_options = set(
                             [
                                 _mitochondrial_codon_table["".join([seq[-2:], x])]
-                                for x in ["A", "C", "G", "T"]
+                                for x in 'ACGT'
                             ]
                         )
                 else:
                     # Editing
                     chunk_options = [''.join([seq[-2:], x])
-                            for x in ['A', 'C', 'G', 'T']]
+                            for x in 'ACGT']
                     if not mitochondrial:
                         codon_options = set([_codon_table[x.replace('I', 'G')]
                             for x in chunk_options])
@@ -3546,7 +3546,7 @@ class Transcript(object):
             return peptide_seqs, protein
 
 
-def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
+def gtf_to_cds(gtf_file, dict_dir=None):
     """References cds_dict to get cds bounds for later Bowtie query
     Keys in the dictionary are transcript IDs, while entries are lists of
         relevant CDS/stop codon data
@@ -3554,7 +3554,7 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
                 +/- strand, transcript type]
     Writes cds_dict as a pickled dictionary
     gtf_file: input gtf file to process
-    dictdir: path to directory to store pickled dicts
+    dict_dir: path to directory to store pickled dicts
     Return value: dictionaries
     """
     cds_dict = collections.defaultdict(list)
@@ -3844,22 +3844,24 @@ def gtf_to_cds(gtf_file, dictdir, pickle_it=True):
     for transcript_id in delete_txs:
         del cds_dict[transcript_id]
     # Write to pickled dictionary
-    if pickle_it:
-        pickle_dict = os.path.join(dictdir, "transcript_to_CDS.pickle")
+    if dict_dir is not None:
+        pickle_dict = os.path.join(dict_dir, "transcript_to_CDS.pickle")
         with open(pickle_dict, "wb") as f:
             pickle.dump(cds_dict, f)
-        pickle_dict2 = os.path.join(dictdir, "transcript_to_gene_info.pickle")
+        pickle_dict2 = os.path.join(dict_dir, "transcript_to_gene_info.pickle")
         with open(pickle_dict2, "wb") as f:
             pickle.dump(tx_data_dict, f)
     return cds_dict, tx_data_dict
 
 
-def cds_to_feature_length(cds_dict, tx_data_dict, dictdir, pickle_it=True):
+def cds_to_feature_length(cds_dict, tx_data_dict, dict_dir=None):
     """Creates a dictionary linking gene ID to gene length
     Gene length is median length of all isoforms
 
     cds_dict: CDS dictionary produced by gtf_to_cds()
-    tx_data_dict: tranascript data dictionary produced by gtf_to_cds()
+    tx_data_dict: transcript data dictionary produced by gtf_to_cds()
+    dict_dir: where to write picked dictionary or None if pickling
+        shouldn't happen
 
     Return value: dictionary, keys are gene IDs, values are gene lengths (kilobase)
     """
@@ -3876,21 +3878,25 @@ def cds_to_feature_length(cds_dict, tx_data_dict, dictdir, pickle_it=True):
         # Store isoform length in dict
         feature_to_feature_length[transcript_id] = length / 1000.0
     # Write to pickled dictionary
-    if pickle_it:
-        pickle_dict = os.path.join(dictdir, "feature_to_feature_length.pickle")
+    if dict_dir is not None:
+        pickle_dict = os.path.join(dict_dir, "feature_to_feature_length.pickle")
         with open(pickle_dict, "wb") as f:
             pickle.dump(feature_to_feature_length, f)
     return feature_to_feature_length
 
 
-def cds_to_tree(cds_dict, dictdir, pickle_it=True):
+def cds_to_tree(cds_dict, dict_dir=None):
     """Creates searchable tree of chromosome intervals from CDS dictionary
+    
     Each chromosome is stored in the dictionary as an interval tree object
-        Intervals are added for each CDS, with the associated transcript ID
-        Assumes transcript is all on one chromosome - does not work for
-            gene fusions
+    Intervals are added for each CDS, with the associated transcript ID
+    Assumes transcript is all on one chromosome - does not work for gene fusions
     Writes the searchable tree as a pickled dictionary
+
     cds_dict: CDS dictionary produced by gtf_to_cds()
+    dict_dir: where to write picked dictionary or None if pickling
+        shouldn't happen
+
     Return value: searchable tree
     """
     searchable_tree = {}
@@ -3911,12 +3917,46 @@ def cds_to_tree(cds_dict, dictdir, pickle_it=True):
             # else:
             # report an error?
     # Write to pickled dictionary
-    if pickle_it:
-        pickle_dict = os.path.join(dictdir, "intervals_to_transcript.pickle")
+    if dict_dir is not None:
+        pickle_dict = os.path.join(dict_dir, "intervals_to_transcript.pickle")
         with open(pickle_dict, "wb") as f:
             pickle.dump(searchable_tree, f)
     return searchable_tree
 
+def transcript_to_rna_edits(rna_edit_file, cds_tree, cds_dict,
+                             dict_dir=None):
+    """ Creates dictionary mapping transcripts to RNA edit positions
+
+    rna_edit_file: path to REDIportal-formatted file storing RNA A-to-I
+        edits. The first line of this file is a header that can be
+        anything, and subsequent lines must have, at a minimum, 5 tab-
+        separated fields:
+            chrom [TAB] 1-based position [TAB] Reference base (can be
+            blank) [TAB] Edit base (can be blank) [TAB] Strand (+/-)
+    cds_tree: tree output by cds_to_tree() in this script
+    cds_dict: cds_dict output by gtf_to_cds() 
+    dict_dir: where to write picked dictionary or None if pickling
+        shouldn't happen
+
+    Return value: dictionary mapping each transcript ID to a list of
+    tuples recording RNA edits in the format
+    (chromosome, 0-based position)
+    """
+    with xopen(None, rna_edit_file) as f:
+        transcript_to_rna_edits = defaultdict(list)
+        for line in f:
+            chrom, pos, _, _, strand = line.split('\t')[:5]
+            pos = int(pos)
+            for transcript in cds_tree[chrom][pos:pos + 1]:
+                if strand == cds_dict[transcript][4]:
+                    transcript_to_rna_edits[
+                            cds_tree[chrom][pos:pos + 1]
+                        ].append((chrom, pos))
+    if dict_dir is not None:
+        pickle_dict = os.path.join(dict_dir, "transcript_to_rna_edits.pickle")
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(transcript_to_rna_edits, f)
+    return transcript_to_rna_edits
 
 def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     """Uses cds tree to btain transcript IDs from genomic coordinates
