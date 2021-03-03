@@ -72,10 +72,10 @@ download = {
         "Gencode_mouse/release_M1/"
         "gencode.vM1.annotation.gtf.gz"
     ],
-    "Bowtie GRCh38 index": [
+    "Bowtie hg38 index": [
         "https://recount.bio/data/bowtie_indexes/GRCh38.p13.zip",
     ],
-    "Bowtie GRCh37 index": [
+    "Bowtie hg19 index": [
         "https://recount.bio/data/bowtie_indexes/GRCh37.p13.zip",
     ],
     "Bowtie mm10 index": [
@@ -84,6 +84,15 @@ download = {
     "Bowtie mm9 index": [
         "https://recount.bio/data/bowtie_indexes/NCBIM37.zip",
     ],
+    "REDIportal mm10 database" : [
+        "http://srv00.recas.ba.infn.it/webshare/ATLAS/donwload/TABLE1_mm10.txt.gz"
+    ],
+    "REDIportal hg19 database" : [
+        "http://srv00.recas.ba.infn.it/webshare/ATLAS/donwload/TABLE1_hg19.txt.gz"
+    ],
+    "REDIportal hg38 database" : [
+        "http://srv00.recas.ba.infn.it/webshare/ATLAS/donwload/TABLE1_hg38.txt.gz"
+    ]
 }
 
 
@@ -517,158 +526,65 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        if self._yes_no_query("Download GENCODE v35 gtf annotation file?"):
-            self._grab_and_explode(
-                download["GENCODE v35 annotation"],
-                "GENCODE v35 annotation",
-                explode=False,
-            )
-            gencode_v35_temp = os.path.join(temp_install_dir, "gencode_v35")
-            gencode_v35 = os.path.join(self.download_dir, "gencode_v35")
-            gencode_v35_gtf = os.path.join(
-                temp_install_dir,
-                os.path.basename(download["GENCODE v35 annotation"][0]),
-            )
-            try:
-                os.makedirs(gencode_v35_temp)
-            except OSError as e:
-                self._print_to_screen_and_log(
-                    (
-                        "Problem encountered trying to create "
-                        "directory %s for installation. May need "
-                        "sudo permissions."
-                    )
-                    % gencode_v35_temp
+        for build, gencode, bowtie, rediportal in [
+                ("mm9", "vM1", "NCBIM37", None),
+                ("mm10", "vM25", "GRCm38.p6", "TABLE1_mm10.txt"),
+                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt"),
+                ("hg38", "v35", "GRCh38.p13", "TABLE1_hg38.txt")
+            ]:
+            if self._yes_no_query("Download and install indexes for " + build + "?"):
+                # Download and index annotation
+                self._grab_and_explode(
+                    download["GENCODE " + gencode + " annotation"],
+                    "GENCODE " + gencode + " annotation",
+                    explode=False,
                 )
-                self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v35...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_v35_gtf, gencode_v35_temp)
-            feature_lengths = cds_to_feature_length(
-                cds_dict, tx_data_dict, gencode_v35_temp
-            )
-            cds_to_tree(cds_dict, gencode_v35_temp)
-        else:
-            gencode_v35 = None
-        if self._yes_no_query("Download GENCODE v19 gtf annotation file?"):
-            self._grab_and_explode(
-                download["GENCODE v19 annotation"],
-                "GENCODE v19 annotation",
-                explode=False,
-            )
-            gencode_v19_temp = os.path.join(temp_install_dir, "gencode_v19")
-            gencode_v19 = os.path.join(self.download_dir, "gencode_v19")
-            gencode_v19_gtf = os.path.join(
-                temp_install_dir,
-                os.path.basename(download["GENCODE v19 annotation"][0]),
-            )
-            try:
-                os.makedirs(gencode_v19_temp)
-            except OSError as e:
-                self._print_to_screen_and_log(
-                    (
-                        "Problem encountered trying to create "
-                        "directory %s for installation. May need "
-                        "sudo permissions."
+                exec("gencode_" + gencode 
+                     + "_temp = os.path.join(temp_install_dir, 'gencode_"
+                     + gencode + "')")
+                exec("gencode_" + gencode
+                     + " = os.path.join(self.download_dir, 'gencode_" + gencode + "')")
+                exec("gencode_" + gencode 
+                     + "_gtf = os.path.join(temp_install_dir,"
+                     + "os.path.basename(download['GENCODE " + gencode + " annotation'][0]))")
+                try:
+                    exec("os.makedirs(gencode_" + gencode + " _temp)")
+                except OSError as e:
+                    self._print_to_screen_and_log(
+                        (
+                            'Problem encountered trying to create '
+                            'directory "{}" for installation. May need '
+                            'sudo permissions.'.format(eval("gencode_" + gencode + "_temp"))
+                        )
                     )
-                    % gencode_v19_temp
-                )
-                self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing GENCODE v19...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_v19_gtf, gencode_v19_temp)
-            feature_lengths = cds_to_feature_length(
-                cds_dict, tx_data_dict, gencode_v19_temp
-            )
-            cds_to_tree(cds_dict, gencode_v19_temp)
-        else:
-            gencode_v19 = None
-        if self._yes_no_query("Download GENCODE vM25 gtf annotation file?"):
-            self._grab_and_explode(
-                download["GENCODE vM25 annotation"],
-                "GENCODE vM25 annotation",
-                explode=False,
-            )
-            gencode_vM25_temp = os.path.join(temp_install_dir, "gencode_vM25")
-            gencode_vM25 = os.path.join(self.download_dir, "gencode_vM25")
-            gencode_vM25_gtf = os.path.join(
-                temp_install_dir,
-                os.path.basename(download["GENCODE vM25 annotation"][0]),
-            )
-            try:
-                os.makedirs(gencode_vM25_temp)
-            except OSError as e:
+                    self._bail()
                 self._print_to_screen_and_log(
-                    (
-                        "Problem encountered trying to create "
-                        "directory %s for installation. May need "
-                        "sudo permissions."
+                        "[Configuring] Indexing GENCODE {}...".format(gencode)
                     )
-                    % gencode_vM25_temp
+                cds_dict, tx_data_dict = gtf_to_cds(eval("gencode_" + gencode + "_gtf"),
+                                                    eval("gencode_" + gencode + "_temp"))
+                cds_to_feature_length(
+                    cds_dict, tx_data_dict, eval("gencode_" + gencode + "_temp")
                 )
-                self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM25...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_vM25_gtf, gencode_vM25_temp)
-            feature_lengths = cds_to_feature_length(
-                cds_dict, tx_data_dict, gencode_vM25_temp
-            )
-            cds_to_tree(cds_dict, gencode_vM25_temp)
-        else:
-            gencode_vM25 = None
-        if self._yes_no_query("Download GENCODE vM1 gtf annotation file?"):
-            self._grab_and_explode(
-                download["GENCODE vM1 annotation"],
-                "GENCODE vM1 annotation",
-                explode=False,
-            )
-            gencode_vM1_temp = os.path.join(temp_install_dir, "gencode_vM1")
-            gencode_vM1 = os.path.join(self.download_dir, "gencode_vM1")
-            gencode_vM1_gtf = os.path.join(
-                temp_install_dir,
-                os.path.basename(download["GENCODE vM1 annotation"][0]),
-            )
-            try:
-                os.makedirs(gencode_vM1_temp)
-            except OSError as e:
-                self._print_to_screen_and_log(
-                    (
-                        "Problem encountered trying to create "
-                        "directory %s for installation. May need "
-                        "sudo permissions."
-                    )
-                    % gencode_vM1_temp
+                cds_to_tree(cds_dict, eval("gencode_" + gencode + "_temp"))
+                # Download Bowtie index
+                self._grab_and_explode(
+                    download["Bowtie " + build + " index"], "Bowtie " + build + " index"
                 )
-                self._bail()
-            self._print_to_screen_and_log("[Configuring] Indexing GENCODE vM1...")
-            cds_dict, tx_data_dict = gtf_to_cds(gencode_vM1_gtf, gencode_vM1_temp)
-            feature_lengths = cds_to_feature_length(
-                cds_dict, tx_data_dict, gencode_vM1_temp
-            )
-            cds_to_tree(cds_dict, gencode_vM1_temp)
-        else:
-            gencode_vM1 = None
-        if self._yes_no_query("Download Bowtie GRCh38 index?"):
-            self._grab_and_explode(
-                download["Bowtie GRCh38 index"], "Bowtie GRCh38 index"
-            )
-            bowtie_grch38 = os.path.join(self.download_dir, "GRCh38.p13")
-        else:
-            bowtie_grch38 = None
-        if self._yes_no_query("Download Bowtie GRCh37 index?"):
-            self._grab_and_explode(
-                download["Bowtie GRCh37 index"], "Bowtie GRCh37 index"
-            )
-            bowtie_hg19 = os.path.join(self.download_dir, "GRCh37.p13")
-        else:
-            bowtie_hg19 = None
-        if self._yes_no_query("Download Bowtie mm10 index?"):
-            self._grab_and_explode(download["Bowtie mm10 index"], "Bowtie mm10 index")
-            bowtie_mm10 = os.path.join(self.download_dir, "GRCm38.p6")
-        else:
-            bowtie_mm10 = None
-        if self._yes_no_query("Download Bowtie mm9 index?"):
-            self._grab_and_explode(download["Bowtie mm9 index"], "Bowtie mm9 index")
-            bowtie_mm9 = os.path.join(self.download_dir, "NCBIM37")
-        else:
-            bowtie_mm9 = None
+                exec("bowtie_" + build + " = os.path.join(self.download_dir, '" + bowtie + "')")
+                # Download and index REDIportal RNA edits
+                self._grab_and_explode(
+                    download["REDIportal " + build + " database"], "REDIportal "
+                    + build + " database"
+                )
+                exec(
+                    "rediportal_" + build + " = os.path.join(self.download_dir, 'TABLE1_"
+                    + build + ".txt')"
+                )
+            else:
+                exec("gencode_" + gencode + " = None")
+                exec("bowtie_" + build + " = None")
+                exec("rediportal_" + build + " = None")
         programs = []
         for program in [
             "netMHCIIpan v3",
@@ -769,7 +685,7 @@ gencode_v35 = {gencode_v35}
 gencode_v19 = {gencode_v19}
 gencode_vM25 = {gencode_vM25}
 gencode_vM1 = {gencode_vM1}
-bowtie_grch38 = {bowtie_grch38}
+bowtie_hg38 = {bowtie_hg38}
 bowtie_hg19 = {bowtie_hg19}
 bowtie_mm10 = {bowtie_mm10}
 bowtie_mm9 = {bowtie_mm9}
@@ -799,8 +715,8 @@ hapcut2 = {hapcut2}
                     gencode_vM1=(
                         "None" if gencode_vM1 is None else self._quote(gencode_vM1)
                     ),
-                    bowtie_grch38=(
-                        "None" if bowtie_grch38 is None else self._quote(bowtie_grch38)
+                    bowtie_hg38=(
+                        "None" if bowtie_hg38 is None else self._quote(bowtie_hg38)
                     ),
                     bowtie_hg19=(
                         "None" if bowtie_hg19 is None else self._quote(bowtie_hg19)

@@ -392,8 +392,8 @@ def main():
         downloader.run()
     elif args.subparser_name == "index":
         cds_dict, tx_data_dict = gtf_to_cds(args.gtf, args.dicts)
-        gene_lengths = cds_to_feature_length(cds_dict, tx_data_dict, args.dicts)
-        tree = cds_to_tree(cds_dict, args.dicts)
+        cds_to_feature_length(cds_dict, tx_data_dict, args.dicts)
+        cds_to_tree(cds_dict, args.dicts)
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
@@ -415,10 +415,10 @@ def main():
             if (
                 args.build == "GRCh38"
                 and paths.gencode_v35 is not None
-                and paths.bowtie_grch38 is not None
+                and paths.bowtie_hg38 is not None
             ):
                 gencode_path = paths.gencode_v35
-                bowtie_index_path = paths.bowtie_grch38
+                bowtie_index_path = paths.bowtie_hg38
             elif (
                 args.build == "hg19"
                 and paths.gencode_v19 is not None
