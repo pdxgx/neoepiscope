@@ -90,8 +90,8 @@ def main():
     index_parser = subparsers.add_parser(
         "index",
         help=(
-            "produces pickled dictionaries "
-            "linking transcripts tointervals_to_transcript intervals and "
+            "produces pickled dictionaries that "
+            "1) link transcripts to intervals;  "
             " CDS lines in a GTF"
         ),
     )
@@ -203,7 +203,7 @@ def main():
         "--dicts",
         type=str,
         required=False,
-        help="input path to pickled CDS dictionary directory",
+        help="input path to directory with pickled CDS and RNA edit dictionaries",
     )
     call_parser.add_argument(
         "-c",
@@ -383,12 +383,11 @@ def main():
         type=str,
         required=False,
         default=None,
-        help="path to pickle rna A-I dictionary",
+        help="input path to pickled RNA A-I dictionary",
     )
     args = parser.parse_args()
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
-
         downloader = NeoepiscopeDownloader()
         downloader.run()
     elif args.subparser_name == "index":
@@ -418,114 +417,60 @@ def main():
                 and paths.gencode_v35 is not None
                 and paths.bowtie_grch38 is not None
             ):
-                with open(
-                    os.path.join(paths.gencode_v35, "intervals_to_transcript.pickle"),
-                    "rb",
-                ) as interval_stream:
-                    interval_dict = pickle.load(interval_stream)
-                with open(
-                    os.path.join(paths.gencode_v35, "transcript_to_CDS.pickle"), "rb"
-                ) as cds_stream:
-                    cds_dict = pickle.load(cds_stream)
-                with open(
-                    os.path.join(paths.gencode_v35, "transcript_to_gene_info.pickle"),
-                    "rb",
-                ) as info_stream:
-                    info_dict = pickle.load(info_stream)
-                with open(
-                    os.path.join(paths.gencode_v35, "feature_to_feature_length.pickle"),
-                    "rb",
-                ) as info_stream:
-                    feature_length_dict = pickle.load(info_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_grch38)
+                gencode_path = paths.gencode_v35
+                bowtie_index_path = paths.bowtie_grch38
             elif (
                 args.build == "hg19"
                 and paths.gencode_v19 is not None
                 and paths.bowtie_hg19 is not None
             ):
-                with open(
-                    os.path.join(paths.gencode_v19, "intervals_to_transcript.pickle"),
-                    "rb",
-                ) as interval_stream:
-                    interval_dict = pickle.load(interval_stream)
-                with open(
-                    os.path.join(paths.gencode_v19, "transcript_to_CDS.pickle"), "rb"
-                ) as cds_stream:
-                    cds_dict = pickle.load(cds_stream)
-                with open(
-                    os.path.join(paths.gencode_v19, "transcript_to_gene_info.pickle"),
-                    "rb",
-                ) as info_stream:
-                    info_dict = pickle.load(info_stream)
-                with open(
-                    os.path.join(paths.gencode_v19, "feature_to_feature_length.pickle"),
-                    "rb",
-                ) as info_stream:
-                    feature_length_dict = pickle.load(info_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_hg19)
+                gencode_path = paths.gencode_v19
+                bowtie_index_path = paths.bowtie_hg19
             elif (
                 args.build == "mm9"
                 and paths.gencode_vM1 is not None
                 and paths.bowtie_mm9 is not None
             ):
-                with open(
-                    os.path.join(paths.gencode_vM1, "intervals_to_transcript.pickle"),
-                    "rb",
-                ) as interval_stream:
-                    interval_dict = pickle.load(interval_stream)
-                with open(
-                    os.path.join(paths.gencode_vM1, "transcript_to_CDS.pickle"), "rb"
-                ) as cds_stream:
-                    cds_dict = pickle.load(cds_stream)
-                with open(
-                    os.path.join(paths.gencode_vM1, "transcript_to_gene_info.pickle"),
-                    "rb",
-                ) as info_stream:
-                    info_dict = pickle.load(info_stream)
-                with open(
-                    os.path.join(paths.gencode_vM1, "feature_to_feature_length.pickle"),
-                    "rb",
-                ) as info_stream:
-                    feature_length_dict = pickle.load(info_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm9)
+                gencode_path = paths.gencode_vM1
+                bowtie_index_path = paths.bowtie_mm9
             elif (
                 args.build == "mm10"
                 and paths.gencode_vM25 is not None
                 and paths.bowtie_mm10 is not None
             ):
-                with open(
-                    os.path.join(paths.gencode_vM25, "intervals_to_transcript.pickle"),
-                    "rb",
-                ) as interval_stream:
-                    interval_dict = pickle.load(interval_stream)
-                with open(
-                    os.path.join(paths.gencode_vM25, "transcript_to_CDS.pickle"), "rb"
-                ) as cds_stream:
-                    cds_dict = pickle.load(cds_stream)
-                with open(
-                    os.path.join(paths.gencode_vM25, "transcript_to_gene_info.pickle"),
-                    "rb",
-                ) as info_stream:
-                    info_dict = pickle.load(info_stream)
-                with open(
-                    os.path.join(
-                        paths.gencode_vM25, "feature_to_feature_length.pickle"
-                    ),
-                    "rb",
-                ) as info_stream:
-                    feature_length_dict = pickle.load(info_stream)
-                reference_index = bowtie_index.BowtieIndexReference(paths.bowtie_mm10)
+                gencode_path = paths.gencode_vM25
+                bowtie_index_path = paths.bowtie_mm10
             else:
                 raise RuntimeError(
                     "".join(
                         [
                             args.build,
                             " is not an available genome build. Please "
-                            "check that you have run neoepiscope download and are "
+                            "check that you have run `neoepiscope download` and are "
                             "using 'hg19', 'GRCh38', 'mm10', or 'mm9' for this argument.",
                         ]
                     )
                 )
+            with open(
+                    os.path.join(gencode_path, "intervals_to_transcript.pickle"),
+                    "rb",
+                ) as interval_stream:
+                    interval_dict = pickle.load(interval_stream)
+            with open(
+                    os.path.join(gencode_path, "transcript_to_CDS.pickle"), "rb"
+                ) as cds_stream:
+                cds_dict = pickle.load(cds_stream)
+            with open(
+                    os.path.join(gencode_path, "transcript_to_gene_info.pickle"),
+                    "rb",
+                ) as info_stream:
+                info_dict = pickle.load(info_stream)
+            with open(
+                    os.path.join(gencode_path, "feature_to_feature_length.pickle"),
+                    "rb",
+                ) as info_stream:
+                feature_length_dict = pickle.load(info_stream)
+            reference_index = bowtie_index.BowtieIndexReference(bowtie_index_path)
         else:
             if args.bowtie_index is not None and args.dicts is not None:
                 intervals_path = os.path.join(
@@ -540,7 +485,7 @@ def main():
                             [
                                 "Cannot find ",
                                 intervals_path,
-                                "; have you indexed your GTF with neoepiscope index?",
+                                "; have you indexed your GTF with `neoepiscope index`?",
                             ]
                         )
                     )
@@ -554,7 +499,7 @@ def main():
                             [
                                 "Cannot find ",
                                 cds_path,
-                                "; have you indexed your GTF with neoepiscope index?",
+                                "; have you indexed your GTF with `neoepiscope index`?",
                             ]
                         )
                     )
@@ -568,7 +513,7 @@ def main():
                             [
                                 "Cannot find ",
                                 info_path,
-                                "; have you indexed your GTF with neoepiscope index?",
+                                "; have you indexed your GTF with `neoepiscope index`?",
                             ]
                         )
                     )
@@ -584,7 +529,7 @@ def main():
                             [
                                 "Cannot find ",
                                 feature_length_path,
-                                "; have you indexed your GTF with neoepiscope index?",
+                                "; have you indexed your GTF with `neoepiscope index`?",
                             ]
                         )
                     )
