@@ -573,14 +573,22 @@ class NeoepiscopeDownloader(object):
                 )
                 exec("bowtie_" + build + " = os.path.join(self.download_dir, '" + bowtie + "')")
                 # Download and index REDIportal RNA edits
-                self._grab_and_explode(
-                    download["REDIportal " + build + " database"], "REDIportal "
-                    + build + " database"
-                )
-                exec(
-                    "rediportal_" + build + " = os.path.join(self.download_dir, 'TABLE1_"
-                    + build + ".txt')"
-                )
+                if rediportal is not None:
+                    self._grab_and_explode(
+                        download["REDIportal " + build + " database"], "REDIportal "
+                        + build + " database"
+                    )
+                    exec(
+                        "rediportal_" + build + " = os.path.join(self.download_dir, 'TABLE1_"
+                        + build + ".txt')"
+                    )
+                else:
+                    exec("rediportal_" + build + " = None")
+                    self._print_to_screen_and_log(
+                        "[Configuring] No RNA edits available for {}; continuing...".format(
+                                build
+                            )
+                    )
             else:
                 exec("gencode_" + gencode + " = None")
                 exec("bowtie_" + build + " = None")
