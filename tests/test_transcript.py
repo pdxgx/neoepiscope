@@ -1209,6 +1209,7 @@ class TestTranscript(unittest.TestCase):
         """check whether rna editing in start codon is not allowed"""
         self.atoi_transcript.edit('I', 9664180, mutation_type="R", mutation_class="R", vaf=None)
         self.assertEqual(self.atoi_transcript.edits[9664180], [])
+        self.assertEqual(self.atoi_transcript.all_transcript_warnings, ["rna_editing_may_disrupt_start_codon"])
     
     def test_seq_to_peptide_with_I_N(self):
         """checks whether sseq_to_peptide function can properly handle N and I"""

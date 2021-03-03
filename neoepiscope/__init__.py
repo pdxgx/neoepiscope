@@ -714,8 +714,8 @@ def main():
             # Not using expression data
             tpm_dict = None
             tpm_threshold = None
+        rna_edit_dict = None    
         if args.rna_edit:
-            rna_edit_dict = None
             with open(args.rna_edit, "rb") as rna_pickle:
                 rna_edit_dict = pickle.load(rna_pickle)
         # Find transcripts that haplotypes overlap
