@@ -1251,8 +1251,8 @@ class Transcript(object):
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits at same pos
         for pos, edits_at_pos in edits.items():
-            edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             ref_at_pos = edits_at_pos[0][3][2]
+            edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             if len(edits_at_pos) > 1:
                 edits_at_pos = sorted(edits[pos], key=lambda x: (x[1], x[2]))
                 new_entry = [x for x in edits[pos] if x[1] == "I"]
