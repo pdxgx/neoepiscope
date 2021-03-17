@@ -1323,7 +1323,7 @@ class Transcript(object):
                         (seq, mutation_type, mutation_class, tuple(var))
                     )
                 edits[pos] = new_entry
-            elif edits_at_pos[0][1] == "R":
+            elif edits_at_pos[1] == "R":
                 if not (ref_at_pos == 'T' and self.rev_strand or
                         ref_at_pos == 'A' and not self.rev_strand):
                     warnings.warn("Reference nucleotide is not A or T at RNA "
