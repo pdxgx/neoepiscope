@@ -1252,6 +1252,7 @@ class Transcript(object):
         # Handle germline, somatic variants and RNA edits at same pos
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
+            # Two or more overlapping variants, eg. germline+somatic SNVs, germline SNV+RNA-edit
             if len(edits_at_pos) > 1:
                 edits_at_pos = sorted(edits[pos], key=lambda x: (x[1], x[2]))
                 new_entry = [x for x in edits[pos] if x[1] == "I"]
@@ -1322,6 +1323,7 @@ class Transcript(object):
                         (seq, mutation_type, mutation_class, tuple(var))
                     )
                 edits[pos] = new_entry
+            # RNA-edit present
             elif len(edits_at_pos) == 1 and edits_at_pos[0][1] == "R":
                 ref_at_pos = edits_at_pos[0][3][2]                
                 if not (ref_at_pos == 'T' and self.rev_strand or
