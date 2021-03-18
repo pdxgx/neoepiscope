@@ -1251,7 +1251,6 @@ class Transcript(object):
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits at same pos
         for pos, edits_at_pos in edits.items():
-            ref_at_pos = edits_at_pos[0][3][2]
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             if len(edits_at_pos) > 1:
                 edits_at_pos = sorted(edits[pos], key=lambda x: (x[1], x[2]))
@@ -1324,6 +1323,7 @@ class Transcript(object):
                     )
                 edits[pos] = new_entry
             elif len(edits_at_pos) == 1 and edits_at_pos[0][1] == "R":
+                ref_at_pos = edits_at_pos[0][3][2]                
                 if not (ref_at_pos == 'T' and self.rev_strand or
                         ref_at_pos == 'A' and not self.rev_strand):
                     warnings.warn("Reference nucleotide is not A or T at RNA "
