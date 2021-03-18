@@ -4590,31 +4590,18 @@ def get_peptides_from_transcripts(
         seleno = False
         if "seleno" in info_dict[transcript][3]:
             seleno = True
-        if rna_edit_dict is None:
-            transcript_a = Transcript(
-                reference_index,
-                [
-                    [str(chrom), "", seq_type, str(start), str(end), ".", strand]
-                    for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
-                        transcript
-                    ]
-                ],
-                transcript,
-                seleno,
-            )
-        else:
-            transcript_a = Transcript(
-                reference_index,
-                [
-                    [str(chrom), "", seq_type, str(start), str(end), ".", strand]
-                    for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
-                        transcript
-                    ]
-                ],
-                transcript,
-                seleno,
-                rna_edit_dict
-            )
+        transcript_a = Transcript(
+            reference_index,
+            [
+                [str(chrom), "", seq_type, str(start), str(end), ".", strand]
+                for (chrom, seq_type, start, end, strand, tx_type) in cds_dict[
+                    transcript
+                ]
+            ],
+            transcript,
+            seleno,
+            rna_edit_dict
+        )
         for mutation in homozygous_variants[transcript]:
             if tuple(mutation) not in used_homozygous_variants:
                 # Determine if mutation is somatic or germline
