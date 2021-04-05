@@ -1216,10 +1216,14 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(9750163, edits)
 
-    def test_expressed_edit_with_rna_edit_and_germline(self):
-        self.atoi_transcript.edit('I', 9750164, mutation_type="V", mutation_class="G", vaf=None)
+    def test_expressed_edit_with_rna_edit_and_germline_with_exclude_germline_option(self):
+        pos = 9750162
+        self.atoi_transcript.edit('I', pos, mutation_type="V", mutation_class="G", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_germline=0)
-        self.assertNotIn(9750163, edits)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
 
     def test_expressed_edit_with_rna_edit_and_somatic(self):
         self.atoi_transcript.edit('I', 9750164, mutation_type="R", mutation_class="S", vaf=None)
