@@ -1292,18 +1292,17 @@ class Transcript(object):
                 else:
                     # RNA edits present
                     ###Need to check
-                    if 1:
-                        germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
-                                    else None)
-                        if germline is None:
-                            somatic = edits_at_pos[1]
-                        elif len(edits_at_pos) > 2:
-                            somatic = edits_at_pos[2]
-                        else:
-                            somatic = None
-                        #It looks like we need to delete this code
-                        #somatic = (edits_at_pos[1] if germline is None
-                        #               else edits_at_pos[2])
+                    germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
+                                else None)
+                    if germline is None:
+                        somatic = edits_at_pos[1]
+                    elif len(edits_at_pos) > 2:
+                        somatic = edits_at_pos[2]
+                    else:
+                        somatic = None
+                    #It looks like we need to delete this code
+                    #somatic = (edits_at_pos[1] if germline is None
+                    #               else edits_at_pos[2])
                     if germline and somatic:
                         if not (include_germline == 1 and include_somatic == 2):
                             # Favor somatic variant, make germline alt allele the "reference" allele
