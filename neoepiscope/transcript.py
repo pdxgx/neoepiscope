@@ -949,18 +949,34 @@ class Transcript(object):
                     self.chrom, pos - 1, len(seq)
                 )
                 other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
-                if not other_snvs:
-                    self.edits[pos - 1].append(
-                        (
-                            seq,
-                            mutation_type,
-                            mutation_class,
-                            (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
+                #Need to check
+                if 0:
+                    if not other_snvs:
+                        self.edits[pos - 1].append(
+                            (
+                                seq,
+                                mutation_type,
+                                mutation_class,
+                                (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
+                            )
                         )
+                    else:
+                        warnings.warn("RNA edit site was disrupted in %s"%self.transcript_id)
+                        self.all_transcript_warnings.append("rna_editing_site_disrupted")
+                #modified to include RNA edits even with other_snvs, but it prints out warnings.
+                self.edits[pos - 1].append(
+                    (
+                        seq,
+                        mutation_type,
+                        mutation_class,
+                        (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
                     )
-                else:
+                )
+                if other_snvs:
                     warnings.warn("RNA edit site was disrupted in %s"%self.transcript_id)
                     self.all_transcript_warnings.append("rna_editing_site_disrupted")
+
+
         else:
             raise NotImplementedError("Mutation type not yet implemented")
 
@@ -1250,6 +1266,7 @@ class Transcript(object):
                     if start_index % 2 and edit[3][1] != edit[0]:
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits at same pos
+        wrong_rna_pos = []
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             # Two or more overlapping variants, eg. germline+somatic SNVs, germline SNV+RNA-edit
@@ -1274,16 +1291,19 @@ class Transcript(object):
                         var[2] = somatic[3][3]
                 else:
                     # RNA edits present
-                    germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
-                                else None)
-                    if germline is None:
-                        somatic = edits_at_pos[1]
-                    elif len(edits_at_pos) > 2:
-                        somatic = edits_at_pos[2]
-                    else:
-                        somatic = None
-                    somatic = (edits_at_pos[1] if germline is None
-                                   else edits_at_pos[2])
+                    ###Need to check
+                    if 1:
+                        germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
+                                    else None)
+                        if germline is None:
+                            somatic = edits_at_pos[1]
+                        elif len(edits_at_pos) > 2:
+                            somatic = edits_at_pos[2]
+                        else:
+                            somatic = None
+                        #It looks like we need to delete this code
+                        #somatic = (edits_at_pos[1] if germline is None
+                        #               else edits_at_pos[2])
                     if germline and somatic:
                         if not (include_germline == 1 and include_somatic == 2):
                             # Favor somatic variant, make germline alt allele the "reference" allele
@@ -1304,15 +1324,21 @@ class Transcript(object):
                         mutation_class = "G"
                         mutation_type = "V"
                         var = list(germline[3])
-                        var[2] = somatic[3][3]
+                        #Need to check. somatic is None in here
+                        #var[2] = somatic[3][3]
                     elif somatic and include_somatic:
                         seq = somatic[0]
                         mutation_class = "S"
                         mutation_type = "V"
                         var = list(somatic[3])
-                        var[2] = germline[3][3]
-                    if (seq == 'T' and self.rev_strand or
-                        seq == 'A' and not self.rev_strand):
+                        #Need to check. germline is None
+                        #var[2] = germline[3][3]
+                    ref_at_pos = edits_at_pos[0][3][2]
+                    #Need to check. ref should be cjecked. Not seq
+                    #if (seq == 'T' and self.rev_strand or
+                    #    seq == 'A' and not self.rev_strand):
+                    if (ref_at_pos == 'T' and self.rev_strand or
+                        ref_at_pos == 'A' and not self.rev_strand):
                         # Favor RNA edit
                         seq = 'I'
                         mutation_type = "R"
@@ -1331,9 +1357,12 @@ class Transcript(object):
                     warnings.warn("Reference nucleotide is not A or T at RNA "
                                   "edit site {}:{}; ignoring.".format(
                                             self.chrom, pos
-                                        )
-                                    )
-                    del edits[pos]
+                                        ))
+                    #del edits[pos]
+                    wrong_rna_pos.append(pos)
+        if len(wrong_rna_pos)>0:
+            for pos in wrong_rna_pos:
+                del edits[pos]
         return (edits, adjusted_intervals)
 
     def save(self):
@@ -1429,7 +1458,7 @@ class Transcript(object):
             if seq or mutation_class != "R":
                 if isinstance(mutation_info, list):
                     seq_list.append(
-                        (
+         (
                             seq,
                             mutation_class,
                             [mutation_info[i] for i in range(0, len(mutation_info))],
