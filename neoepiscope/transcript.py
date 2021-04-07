@@ -1282,8 +1282,6 @@ class Transcript(object):
                         somatic = edits_at_pos[2]
                     else:
                         somatic = None
-                    somatic = (edits_at_pos[1] if germline is None
-                                   else edits_at_pos[2])
                     if germline and somatic:
                         if not (include_germline == 1 and include_somatic == 2):
                             # Favor somatic variant, make germline alt allele the "reference" allele
