@@ -938,23 +938,28 @@ class Transcript(object):
                     )
                 )
         elif mutation_type == "R":
-            if not self.rev_strand and self.start_coordinates[0] == pos:
-                self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon")
-                warnings.warn("Start codon in %s may be disrupted by RNA editing" % (self.transcript_id))
-            elif self.rev_strand and self.start_coordinates[2] == pos:
-                self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon")
-                warnings.warn("Start codon in %s may be disrupted by RNA editing" % (self.transcript_id))
             reference_seq = self.bowtie_reference_index.get_stretch(
                 self.chrom, pos - 1, len(seq)
             )
-            self.edits[pos - 1].append(
-                (
-                    seq,
-                    mutation_type,
-                    mutation_class,
-                    (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
+            existing_RNA_edit = [edit for edit in self.edits[pos - 1] if edit[1] == 'R']
+            if not existing_RNA_edit:
+                if not self.rev_strand and self.start_coordinates[0] == pos:
+                    self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon")
+                    warnings.warn("Start codon in %s may be disrupted by RNA editing" % self.transcript_id)
+                elif self.rev_strand and self.start_coordinates[2] == pos:
+                    self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon")
+                    warnings.warn("Start codon in %s may be disrupted by RNA editing" % self.transcript_id)
+                self.edits[pos - 1].append(
+                    (
+                        seq,
+                        mutation_type,
+                        mutation_class,
+                        (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
+                    )
                 )
-            )
+            else:
+                warnings.warn("Cannot add RNA edit to a site in %s that already has an RNA edit" 
+                    % self.transcript_id)
         else:
             raise NotImplementedError("Mutation type not yet implemented")
 
@@ -1299,15 +1304,11 @@ class Transcript(object):
                         mutation_class = "G"
                         mutation_type = "V"
                         var = list(germline[3])
-                        var[2] = somatic[3][3]
                     elif somatic and include_somatic:
                         seq = somatic[0]
                         mutation_class = "S"
                         mutation_type = "V"
                         var = list(somatic[3])
-                        var[2] = germline[3][3]
-                    else:
-                        seq = edits_at_pos[0][3][2]
                     if (seq == 'T' and self.rev_strand or
                         seq == 'A' and not self.rev_strand):
                         # Favor RNA edit
