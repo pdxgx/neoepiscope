@@ -1208,9 +1208,28 @@ class TestTranscript(unittest.TestCase):
     def test_edit_with_rna_edits_at_start_codon(self):
         """check whether rna editing in start codon is not allowed"""
         self.atoi_transcript.edit('I', 9664180, mutation_type="R", mutation_class="R", vaf=None)
-        self.assertEqual(self.atoi_transcript.edits[9664180], [])
+        self.assertEqual(self.atoi_transcript.edits[9664180], []) #NEED TO FIX EXPECTED OUTPUT
         self.assertEqual(self.atoi_transcript.all_transcript_warnings, ["rna_editing_may_disrupt_start_codon"])
     
+    def test_expressed_edit_with_no_ref_genome(self):
+        self.atoi_transcript.edit('I', 9750164, mutation_type="R", mutation_class="R", vaf=None)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
+        self.assertNotIn(9750163, edits)
+
+    def test_expressed_edit_with_rna_edit_and_germline_with_germline_options(self):
+        pos = 9750162
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_germline=0)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_germline=1)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
+
     def test_seq_to_peptide_with_I_N(self):
         """checks whether sseq_to_peptide function can properly handle N and I"""
         seq = "AAIATIIGNIAA"
