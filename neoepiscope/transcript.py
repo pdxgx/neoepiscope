@@ -944,23 +944,17 @@ class Transcript(object):
             elif self.rev_strand and self.start_coordinates[2] == pos:
                 self.all_transcript_warnings.append("rna_editing_may_disrupt_start_codon")
                 warnings.warn("Start codon in %s may be disrupted by RNA editing" % (self.transcript_id))
-            else:
-                reference_seq = self.bowtie_reference_index.get_stretch(
-                    self.chrom, pos - 1, len(seq)
+            reference_seq = self.bowtie_reference_index.get_stretch(
+                self.chrom, pos - 1, len(seq)
+            )
+            self.edits[pos - 1].append(
+                (
+                    seq,
+                    mutation_type,
+                    mutation_class,
+                    (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
                 )
-                other_snvs = [edit for edit in self.edits[pos - 1] if edit[1] == 'V']
-                if not other_snvs:
-                    self.edits[pos - 1].append(
-                        (
-                            seq,
-                            mutation_type,
-                            mutation_class,
-                            (self.chrom, pos, reference_seq, seq, mutation_type, vaf),
-                        )
-                    )
-                else:
-                    warnings.warn("RNA edit site was disrupted in %s"%self.transcript_id)
-                    self.all_transcript_warnings.append("rna_editing_site_disrupted")
+            )
         else:
             raise NotImplementedError("Mutation type not yet implemented")
 
