@@ -1244,6 +1244,7 @@ class Transcript(object):
                     if start_index % 2 and edit[3][1] != edit[0]:
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits at same pos
+        edits_to_return = copy.copy(edits)
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             # Two or more overlapping variants, eg. germline+somatic SNVs, germline SNV+RNA-edit
@@ -1316,7 +1317,7 @@ class Transcript(object):
                 new_entry.append(
                         (seq, mutation_type, mutation_class, tuple(var))
                     )
-                edits[pos] = new_entry
+                edits_to_return[pos] = new_entry
             # RNA-edit present
             elif len(edits_at_pos) == 1 and edits_at_pos[0][1] == "R":
                 ref_at_pos = edits_at_pos[0][3][2]                
@@ -1327,8 +1328,8 @@ class Transcript(object):
                                             self.chrom, pos
                                         )
                                     )
-                    del edits[pos]
-        return (edits, adjusted_intervals)
+                    del edits_to_return[pos]
+        return (edits_to_return, adjusted_intervals)
 
     def save(self):
         """Creates save point for edits.
