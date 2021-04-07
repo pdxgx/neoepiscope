@@ -1200,10 +1200,12 @@ class TestTranscript(unittest.TestCase):
 
     def test_expressed_edits_with_rna_edits_from_dict(self):
         """check expressed_edit can read and generate edits using
-            rna_editing_sites"""
+            rna_editing_sites from dictionary"""
         self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertEqual(self.atoi_transcript.edits[9750161],
                 [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=False)
+        self.assertNotIn(9750161, edits)
 
     def test_edit_with_rna_edits_at_start_codon(self):
         """check whether rna editing handled correctly for start codon"""
@@ -1212,7 +1214,7 @@ class TestTranscript(unittest.TestCase):
                 [('I', 'R', 'R', ('11', 9664180, 'A', 'I', 'R', None))])
         self.assertEqual(self.atoi_transcript.all_transcript_warnings, ["rna_editing_may_disrupt_start_codon"])
     
-    def test_expressed_edit_with_no_ref_genome(self):
+    def test_expressed_rna_edit_with_not_A_in_ref_genome(self):
         self.atoi_transcript.edit('I', 9750164, mutation_type="R", mutation_class="R", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(9750163, edits)
@@ -1230,6 +1232,55 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
+
+    def test_expressed_edit_with_overlapping_rna_edit_and_somatic_with_somatic_options(self):
+        pos = 9750162
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="S", vaf=None)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_somatic=0)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_somatic=2)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
+
+    def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edits(self):
+        pos = 9750162
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
+        self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
+            include_germline=2, include_somatic=0)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
+            include_germline=0, include_somatic=2)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
+            include_germline=0, include_somatic=0)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
+#        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
+#            include_germline=1, include_somatic=2)
+#        edit = edits[pos-1][0]
+#        self.assertEqual(edit[0], "?")
+#        self.assertEqual(edit[3][3], "?")
+#        self.assertEqual(edit[3][4], "?")        
+#        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
+#            include_germline=2, include_somatic=1)
+#        edit = edits[pos-1][0]
+#        self.assertEqual(edit[0], "?")
+#        self.assertEqual(edit[3][3], "?")
+#        self.assertEqual(edit[3][4], "?")
 
     def test_seq_to_peptide_with_I_N(self):
         """checks whether sseq_to_peptide function can properly handle N and I"""
