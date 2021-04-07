@@ -1248,7 +1248,9 @@ class Transcript(object):
                 elif edit[1] == "R" and edit[2] == "R": # RNA edit
                     if start_index % 2 and edit[3][1] != edit[0]:
                         edits[pos].append(edit)
-        # Handle germline, somatic variants and RNA edits at same pos
+        # Handle germline, somatic variants and RNA edits (if desired) at same pos
+        if not include_rna_edits:
+            edits = [edit for edit in edits if not edit[1] == "R"]
         edits_to_return = copy.copy(edits)
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]

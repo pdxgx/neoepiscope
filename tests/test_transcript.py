@@ -1198,7 +1198,7 @@ class TestTranscript(unittest.TestCase):
             {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", "NA")]},
         )
 
-    def test_expressed_edits_with_rna_edits(self):
+    def test_expressed_edits_with_rna_edits_from_dict(self):
         """check expressed_edit can read and generate edits using
             rna_editing_sites"""
         self.atoi_transcript.expressed_edits(include_rna_edits=True)
@@ -1206,7 +1206,7 @@ class TestTranscript(unittest.TestCase):
                 [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
 
     def test_edit_with_rna_edits_at_start_codon(self):
-        """check whether rna editing in start codon is not allowed"""
+        """check whether rna editing handled correctly for start codon"""
         self.atoi_transcript.edit('I', 9664180, mutation_type="R", mutation_class="R", vaf=None)
         self.assertEqual(self.atoi_transcript.edits[9664179], 
                 [('I', 'R', 'R', ('11', 9664180, 'A', 'I', 'R', None))])
