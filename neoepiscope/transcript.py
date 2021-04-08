@@ -1307,9 +1307,9 @@ class Transcript(object):
                         mutation_class = "S"
                         mutation_type = "V"
                         var = list(somatic[3])
-                    if include_rna_edits and 
+                    if (include_rna_edits and 
                         (seq == 'T' and self.rev_strand or
-                            seq == 'A' and not self.rev_strand):
+                            seq == 'A' and not self.rev_strand)):
                         # Favor RNA edit
                         seq = 'I'
                         mutation_type = "R"
