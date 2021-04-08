@@ -1249,15 +1249,6 @@ class Transcript(object):
                     if start_index % 2 and edit[3][1] != edit[0]:
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits (if desired) at same pos
-        try:
-            if not include_rna_edits:
-                edits = [edit for edit in edits if not edit[1] == "R"]
-        except TypeError:
-                # Start is outside bounds of transcript
-            print(edits)
-            print(self.edits)
-            exit()
-
         edits_to_return = copy.copy(edits)
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
@@ -1316,8 +1307,9 @@ class Transcript(object):
                         mutation_class = "S"
                         mutation_type = "V"
                         var = list(somatic[3])
-                    if (seq == 'T' and self.rev_strand or
-                        seq == 'A' and not self.rev_strand):
+                    if include_rna_edits and 
+                        (seq == 'T' and self.rev_strand or
+                            seq == 'A' and not self.rev_strand):
                         # Favor RNA edit
                         seq = 'I'
                         mutation_type = "R"
@@ -1330,15 +1322,18 @@ class Transcript(object):
                 edits_to_return[pos] = new_entry
             # RNA-edit present
             elif len(edits_at_pos) == 1 and edits_at_pos[0][1] == "R":
-                ref_at_pos = edits_at_pos[0][3][2]                
-                if not (ref_at_pos == 'T' and self.rev_strand or
-                        ref_at_pos == 'A' and not self.rev_strand):
-                    warnings.warn("Reference nucleotide is not A or T at RNA "
-                                  "edit site {}:{}; ignoring.".format(
-                                            self.chrom, pos
-                                        )
-                                    )
+                if not include_rna_edits:
                     del edits_to_return[pos]
+                else:
+                    ref_at_pos = edits_at_pos[0][3][2]                
+                    if not (ref_at_pos == 'T' and self.rev_strand or
+                            ref_at_pos == 'A' and not self.rev_strand):
+                        warnings.warn("Reference nucleotide is not A or T at RNA "
+                                      "edit site {}:{}; ignoring.".format(
+                                                self.chrom, pos
+                                            )
+                                        )
+                        del edits_to_return[pos]
         return (edits_to_return, adjusted_intervals)
 
     def save(self):
