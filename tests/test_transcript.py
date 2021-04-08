@@ -1262,7 +1262,7 @@ class TestTranscript(unittest.TestCase):
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "RV")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, 
             include_germline=0, include_somatic=0)
         edit = edits[pos-1][0]
