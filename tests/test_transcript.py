@@ -1374,20 +1374,6 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(pos-1, edits)
 
-    def test_rna_edit_peptide(self):
-        pos = 9750189
-        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
-        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=False)
-        print(edits)
-        peptides, protein1 = self.atoi_transcript.neopeptides(include_rna_edits=False, return_protein=True)
-        print("atoi(protein): ", protein1)
-        pos = 9750229
-        self.atoi_transcript.edit('T', pos, mutation_type="V", mutation_class="G", vaf=None)
-        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
-        print(edits)
-        peptides, protein2 = self.atoi_transcript.neopeptides(include_rna_edits=True, return_protein=True)
-        print("atoi(protein): ", protein2)
-
     def test_expressed_edit_with_deletion(self):
         pos = 9750162
         self.atoi_transcript.edit(1, pos, mutation_type="D")
@@ -1401,21 +1387,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(editing_positions, [0, 1.0, 2.0, 3.0])
         self.assertEqual(ambiguous_positions, [3.0])
         self.assertEqual(pep, "KMGE")
-        
-    def test_rna_edit_peptide(self):
-        pos = 9750189    
-        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
-        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=False)
-        print(edits)
-        peptides, protein1 = self.atoi_transcript.neopeptides(include_rna_edits=False, return_protein=True)
-        print("atoi(protein): ", protein1)
-        pos = 9750229
-        self.atoi_transcript.edit('T', pos, mutation_type="V", mutation_class="G", vaf=None)
-        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
-        print(edits)
-        peptides, protein2 = self.atoi_transcript.neopeptides(include_rna_edits=True, return_protein=True)
-        print("atoi(protein): ", protein2)
-        self.assertEqual(protein1, protein2)
 
 if __name__ == "__main__":
     unittest.main()
