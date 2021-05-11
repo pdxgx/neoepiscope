@@ -198,25 +198,6 @@ class TestTranscript(unittest.TestCase):
         for item in [9750162, 9750152, 9750230, 9750194, 9750220, 9750151, 9750185, 9750221]:
             self.atoi_manual_transcript.edit("I", item, mutation_type="R", mutation_class="R", vaf=None)
 
-        self.no_atoi_transcript = Transcript(
-            self.reference_index_hg38,
-            [
-                [
-                    str(chrom).replace("chr", ""),
-                    "N/A",
-                    seq_type,
-                    str(start),
-                    str(end),
-                    ".",
-                    strand,
-                ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds_hg38[
-                    "ENST00000318950.10"
-                ]
-            ],
-            "ENST00000318950.10",
-            False,
-        )
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
             self.reference_index,
@@ -1379,6 +1360,12 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(editing_positions, [0, 1.0, 2.0, 3.0])
         self.assertEqual(ambiguous_positions, [3.0])
         self.assertEqual(pep, "KMGE")
+
+    def test_neopeptide_with_rna_edit(self):    
+        self.transcript.edit("I", 5248244, mutation_type="R", mutation_class="R" )
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True)
+        self.assertEqual(protein[0:3], "MVR")
+
 
 if __name__ == "__main__":
     unittest.main()
