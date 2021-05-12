@@ -39,44 +39,44 @@ import unittest
 
 unittest.TestCase.maxDiff = None
 
+"""Sets up gtf file and creates dictionaries for tests"""
+gtf = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests",
+    "Chr11.gtf",
+)
+gtf_hg38 = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests",
+    "grch38_chr11.gtf",
+)
+cds, tx_data = gtf_to_cds(gtf)
+cds_hg38, tx_data_hg38 = gtf_to_cds(gtf_hg38)
+ref_prefix = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests",
+    "Chr11.ref",
+)
+ref_prefix_hg38 = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests",
+    "grch38_chr11",
+)
+atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+         "neoepiscope",
+         "transcript_to_editing_hg38.pickle")
+rna_dict = pickle.load(open(atoi, "rb"))
+reference_index = bowtie_index.BowtieIndexReference(ref_prefix)
+reference_index_hg38 = bowtie_index.BowtieIndexReference(ref_prefix_hg38)
 
 class TestTranscript(unittest.TestCase):
     """Tests transcript object construction"""
-
+        
     def setUp(self):
-        """Sets up gtf file and creates dictionaries for tests"""
-        self.gtf = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
-            "Chr11.gtf",
-        )
-        self.gtf_hg38 = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
-            "grch38_chr11.gtf",
-        )
-        self.cds, self.tx_data = gtf_to_cds(self.gtf)
-        self.cds_hg38, self.tx_data_hg38 = gtf_to_cds(self.gtf_hg38)
-        self.ref_prefix = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
-            "Chr11.ref",
-        )
-        self.ref_prefix_hg38 = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tests",
-            "grch38_chr11",
-        )
-        self.atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                 "neoepiscope",
-                 "transcript_to_editing_hg38.pickle")
-        self.rna_dict = pickle.load(open(self.atoi, "rb"))
-        self.reference_index = bowtie_index.BowtieIndexReference(self.ref_prefix)
-        self.reference_index_hg38 = bowtie_index.BowtieIndexReference(self.ref_prefix_hg38)
         ## All following transcripts from GRCh37 genome build ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
         self.transcript = Transcript(
-            self.reference_index,
+            reference_index,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -87,7 +87,7 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds[
                     "ENST00000335295.4_1"
                 ]
             ],
@@ -96,7 +96,7 @@ class TestTranscript(unittest.TestCase):
         )
         # PTDSS2-001: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
         self.fwd_transcript = Transcript(
-            self.reference_index,
+            reference_index,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -107,7 +107,7 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds[
                     "ENST00000308020.5_1"
                 ]
             ],
@@ -116,7 +116,7 @@ class TestTranscript(unittest.TestCase):
         )
         # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
         self.all_coding_transcript = Transcript(
-            self.reference_index,
+            reference_index,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -127,7 +127,7 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds[
                     "ENST00000317078.1_1"
                 ]
             ],
@@ -136,7 +136,7 @@ class TestTranscript(unittest.TestCase):
         )
         # CAPRIN1-001: 4108bp transcript w/ 19 exons (18/19 coding) --> 709aa peptide
         self.partial_coding_transcript = Transcript(
-            self.reference_index,
+            reference_index,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -147,7 +147,7 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds[
                     "ENST00000341394.8_1"
                 ]
             ],
@@ -156,7 +156,7 @@ class TestTranscript(unittest.TestCase):
         )
         # AP003733.1: transcript w/ 1 exon (coding)  
         self.atoi_transcript = Transcript(
-            self.reference_index_hg38,
+            reference_index_hg38,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -167,17 +167,17 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds_hg38[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds_hg38[
                     "ENST00000318950.10"
                 ]
             ],
             "ENST00000318950.10",
             False,
-            self.rna_dict,
+            rna_dict,
         )
 
         self.atoi_manual_transcript = Transcript(
-            self.reference_index_hg38,
+            reference_index_hg38,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -188,7 +188,7 @@ class TestTranscript(unittest.TestCase):
                     ".",
                     strand,
                 ]
-                for (chrom, seq_type, start, end, strand, tx_type) in self.cds_hg38[
+                for (chrom, seq_type, start, end, strand, tx_type) in cds_hg38[
                     "ENST00000318950.10"
                 ]
             ],
@@ -200,7 +200,7 @@ class TestTranscript(unittest.TestCase):
 
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
-            self.reference_index,
+            reference_index,
             [
                 [
                     str(chrom).replace("chr", ""),
@@ -1287,26 +1287,29 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
 
-    def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edits(self):
-        pos = 9750162
+    def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edit_restoring_reference(self):
+        pos = 9750162 # Reference base is A
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
         self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=0)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=2)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "I")
         self.assertEqual(edit[3][4], "RV")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=0)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "I")
         self.assertEqual(edit[3][4], "R")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
@@ -1328,24 +1331,78 @@ class TestTranscript(unittest.TestCase):
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "RV")
 
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=2)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "R")
+
+    def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edits(self):
+        pos = 9664182 # Reference base is G
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
+        self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=2, include_somatic=0)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][2], "C")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=0, include_somatic=2)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "RV")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=0, include_somatic=0)
+        self.assertNotIn(pos - 1, edits)
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=1, include_somatic=2)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=2, include_somatic=1)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "C")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "RV")
+
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=1, include_somatic=1)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "G")
+        self.assertEqual(edit[3][3], "I")
+        self.assertEqual(edit[3][4], "RV")
+
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
+            include_germline=2, include_somatic=2)
+        edit = edits[pos-1][0]
+        self.assertEqual(edit[0], "I")
+        self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "I")
         self.assertEqual(edit[3][4], "R")
 
     def test_expressed_edit_with_overlapping_germline_and_somatic_edits(self):
-        pos = 9750163
+        pos = 9664182 # Reference base is G
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
         self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_germline=1, include_somatic=1)
-        self.assertNotIn(pos-1, edits)
+        self.assertEqual(edits[pos-1], [('A', 'V', 'S', ('11', 9664182, 'G', 'A', 'V', None))])
         edits, _ = self.atoi_transcript.expressed_edits(include_germline=2, include_somatic=2)
-        self.assertNotIn(pos-1, edits)
+        self.assertEqual(edits[pos-1], [('A', 'V', 'S', ('11', 9664182, 'A', 'A', 'V', None))])
 
     def test_expressed_edit_with_deletion(self):
         pos = 9750162
