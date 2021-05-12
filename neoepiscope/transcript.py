@@ -1256,22 +1256,31 @@ class Transcript(object):
             if len(edits_at_pos) > 1:
                 edits_at_pos = sorted(edits[pos], key=lambda x: (x[1], x[2]))
                 new_entry = [x for x in edits[pos] if x[1] == "I"]
+                valid_edit = True
                 if edits_at_pos[0][1] == 'V':
                     germline = edits_at_pos[0]
                     somatic = edits_at_pos[1]
                     mutation_type = "V"
-                    if not (include_germline == 1 and include_somatic == 2):
+                    if (include_germline == 2 and include_somatic == 1):
                         # Favor somatic variant, make germline alt allele the "reference" allele
                         seq = somatic[0]
                         mutation_class = "S"
                         var = list(somatic[3])
                         var[2] = germline[3][3]
-                    else:
+                    elif (include_germline == 1 and include_somatic == 2):
                         # Favor germline variant, make somatic alt allele the "reference" allele
                         seq = germline[0]
                         mutation_class = "G"
                         var = list(germline[3])
                         var[2] = somatic[3][3]
+                    else:
+                        #This is case when [germline, somatic] are [1,1] or [2,2]    
+                        #I don't think theres a way to determine which edit comes last, so it should be an error. 
+                        valid_edit = False
+                        warnings.warn("Same option numbers cannot be used for somatic and germline"
+                                      "edit site {}:{}; ignoring.".format(self.chrom, pos)
+                                     )
+                        del edits_to_return[pos]
                 else:
                     # RNA edits present
                     germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
@@ -1283,20 +1292,27 @@ class Transcript(object):
                     else:
                         somatic = None
                     if germline and somatic:
-                        if not (include_germline == 1 and include_somatic == 2):
+                        if (include_germline == 2 and include_somatic == 1):
                             # Favor somatic variant, make germline alt allele the "reference" allele
                             seq = somatic[0]
                             mutation_class = "S"
                             mutation_type = "V"
                             var = list(somatic[3])
                             var[2] = germline[3][3]
-                        else:
+                        elif (include_germline == 1 and include_somatic == 2):
                             # Favor germline variant, make somatic alt allele the "reference" allele
                             seq = germline[0]
                             mutation_class = "G"
                             mutation_type = "V"
                             var = list(germline[3])
                             var[2] = somatic[3][3]
+                        else:
+                            valid_edit = False
+                            warnings.warn("Same option numbers cannot be used for somatic and germline"
+                                        "edit site {}:{}; ignoring.".format(self.chrom, pos)
+                                        )
+                            edits_to_return[pos] = [sorted(edits_to_return[pos], key=lambda x: (x[1], x[2]))[0]]
+
                     elif germline and include_germline:
                         seq = germline[0]
                         mutation_class = "G"
@@ -1307,7 +1323,7 @@ class Transcript(object):
                         mutation_class = "S"
                         mutation_type = "V"
                         var = list(somatic[3])
-                    if (include_rna_edits and 
+                    if valid_edit and (include_rna_edits and 
                         (seq == 'T' and self.rev_strand or
                             seq == 'A' and not self.rev_strand)):
                         # Favor RNA edit
@@ -1316,10 +1332,11 @@ class Transcript(object):
                         var[3] = seq
                         var[4] = "RV"
                 # Update entry
-                new_entry.append(
-                        (seq, mutation_type, mutation_class, tuple(var))
-                    )
-                edits_to_return[pos] = new_entry
+                if valid_edit:
+                    new_entry.append(
+                            (seq, mutation_type, mutation_class, tuple(var))
+                        )
+                    edits_to_return[pos] = new_entry
             # RNA-edit present
             elif len(edits_at_pos) == 1 and edits_at_pos[0][1] == "R":
                 if not include_rna_edits:
