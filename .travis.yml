@@ -13,6 +13,7 @@ install:
   - export PATH="$PATH:$HOME/miniconda/bin"
   - conda install -c bioconda samtools
   - pip install .
+  - pip install --upgrade numpy
   - mhcflurry-downloads fetch models_class1
 script:
   - python tests/test___init__.py
