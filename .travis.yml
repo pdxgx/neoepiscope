@@ -10,6 +10,7 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  - export PATH="$PATH:$HOME/miniconda/bin"
   - conda install -c bioconda samtools
   - pip install .
   - mhcflurry-downloads fetch models_class1
