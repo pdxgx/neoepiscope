@@ -1637,8 +1637,8 @@ class Transcript(object):
                 of somatic and germline, and 'R' denotes reference sequence,
                 mutation information is a list of tuple(s) (chromosome,
                 1-based position of {first base of deletion, base before
-                insertion, SNV}, reference sequence, variant sequence,
-                {'D', 'I', 'V'}, VAF) , and position is the 1-based position
+                insertion, SNV, RNA edit}, reference sequence, variant sequence,
+                {'D', 'I', 'V', 'R'}, VAF) , and position is the 1-based position
                 of the first base of sequence. For hybrid, the tuple structure
                 of mutation information is nested inside of a list: [[ALT], [REF]],
                 where ALT and REF are structured as [chromosome, adj. position,
@@ -1725,24 +1725,15 @@ class Transcript(object):
                                 merge=False,
                             )
                         # Add reference sequence
-                        if self.rev_strand:
-                            self._seq_append(
-                                final_seq,
-                                seqs[(i - 1) // 2][0][last_index : last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + last_index + fill - 1,
-                                merge=False,
-                            )
-                        else:
-                            self._seq_append(
-                                final_seq,
-                                seqs[(i - 1) // 2][0][last_index : last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + last_index,
-                                merge=False,
-                            )
+                        self._seq_append(
+                            final_seq,
+                            seqs[(i - 1) // 2][0][last_index : last_index + fill],
+                            "R",
+                            tuple(),
+                            seqs[(i - 1) // 2][1][0] + last_index
+                                + (fill - 1 if self.rev_strand else 0),
+                            merge=False,
+                        )
                         # Add edits
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == "V" or edit[1] == "R":
