@@ -743,8 +743,8 @@ class Transcript(object):
             self.deletion_intervals = []
             self.boundary_spanning_deletion = False
         else:
-            self.edits = copy.copy(self.last_edits)
-            self.deletion_intervals = copy.copy(self.last_deletion_intervals)
+            self.edits = copy.deepcopy(self.last_edits)
+            self.deletion_intervals = copy.deepcopy(self.last_deletion_intervals)
             if [x for x in self.deletion_intervals if x[3][6]] == []:
                 self.boundary_spanning_deletion = False
 
@@ -1004,6 +1004,7 @@ class Transcript(object):
         else:
             end -= 1
         assert end >= start
+        self.save()
         if include_rna_edits:
             for item in self.rna_edit_sites:
                 self.edit("I", item[1], mutation_type = "R", mutation_class="R")
@@ -1260,13 +1261,17 @@ class Transcript(object):
                     germline = edits_at_pos[0]
                     somatic = edits_at_pos[1]
                     mutation_type = "V"
-                    seq = somatic[0]
-                    mutation_class = "S"
-                    var = list(somatic[3])
-                    if include_somatic == 1:
+                    if not (include_germline == 1 and include_somatic == 2):
+                        # Favor somatic variant, make germline alt allele the "reference" allele
+                        seq = somatic[0]
+                        mutation_class = "S"
+                        var = list(somatic[3])
                         var[2] = germline[3][3]
                     else:
-                        #include_somatic == 2
+                        # Favor germline variant, make somatic alt allele the "reference" allele
+                        seq = germline[0]
+                        mutation_class = "G"
+                        var = list(germline[3])
                         var[2] = somatic[3][3]
                 else:
                     # RNA edits present
@@ -1278,38 +1283,39 @@ class Transcript(object):
                         somatic = edits_at_pos[2]
                     else:
                         somatic = None
-                    mutation_type = "V"
                     if germline and somatic:
-                        seq = somatic[0]
-                        mutation_class = "S"
-                        var = list(somatic[3])
-                        if include_somatic == 1:
+                        if not (include_germline == 1 and include_somatic == 2):
+                            # Favor somatic variant, make germline alt allele the "reference" allele
+                            seq = somatic[0]
+                            mutation_class = "S"
+                            mutation_type = "V"
+                            var = list(somatic[3])
                             var[2] = germline[3][3]
                         else:
-                            #include_somatic == 2
+                            # Favor germline variant, make somatic alt allele the "reference" allele
+                            seq = germline[0]
+                            mutation_class = "G"
+                            mutation_type = "V"
+                            var = list(germline[3])
                             var[2] = somatic[3][3]
-                    elif germline:
+                    elif germline and include_germline:
                         seq = germline[0]
                         mutation_class = "G"
+                        mutation_type = "V"
                         var = list(germline[3])
-                    else:
+                    elif somatic and include_somatic:
                         seq = somatic[0]
                         mutation_class = "S"
+                        mutation_type = "V"
                         var = list(somatic[3])
-                    # current behavior: everything gets RNA-edited if include_rna_edits
-                    # future behavior: include_rna_edits = [0,1,2,3] where behavior would change based on specification of where to include edits
-                    if include_rna_edits:
-                        if (seq == 'T' and self.rev_strand or
-                            seq == 'A' and not self.rev_strand):
-                            # Favor RNA edit
-                            seq = 'I'
-                            mutation_type = "R"
-                            var[3] = seq
-                            var[4] = "R"
-                        if (var[2] == 'T' and self.rev_strand or
-                            var[2] == 'A' and not self.rev_strand):
-                            # Favor RNA edit
-                            var[2] = 'I'
+                    if (include_rna_edits and 
+                        (seq == 'T' and self.rev_strand or
+                            seq == 'A' and not self.rev_strand)):
+                        # Favor RNA edit
+                        seq = 'I'
+                        mutation_type = "R"
+                        var[3] = seq
+                        var[4] = "RV"
                 # Update entry
                 new_entry.append(
                         (seq, mutation_type, mutation_class, tuple(var))
@@ -1329,6 +1335,7 @@ class Transcript(object):
                                             )
                                         )
                         del edits_to_return[pos]
+        self.reset()
         return (edits_to_return, adjusted_intervals)
 
     def save(self):
@@ -1336,8 +1343,8 @@ class Transcript(object):
 
         No return value.
         """
-        self.last_edits = copy.copy(self.edits)
-        self.last_deletion_intervals = copy.copy(self.deletion_intervals)
+        self.last_edits = copy.deepcopy(self.edits)
+        self.last_deletion_intervals = copy.deepcopy(self.deletion_intervals)
 
     def reading_frame(self, pos):
         """Retrieves reading frame (0, 1, or 2) at given coordinate.
@@ -1634,8 +1641,8 @@ class Transcript(object):
                 of somatic and germline, and 'R' denotes reference sequence,
                 mutation information is a list of tuple(s) (chromosome,
                 1-based position of {first base of deletion, base before
-                insertion, SNV}, reference sequence, variant sequence,
-                {'D', 'I', 'V'}, VAF) , and position is the 1-based position
+                insertion, SNV, RNA edit}, reference sequence, variant sequence,
+                {'D', 'I', 'V', 'R'}, VAF) , and position is the 1-based position
                 of the first base of sequence. For hybrid, the tuple structure
                 of mutation information is nested inside of a list: [[ALT], [REF]],
                 where ALT and REF are structured as [chromosome, adj. position,
@@ -1722,24 +1729,15 @@ class Transcript(object):
                                 merge=False,
                             )
                         # Add reference sequence
-                        if self.rev_strand:
-                            self._seq_append(
-                                final_seq,
-                                seqs[(i - 1) // 2][0][last_index : last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + last_index + fill - 1,
-                                merge=False,
-                            )
-                        else:
-                            self._seq_append(
-                                final_seq,
-                                seqs[(i - 1) // 2][0][last_index : last_index + fill],
-                                "R",
-                                tuple(),
-                                seqs[(i - 1) // 2][1][0] + last_index,
-                                merge=False,
-                            )
+                        self._seq_append(
+                            final_seq,
+                            seqs[(i - 1) // 2][0][last_index : last_index + fill],
+                            "R",
+                            tuple(),
+                            seqs[(i - 1) // 2][1][0] + last_index
+                                + (fill - 1 if self.rev_strand else 0),
+                            merge=False,
+                        )
                         # Add edits
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == "V" or edit[1] == "R":
