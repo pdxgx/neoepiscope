@@ -29,20 +29,20 @@ SOFTWARE.
 """
 
 from __future__ import absolute_import, division, print_function
-from inspect import getsourcefile
-from collections import defaultdict
-import os.path as path, sys
-
-from neoepiscope import *
-
-import unittest
-import filecmp
 import os
+from inspect import getsourcefile
 
 neoepiscope_dir = os.path.dirname(
     os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
 )
+import sys
+sys.path.insert(0, neoepiscope_dir)
+from neoepiscope import *
 
+from collections import defaultdict
+
+import unittest
+import filecmp
 
 def predicate(line):
     """ whether reading first line of neoepiscope output """
@@ -51,7 +51,7 @@ def predicate(line):
     return True
 
 
-class TestGTFprocessing(unittest.TestCase):
+class TestGtfProcessing(unittest.TestCase):
     """Tests proper creation of dictionaries store GTF data"""
 
     def setUp(self):
@@ -116,7 +116,7 @@ class TestGTFprocessing(unittest.TestCase):
         self.assertEqual(self.tpm11["ENST00000325207.9_2"], 820065.9484656778)
 
 
-class TestVCFmerging(unittest.TestCase):
+class TestVcfMerging(unittest.TestCase):
     """Tests proper merging of somatic and germline VCFS"""
 
     def setUp(self):
@@ -167,7 +167,7 @@ class TestPrepHapCUT(unittest.TestCase):
         os.remove(self.test_rbp)
 
 
-class TestVAFpos(unittest.TestCase):
+class TestVafPos(unittest.TestCase):
     """Tests fetching of VAF position from VCF file"""
 
     def setUp(self):
@@ -772,7 +772,7 @@ class TestExpression(unittest.TestCase):
         self.bam = os.path.join(self.base_dir, "test.rna.bam")
         self.neoepitopes = {
             "AAAAAAAAA": [
-                ("11", 63401, "C", "T", "V", "NA", "AAAACAAAA", "NA", "NA", "TX1.2")
+                ("11", 63402, "C", "T", "V", "NA", "AAAACAAAA", "NA", "NA", "TX1.2")
             ]
         }
         self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
@@ -783,8 +783,8 @@ class TestExpression(unittest.TestCase):
         expressed_vars, covered_vars = transcript_expression.get_expressed_variants(
             self.bam, self.reference_index, self.neoepitopes
         )
-        self.assertEqual(expressed_vars[("11", 63401, "C", "T", "V")], 2)
-        self.assertEqual(covered_vars[("11", 63401, "C", "T", "V")], 4)
+        self.assertEqual(expressed_vars[("11", 63402, "C", "T", "V")], 2)
+        self.assertEqual(covered_vars[("11", 63402, "C", "T", "V")], 4)
         self.assertEqual(len(expressed_vars.keys()), 1)
         self.assertEqual(len(covered_vars.keys()), 1)
 

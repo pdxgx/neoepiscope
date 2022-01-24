@@ -33,6 +33,10 @@ from inspect import getsourcefile
 import os
 import sys
 
+neoepiscope_dir = os.path.dirname(
+    os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
+)
+sys.path.insert(0, neoepiscope_dir)
 from neoepiscope import *  # Import package in same directory as tests
 
 import unittest
