@@ -83,7 +83,7 @@ setup(
         "mhcflurry>=2.0.0",
         "mhcnuggets",
         "networkx",
-        "pysam",
+        "pysam>=0.18.0",
     ],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
