@@ -772,7 +772,7 @@ class TestExpression(unittest.TestCase):
         self.bam = os.path.join(self.base_dir, "test.rna.bam")
         self.neoepitopes = {
             "AAAAAAAAA": [
-                ("11", 63401, "C", "T", "V", "NA", "AAAACAAAA", "NA", "NA", "TX1.2")
+                ("11", 63402, "C", "T", "V", "NA", "AAAACAAAA", "NA", "NA", "TX1.2")
             ]
         }
         self.ref_prefix = os.path.join(self.base_dir, "Chr11.ref")
@@ -783,8 +783,8 @@ class TestExpression(unittest.TestCase):
         expressed_vars, covered_vars = transcript_expression.get_expressed_variants(
             self.bam, self.reference_index, self.neoepitopes
         )
-        self.assertEqual(expressed_vars[("11", 63401, "C", "T", "V")], 2)
-        self.assertEqual(covered_vars[("11", 63401, "C", "T", "V")], 4)
+        self.assertEqual(expressed_vars[("11", 63402, "C", "T", "V")], 2)
+        self.assertEqual(covered_vars[("11", 63402, "C", "T", "V")], 4)
         self.assertEqual(len(expressed_vars.keys()), 1)
         self.assertEqual(len(covered_vars.keys()), 1)
 
