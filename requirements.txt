@@ -1,8 +1,0 @@
-intervaltree==3.0.2
-mhcnames==0.4.8
-mhcnuggets==2.3.3
-networkx==2.6.3
-numpy==1.22.0
-pysam==0.18.0
-setuptools==58.0.4
-six==1.16.0
