@@ -1277,7 +1277,7 @@ class TestTranscript(unittest.TestCase):
 
 
     def test_expressed_edit_with_overlapping_rna_edit_and_somatic_with_somatic_options(self):
-        """check whether RNA A-to-I editing appropriately handles overlappint RNA and somatic edits"""
+        """check whether RNA A-to-I editing appropriately handles overlapping RNA and somatic edits"""
         # edit is in the format: tuple (seq, mutation_type, mutation_class, (chr, pos, ref_seq, seq, mutation_type, vaf))
         pos = 9750162 # Reference base is A
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="S", vaf=None)
@@ -1320,7 +1320,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][4], "V")
 
     def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edit_restoring_reference(self):
-        """check whether RNA A-to-I editing appropriately handles overlappint RNA, germline, and somatic edits"""
+        """check whether RNA A-to-I editing appropriately handles overlapping RNA, germline, and somatic edits"""
         # edit is in the format: tuple (seq, mutation_type, mutation_class, (chr, pos, ref_seq, seq, mutation_type, vaf))
         pos = 9750162 # Reference base is A
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
@@ -1364,7 +1364,7 @@ class TestTranscript(unittest.TestCase):
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
-        self.assertEqual(edit[3][2], "C")
+        self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
         self.assertEqual(edit[3][4], "R")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
@@ -1377,10 +1377,10 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
-        self.assertEqual(edit[0], "I")
-        self.assertEqual(edit[3][2], "C")
-        self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][2], "I")
+        self.assertEqual(edit[3][3], "C")
+        self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=1)
         edit = edits[pos-1][0]
@@ -1390,13 +1390,16 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][4], "R")
 
     def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edits(self):
-        """check whether RNA A-to-I editing appropriately handles overlappint RNA, germline, and somatic edits"""
+        """check whether RNA A-to-I editing appropriately handles overlapping RNA, germline, and somatic edits"""
         # edit is in the format: tuple (seq, mutation_type, mutation_class, (chr, pos, ref_seq, seq, mutation_type, vaf))
         pos = 9664182 # Reference base is G
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
         self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=0)
+        print('jfdakldfs')
+        print(edits)
+        print('----')
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
