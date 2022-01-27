@@ -1262,14 +1262,27 @@ class Transcript(object):
                     germline = edits_at_pos[0]
                     somatic = edits_at_pos[1]
                     mutation_type = "V"
-                    seq = somatic[0]
-                    mutation_class = "S"
-                    var = list(somatic[3])
-                    if include_somatic == 1:
-                        var[2] = germline[3][3]
+                    if include_germline == 1:
+                        if include_somatic == 1:
+                            seq = somatic[0]
+                            mutation_class = "S"
+                            var = list(somatic[3])
+                        else:
+                            #include_somatic == 2                            
+                            seq = germline[0]
+                            mutation_class = "G"
+                            var = list(germline[3])
+                            var[2] = somatic[3][3]
                     else:
-                        #include_somatic == 2
-                        var[2] = somatic[3][3]
+                        #include_germline == 2
+                        seq = somatic[0]
+                        mutation_class = "S"
+                        var = list(somatic[3])
+                        if include_somatic == 1:
+                            var[2] = germline[3][3]
+                        else:
+                            #include_somatic == 2
+                            var[2] = somatic[3][3]
                 else:
                     # RNA edits present
                     germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
@@ -1282,14 +1295,28 @@ class Transcript(object):
                         somatic = None
                     mutation_type = "V"
                     if germline and somatic:
-                        seq = somatic[0]
-                        mutation_class = "S"
-                        var = list(somatic[3])
-                        if include_somatic == 1:
-                            var[2] = germline[3][3]
+                        if include_germline == 1:
+                            if include_somatic == 1:
+                                seq = somatic[0]
+                                mutation_class = "S"
+                                var = list(somatic[3])
+                                # original reference allele stays reference
+                            else:
+                                #include_somatic == 2
+                                seq = germline[0]
+                                mutation_class = "G"
+                                var = list(germline[3])
+                                var[2] = somatic[3][3]
                         else:
-                            #include_somatic == 2
-                            var[2] = somatic[3][3]
+                            #include_germline == 2
+                            seq = somatic[0]
+                            mutation_class = "S"
+                            var = list(somatic[3])
+                            if include_somatic == 1:
+                               var[2] = germline[3][3]
+                            else:
+                                #include_somatic == 2
+                                var[2] = somatic[3][3]
                     elif germline:
                         seq = germline[0]
                         mutation_class = "G"
