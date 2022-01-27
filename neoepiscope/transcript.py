@@ -1251,7 +1251,7 @@ class Transcript(object):
                     if start_index % 2 and edit[3][1] != edit[0]:
                         edits[pos].append(edit)
         # Handle germline, somatic variants and RNA edits (if desired) at same pos
-        edits_to_return = copy.copy(edits)
+        edits_to_return = copy.deepcopy(edits)
         for pos, edits_at_pos in edits.items():
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             # Two or more overlapping variants, eg. germline+somatic SNVs, germline SNV+RNA-edit
@@ -1331,6 +1331,11 @@ class Transcript(object):
                                             )
                                         )
                         del edits_to_return[pos]
+                    else:
+                        edits_to_return[pos] = [
+                            ('I', 'R', 'R', (el[3][0], el[3][1], 'I', 'I', 'R'))
+                                for el in edits_to_return[pos]
+                        ]
         self.reset()
         return (edits_to_return, adjusted_intervals)
 
@@ -1529,12 +1534,12 @@ class Transcript(object):
                 ref = [self.chrom, prev_pos, prev_del_seq, "", prev_mut_info]
             else:
                 ref = [self.chrom, new_seq[3], "", prev_del_seq, []]
-        adj_alt_seq = copy.copy(alt[2])
-        adj_alt_allele = copy.copy(alt[3])
-        adj_alt_mut_info = copy.copy(alt[4])
-        adj_ref_seq = copy.copy(ref[2])
-        adj_ref_allele = copy.copy(ref[3])
-        adj_ref_mut_info = copy.copy(ref[4])
+        adj_alt_seq = copy.deepcopy(alt[2])
+        adj_alt_allele = copy.deepcopy(alt[3])
+        adj_alt_mut_info = copy.deepcopy(alt[4])
+        adj_ref_seq = copy.deepcopy(ref[2])
+        adj_ref_allele = copy.deepcopy(ref[3])
+        adj_ref_mut_info = copy.deepcopy(ref[4])
         if self.rev_strand:
             for mut in new_seq[2]:
                 adj_index = max(
@@ -1607,12 +1612,12 @@ class Transcript(object):
                             if adj_ref_seq.endswith(mut[2][:i])
                         ) :
                     ]
-        alt[2] = copy.copy(adj_alt_seq)
-        alt[3] = copy.copy(adj_alt_allele)
-        alt[4] = copy.copy(adj_alt_mut_info)
-        ref[2] = copy.copy(adj_ref_seq)
-        ref[3] = copy.copy(adj_ref_allele)
-        ref[4] = copy.copy(adj_ref_mut_info)
+        alt[2] = copy.deepcopy(adj_alt_seq)
+        alt[3] = copy.deepcopy(adj_alt_allele)
+        alt[4] = copy.deepcopy(adj_alt_mut_info)
+        ref[2] = copy.deepcopy(adj_ref_seq)
+        ref[3] = copy.deepcopy(adj_ref_allele)
+        ref[4] = copy.deepcopy(adj_ref_mut_info)
         return ("", "H", [alt, ref], alt[1])
 
     def annotated_seq(
@@ -1662,7 +1667,7 @@ class Transcript(object):
                 include_germline=include_germline,
                 include_rna_edits=include_rna_edits,
             )
-            new_edits = copy.copy(edits)
+            new_edits = copy.deepcopy(edits)
             """Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
             actually added."""

@@ -358,7 +358,7 @@ def get_expressed_variants(bam, reference_index, neopeptides, remove_files=True)
     for contig in reference_index.recs.keys():
         # ID contig name
         if contig in bam_reader.references:
-            search_contig = copy.copy(contig)
+            search_contig = copy.deepcopy(contig)
         elif contig.replace("chr", "") in bam_reader.references:
             search_contig = contig.replace("chr", "")
         elif "".join(["chr", contig]) in bam_reader.references:
