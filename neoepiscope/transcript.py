@@ -1253,36 +1253,25 @@ class Transcript(object):
         # Handle germline, somatic variants and RNA edits (if desired) at same pos
         edits_to_return = copy.deepcopy(edits)
         for pos, edits_at_pos in edits.items():
+            ## including SNVs and RNA-edits
             edits_at_pos = [x for x in edits_at_pos if x[1] in "VR"]
             # Two or more overlapping variants, eg. germline+somatic SNVs, germline SNV+RNA-edit
             if len(edits_at_pos) > 1:
+                ## sorting by mut_type, then mut_class
                 edits_at_pos = sorted(edits[pos], key=lambda x: (x[1], x[2]))
                 new_entry = [x for x in edits[pos] if x[1] == "I"]
                 if edits_at_pos[0][1] == 'V':
                     germline = edits_at_pos[0]
                     somatic = edits_at_pos[1]
                     mutation_type = "V"
-                    if include_germline == 1:
-                        if include_somatic == 1:
-                            seq = somatic[0]
-                            mutation_class = "S"
-                            var = list(somatic[3])
-                        else:
-                            #include_somatic == 2                            
-                            seq = germline[0]
-                            mutation_class = "G"
-                            var = list(germline[3])
-                            var[2] = somatic[3][3]
-                    else:
-                        #include_germline == 2
-                        seq = somatic[0]
-                        mutation_class = "S"
-                        var = list(somatic[3])
-                        if include_somatic == 1:
-                            var[2] = germline[3][3]
-                        else:
-                            #include_somatic == 2
-                            var[2] = somatic[3][3]
+                    seq = somatic[0]
+                    mutation_class = "S"
+                    var = list(somatic[3])
+                    if include_somatic == 2:
+                        var[2] = somatic[3][3]
+                    elif include_germline == 2:
+                        #include_somatic == 1
+                        var[2] = germline[3][3]
                 else:
                     # RNA edits present
                     germline = (edits_at_pos[1] if edits_at_pos[1][2] == 'G'
@@ -1295,36 +1284,26 @@ class Transcript(object):
                         somatic = None
                     mutation_type = "V"
                     if germline and somatic:
-                        if include_germline == 1:
-                            if include_somatic == 1:
-                                seq = somatic[0]
-                                mutation_class = "S"
-                                var = list(somatic[3])
-                                # original reference allele stays reference
-                            else:
-                                #include_somatic == 2
-                                seq = germline[0]
-                                mutation_class = "G"
-                                var = list(germline[3])
-                                var[2] = somatic[3][3]
-                        else:
-                            #include_germline == 2
-                            seq = somatic[0]
-                            mutation_class = "S"
-                            var = list(somatic[3])
-                            if include_somatic == 1:
-                               var[2] = germline[3][3]
-                            else:
-                                #include_somatic == 2
-                                var[2] = somatic[3][3]
+                        seq = somatic[0]
+                        mutation_class = "S"
+                        var = list(somatic[3])
+                        if include_somatic == 2:
+                            var[2] = somatic[3][3]
+                        elif include_germline == 2:
+                            # include_somatic == 1
+                            var[2] = germline[3][3]
                     elif germline:
                         seq = germline[0]
                         mutation_class = "G"
                         var = list(germline[3])
+                        if include_germline == 2:
+                            var[2] = germline[3][3]
                     else:
                         seq = somatic[0]
                         mutation_class = "S"
                         var = list(somatic[3])
+                        if include_somatic == 2:
+                            var[2] = somatic[3][3]
                     # current behavior: everything gets RNA-edited if include_rna_edits
                     # future behavior: include_rna_edits = [0,1,2,3] where behavior would change based on specification of where to include edits
                     if include_rna_edits:
