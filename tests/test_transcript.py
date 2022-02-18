@@ -1228,9 +1228,11 @@ class TestTranscript(unittest.TestCase):
     def test_expressed_edits_with_rna_edits_from_dict(self):
         """check expressed_edit can read and generate edits using
             rna_editing_sites from dictionary"""
-        self.atoi_transcript.expressed_edits(include_rna_edits=True)
-        self.assertEqual(self.atoi_transcript.edits[9750161],
-                [('I', 'R', 'R', ('11', 9750162, 'A', 'I', 'R', None))])
+        edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
+        self.assertEqual(
+            edits[9750161],
+            [('I', 'R', 'R', ('11', 9750162, 'I', 'I', 'R'))]
+        )
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=False)
         self.assertNotIn(9750161, edits)
 
@@ -1395,11 +1397,9 @@ class TestTranscript(unittest.TestCase):
         pos = 9664182 # Reference base is G
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
         self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
+        self.atoi_transcript.edit('I', pos, mutation_type="R", mutation_class="R", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=0)
-        print('jfdakldfs')
-        print(edits)
-        print('----')
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
@@ -1433,7 +1433,7 @@ class TestTranscript(unittest.TestCase):
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
-        self.assertEqual(edit[3][2], "C")
+        self.assertEqual(edit[3][2], "G")
         self.assertEqual(edit[3][3], "I")
         self.assertEqual(edit[3][4], "R")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
@@ -1446,9 +1446,9 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
-        self.assertEqual(edit[0], "G")
-        self.assertEqual(edit[3][2], "C")
-        self.assertEqual(edit[3][3], "G")
+        self.assertEqual(edit[0], "C")
+        self.assertEqual(edit[3][2], "G")
+        self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V") # not entirely sure this should be 'V'
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=1)
