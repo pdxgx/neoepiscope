@@ -201,7 +201,7 @@ class TestTranscript(unittest.TestCase):
             False,
         )
         for item in [9750162, 9750152, 9750230, 9750194, 9750220, 9750151, 9750185, 9750221]:
-            self.atoi_manual_transcript.edit("I", item, mutation_type="R", mutation_class="R", vaf=None)
+            self.atoi_manual_transcript.edit("I", item, mutation_type="E", mutation_class="P", vaf=None)
 
         # NEAT1-002: 1745bp transcript w/ 2 exon (both non-coding) --> lncRNA
         self.non_coding_transcript = Transcript(
@@ -1231,25 +1231,25 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertEqual(
             edits[9750161],
-            [('I', 'R', 'R', ('11', 9750162, 'I', 'I', 'R'))]
+            [('I', 'E', 'P', ('11', 9750162, 'I', 'I', 'E'))]
         )
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=False)
         self.assertNotIn(9750161, edits)
 
     def test_edit_with_rna_edits_at_start_codon(self):
         """check whether RNA editing handled correctly for start codon"""
-        self.atoi_transcript.edit('I', 9664180, mutation_type="R", mutation_class="R", vaf=None)
+        self.atoi_transcript.edit('I', 9664180, mutation_type="E", mutation_class="P", vaf=None)
         self.assertEqual(self.atoi_transcript.edits[9664179],
-                [('I', 'R', 'R', ('11', 9664180, 'A', 'I', 'R', None))])
+                [('I', 'E', 'P', ('11', 9664180, 'A', 'I', 'E', None))])
         self.assertEqual(self.atoi_transcript.all_transcript_warnings, ["rna_editing_may_disrupt_start_codon"])
 
     def test_expressed_rna_edit_with_not_A_in_ref_genome(self):
         """check whether RNA A-to-I editing ignored correctly when editing site is not A"""
         pos = 9750164
-        self.atoi_transcript.edit('I', pos, mutation_type="R", mutation_class="R", vaf=None)
+        self.atoi_transcript.edit('I', pos, mutation_type="E", mutation_class="P", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(pos-1, edits)
-        self.atoi_manual_transcript.edit('I', pos, mutation_type="R", mutation_class="R", vaf=None)
+        self.atoi_manual_transcript.edit('I', pos, mutation_type="E", mutation_class="P", vaf=None)
         edits, _ = self.atoi_manual_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(pos-1, edits)
 
@@ -1263,7 +1263,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_germline=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
@@ -1288,7 +1288,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
@@ -1307,7 +1307,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_manual_transcript.expressed_edits(include_rna_edits=True, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
@@ -1340,42 +1340,42 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=0)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=2)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=2)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
@@ -1389,7 +1389,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
 
     def test_expressed_edit_with_overlapping_rna_germline_and_somatic_edits(self):
         """check whether RNA A-to-I editing appropriately handles overlapping RNA, germline, and somatic edits"""
@@ -1397,7 +1397,7 @@ class TestTranscript(unittest.TestCase):
         pos = 9664182 # Reference base is G
         self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
         self.atoi_transcript.edit('A', pos, mutation_type="V", mutation_class="S", vaf=None)
-        self.atoi_transcript.edit('I', pos, mutation_type="R", mutation_class="R", vaf=None)
+        self.atoi_transcript.edit('I', pos, mutation_type="E", mutation_class="P", vaf=None)
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=0)
         edit = edits[pos-1][0]
@@ -1411,7 +1411,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=0, include_somatic=0)
         self.assertNotIn(pos - 1, edits)
@@ -1421,28 +1421,28 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "G")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=2, include_somatic=2)
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
@@ -1456,7 +1456,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[3][2], "G")
         self.assertEqual(edit[3][3], "I")
-        self.assertEqual(edit[3][4], "R")
+        self.assertEqual(edit[3][4], "E")
 
     def test_expressed_edit_with_overlapping_germline_and_somatic_edits(self):
         pos = 9664182 # Reference base is G
@@ -1473,6 +1473,223 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=True)
         self.assertNotIn(pos-1, edits)
 
+    def test_annotated_seq_with_rna_edits(self):
+        """checks that annotated_seq correctly handles presence of rna edits
+        return value:
+        tuple(
+            sequence,
+            mut class (one of G=germline, S=somatic, H=hybrid, R=reference, P=post-transcriptional),
+            mut info,
+            1-based mut position or exon bound
+            )
+        """
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=False)
+        self.assertEqual(len(seq), 12)
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'I')
+        self.assertEqual(seq[12][1], 'P')
+        self.assertEqual(seq[12][2][0][2], 'I')
+        self.assertEqual(seq[12][2][0][3], 'I')
+        self.assertEqual(seq[12][2][0][4], 'E')
+        self.assertEqual(seq[12][2][0][1], seq[12][3])
+        self.assertEqual(seq[12][2][0][1], 9750151)
+
+    def test_annotated_seq_with_overlapping_rna_and_germline_edits(self):
+        # reference base is A
+        pos = 9750151
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'I')
+        self.assertEqual(seq[12][1], 'P')
+        self.assertEqual(seq[12][2][0][2], 'I')
+        self.assertEqual(seq[12][2][0][3], 'I')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        # mut base is 'C'
+        self.assertEqual(seq[12][0], 'C')
+        # mut type is germline
+        self.assertEqual(seq[12][1], 'G')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is germline edit
+        self.assertEqual(seq[12][2][0][3], 'C')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'C')
+        self.assertEqual(seq[12][1], 'G')
+        # ref is germline edit
+        self.assertEqual(seq[12][2][0][2], 'C')
+        self.assertEqual(seq[12][2][0][3], 'C')
+
+    def test_annotated_seq_with_overlapping_rna_and_somatic_edits(self):
+        # reference base is A
+        pos = 9750151
+        self.atoi_transcript.edit('T', pos, mutation_type="V", mutation_class="S", vaf=None)
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'I')
+        self.assertEqual(seq[12][1], 'P')
+        self.assertEqual(seq[12][2][0][2], 'I')
+        self.assertEqual(seq[12][2][0][3], 'I')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        # mut base is 'T'
+        self.assertEqual(seq[12][0], 'T')
+        # mut type is somatic
+        self.assertEqual(seq[12][1], 'S')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is somatic edit
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=2, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        # ref is somatic edit
+        self.assertEqual(seq[12][2][0][2], 'T')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+    def test_annotated_seq_with_overlapping_rna_germline_and_somatic_edits(self):
+        # reference base is A
+        pos = 9750151
+        self.atoi_transcript.edit('C', pos, mutation_type="V", mutation_class="G", vaf=None)
+        self.atoi_transcript.edit('T', pos, mutation_type="V", mutation_class="S", vaf=None)
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'I')
+        self.assertEqual(seq[12][1], 'P')
+        self.assertEqual(seq[12][2][0][2], 'I')
+        self.assertEqual(seq[12][2][0][3], 'I')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        # germline mut base is 'C'
+        self.assertEqual(seq[12][0], 'C')
+        # mut type is germline
+        self.assertEqual(seq[12][1], 'G')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is germline edit
+        self.assertEqual(seq[12][2][0][3], 'C')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        # somatic mut base is 'T'
+        self.assertEqual(seq[12][0], 'T')
+        # mut type is somatic
+        self.assertEqual(seq[12][1], 'S')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is somatic edit
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=1, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        self.assertEqual(seq[12][2][0][2], 'I')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        self.assertEqual(seq[12][2][0][2], 'C')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=2, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        self.assertEqual(seq[12][2][0][2], 'T')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=2, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        self.assertEqual(seq[12][2][0][2], 'T')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=0, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'C')
+        self.assertEqual(seq[12][1], 'G')
+        self.assertEqual(seq[12][2][0][2], 'C')
+        self.assertEqual(seq[12][2][0][3], 'C')
+
+        seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=2, include_rna_edits=True)
+        self.assertEqual(len(seq), 26)
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        self.assertEqual(seq[12][2][0][2], 'T')
+        self.assertEqual(seq[12][2][0][3], 'T')
+
+    def test_build_sequences_with_rna_edits(self):
+        """Return value:
+        tuple(
+            alternative transcript sequence,
+            reference transcript sequence,
+            dictionary linking genomic coordinates (1-based) to reference transcript coordinates (0-based),
+            dictionary linking genomic coordinates (1-based) to alternative transcript coordinates (0-based),
+            dictionary linking reference transcript coordinates (0-based) to genomic coordinates (1-based),
+            dictionary linking alternative transcript coordinates (0-based) to genomic coordinates (1-based),
+            reference interval tree,
+            alternative interval tree,
+            reference mut to transcript position info,
+            alternative mut to transcript position info
+            )
+        """
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=True)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.atoi_transcript._build_sequences(seq, strand = 1, include_germline = 2, include_somatic = 1)
+        self.assertEqual(sequence, ref_sequence)
+        self.assertEqual(sequence.find('I'), 2041)
+        self.assertEqual(genome_to_ref, genome_to_alt)
+        self.assertEqual(genome_to_ref[9750151], 2041)
+        self.assertEqual(ref_to_genome, alt_to_genome)
+        self.assertEqual(ref_to_genome[2041], 9750151)
+        self.assertEqual(ref_tree, alt_tree)
+        self.assertEqual(len(mut_to_ref_counter), 8)
+        self.assertEqual(len(mut_to_alt_counter), 8)
+
+    def test_build_sequences_with_variant(self):
+        self.transcript.edit("C", 5248245, mutation_type="V", mutation_class="S")
+        seq = self.transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=True)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.atoi_transcript._build_sequences(seq, strand=1, include_germline=2, include_somatic=1)
+
+        # ref counter output {mut_info: transcript position}
+        self.assertEqual(mut_to_ref_counter[('11', 5248245, 'G', 'C', 'V', None)], 56)
+        # alt counter output {mut info: transcript position, (base, mut_class [(mut_info)], genomic position)
+        self.assertEqual(mut_to_alt_counter[('11', 5248245, 'G', 'C', 'V', None)], (56, ('G', 'S', [('11', 5248245, 'G', 'C', 'V', None)], 5248245)))
+
     def test_seq_to_peptide_with_I_N(self):
         """checks whether sseq_to_peptide function can properly handle N and I"""
         seq = "AAIATIIGNIAA"
@@ -1481,11 +1698,48 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(ambiguous_positions, [3.0])
         self.assertEqual(pep, "KMGE")
 
-    def test_neopeptide_with_rna_edit(self):    
-        self.transcript.edit("I", 5248244, mutation_type="R", mutation_class="R" )
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True)
-        self.assertEqual(protein[0:3], "MVR")
+    def check_neopeptide_output(self):
+        self.atoi_transcript.edit('I', 9749959, mutation_type="E", mutation_class="P", vaf=None)
+        seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=True)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.atoi_transcript._build_sequences(seq, strand=1, include_germline=2, include_somatic=1)
+        #print(sequence[103:1858])
+        #pep = transcript.seq_to_peptide(sequence[103:1858], return_positions=True))
+        #kmers = transcript.kmerize_peptide(pep, editing_positions=editing_positions)
+        #print(kmers)
+        neopeps = self.atoi_transcript.neopeptides(include_rna_edits=True, allow_no_edits=False)
+        print("neopeptides output:", neopeps)
 
+    def test_neopeptide_with_rna_edit(self):
+        # reverse transcript, codon sequence: CAT = "H"
+        # 5248244 is T in reverse-complemented codon ATG
+        self.transcript.edit("I", 5248244, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True)
+        self.assertEqual((pep, protein[:4]), ({}, "MVRL"))
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=False)
+        self.assertEqual((pep, protein[:4]), ({}, "MVHL"))
+        # reverse-complemented codon is AIC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248245, mutation_type="V", mutation_class="S")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        # reverse-complemented codon is ACC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248244, mutation_type="V", mutation_class="G")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        # adjacent reverse-complemented codon is ACT, new codon interpreted as GCT = Alanine
+        self.transcript.edit("I", 5248239, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=True, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
 
 if __name__ == "__main__":
     unittest.main()
