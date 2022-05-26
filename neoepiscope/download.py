@@ -48,7 +48,7 @@ import tempfile
 import sys
 import os
 import subprocess
-from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree
+from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree, transcript_to_rna_edits
 from distutils.core import Command
 
 download = {
@@ -539,16 +539,15 @@ class NeoepiscopeDownloader(object):
                     "GENCODE " + gencode + " annotation",
                     explode=False,
                 )
-                exec("gencode_" + gencode 
-                     + "_temp = os.path.join(temp_install_dir, 'gencode_"
-                     + gencode + "')")
-                exec("gencode_" + gencode
-                     + " = os.path.join(self.download_dir, 'gencode_" + gencode + "')")
-                exec("gencode_" + gencode 
-                     + "_gtf = os.path.join(temp_install_dir,"
-                     + "os.path.basename(download['GENCODE " + gencode + " annotation'][0]))")
+                exec("gencode_" + gencode + "_temp = '" + os.path.join(temp_install_dir, 'gencode_' + gencode)
+                     + "'", globals())
+                exec("gencode_" + gencode + " = '" + os.path.join(self.download_dir, 'gencode_' + gencode)
+                     + "'", globals())
+                exec("gencode_" + gencode + "_gtf = '"
+                     + os.path.join(temp_install_dir, os.path.basename(download['GENCODE ' + gencode + ' annotation'][0]))
+                     + "'", globals())
                 try:
-                    exec("os.makedirs(gencode_" + gencode + " _temp)")
+                    os.makedirs(eval("gencode_" + gencode + "_temp"))
                 except OSError as e:
                     self._print_to_screen_and_log(
                         (
@@ -562,7 +561,8 @@ class NeoepiscopeDownloader(object):
                         "[Configuring] Indexing GENCODE {}...".format(gencode)
                     )
                 cds_dict, tx_data_dict = gtf_to_cds(eval("gencode_" + gencode + "_gtf"),
-                                                    dict_dir=eval("gencode_" + gencode + "_temp"))
+                                                    dict_dir=eval("gencode_" + gencode + "_temp")
+                                                    )
                 cds_to_feature_length(
                     cds_dict, tx_data_dict, dict_dir=eval("gencode_" + gencode + "_temp")
                 )
@@ -573,7 +573,8 @@ class NeoepiscopeDownloader(object):
                 self._grab_and_explode(
                     download["Bowtie " + build + " index"], "Bowtie " + build + " index"
                 )
-                exec("bowtie_" + build + " = os.path.join(self.download_dir, '" + bowtie + "')")
+                exec("bowtie_" + build + " = '" + os.path.join(self.download_dir, bowtie)
+                     + "'", globals())
                 # Download and index REDIportal RNA edits
                 if rediportal is not None:
                     self._grab_and_explode(
@@ -581,16 +582,15 @@ class NeoepiscopeDownloader(object):
                         + build + " database",
                         explode=False
                     )
-                    exec("rediportal_" + build 
-                         + "_temp = os.path.join(temp_install_dir, 'rediportal_"
-                         + build + "')")
-                    exec("rna_edits_" + build
-                         + " = os.path.join(self.download_dir, 'rediportal_" + build + "')")
-                    exec("rediportal_" + build 
-                         + "_file = os.path.join(temp_install_dir, "
-                         + "os.path.basename(download['REDIportal " + build + " database'][0]))")
+                    exec("rediportal_" + build + "_temp = '" + os.path.join(temp_install_dir, 'rediportal_' + build)
+                         + "'", globals())
+                    exec("rna_edits_" + build + " = '" + os.path.join(self.download_dir, 'rediportal_' + build)
+                         + "'", globals())
+                    exec("rediportal_" + build + "_file = '"
+                         + os.path.join(temp_install_dir, os.path.basename(download['REDIportal ' + build + ' database'][0]))
+                         + "'", globals())
                     try:
-                        exec("os.makedirs(rediportal_" + build + " _temp)")
+                        os.makedirs(eval("rediportal_" + build + "_temp"))
                     except OSError as e:
                         self._print_to_screen_and_log(
                             (
@@ -599,25 +599,25 @@ class NeoepiscopeDownloader(object):
                                 'sudo permissions.'.format(eval("rediportal_" + build + "_temp"))
                             )
                         )   
-                    self._bail()
+                        self._bail()
                     self._print_to_screen_and_log(
                         "[Configuring] Indexing REDIportal RNA edits for {}...".format(build)
                     )
-                    transcripts_to_rna_edits(eval("rediportal_" + build + "_file"),
-                            searchable_tree, cds_dict,
-                            dict_dir=eval("rediportal_" + build + "_temp")
-                        )
+                    transcript_to_rna_edits(eval("rediportal_" + build + "_file"),
+                                            searchable_tree, cds_dict,
+                                            dict_dir=eval("rediportal_" + build + "_temp")
+                                            )
                 else:
-                    exec("rna_edits_" + build + " = None")
+                    exec("rna_edits_" + build + " = None", globals())
                     self._print_to_screen_and_log(
                         "[Configuring] No RNA edits available for {}; continuing...".format(
                                 build
                             )
                     )
             else:
-                exec("gencode_" + gencode + " = None")
-                exec("bowtie_" + build + " = None")
-                exec("rna_edits_" + build + " = None")
+                exec("gencode_" + gencode + " = None", globals())
+                exec("bowtie_" + build + " = None", globals())
+                exec("rna_edits_" + build + " = None", globals())
         programs = []
         for program in [
             "netMHCIIpan v3",

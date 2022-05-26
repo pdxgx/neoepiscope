@@ -46,6 +46,7 @@ import bisect
 import string
 import re
 import os
+import io
 import pickle
 from intervaltree import IntervalTree
 from operator import itemgetter
@@ -97,7 +98,7 @@ def xopen(gzipped, *args):
                 # Be forgiving of gzips that end unexpectedly
                 # old_read_eof = gzip.GzipFile._read_eof
                 # gzip.GzipFile._read_eof = lambda *args, **kwargs: None
-                fh = gzip.open(*args)
+                fh = io.TextIOWrapper(gzip.open(*args, "r"))
             elif "w" in mode or "a" in mode:
                 try:
                     compresslevel = int(args[2])
@@ -4152,12 +4153,23 @@ def transcript_to_rna_edits(rna_edit_file, cds_tree, cds_dict,
     """
     transcript_to_rna_edits = collections.defaultdict(list)
     with xopen(None, rna_edit_file) as f:
+        # remove header from rediportal file
+        next(f)
         for line in f:
             chrom, pos, _, _, strand = line.split('\t')[:5]
             pos = int(pos)
-            for transcript in cds_tree[chrom][pos:pos + 1]:
-                if strand == cds_dict[transcript][4]:
-                    transcript_to_rna_edits[transcript].append((chrom, pos))
+            # 0.045% of rediportal region labels are alt chromosomes (e.g. 'chr14_GL000009v2_random')
+            try:
+                cds_tree[chrom]
+                for transcript in cds_tree[chrom][pos:pos + 1]:
+                    # some transcript keys returning empty list values from cds_dict
+                    if not cds_dict[transcript]:
+                        pass
+                    elif strand == cds_dict[transcript][0][4]:
+                        transcript_to_rna_edits[transcript].append((chrom, pos))
+            # alt chroms not in cds_tree skipped
+            except KeyError:
+                pass
     if dict_dir is not None:
         pickle_dict = os.path.join(dict_dir, "transcript_to_rna_edits.pickle")
         with open(pickle_dict, "wb") as f:
