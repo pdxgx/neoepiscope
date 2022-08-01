@@ -141,6 +141,8 @@ Options:
 
 ```-s, --somatic```                   how to handle somatic mutations (by default includes for neoepitope enumeration)
 
+```-e, --rna-edits```                 path to directory containing REDIportal-formatted RNA edits file
+
 ```-u, --upstream-atgs```             handling of translation from upstream start codons - ("novel" (default) only, "all", "none", "reference" only)
 
 ```-i, --isolate```                   isolate mutations - disables phasing of mutations which share a haplotype

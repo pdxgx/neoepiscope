@@ -3632,6 +3632,7 @@ class Transcript(object):
                 peptides = kmerize_peptide(
                     protein[coords[0] : coords[1]], min_size=size, max_size=size, editing_positions=editing_positions
                 )
+                # make normal peptide + ref peptide pair
                 if coords[2] != "NA":
                     paired_peptides = kmerize_peptide(
                         protein_ref[coords[2] : coords[3]], min_size=size, max_size=size, editing_positions=ref_editing_positions
