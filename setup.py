@@ -70,7 +70,7 @@ setup(
         "personalizing the reference transcriptome using germline variants."
     ),
     url="http://github.com/ohsu-comp-bio/neoepiscope",
-    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.5.0",
+    download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.6.0",
     author="Mary A. Wood, Austin Nguyen, Abhinav Nellore, Reid F. Thompson",
     author_email="thompsre@ohsu.edu",
     license="MIT",
