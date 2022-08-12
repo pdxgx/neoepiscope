@@ -51,13 +51,13 @@ import pickle
 from intervaltree import IntervalTree
 from operator import itemgetter
 from numpy import median
+from pepsickle import initialize_epitope_model, predict_protein_cleavage_locations
 import sys
 import warnings
 import contextlib
 import networkx as nx
 
 revcomp_translation_table = str.maketrans("ATCGI", "TAGCI")
-
 
 @contextlib.contextmanager
 def xopen(gzipped, *args):
@@ -1311,8 +1311,6 @@ class Transcript(object):
                         var = list(somatic[3])
                         if include_somatic == 2:
                             var[2] = somatic[3][3]
-                    # current behavior: everything gets RNA-edited if include_rna_edits
-                    # future behavior: include_rna_edits = [0,1,2] where behavior would change based on specification of where to include edits
                     if include_rna_edits == 1:
                         if (seq == 'T' and self.rev_strand or
                             seq == 'A' and not self.rev_strand):
@@ -1534,7 +1532,6 @@ class Transcript(object):
             1 = exclude germline mutations from reference comparison,
             2 = include germline mutations in both annotated sequence and
             reference comparison
-
         Return value: hybridized sequence - tuple of ('', 'H',
             mutation_information, position) where 'H' denotes a hybrid of
             somatic and germline deletions, mutation_information is a list
@@ -2452,6 +2449,7 @@ class Transcript(object):
         include_somatic=1,
         include_germline=2,
         include_rna_edits=0,
+        cleavage_prediction=False,
         only_novel_upstream=False,
         only_downstream=True,
         only_reference=False,
@@ -2474,6 +2472,8 @@ class Transcript(object):
         include_rna_edits: 0 = do not include A to I RNA editing,
             1 = exclude RNA edits from reference comparison,
             2 = include RNA edits in both annotated sequence and reference comparison
+        cleavage_prediction: "C" = cleavage probability using constitutive proteasome data,
+            "I" = cleavage probability using immunoproteasome data
         Return value: dict of peptides of desired length(s) [KEYS] with
             values equivalent to a list of causal variants [VALUES].
         """
@@ -3652,7 +3652,7 @@ class Transcript(object):
                                 # Dealing with regular peptide
                                 data_set = coords[4]
                             if len(paired_peptides) == len(peptides):
-                                if pair[0][1]==True or pair[1][1]==True:
+                                if "rna_editing" not in transcript_warnings[0] and pair[0][1]==True or pair[1][1]==True:
                                     transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
                                 if pair[0][2]==True or pair[1][2]==True:
                                     transcript_warnings[0] = ';'.join([transcript_warnings[0],"ambiguous_inosine_codon"])
@@ -3708,7 +3708,7 @@ class Transcript(object):
                             # Dealing with regular peptide
                             data_set = coords[4]
 
-                        if pep[1]==True:
+                        if "rna_editing" not in transcript_warnings[0] and pep[1]==True:
                             transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
 
                         if pep[2]==True:
@@ -4591,6 +4591,7 @@ def get_peptides_from_transcripts(
     include_germline=2,
     include_somatic=1,
     include_rna_edits=0,
+    cleavage_prediction=False,
     protein_fasta=False,
     rna_edit_dict=None
 ):
@@ -4623,6 +4624,8 @@ def get_peptides_from_transcripts(
     include_rna_edits: 0 = do not include A to I RNA editing,
             1 = exclude RNA edits from reference comparison,
             2 = include RNA edits in both annotated sequence and reference comparison
+    cleavage_prediction: "C" = cleavage probability using constitutive proteasome data,
+            "I" = cleavage probability using immunoproteasome data
     nmd: whether to include nonsense mediated decay transcripts (boolean)
     pp: whether to include polymorphic pseudogene transcripts (boolean)
     igv: whether to include IGV transcripts (boolean)
@@ -4639,6 +4642,10 @@ def get_peptides_from_transcripts(
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     used_homozygous_variants = set()
+    # initialize proteasomal cleavage model
+    if clevage_prediction:
+        cleavage_model = initialize_epitope_model()
+    # enumerate transcripts
     for affected_transcript in relevant_transcripts:
         # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
         if cds_dict[affected_transcript][0][5] == "nonsense_mediated_decay" and not nmd:
@@ -4726,6 +4733,7 @@ def get_peptides_from_transcripts(
                     include_somatic=include_somatic,
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
+                    cleavage_prediction=cleavage_prediction,
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,
@@ -4806,6 +4814,7 @@ def get_peptides_from_transcripts(
                     include_somatic=include_somatic,
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
+                    cleavage_prediction=cleavage_prediction,
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,

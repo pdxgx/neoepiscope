@@ -71,7 +71,7 @@ setup(
     ),
     url="http://github.com/ohsu-comp-bio/neoepiscope",
     download_url="https://github.com/pdxgx/neoepiscope/tarball/v0.7.0",
-    author="Mary A. Wood, Austin Nguyen, Abhinav Nellore, Reid F. Thompson",
+    author="Mary A. Wood, Austin Nguyen, W. Max Schreyer, Abhinav Nellore, Reid F. Thompson",
     author_email="thompsre@ohsu.edu",
     license="MIT",
     packages=["neoepiscope"],

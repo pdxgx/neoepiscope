@@ -118,10 +118,17 @@ def main():
     call_parser = subparsers.add_parser("call", help="calls neoepitopes")
     # Index parser options (produces pickled dictionaries for transcript data)
     index_parser.add_argument(
-        "-g", "--gtf", type=str, required=True, help="input path to GTF file"
+        "-g", 
+        "--gtf", 
+        type=str, 
+        required=True, 
+        help="input path to GTF file"
     )
     index_parser.add_argument(
-        "-e", "--rna-edits", type=str, required=False,
+        "-e", 
+        "--rna-edits", 
+        type=str, 
+        required=False,
         default=None,
         help="input path to REDIportal-formatted file containing RNA edits"
     )
@@ -300,6 +307,15 @@ def main():
         "neoepitope enumeration; documentation online for more information",
     )
     call_parser.add_argument(
+        "-e", 
+        "--rna-edits",
+        type=str, 
+        required=False,
+        default="exclude",
+        help="how to handle RNA edits in "
+        "neoepitope enumeration; documentation online for more information",
+    )
+    call_parser.add_argument(
         "-b",
         "--build",
         type=str,
@@ -314,6 +330,13 @@ def main():
         action="store_true",
         help="isolate mutations - do not use phasing information to "
         "combine nearby mutations in the same neoepitope",
+    )
+    call_parser.add_argument(
+        "-l",
+        "--cleavage-prediction",
+        required=False,
+        help="enumerate neoepitopes from proteasomal cleavage predictions; "
+        "documentation online for more information",
     )
     call_parser.add_argument(
         "-r",
@@ -382,13 +405,6 @@ def main():
         type=float,
         required=False,
         help="minimum TPM to consider a transcript expressed",
-    )
-    call_parser.add_argument(
-        "-e",
-        "--rna-edits",
-        required=False,
-        default=False,
-        help="account for RNA editing"
     )
     args = parser.parse_args()
     if args.subparser_name == "download":
@@ -680,6 +696,26 @@ def main():
                 "excluded, no epitopes will be returned",
                 Warning,
             )
+        # Establish handling of RNA edits:
+        if args.rna-edits == "include":
+            include_rna_edits = 1
+        elif args.rna-edits == "background":
+            include_rna_edits = 2
+        elif args.rna-edits == "exclude":
+            include_rna_edits = 0
+        else:
+            raise RuntimeError(
+                "--rna-edits must be one of " '{"background", "include", "exclude"}'
+            )
+        # Determine handling of proteasome type for cleavage prediciton:
+        if args.cleavage-prediction == "C":
+            cleavage_prediction="C"
+        elif args.cleavage-prediction == "I":
+            cleavage_prediction="I"
+        else:
+            raise RuntimeError(
+                "--cleavage-prediction must be one of " '{"C", "I"}'
+            )
         # Determine whether mutations will be phased
         if not args.isolate:
             phase_mutations = True
@@ -726,6 +762,8 @@ def main():
             args.allow_partial_codons,
             include_germline,
             include_somatic,
+            include_rna_edits,
+            cleavage_prediction,
             protein_fasta=args.fasta,
             rna_edit_dict=(rna_edit_dict if args.rna_edits else None),
         )

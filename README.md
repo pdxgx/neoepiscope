@@ -147,6 +147,8 @@ Options:
 
 ```-i, --isolate```                   isolate mutations - disables phasing of mutations which share a haplotype
 
+```-l, --cleavage-prediction```       enumerate neoepitopes from proteasomal cleavage predictions - ("C" constitutive proteasome, "I" immunoproteasome)
+
 ```--nmd```                           enumerate neoepitopes from nonsense mediated decay transcripts
 
 ```--pp```                            enumerate neoepitopes from polymorphic pseudogene transcripts
