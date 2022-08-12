@@ -2006,5 +2006,41 @@ class TestTranscript(unittest.TestCase):
         pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2)
         self.assertEqual(protein[:5], "MVGLA")
 
+    def test_neopeptides_with_rna_edits_and_pepsickle_C(self):
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="C")
+        self.assertEqual((pep, protein), ({}, ""))
+
+        # Reference protein sequence "MGSLK"
+        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C")
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLK")
+
+        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C")
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLE")
+
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="C")
+        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
+
+    def test_neopeptides_with_rna_edits_and_pepsickle_I(self):
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="I")
+        self.assertEqual((pep, protein), ({}, ""))
+
+        # Reference protein sequence "MGSLK"
+        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I")
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLK")
+
+        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I")
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLE")
+
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="I")
+        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
+
 if __name__ == "__main__":
     unittest.main()

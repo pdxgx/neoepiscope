@@ -3588,117 +3588,64 @@ class Transcript(object):
             transcript_warnings = [";".join(transcript_warnings)]
         # Enumerate peptides
         peptide_seqs = collections.defaultdict(list)
-        # get amino acid ranges for kmerization
-        for size in range(min_size, max_size + 1):
-            epitope_coords = []
-            peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size, editing_positions=ref_editing_positions)
-            for coords in coordinates:
-                if coords[4] != "NA" and same_start_frame:
-                    # Get coordinates of paired normal peptide
-                    epitope_coords.append(
-                        [
-                            max(0, ((coords[2] - coding_start) // 3) - size + 1),
-                            min(len(protein), ((coords[3] - coding_start) // 3) + size),
-                            max(0, ((coords[4] - coding_start) // 3) - size + 1),
-                            min(
-                                len(protein_ref),
-                                ((coords[5] - coding_start) // 3) + size,
-                            ),
-                            coords[6],
-                        ]
-                    )
-                else:
-                    # No valid paired normal peptide
-                    epitope_coords.append(
-                        [
-                            max(0, ((coords[2] - coding_start) // 3) - size + 1),
-                            min(len(protein), ((coords[3] - coding_start) // 3) + size),
-                            "NA",
-                            "NA",
-                            coords[6],
-                        ]
-                    )
-            for coords in frame_shifts:
-                epitope_coords.append(
-                    [
-                        max(0, ((coords[2] - coding_start) // 3) - size + 1),
-                        min(len(protein), ((coords[3] - coding_start) // 3) + size),
-                        "NA",
-                        "NA",
-                        coords[4],
-                    ]
+        if cleavage_prediction:
+            # Use pepsickle cleavage prediction when applicable
+            cleavage_model = initialize_epitope_model()
+            cleaved_protein = predict_protein_cleavage_locations(
+                protein_id="None",
+                protein_seq=protein,
+                model=cleavage_model,
+                mod_type="epitope",
+                proteasome_type=cleavage_prediction,
                 )
-            for coords in epitope_coords:
-                peptides = kmerize_peptide(
-                    protein[coords[0] : coords[1]], min_size=size, max_size=size, editing_positions=editing_positions
-                )
-                # make normal peptide + ref peptide pair
-                if coords[2] != "NA":
-                    paired_peptides = kmerize_peptide(
-                        protein_ref[coords[2] : coords[3]], min_size=size, max_size=size, editing_positions=ref_editing_positions
-                    )
-                    if len(paired_peptides) == len(peptides):
-                        peptide_pairs = zip(peptides, paired_peptides)
-                    else:
-                        peptide_pairs = zip(
-                            peptides, ["NA" for j in range(0, len(peptides))]
+            for size in range(min_size, max_size + 1):
+                epitope_coords = []
+                peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size, editing_positions=ref_editing_positions)
+                peptides = []
+                for pos in range(len(cleaved_protein)):
+                    # Enumerate peptides from predicted cleavage sites only
+                    if cleaved_protein[pos][3] == True and (pos+1)-size >= 0:
+                        entry = (protein[(pos+1)-size:pos+1],
+                            True if [x for x in editing_positions if x in range((pos+1)-size, pos+1)] else False,
+                            True if [x for x in ambiguous_positions if x in range((pos+1)-size, pos+1)] else False)
+                        peptides.append(entry)
+                for coords in coordinates:
+                    if coords[4] != "NA" and same_start_frame:
+                        # Get coordinates of paired normal peptide
+                        epitope_coords.append(
+                            [
+                                max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                                min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                                max(0, ((coords[4] - coding_start) // 3) - size + 1),
+                                min(
+                                    len(protein_ref),
+                                    ((coords[5] - coding_start) // 3) + size,
+                                ),
+                                coords[6],
+                            ]
                         )
-                    for pair in peptide_pairs:
-                        if pair[0] not in peptides_ref:
-                            if len(coords[4]) == 2 and type(coords[4][0]) == list:
-                                # Dealing with peptide resulting from hybrid interval
-                                data_set = coords[4][0][4]
-                            else:
-                                # Dealing with regular peptide
-                                data_set = coords[4]
-                            if len(paired_peptides) == len(peptides):
-                                if "rna_editing" not in transcript_warnings[0] and pair[0][1]==True or pair[1][1]==True:
-                                    transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
-                                if pair[0][2]==True or pair[1][2]==True:
-                                    transcript_warnings[0] = ';'.join([transcript_warnings[0],"ambiguous_inosine_codon"])
-
-                            for mutation_data in data_set:
-                                if (
-                                    unknown_aa
-                                    and "?" in pair[0][0]
-                                    or "?" in pair[1][0]
-                                    or "X" in pair[0][0]
-                                    or "X" in pair[1][0]
-                                ):
-                                    if self.seleno:
-                                        mutation_data = (
-                                            mutation_data
-                                            + (pair[1][0],)
-                                            + (
-                                                ";".join(
-                                                    [
-                                                        transcript_warnings[0],
-                                                        "unknown_amino_acid",
-                                                        "may_contain_selenocysteine",
-                                                    ]
-                                                ),
-                                            )
-                                        )
-                                    else:
-                                        mutation_data = (
-                                            mutation_data
-                                            + (pair[1][0],)
-                                            + (
-                                                ";".join(
-                                                    [
-                                                        transcript_warnings[0],
-                                                        "unknown_amino_acid",
-                                                    ]
-                                                ),
-                                            )
-                                        )
-                                else:
-                                    mutation_data = (
-                                        mutation_data + (pair[1][0],) + tuple(transcript_warnings)
-                                    )
-                                peptide_seqs[pair[0][0]].append(mutation_data)
-                            peptide_seqs[pair[0][0]] = list(set(peptide_seqs[pair[0][0]]))
-                else:
+                    else:
+                        # No valid paired normal peptide
+                        epitope_coords.append(
+                            [
+                                max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                                min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                                "NA",
+                                "NA",
+                                coords[6],
+                            ]
+                        )
+                for coords in frame_shifts:
+                    epitope_coords.append(
+                        [
+                            max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                            min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                            "NA",
+                            "NA",
+                            coords[4],
+                        ]
+                    )
+                for coords in epitope_coords:
                     peptides = list(set(peptides).difference(peptides_ref))
                     for pep in peptides:
                         if len(coords[4]) == 2 and type(coords[4][0]) == list:
@@ -3748,6 +3695,167 @@ class Transcript(object):
                                 )
                             peptide_seqs[pep[0]].append(mutation_data)
                         peptide_seqs[pep[0]] = list(set(peptide_seqs[pep[0]]))
+        else:
+            # Naive kmerization approach
+            for size in range(min_size, max_size + 1):
+                epitope_coords = []
+                peptides_ref = kmerize_peptide(protein_ref, min_size=size, max_size=size, editing_positions=ref_editing_positions)
+                for coords in coordinates:
+                    if coords[4] != "NA" and same_start_frame:
+                        # Get coordinates of paired normal peptide
+                        epitope_coords.append(
+                            [
+                                max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                                min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                                max(0, ((coords[4] - coding_start) // 3) - size + 1),
+                                min(
+                                    len(protein_ref),
+                                    ((coords[5] - coding_start) // 3) + size,
+                                ),
+                                coords[6],
+                            ]
+                        )
+                    else:
+                        # No valid paired normal peptide
+                        epitope_coords.append(
+                            [
+                                max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                                min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                                "NA",
+                                "NA",
+                                coords[6],
+                            ]
+                        )
+                for coords in frame_shifts:
+                    epitope_coords.append(
+                        [
+                            max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                            min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                            "NA",
+                            "NA",
+                            coords[4],
+                        ]
+                    )
+                for coords in epitope_coords:
+                    peptides = kmerize_peptide(
+                        protein[coords[0] : coords[1]], min_size=size, max_size=size, editing_positions=editing_positions
+                    )
+                    # make normal peptide + ref peptide pair
+                    if coords[2] != "NA":
+                        paired_peptides = kmerize_peptide(
+                            protein_ref[coords[2] : coords[3]], min_size=size, max_size=size, editing_positions=ref_editing_positions
+                        )
+                        if len(paired_peptides) == len(peptides):
+                            peptide_pairs = zip(peptides, paired_peptides)
+                        else:
+                            peptide_pairs = zip(
+                                peptides, ["NA" for j in range(0, len(peptides))]
+                            )
+                        for pair in peptide_pairs:
+                            if pair[0] not in peptides_ref:
+                                if len(coords[4]) == 2 and type(coords[4][0]) == list:
+                                    # Dealing with peptide resulting from hybrid interval
+                                    data_set = coords[4][0][4]
+                                else:
+                                    # Dealing with regular peptide
+                                    data_set = coords[4]
+                                if len(paired_peptides) == len(peptides):
+                                    if "rna_editing" not in transcript_warnings[0] and pair[0][1]==True or pair[1][1]==True:
+                                        transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
+                                    if pair[0][2]==True or pair[1][2]==True:
+                                        transcript_warnings[0] = ';'.join([transcript_warnings[0],"ambiguous_inosine_codon"])
+
+                                for mutation_data in data_set:
+                                    if (
+                                        unknown_aa
+                                        and "?" in pair[0][0]
+                                        or "?" in pair[1][0]
+                                        or "X" in pair[0][0]
+                                        or "X" in pair[1][0]
+                                    ):
+                                        if self.seleno:
+                                            mutation_data = (
+                                                mutation_data
+                                                + (pair[1][0],)
+                                                + (
+                                                    ";".join(
+                                                        [
+                                                            transcript_warnings[0],
+                                                            "unknown_amino_acid",
+                                                            "may_contain_selenocysteine",
+                                                        ]
+                                                    ),
+                                                )
+                                            )
+                                        else:
+                                            mutation_data = (
+                                                mutation_data
+                                                + (pair[1][0],)
+                                                + (
+                                                    ";".join(
+                                                        [
+                                                            transcript_warnings[0],
+                                                            "unknown_amino_acid",
+                                                        ]
+                                                    ),
+                                                )
+                                            )
+                                    else:
+                                        mutation_data = (
+                                            mutation_data + (pair[1][0],) + tuple(transcript_warnings)
+                                        )
+                                    peptide_seqs[pair[0][0]].append(mutation_data)
+                                peptide_seqs[pair[0][0]] = list(set(peptide_seqs[pair[0][0]]))
+                    else:
+                        peptides = list(set(peptides).difference(peptides_ref))
+                        for pep in peptides:
+                            if len(coords[4]) == 2 and type(coords[4][0]) == list:
+                                # Dealing with peptide resulting from hybrid interval
+                                data_set = coords[4][0][4]
+                            else:
+                                # Dealing with regular peptide
+                                data_set = coords[4]
+
+                            if "rna_editing" not in transcript_warnings[0] and pep[1]==True:
+                                transcript_warnings[0] = ';'.join([transcript_warnings[0], "rna_editing"])
+
+                            if pep[2]==True:
+                                transcript_warnings[0] = ';'.join([transcript_warnings[0], "ambiguous_inosine_codon"])
+                            for mutation_data in data_set:
+                                if unknown_aa and "?" in pep[0] or "X" in pep[0]:
+                                    if self.seleno:
+                                        mutation_data = (
+                                            mutation_data
+                                            + ("NA",)
+                                            + (
+                                                ";".join(
+                                                    [
+                                                        transcript_warnings[0],
+                                                        "unknown_amino_acid",
+                                                        "may_contain_selenocysteine",
+                                                    ]
+                                                ),
+                                            )
+                                        )
+                                    else:
+                                        mutation_data = (
+                                            mutation_data
+                                            + ("NA",)
+                                            + (
+                                                ";".join(
+                                                    [
+                                                        transcript_warnings[0],
+                                                        "unknown_amino_acid",
+                                                    ]
+                                                ),
+                                            )
+                                        )
+                                else:
+                                    mutation_data = (
+                                        mutation_data + ("NA",) + tuple(transcript_warnings)
+                                    )
+                                peptide_seqs[pep[0]].append(mutation_data)
+                            peptide_seqs[pep[0]] = list(set(peptide_seqs[pep[0]]))
         if not return_protein:
             # return list of unique neoepitope sequences
             return peptide_seqs
@@ -4642,9 +4750,6 @@ def get_peptides_from_transcripts(
     neoepitopes = collections.defaultdict(list)
     fasta_entries = collections.defaultdict(set)
     used_homozygous_variants = set()
-    # initialize proteasomal cleavage model
-    if clevage_prediction:
-        cleavage_model = initialize_epitope_model()
     # enumerate transcripts
     for affected_transcript in relevant_transcripts:
         # Filter out NMD, polymorphic pseudogene, IG V, TR V transcripts if relevant
