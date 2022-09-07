@@ -32,6 +32,7 @@ from __future__ import absolute_import, division, print_function
 from inspect import getsourcefile
 import os
 import sys
+from pepsickle import initialize_epitope_model
 
 neoepiscope_dir = os.path.dirname(
     os.path.dirname((os.path.abspath(getsourcefile(lambda: 0))))
@@ -1011,6 +1012,528 @@ class TestTranscript(unittest.TestCase):
         rev_peptides = self.transcript.neopeptides().keys()
         self.assertEqual(len(rev_peptides), 28)
 
+    def test_all_peptides_pepsickle(self):
+        """Fails if pepsickle alters peptide outputs compared to naive
+        kmerization approach with various mutations -- individual test
+        descriptions can be found above"""
+
+        cleavage_model = initialize_epitope_model()
+
+        # test_no_mutations_peptides
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        
+        # test_noncoding_mutation_peptides
+        self.fwd_transcript.edit("G", 450286)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        
+        self.transcript.edit("A", 5248266)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_synonymous_snv_peptides
+        self.fwd_transcript.edit("A", 450464)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+
+        self.transcript.edit("A", 5248005)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(rev_peptides)
+        
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_missense_snv_peptides
+        self.fwd_transcript.edit("T", 450502)
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit("T", 5248006)
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_in_frame_insertion_peptides
+        self.fwd_transcript.edit("AAA", 450551, mutation_type="I")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit("TTT", 5247986, mutation_type="I")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_synonymous_inframe_insertion_peptides
+        self.fwd_transcript.edit("AAA", 450502, mutation_type="I")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit("TTT", 5246874, mutation_type="I")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_frameshift_insertion
+        self.fwd_transcript.edit("AAAAA", 473925, mutation_type="I")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit("AAAAA", 5247883, mutation_type="I")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_in_frame_deletion_peptides
+        self.fwd_transcript.edit(3, 450555, mutation_type="D")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit(3, 5247858, mutation_type="D")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_synonymous_inframe_deletion_peptides
+        self.fwd_transcript.edit(3, 473918, mutation_type="D")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit(3, 5247922, mutation_type="D")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_frameshift_deletion
+        self.fwd_transcript.edit(5, 473912, mutation_type="D")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+
+        self.transcript.edit(5, 5247930, mutation_type="D")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_nonstop_mutation_peptides
+        self.fwd_transcript.edit("A", 490580)
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit("G", 5246828)
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        
+        # Check warnings for transcript with stop codon removed
+        self.all_coding_transcript.edit("T", 5809086)
+        peptides = self.all_coding_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        for pep in peptides:
+            for mutation_data in peptides[pep]:
+                self.assertEqual(
+                    mutation_data[7], "annotated_stop_codon_disrupted;nonstop"
+                )
+        peptides = self.all_coding_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        for pep in peptides:
+            for mutation_data in peptides[pep]:
+                self.assertEqual(
+                    mutation_data[7], "annotated_stop_codon_disrupted;nonstop"
+                )
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.all_coding_transcript.reset(reference=True)
+
+        # test_split_start
+        self.fwd_transcript.edit("AT", 450419, mutation_type="I")
+        kmertides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()        
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit("T", 5248290, mutation_type="I")
+        rev_kmertides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model,
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        
+        self.partial_coding_transcript.edit("A", 34073379)
+        partial_kmertides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False
+            ).keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model,
+            only_novel_upstream=True, only_downstream=False
+            ).keys()
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model,
+            only_novel_upstream=True, only_downstream=False
+            ).keys()
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.partial_coding_transcript.reset(reference=True)
+        
+        # test_start_lost_peptides
+        self.fwd_transcript.edit("T", 450456)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertFalse(peptides)
+        
+        self.transcript.edit("G", 5248251)
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        
+        self.partial_coding_transcript.edit("T", 34073968)
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            )
+        self.assertFalse(partial_peptides)
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            )
+        self.assertFalse(partial_peptides)
+
+        self.all_coding_transcript.edit("T", 5810046)
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            )
+        self.assertFalse(all_peptides)
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            )
+        self.assertFalse(all_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.partial_coding_transcript.reset(reference=True)
+        self.all_coding_transcript.reset(reference=True)
+
+        # test_start_lost_and_new_inframe_start
+        self.fwd_transcript.edit("ATG", 450446, mutation_type="I")
+        self.fwd_transcript.edit("T", 450456)
+        kmertides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()        
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit("CAT", 5248263, mutation_type="I")
+        self.transcript.edit("G", 5248251)
+        rev_kmertides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()        
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        
+        self.partial_coding_transcript.edit("T", 34073968)
+        self.partial_coding_transcript.edit("ATG", 34073397, mutation_type="I")
+        partial_kmertides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False
+            ).keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()        
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.partial_coding_transcript.reset(reference=True)
+
+        # test_start_lost_and_new_out_of_frame_start
+        self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
+        self.fwd_transcript.edit("T", 450456)
+        kmertides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()        
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit("CAT", 5248280, mutation_type="I")
+        self.transcript.edit("G", 5248251)
+        rev_kmertides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False).keys()
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model,
+            ).keys()        
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        
+        self.partial_coding_transcript.edit("T", 34073968)
+        self.partial_coding_transcript.edit("ATG", 34073396, mutation_type="I")
+        partial_kmertides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False
+            ).keys()
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+        partial_peptides = self.partial_coding_transcript.neopeptides(
+            only_novel_upstream=True, only_downstream=False,
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()        
+        self.assertEqual(partial_kmertides, partial_kmertides | partial_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.partial_coding_transcript.reset(reference=True)
+
+        # test_skipping_new_start
+        self.fwd_transcript.edit("ATG", 450445, mutation_type="I")
+        peptides = self.fwd_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(peptides)
+        peptides = self.fwd_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(peptides)
+        
+        self.transcript.edit("CAT", 5248280, mutation_type="I")
+        rev_peptides = self.transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(rev_peptides)
+        rev_peptides = self.transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(rev_peptides)
+        
+        self.partial_coding_transcript.edit("ATG", 34073397, mutation_type="I")
+        partial_peptides = self.partial_coding_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(partial_peptides)
+        partial_peptides = self.partial_coding_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(partial_peptides)
+        
+        self.non_coding_transcript.edit("ATG", 65190565, mutation_type="I")
+        noncoding_peptides = self.non_coding_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(noncoding_peptides)
+        noncoding_peptides = self.non_coding_transcript.neopeptides(only_downstream=True, 
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertFalse(noncoding_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+        self.partial_coding_transcript.reset(reference=True)
+        self.non_coding_transcript.reset(reference=True)
+
+        # test_translation_lost_and_restored
+        self.fwd_transcript.edit("C", 450458, mutation_class="G")
+        self.fwd_transcript.edit("G", 450458)
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.all_coding_transcript.edit("C", 5810042, mutation_class="G")
+        self.all_coding_transcript.edit("G", 5810042)
+        all_kmertides = self.all_coding_transcript.neopeptides().keys()
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(all_kmertides, all_kmertides | all_peptides)
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(all_kmertides, all_kmertides | all_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.all_coding_transcript.reset(reference=True)
+
+        # test_compound_indel_peptides
+        self.fwd_transcript.edit(4, 473924, mutation_type="D")
+        self.fwd_transcript.edit("AAAA", 473952, mutation_type="I")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit(4, 5247921, mutation_type="D")
+        self.transcript.edit("AAAA", 5247933, mutation_type="I")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
+        self.fwd_transcript.reset(reference=True)
+        self.transcript.reset(reference=True)
+
+        # test_all_coding_tx
+        self.all_coding_transcript.edit("C", 5810036)
+        all_kmertides = self.all_coding_transcript.neopeptides().keys()
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(all_kmertides, all_kmertides | all_peptides)
+        all_peptides = self.all_coding_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(all_kmertides, all_kmertides | all_peptides)
+
+        self.all_coding_transcript.reset(reference=True)
+
+        # test_hybrid_deletion_peptides
+        self.fwd_transcript.edit(5, 450550, mutation_type="D")
+        self.fwd_transcript.edit(5, 450552, mutation_type="D", mutation_class="G")
+        kmertides = self.fwd_transcript.neopeptides().keys()
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        peptides = self.fwd_transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(kmertides, kmertides | peptides)
+        
+        self.transcript.edit(5, 5248211, mutation_type="D", mutation_class="G")
+        self.transcript.edit(5, 5248208, mutation_type="D")
+        rev_kmertides = self.transcript.neopeptides().keys()
+        rev_peptides = self.transcript.neopeptides(
+            cleavage_prediction="C", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+        rev_peptides = self.transcript.neopeptides(
+            cleavage_prediction="I", cleavage_model=cleavage_model
+            ).keys()
+        self.assertEqual(rev_kmertides, rev_kmertides | rev_peptides)
+
     def test_germline_vs_somatic(self):
         """ "Fails if incorrect peptides are returned for different
         germline/somatic mutation inclusion decisions"""
@@ -1225,6 +1748,191 @@ class TestTranscript(unittest.TestCase):
             {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", "NA")]},
         )
 
+    def test_rna_edits_peptides(self):
+        """Fails if incorrect peptides are returned when multiple RNA 
+        edits are introduced"""
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0)
+        self.assertEqual((pep, protein), ({}, ""))
+
+        # Reference protein sequence "MGSLK"
+        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLK")
+
+        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLE")
+
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
+
+    def test_adjacent_edits_peptides(self):
+        """Fails if incorrect peptides are returned when multiple adjacent 
+        edits, including RNA edits, are introduced"""
+        # reverse transcript, codon sequence: CAT = "H"
+        # 5248244 is T in reverse-complemented codon ATG
+        self.transcript.edit("I", 5248244, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=0)
+        self.assertEqual((pep, protein[:4]), ({}, "MVHL"))
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:4], "MVRL")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        self.assertEqual((pep, protein[:4]), ({}, "MVRL"))
+
+        # reverse-complemented codon is AIC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248245, mutation_type="V", mutation_class="S")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+
+        # reverse-complemented codon is ACC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248244, mutation_type="V", mutation_class="G")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+
+        # adjacent reverse-complemented codon is ACT, new codon interpreted as GCT = Alanine
+        self.transcript.edit("I", 5248239, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+
+    def test_rna_edits_peptides_pepsickle(self):
+        """Fails if incorrect peptides are returned when multiple RNA 
+        edits are introduced and pepsickle is used for cleavage prediction"""
+        cleavage_model = initialize_epitope_model()
+
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein), ({}, ""))
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein), ({}, ""))
+
+        # Reference protein sequence "MGSLK"
+        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.atoi_transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLK")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.atoi_transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLK")
+        self.assertEqual(kmers, kmers | pep)
+
+        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.atoi_transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLE")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.atoi_transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MGGLE")
+        self.assertEqual(kmers, kmers | pep)
+
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
+
+    def test_adjacent_edits_peptides_pepsickle(self):
+        """Fails if incorrect peptides are returned when multiple adjacent 
+        edits, including RNA edits, are introduced and pepsickle is used
+        for cleavage prediction"""
+        
+        cleavage_model = initialize_epitope_model()
+
+        # reverse transcript, codon sequence: CAT = "H"
+        # 5248244 is T in reverse-complemented codon ATG
+        self.transcript.edit("I", 5248244, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="C", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein[:4]), ({}, "MVHL"))
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="I", cleavage_model=cleavage_model)
+        self.assertEqual((pep, protein[:4]), ({}, "MVHL"))
+        
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertEqual(protein[:4], "MVRL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1)
+        self.assertEqual(protein[:4], "MVRL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2)
+        self.assertEqual((pep, protein[:4]), ({}, "MVRL"))
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2)
+        self.assertEqual((pep, protein[:4]), ({}, "MVRL"))
+        self.assertEqual(kmers, kmers | pep)
+
+        # reverse-complemented codon is AIC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248245, mutation_type="V", mutation_class="S")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_somatic=1, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_somatic=1, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_somatic=1, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_somatic=1, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_somatic=1)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+
+        # reverse-complemented codon is ACC, new codon interpreted as GGT = Gly
+        self.transcript.edit("C", 5248244, mutation_type="V", mutation_class="G")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:4], "MVGL")
+        self.assertEqual(kmers, kmers | pep)
+
+        # adjacent reverse-complemented codon is ACT, new codon interpreted as GCT = Alanine
+        self.transcript.edit("I", 5248239, mutation_type="E", mutation_class="P")
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=1, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2, cleavage_prediction="C", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+        self.assertEqual(kmers, kmers | pep)
+        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2, cleavage_prediction="I", cleavage_model=cleavage_model)
+        kmers = self.transcript.neopeptides(return_protein=False, include_rna_edits=2, include_germline=2)
+        self.assertEqual(protein[:5], "MVGLA")
+        self.assertEqual(kmers, kmers | pep)
+
+    # Further RNA editing tests
     def test_expressed_edits_with_rna_edits_from_dict(self):
         """check expressed_edit can read and generate edits using
             rna_editing_sites from dictionary"""
@@ -1954,93 +2662,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(editing_positions, [0, 1.0, 2.0, 3.0])
         self.assertEqual(ambiguous_positions, [3.0])
         self.assertEqual(pep, "KMGE")
-
-    def test_neopeptides_with_rna_edits(self):
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0)
-        self.assertEqual((pep, protein), ({}, ""))
-
-        # Reference protein sequence "MGSLK"
-        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1)
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLK")
-
-        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1)
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLE")
-
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2)
-        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
-
-    def test_neopeptides_with_adjacent_edits(self):
-        # reverse transcript, codon sequence: CAT = "H"
-        # 5248244 is T in reverse-complemented codon ATG
-        self.transcript.edit("I", 5248244, mutation_type="E", mutation_class="P")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=0)
-        self.assertEqual((pep, protein[:4]), ({}, "MVHL"))
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1)
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:4], "MVRL")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2)
-        self.assertEqual((pep, protein[:4]), ({}, "MVRL"))
-
-        # reverse-complemented codon is AIC, new codon interpreted as GGT = Gly
-        self.transcript.edit("C", 5248245, mutation_type="V", mutation_class="S")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_somatic=1)
-        self.assertEqual(protein[:4], "MVGL")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_somatic=1)
-        self.assertEqual(protein[:4], "MVGL")
-
-        # reverse-complemented codon is ACC, new codon interpreted as GGT = Gly
-        self.transcript.edit("C", 5248244, mutation_type="V", mutation_class="G")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2)
-        self.assertEqual(protein[:4], "MVGL")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2)
-        self.assertEqual(protein[:4], "MVGL")
-
-        # adjacent reverse-complemented codon is ACT, new codon interpreted as GCT = Alanine
-        self.transcript.edit("I", 5248239, mutation_type="E", mutation_class="P")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=1, include_germline=2)
-        self.assertEqual(protein[:5], "MVGLA")
-        pep, protein = self.transcript.neopeptides(return_protein=True, include_rna_edits=2, include_germline=2)
-        self.assertEqual(protein[:5], "MVGLA")
-
-    def test_neopeptides_with_rna_edits_and_pepsickle_C(self):
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="C")
-        self.assertEqual((pep, protein), ({}, ""))
-
-        # Reference protein sequence "MGSLK"
-        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C")
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLK")
-
-        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="C")
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLE")
-
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="C")
-        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
-
-    def test_neopeptides_with_rna_edits_and_pepsickle_I(self):
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=0, cleavage_prediction="I")
-        self.assertEqual((pep, protein), ({}, ""))
-
-        # Reference protein sequence "MGSLK"
-        self.atoi_transcript.edit("I", 9664186, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I")
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLK")
-
-        self.atoi_transcript.edit("I", 9664192, mutation_type="E", mutation_class="P")
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=1, cleavage_prediction="I")
-        self.assertNotEqual(pep, {})
-        self.assertEqual(protein[:5], "MGGLE")
-
-        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2, cleavage_prediction="I")
-        self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
 
 if __name__ == "__main__":
     unittest.main()

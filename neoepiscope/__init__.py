@@ -65,6 +65,7 @@ from .file_processing import (
 )
 from operator import itemgetter
 from intervaltree import Interval, IntervalTree
+from pepsickle import initialize_epitope_model
 
 _help_intro = (
     """neoepiscope searches for neoepitopes using tumor/normal DNA-seq data."""
@@ -708,10 +709,15 @@ def main():
                 "--rna-edits must be one of " '{"background", "include", "exclude"}'
             )
         # Determine handling of proteasome type for cleavage prediciton:
-        if args.cleavage-prediction == "C":
-            cleavage_prediction="C"
+        if not args.cleavage-prediction:
+            cleavage_prediction = None
+            cleavage_model = None
+        elif args.cleavage-prediction == "C":
+            cleavage_prediction = "C"
+            cleavage_model = initialize_epitope_model()
         elif args.cleavage-prediction == "I":
-            cleavage_prediction="I"
+            cleavage_prediction = "I"
+            cleavage_model = initialize_epitope_model()
         else:
             raise RuntimeError(
                 "--cleavage-prediction must be one of " '{"C", "I"}'
@@ -764,6 +770,7 @@ def main():
             include_somatic,
             include_rna_edits,
             cleavage_prediction,
+            cleavage_model,
             protein_fasta=args.fasta,
             rna_edit_dict=(rna_edit_dict if args.rna_edits else None),
         )

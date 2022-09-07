@@ -84,6 +84,7 @@ setup(
         "mhcnuggets",
         "networkx",
         "pysam>=0.18.0",
+        "pepsickle",
     ],
     entry_points={"console_scripts": ["neoepiscope=neoepiscope:main"]},
     cmdclass={"download": DownloadDependencies, "test": DiscoverTest},
