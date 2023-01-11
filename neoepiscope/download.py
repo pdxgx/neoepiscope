@@ -92,6 +92,9 @@ download = {
     ],
     "REDIportal hg38 database" : [
         "http://srv00.recas.ba.infn.it/webshare/ATLAS/donwload/TABLE1_hg38.txt.gz"
+    ],
+    "UniProtKB" : [
+        "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz"
     ]
 }
 
@@ -537,7 +540,7 @@ class NeoepiscopeDownloader(object):
                 self._grab_and_explode(
                     download["GENCODE " + gencode + " annotation"],
                     "GENCODE " + gencode + " annotation",
-                    explode=False,
+                    explode=False
                 )
                 exec("gencode_" + gencode + "_temp = '" + os.path.join(temp_install_dir, 'gencode_' + gencode)
                      + "'", globals())
@@ -618,6 +621,22 @@ class NeoepiscopeDownloader(object):
                 exec("gencode_" + gencode + " = None", globals())
                 exec("bowtie_" + build + " = None", globals())
                 exec("rna_edits_" + build + " = None", globals())
+        ## add download question for UniProtKB
+        if self._yes_no_query(
+                (
+                "Download UniProtKB flat file for post-translational "
+                "modification warnings?"
+                )
+            ):
+                # test filename variable
+                exec("UniProtKB" + " = '" + os.path.join(self.download_dir, 'uniprot_sprot.dat.gz')
+                     + "'", globals())
+                # Download UniProtKB flat file
+                self._grab_and_explode(
+                    download["UniProtKB"], "UniProtKB",
+                    explode=False
+                )
+
         programs = []
         for program in [
             "netMHCIIpan v3",
@@ -726,6 +745,7 @@ rna_edits_hg38 = {rna_edits_hg38}
 rna_edits_hg19 = {rna_edits_hg19}
 rna_edits_mm10 = {rna_edits_mm10}
 rna_edits_mm9 = {rna_edits_mm9}
+UniProtKB = {UniProtKB}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCIIpan4 = {netMHCIIpan4}
 netMHCpan3 = {netMHCpan3}
@@ -775,6 +795,9 @@ hapcut2 = {hapcut2}
                     ),
                     rna_edits_mm9=(
                         "None" if rna_edits_mm9 is None else self._quote(rna_edits_mm9)
+                    ),
+                    UniProtKB=(
+                        "None" if UniProtKB is None else self._quote(UniProtKB)
                     ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])

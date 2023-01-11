@@ -4298,7 +4298,7 @@ def transcript_to_rna_edits(rna_edit_file, cds_tree, cds_dict,
     return transcript_to_rna_edits
 
 def get_transcripts_from_tree(chrom, start, stop, cds_tree):
-    """Uses cds tree to btain transcript IDs from genomic coordinates
+    """Uses cds tree to obtain transcript IDs from genomic coordinates
 
     chrom: (String) Specify chrom to use for transcript search.
     start: (Int) Specify start position to use for transcript search.
@@ -4379,7 +4379,7 @@ def process_haplotypes(hapcut_output, interval_dict, phasing):
                     software's prep mode)
     interval_dict: dictionary linking genomic intervals to transcripts
     phasing: whether to phase mutations (boolean)
-    Return value: dictinoary linking haplotypes to transcripts
+    Return value: dictionary linking haplotypes to transcripts
     """
     chr_in_intervals = False
     for contig in interval_dict:

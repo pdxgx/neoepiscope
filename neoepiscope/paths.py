@@ -43,6 +43,7 @@ rna_edits_hg38 = None
 rna_edits_hg19 = None
 rna_edits_mm10 = None
 rna_edits_mm9 = None
+UniProtKB = None
 netMHCIIpan3 = None
 netMHCIIpan4 = None
 netMHCpan3 = None
