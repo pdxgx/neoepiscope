@@ -52,6 +52,8 @@ from .transcript import (
     get_transcripts_from_tree,
     process_haplotypes,
     get_peptides_from_transcripts,
+    transcript_to_rna_edits,
+    transcript_to_ptm_sites,
 )
 from .transcript_expression import feature_to_tpm_dict, get_expressed_variants
 from .binding_scores import get_binding_tools, gather_binding_scores
@@ -132,6 +134,16 @@ def main():
         required=False,
         default=None,
         help="input path to REDIportal-formatted file containing RNA edits"
+    )
+    index_parser.add_argument(
+        "-p", 
+        "--ptm-sites", 
+        type=str,
+        nargs=2, 
+        required=False,
+        action="append",
+        default=None,
+        help="input path to UniProtKB flat file and species for parsing ('HUMAN' or 'MOUSE')"
     )
     index_parser.add_argument(
         "-d",
@@ -361,6 +373,14 @@ def main():
         help="enumerate neoepitopes from polymorphic pseudogene transcripts",
     )
     call_parser.add_argument(
+        "--ptm-sites", 
+        type=str, 
+        required=False,
+        default="exclude",
+        help="how to handle post-translational modification warnings in "
+        "neoepitope enumeration; documentation online for more information",
+    )
+    call_parser.add_argument(
         "--igv",
         required=False,
         action="store_true",
@@ -419,6 +439,10 @@ def main():
         if args.rna_edits is not None:
             transcript_to_rna_edits(args.rna_edits, cds_tree, cds_dict,
                                     dict_dir=args.dicts)
+        if args.ptm_sites is not None:
+            transcript_to_ptm_sites(
+                args.ptm_sites[0], args.ptm_sites[1], cds_tree, dict_dir=args.dicts
+            )
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
@@ -442,37 +466,45 @@ def main():
                 and paths.gencode_v35 is not None
                 and paths.bowtie_hg38 is not None
                 and paths.rna_edits_hg38 is not None
+                and paths.uniprot_hg38 is not None
             ):
                 gencode_path = paths.gencode_v35
                 bowtie_index_path = paths.bowtie_hg38
                 rna_edits_path = paths.rna_edits_hg38
+                uniprot_path = paths.uniprot_hg38
             elif (
                 args.build == "hg19"
                 and paths.gencode_v19 is not None
                 and paths.bowtie_hg19 is not None
                 and paths.rna_edits_hg19 is not None
+                and paths.uniprot_hg19 is not None
             ):
                 gencode_path = paths.gencode_v19
                 bowtie_index_path = paths.bowtie_hg19
                 rna_edits_path = paths.rna_edits_hg19
+                uniprot_path = paths.uniprot_hg19
             elif (
                 args.build == "mm9"
                 and paths.gencode_vM1 is not None
                 and paths.bowtie_mm9 is not None
                 and paths.rna_edits_mm9 is not None
+                and paths.uniprot_mm9 is not None
             ):
                 gencode_path = paths.gencode_vM1
                 bowtie_index_path = paths.bowtie_mm9
                 rna_edits_path = paths.rna_edits_mm9
+                uniprot_path = paths.uniprot_mm9
             elif (
                 args.build == "mm10"
                 and paths.gencode_vM25 is not None
                 and paths.bowtie_mm10 is not None
                 and paths.rna_edits_mm10 is not None
+                and paths.uniprot_mm10 is not None
             ):
                 gencode_path = paths.gencode_vM25
                 bowtie_index_path = paths.bowtie_mm10
                 rna_edits_path = paths.rna_edits_mm10
+                uniprot_path = paths.uniprot_mm10
             else:
                 raise RuntimeError(
                     "".join(
@@ -513,6 +545,18 @@ def main():
                 if e.errno == 2:
                     # No RNA edits available because picked dictionary not found
                     rna_edit_dict = None
+                else:
+                    raise
+            try:
+                with open(
+                    os.path.join(uniprot_path, "transcript_to_ptm_sites.pickle"),
+                    "rb",
+                ) as ptm_sites_stream:
+                    ptm_sites_dict = pickle.load(ptm_sites_stream)
+            except IOError as e:
+                if e.errno == 2:
+                    # No post-translational modifications available because picked dictionary not found
+                    ptm_sites_dict = None
                 else:
                     raise
             reference_index = bowtie_index.BowtieIndexReference(bowtie_index_path)
@@ -589,6 +633,19 @@ def main():
                     warnings.warn(
                         "No dictionary with RNA edits provided; "
                         "will proceed without accounting for RNA editing",
+                        Warning
+                    )
+                uniprot_path = os.path.join(
+                    args.dicts, "transcript_to_ptm_sites.pickle"
+                )
+                if os.path.isfile(uniprot_path):
+                    with open(uniprot_path, "rb") as ptm_sites_stream:
+                        ptm_sites_dict = pickle.load(ptm_sites_stream)
+                else:
+                    ptm_sites_dict = None
+                    warnings.warn(
+                        "No dictionary with post-translational modifications provided; "
+                        "will proceed without raising peptide-level PTM flags",
                         Warning
                     )
                 bowtie_files = [
@@ -708,6 +765,15 @@ def main():
             raise RuntimeError(
                 "--rna-edits must be one of " '{"background", "include", "exclude"}'
             )
+        # Establish handling of post-translational modifications:
+        if args.ptm-sites == "include":
+            include_ptm_sites = 1
+        elif args.ptm-sites == "exclude":
+            include_ptm_sites = 0
+        else:
+            raise RuntimeError(
+                "--ptm-sites must be one of " '{"include", "exclude"}'
+            )
         # Determine handling of proteasome type for cleavage prediciton:
         if not args.cleavage-prediction:
             cleavage_prediction = None
@@ -769,10 +835,12 @@ def main():
             include_germline,
             include_somatic,
             include_rna_edits,
+            include_ptm_sites,
             cleavage_prediction,
             cleavage_model,
             protein_fasta=args.fasta,
             rna_edit_dict=(rna_edit_dict if args.rna_edits else None),
+            ptm_sites_dict=(ptm_sites_dict if args.ptm_sites else None),
         )
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes) > 0:
