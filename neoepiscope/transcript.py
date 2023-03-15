@@ -40,6 +40,7 @@ SOFTWARE.
 
 from __future__ import absolute_import, division, print_function
 from . import bowtie_index
+from . import uniprot_parse
 import collections
 import copy
 import bisect
@@ -462,7 +463,8 @@ class Transcript(object):
     # I.E., should we break up a somatic deletion into two separate mutations
     # that surround the germline mutation? Or do we only call the somatic?
 
-    def __init__(self, bowtie_reference_index, cds, transcript_id, seleno, rna_edit_dict=None):
+    def __init__(self, bowtie_reference_index, cds, transcript_id, seleno, 
+        rna_edit_dict=None, ptm_sites_dict=None):
         """ Initializes Transcript object.
             This class assumes edits added to a transcript are properly
             phased, consistent, and nonredundant. Most conspicuously, there
@@ -473,7 +475,9 @@ class Transcript(object):
                 a line can be a list pre-split by '\t' or not yet split
             transcript_id: transcript ID
             seleno: whether translated transcript contains a selenocysteine (boolean)
-            rna_edit_dict: dictionary linking transcript IDs to RNA editing sites 
+            rna_edit_dict: dictionary linking transcript IDs to RNA editing sites
+            ptm_sites_dict: dictionary linking transcript IDs to genome-mapped
+                post-translational modification sites 
         """
         assert len(cds) > 0
         if rna_edit_dict is None:
@@ -483,6 +487,13 @@ class Transcript(object):
                 self.rna_edit_sites = rna_edit_dict[transcript_id]
             except KeyError:
                 self.rna_edit_sites = []
+        if ptm_sites_dict is None:
+            self.ptm_sites = []
+        else:
+            try:
+                self.ptm_sites = ptm_sites_dict[transcript_id]
+            except KeyError:
+                self.ptm_sites = []
         self.bowtie_reference_index = bowtie_reference_index
         self.transcript_id = transcript_id
         self.seleno = seleno
@@ -969,7 +980,7 @@ class Transcript(object):
 
     def expressed_edits(
         self, start=None, end=None, genome=True, include_somatic=1, include_germline=2, 
-        include_rna_edits=0):
+        include_rna_edits=0, include_ptm_sites=0):
         """ Gets expressed set of edits and transcript intervals.
             start: start position (1-indexed, inclusive); None means start of
                 transcript
@@ -987,6 +998,8 @@ class Transcript(object):
             include_rna_edits: 0 = do not include A to I RNA editing,
                 1 = exclude RNA edits from reference comparison,
                 2 = include RNA edits in both annotated sequence and reference comparison
+            include_ptm_sites: 0 = do not include post-translational modification warnings,
+                1 = include post-translational modification flags for enumerated neopeptides
             Return value: tuple (defaultdict
                                  mapping edits to lists of
                                  (seq, mutation_type, mutation_class)
@@ -1648,7 +1661,7 @@ class Transcript(object):
 
     def annotated_seq(
         self, start=None, end=None, genome=True, include_somatic=1,
-        include_germline=2, include_rna_edits=0):
+        include_germline=2, include_rna_edits=0, include_ptm_sites=0):
         """ Retrieves transcript sequence between start and end coordinates.
             Includes info on whether edits are somatic or germline and whether
             sequence is reference sequence.
@@ -1668,6 +1681,8 @@ class Transcript(object):
             include_rna_edits: 0 = do not include A to I RNA editing,
                 1 = exclude RNA edits from reference comparison,
                 2 = include RNA edits in both annotated sequence and reference comparison
+            include_ptm_sites: 0 = do not include post-translational modification warnings,
+                1 = include post-translational modification flags for enumerated neopeptides
             Return value: list of tuples (sequence, mutation class,
                 mutation information, position),
                 where sequence is a segment of sequence of the (possibly)
@@ -1700,6 +1715,7 @@ class Transcript(object):
                 include_somatic=include_somatic,
                 include_germline=include_germline,
                 include_rna_edits=include_rna_edits,
+                include_ptm_sites=include_ptm_sites
             )
             new_edits = copy.deepcopy(edits)
             """Check for insertions at beginnings of intervals, and if they're
@@ -2120,7 +2136,8 @@ class Transcript(object):
         )
 
     def _build_sequences(
-        self, annotated_sequence, strand, include_somatic, include_germline, include_rna_edits
+        self, annotated_sequence, strand, include_somatic, include_germline, 
+        include_rna_edits, include_ptm_sites
     ):
         """Builds alternative and reference sequences and dictionaries linking their
         transcript-level coordinates to genomic coordinates
@@ -2452,6 +2469,7 @@ class Transcript(object):
         include_somatic=1,
         include_germline=2,
         include_rna_edits=0,
+        include_ptm_sites=0,
         cleavage_prediction=None,
         cleavage_model=None,
         only_novel_upstream=False,
@@ -2476,6 +2494,8 @@ class Transcript(object):
         include_rna_edits: 0 = do not include A to I RNA editing,
             1 = exclude RNA edits from reference comparison,
             2 = include RNA edits in both annotated sequence and reference comparison
+        include_ptm_sites: 0 = do not include post-translational modification warnings,
+                1 = include post-translational modification flags for enumerated neopeptides
         cleavage_prediction: "C" = cleavage probability using constitutive proteasome data,
             "I" = cleavage probability using immunoproteasome data
         cleavage_model: initialized human epitope proteasome model from pepsickle
@@ -2535,7 +2555,8 @@ class Transcript(object):
             strand=strand,
             include_somatic=include_somatic,
             include_germline=include_germline,
-            include_rna_edits=include_rna_edits
+            include_rna_edits=include_rna_edits,
+            include_ptm_sites=include_ptm_sites
         )
         # Assign possible start codon sequences
         # May want to update to include 'ATA', 'ATT' for mitochondrial transcripts
@@ -4297,6 +4318,34 @@ def transcript_to_rna_edits(rna_edit_file, cds_tree, cds_dict,
             pickle.dump(transcript_to_rna_edits, f)
     return transcript_to_rna_edits
 
+def transcript_to_ptm_sites(uniprot_file, build_species, cds_dict, dict_dir=None):
+    """Parses UniProtKB file and maps post-translational modifications to
+    genomic coordinates using cds dict
+    
+    uniprot_file: (String) path to UniProtKB flat file
+    build_species: (String) species name to use in flat file parsing
+    cds_dict: cds_dict output by gtf_to_cds() 
+    dict_dir: where to write picked dictionary or None if pickling
+        shouldn't happen
+
+    Return value: (dict) in the following format
+        {transcript_id: [accession, isoform_id, [(0-based aa location, type, description), ...]]}
+    """
+    ###### Needs helper fxn to convert 0-based aa position to genomic position w/ cds_dict
+
+    transcript_to_ptm_sites = dict()
+    with open(uniprot_file, 'rt') as handle:
+        for record in parse(handle, build_species):
+            # Create dict entry for every ENSEMBL transcript ID
+            for ids in record.tx_ids:
+                transcript_to_ptm_sites[ids[0]] = [record.accession, ids[1], record.ptms[ids[1]]]
+
+    if dict_dir is not None:
+        pickle_dict = os.path.join(dict_dir, "transcript_to_ptm_sites.pickle")
+        with open(pickle_dict, "wb") as f:
+            pickle.dump(transcript_to_ptm_sites, f)
+    return transcript_to_ptm_sites
+
 def get_transcripts_from_tree(chrom, start, stop, cds_tree):
     """Uses cds tree to obtain transcript IDs from genomic coordinates
 
@@ -4711,10 +4760,12 @@ def get_peptides_from_transcripts(
     include_germline=2,
     include_somatic=1,
     include_rna_edits=0,
+    include_ptm_sites=0,
     cleavage_prediction=None,
     cleavage_model=None,
     protein_fasta=False,
-    rna_edit_dict=None
+    rna_edit_dict=None,
+    ptm_sites_dict=None
 ):
     """For transcripts that are affected by a mutation, mutations are applied
     and neoepitopes resulting from mutations are called
@@ -4744,8 +4795,12 @@ def get_peptides_from_transcripts(
             reference comparison
     include_rna_edits: 0 = do not include A to I RNA editing,
             1 = exclude RNA edits from reference comparison,
-            2 = include RNA edits in both annotated sequence and reference comparison
-    cleavage_prediction: "C" = cleavage probability using constitutive proteasome data,
+            2 = include RNA edits in both annotated sequence and reference 
+            comparison
+    include_ptm_sites: 0 = do not include post-translational modification warnings,
+                1 = include post-translational modification flags for enumerated neopeptides
+    cleavage_prediction: "C" = cleavage probability using constitutive 
+            proteasome data,
             "I" = cleavage probability using immunoproteasome data
     cleavage_model: initialized human epitope proteasome model from pepsickle
     nmd: whether to include nonsense mediated decay transcripts (boolean)
@@ -4757,7 +4812,9 @@ def get_peptides_from_transcripts(
     allow_partial_codons: attempt to translate partial codons at ends of transcripts
     protein_fasta: wheather to generate full-length protein sequences
         for fasta file
-    rna_edit_dict: dictionary linking chrom,pos to interval
+    rna_edit_dict: dictionary linking transcript IDs to RNA editing sites
+    ptm_sites_dict: dictionary linking transcript IDs to genome-mapped post-translational 
+        modification sites 
     return value: dictionary linking neoepitopes to their associated
         metadata
     """
@@ -4800,7 +4857,8 @@ def get_peptides_from_transcripts(
                 ],
                 affected_transcript,
                 seleno,
-                rna_edit_dict
+                rna_edit_dict,
+                ptm_sites_dict
             )
         # Iterate over haplotypes associated with this transcript
         haplotypes = relevant_transcripts[affected_transcript]
@@ -4852,6 +4910,7 @@ def get_peptides_from_transcripts(
                     include_somatic=include_somatic,
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
+                    include_ptm_sites=include_ptm_sites,
                     cleavage_prediction=cleavage_prediction,
                     cleavage_model=cleavage_model,
                     only_novel_upstream=only_novel_upstream,
@@ -4893,7 +4952,8 @@ def get_peptides_from_transcripts(
             ],
             transcript,
             seleno,
-            rna_edit_dict
+            rna_edit_dict,
+            ptm_sites_dict
         )
         for mutation in homozygous_variants[transcript]:
             if tuple(mutation) not in used_homozygous_variants:
@@ -4934,6 +4994,7 @@ def get_peptides_from_transcripts(
                     include_somatic=include_somatic,
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
+                    include_ptm_sites=include_ptm_sites,
                     cleavage_prediction=cleavage_prediction,
                     cleavage_model=cleavage_model,
                     only_novel_upstream=only_novel_upstream,

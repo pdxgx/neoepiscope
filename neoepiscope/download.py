@@ -50,6 +50,8 @@ import os
 import subprocess
 from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree, transcript_to_rna_edits
 from distutils.core import Command
+from datetime import datetime
+from urllib import request, error
 
 download = {
     "GENCODE v35 annotation": [
@@ -92,9 +94,6 @@ download = {
     ],
     "REDIportal hg38 database" : [
         "http://srv00.recas.ba.infn.it/webshare/ATLAS/donwload/TABLE1_hg38.txt.gz"
-    ],
-    "UniProtKB" : [
-        "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz"
     ]
 }
 
@@ -529,11 +528,68 @@ class NeoepiscopeDownloader(object):
             os.rmdir(self.download_dir)
             pass
         os.chdir(temp_install_dir)
-        for build, gencode, bowtie, rediportal in [
-                ("mm9", "vM1", "NCBIM37", None),
-                ("mm10", "vM25", "GRCm38.p6", "TABLE1_mm10.txt"),
-                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt"),
-                ("hg38", "v35", "GRCh38.p13", "TABLE1_hg38.txt")
+        
+        # Add download question for UniProtKB
+        if self._yes_no_query(
+            (
+                "Download UniProtKB for post-translational modification warnings?"
+                " File size is ~1.5 GB and may take >1 hr to download."
+                )
+        ):
+            # Set the UniProtKB url to the first release of the current year or,
+            # if unavailable, the first release of the previous year
+            year = datetime.now().year
+            try:
+                url_response = request.urlopen(
+                    "https://ftp.uniprot.org/pub/databases/uniprot/previous_releases/" 
+                    "release-{0}_01/knowledgebase/uniprot_sprot-only{0}_01.tar.gz".format(year)
+                    )
+            except error.URLError:
+                year -= 1
+
+            uniprot_url = [
+                "https://ftp.uniprot.org/pub/databases/uniprot/previous_releases/"
+                "release-{0}_01/knowledgebase/uniprot_sprot-only{0}_01.tar.gz".format(year)
+                ]
+            uniprot_tarball = "uniprot_sprot-only{0}_01.tar.gz".format(year)
+
+            # Download UniProtKB flat file
+            self._grab_and_explode(uniprot_url, "UniProtKB", explode=False)
+            
+            # Extract gzipped flat file from tarball
+            extract_command = [
+                "tar", 
+                "zxvf", 
+                uniprot_tarball, 
+                'uniprot_sprot.dat.gz'
+                ]
+            try:
+                subprocess.check_output(extract_command)
+            except subprocess.CalledProcessError as e:
+               self._print_to_screen_and_log(
+                                    (
+                                        "Error encountered unpacking file {0}; exit "
+                                        'code was {1}; command invoked was "{2}".'.format(
+                                            uniprot_tarball,
+                                            e.returncode,
+                                            " ".join(extract_command)
+                                            )
+                                    )
+                                )
+            # Remove tarball
+            remove_command = ["rm", uniprot_tarball]
+            subprocess.check_output(remove_command)
+
+            # Create flat filename variable
+            uniprotkb_flat_file = os.path.join(temp_install_dir, 'uniprot_sprot.dat.gz')
+        else:
+            uniprotkb_flat_file = None
+
+        for build, gencode, bowtie, rediportal, uniprot_species in [
+                ("mm9", "vM1", "NCBIM37", None, "MOUSE"),
+                ("mm10", "vM25", "GRCm38.p6", "TABLE1_mm10.txt", "MOUSE"),
+                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt", "HUMAN"),
+                ("hg38", "v35", "GRCh38.p13", "TABLE1_hg38.txt", "HUMAN")
             ]:
             if self._yes_no_query("Download and install indexes for " + build + "?"):
                 # Download and index annotation
@@ -581,8 +637,8 @@ class NeoepiscopeDownloader(object):
                 # Download and index REDIportal RNA edits
                 if rediportal is not None:
                     self._grab_and_explode(
-                        download["REDIportal " + build + " database"], "REDIportal "
-                        + build + " database",
+                        download["REDIportal " + build + " database"], 
+                        "REDIportal " + build + " database",
                         explode=False
                     )
                     exec("rediportal_" + build + "_temp = '" + os.path.join(temp_install_dir, 'rediportal_' + build)
@@ -617,25 +673,43 @@ class NeoepiscopeDownloader(object):
                                 build
                             )
                     )
+                # Index UniProtKB post-translational modifications
+                if uniprotkb_flat_file is not None:
+                    exec("uniprot_" + build + "_temp = '" + os.path.join(temp_install_dir, 'uniprot_' + build)
+                         + "'", globals())
+                    exec("uniprot_" + build + " = '" + os.path.join(self.download_dir, 'uniprot_' + build)
+                         + "'", globals())
+                    try:
+                        os.makedirs(eval("uniprot_" + build + "_temp"))
+                    except OSError as e:
+                        self._print_to_screen_and_log(
+                            (
+                                'Problem encountered trying to create '
+                                'directory "{}" for ptm indexing. May need '
+                                'sudo permissions.'.format(eval("uniprot_" + build + "_temp"))
+                            )
+                        )   
+                        self._bail()
+                    self._print_to_screen_and_log(
+                        "[Configuring] Indexing post-translational modifications for {}...".format(build)
+                    )
+                    transcript_to_ptm_sites(uniprotkb_flat_file,
+                                            uniprot_species,
+                                            cds_dict,
+                                            dict_dir=eval("uniprot_" + build + "_temp")
+                                            )
+                else:
+                    exec("uniprot_" + build + " = None", globals())
+                    self._print_to_screen_and_log(
+                        "[Configuring] No post-translational modifications available for {}; continuing...".format(
+                                build
+                            )
+                    )
             else:
                 exec("gencode_" + gencode + " = None", globals())
                 exec("bowtie_" + build + " = None", globals())
                 exec("rna_edits_" + build + " = None", globals())
-        ## add download question for UniProtKB
-        if self._yes_no_query(
-                (
-                "Download UniProtKB flat file for post-translational "
-                "modification warnings?"
-                )
-            ):
-                # test filename variable
-                exec("UniProtKB" + " = '" + os.path.join(self.download_dir, 'uniprot_sprot.dat.gz')
-                     + "'", globals())
-                # Download UniProtKB flat file
-                self._grab_and_explode(
-                    download["UniProtKB"], "UniProtKB",
-                    explode=False
-                )
+                exec("uniprot_" + build + " = None", globals())
 
         programs = []
         for program in [
@@ -745,7 +819,10 @@ rna_edits_hg38 = {rna_edits_hg38}
 rna_edits_hg19 = {rna_edits_hg19}
 rna_edits_mm10 = {rna_edits_mm10}
 rna_edits_mm9 = {rna_edits_mm9}
-UniProtKB = {UniProtKB}
+uniprot_hg38 = {uniprot_hg38}
+uniprot_hg19 = {uniprot_hg19}
+uniprot_mm10 = {uniprot_mm10}
+uniprot_mm9 = {uniprot_mm9}
 netMHCIIpan3 = {netMHCIIpan3}
 netMHCIIpan4 = {netMHCIIpan4}
 netMHCpan3 = {netMHCpan3}
@@ -796,8 +873,17 @@ hapcut2 = {hapcut2}
                     rna_edits_mm9=(
                         "None" if rna_edits_mm9 is None else self._quote(rna_edits_mm9)
                     ),
-                    UniProtKB=(
-                        "None" if UniProtKB is None else self._quote(UniProtKB)
+                    uniprot_hg38=(
+                        "None" if uniprot_hg38 is None else self._quote(uniprot_hg38)
+                    ),
+                    uniprot_hg19=(
+                        "None" if uniprot_hg19 is None else self._quote(uniprot_hg19)
+                    ),
+                    uniprot_mm10=(
+                        "None" if uniprot_mm10 is None else self._quote(uniprot_mm10)
+                    ),
+                    uniprot_mm9=(
+                        "None" if uniprot_mm9 is None else self._quote(uniprot_mm9)
                     ),
                     netMHCIIpan3=(
                         "None" if programs[0] is None else self._quote(programs[0])

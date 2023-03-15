@@ -33,7 +33,7 @@ class Record:
 
     Attributes:
      - entry_name        Name of this entry, e.g. RL1_ECOLI
-     - accessions        List of the accession numbers, e.g. ['P00321']
+     - accession         Primary accession number (first in AC line) as string e.g. P00321
      - organism          The source of the sequence
      - comments          List of strings
      - isoforms          List of tuples (isoform_id, [vsp1, vsp2, ...])
@@ -60,21 +60,18 @@ class Record:
 
     Example:
     --------
-    >>> from Bio import SwissProt
     >>> example_filename = "SwissProt/P68308.txt"
+    >>> species = 'BALPH'
     >>> with open(example_filename) as handle:
-    ...     records = SwissProt.parse(handle)
+    ...     records = parse(handle, species)
     ...     for record in records:
     ...         print(record.entry_name)
-    ...         print(record.accessions)
-    ...         print(record.keywords)
+    ...         print(record.accession)
     ...         print(record.organism)
     ...         print(record.sequence[:20] + "...")
     ...
     NU3M_BALPH
-    ['P68308', 'P24973']
-    ['Electron transport', 'Membrane', 'Mitochondrion', 'Mitochondrion inner membrane', 
-        'NAD', 'Respiratory chain', 'Translocase', 'Transmembrane', 'Transmembrane helix', 'Transport', 'Ubiquinone']
+    P68308
     Balaenoptera physalus (Fin whale) (Balaena physalus).
     MNLLLTLLTNTTLALLLVFI...
     """
@@ -82,11 +79,10 @@ class Record:
     def __init__(self):
         """Initialize the class."""
         self.entry_name = None
-        self.accessions = []
+        self.accession = None
         self.organism = []
         self.comments = []
         self.isoforms = []
-        self.iso_seqs = defaultdict(list)
         self.cross_references = []
         self.tx_ids = []
         self.features = []
@@ -170,7 +166,7 @@ def _read(handle, species):
         if key == "ID" and species in value:
             break
     record = Record()
-    _read_id(record, line)
+    #_read_id(record, line)
     _sequence_lines = []
     for line in handle:
         key, value = line[:2], line[5:].rstrip()
@@ -178,8 +174,7 @@ def _read(handle, species):
             value = unread + " " + value
             unread = ""
         if key == "AC":
-            accessions = value.rstrip(";").split("; ")
-            record.accessions.extend(accessions)
+            record.accession = value.rstrip(";").split("; ")[0]
         # Possible inclusion of record date/time info in future
         #elif key == "DT":
             #_read_dt(record, line)
@@ -210,7 +205,6 @@ def _read(handle, species):
                 for iso_id, VSPs in zip(tmp_ids, tmp_vsps):
                     vsp_list = [VSP.strip() for VSP in re.split(",", VSPs)]
                     record.isoforms.append((iso_id, vsp_list))
-                    record.iso_seqs[iso_id] = vsp_list
             # Link ENSEMBL transcript IDs to isoform IDs
             txs = [i for i in record.cross_references if 'Ensembl' in i]
             for i in txs:
@@ -228,20 +222,17 @@ def _read(handle, species):
             # Keep PTMs for modified residues and glycosylation
             ptms = [p for p in record.features if p[0] == 'MOD_RES' or p[0] == 'CARBOHYD']
             for p in ptms:
+                # Add isoform ID for canonical sequence where possible otherwise iso_id = None
                 if p[1] == None:
                     try:
                         p[1] = record.isoforms[0][0]
                     except IndexError:
                         pass
-                # Check that PTM to/from positions are adjacent
-                if p[2][1] == (p[2][0] + 1):
-                    # defaultdict({iso_id: [[0-based location(s), type, description], ...})
-                    record.ptms[p[1]].append((p[2][0], p[0], p[3]['note']))
-                else:
-                    record.ptms[p[1]].append((p[2], p[0], p[3]['note']))
-            v_seqs = [v for v in record.features if v[0] == 'VAR_SEQ']
-            for seq in v_seqs:
-                record.var_seqs.append((seq[2], seq[3]))
+                # PTMs format: defaultdict({iso_id: [[0-based location, type, description], ...})
+                record.ptms[p[1]].append((p[2][0], p[0], p[3]['note']))
+                
+            # Retain variant sequence information, see Record description for formatting
+            record.var_seqs = [(v[2], v[3]) for v in record.features if v[0] == 'VAR_SEQ']
             return record
         elif key == "**":
             # Do this one last, as it will almost never occur.
@@ -418,12 +409,18 @@ def read_ft(record, line):
             from_res -= 1
             to_res -= 1
         except ValueError:
-            from_res = int(location) -1 
-            to_res = int(location)
+            try:
+                from_res = int(location) -1 
+                to_res = int(location)
+            except ValueError:
+                # if location is inexact we can't map from protein to genome
+                from_res = '?'
+                to_res = '?'
         # {} is placeholder for qualifiers
         feature = [name, isoform_id, (from_res, to_res), {}]
         record.features.append(feature)
         return
+
     # continuation of the previous feature
     elif line[5:21] == "                ":
         feature = record.features[-1]
