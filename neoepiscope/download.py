@@ -533,6 +533,7 @@ class NeoepiscopeDownloader(object):
         if self._yes_no_query(
             (
                 "Download UniProtKB for post-translational modification warnings?"
+                " Warnings only apply to hg38 and mm10 — respond 'n' if using hg37 or mm9."
                 " File size is ~1.5 GB and may take >1 hr to download."
                 )
         ):
@@ -586,9 +587,9 @@ class NeoepiscopeDownloader(object):
             uniprotkb_flat_file = None
 
         for build, gencode, bowtie, rediportal, uniprot_species in [
-                ("mm9", "vM1", "NCBIM37", None, "MOUSE"),
+                ("mm9", "vM1", "NCBIM37", None, None),
                 ("mm10", "vM25", "GRCm38.p6", "TABLE1_mm10.txt", "MOUSE"),
-                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt", "HUMAN"),
+                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt", None),
                 ("hg38", "v35", "GRCh38.p13", "TABLE1_hg38.txt", "HUMAN")
             ]:
             if self._yes_no_query("Download and install indexes for " + build + "?"):
@@ -674,7 +675,7 @@ class NeoepiscopeDownloader(object):
                             )
                     )
                 # Index UniProtKB post-translational modifications
-                if uniprotkb_flat_file is not None:
+                if uniprotkb_flat_file and uniprot_species is not None:
                     exec("uniprot_" + build + "_temp = '" + os.path.join(temp_install_dir, 'uniprot_' + build)
                          + "'", globals())
                     exec("uniprot_" + build + " = '" + os.path.join(self.download_dir, 'uniprot_' + build)

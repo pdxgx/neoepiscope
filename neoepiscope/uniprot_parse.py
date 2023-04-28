@@ -17,7 +17,19 @@ Functions:
 
 import io
 import re
+import os
+import pickle
 from collections import defaultdict
+
+neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    with open(
+        os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "uniprotPTMreference.pickle")),
+    ) as ptm_ref_stream:
+        ptm_reference_dict = pickle.load(ptm_ref_stream)
+except IOError as e:
+    raise
 
 class SwissProtParserError(ValueError):
     """An error occurred while parsing a SwissProt file."""
@@ -48,11 +60,11 @@ class Record:
      - ptms              Defaultdict with:
                             key = isoform_id
                             value = List of tuples
-                                (0-based location,
+                                (1-based location,
                                  MOD_RES or CARBOHYD,
                                  String of description)
      - var_seqs          List with:
-                            [tuple of 0-based (from_location, to_location),
+                            [tuple of 1-based (from_location(inclusive), to_location(exclusive)),
                             {'note': String of alt sequence description,
                              'evidence': String of ECO codes|PubMed IDs,
                              'id': String of VSP ID}]
@@ -86,7 +98,7 @@ class Record:
         self.cross_references = []
         self.tx_ids = []
         self.features = []
-        self.ptms = defaultdict(list)
+        self.ptms = None
         self.var_seqs = []
         self.sequence = ""
 
@@ -221,6 +233,8 @@ def _read(handle, species):
                 record.tx_ids.append((i[1], iso))
             # Keep PTMs for modified residues and glycosylation
             ptms = [p for p in record.features if p[0] == 'MOD_RES' or p[0] == 'CARBOHYD']
+            if ptms:
+                record.ptms = defaultdict(list)
             for p in ptms:
                 # Add isoform ID for canonical sequence where possible otherwise iso_id = None
                 if p[1] == None:
@@ -228,8 +242,14 @@ def _read(handle, species):
                         p[1] = record.isoforms[0][0]
                     except IndexError:
                         pass
-                # PTMs format: defaultdict({iso_id: [[0-based location, type, description], ...})
-                record.ptms[p[1]].append((p[2][0], p[0], p[3]['note']))
+                descrip = p[3]['note']
+                simple_descrip = descrip.split(';')[0]
+                # Skipping PTMs from pathogens
+                if simple_descrip.startswith('(Microbial infection)'):
+                    pass
+                else:
+                    # PTMs format: {iso_id: [(1-based location, [type, base, PTM ID]), ...]}
+                    record.ptms[p[1]].append((p[2][0], ptm_reference_dict[simple_descrip]))
                 
             # Retain variant sequence information, see Record description for formatting
             record.var_seqs = [(v[2], v[3]) for v in record.features if v[0] == 'VAR_SEQ']
@@ -403,15 +423,13 @@ def read_ft(record, line):
             isoform_id, location = location.split(':')
         except ValueError:
             isoform_id = None
-        # strip location and make 0-based
+        # strip location, keep 1-based
         try:
             from_res, to_res = map(int, location.split('..'))
-            from_res -= 1
-            to_res -= 1
         except ValueError:
             try:
-                from_res = int(location) -1 
-                to_res = int(location)
+                from_res = int(location) 
+                to_res = int(location) + 1 
             except ValueError:
                 # if location is inexact we can't map from protein to genome
                 from_res = '?'
@@ -434,6 +452,7 @@ def read_ft(record, line):
             if qualifier_type == "id":
                 if not value.endswith('"'):
                     raise ValueError("Missing closing quote for id")
+                # index 3 of feature is the qualifier dict
                 feature[3][qualifier_type] = value[1:-1]
             else:
                 if value.endswith('"'):
@@ -456,6 +475,7 @@ def read_ft(record, line):
             description = f"{old_description}{description}"
         else:
             description = f"{old_description} {description}"
+        # index 0 of feature is name
         if feature[0] == "VAR_SEQ":
             try:
                 first_seq, second_seq = description.split(" -> ")

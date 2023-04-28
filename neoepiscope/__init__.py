@@ -143,7 +143,8 @@ def main():
         required=False,
         action="append",
         default=None,
-        help="input path to UniProtKB flat file and species for parsing ('HUMAN' or 'MOUSE')"
+        help="input path to UniProtKB flat file and build species ('HUMAN' or 'MOUSE') —"
+        " only use with hg38 or mm10 GTF files for up-to-date mappings",
     )
     index_parser.add_argument(
         "-d",
@@ -333,7 +334,7 @@ def main():
         "--build",
         type=str,
         required=False,
-        help="which default genome build to use (human hg19 or GRCh38, or mouse mm9 or mm10); "
+        help="which default genome build to use (human hg19 or hg38, or mouse mm9 or mm10); "
         "must have used download.py script to install these",
     )
     call_parser.add_argument(
@@ -385,7 +386,7 @@ def main():
         required=False,
         action="store_true",
         default=False,
-        help="enumerate neoepitopes IGV transcripts",
+        help="enumerate neoepitopes from IGV transcripts",
     )
     call_parser.add_argument(
         "--trv",
@@ -440,9 +441,20 @@ def main():
             transcript_to_rna_edits(args.rna_edits, cds_tree, cds_dict,
                                     dict_dir=args.dicts)
         if args.ptm_sites is not None:
-            transcript_to_ptm_sites(
-                args.ptm_sites[0], args.ptm_sites[1], cds_tree, dict_dir=args.dicts
-            )
+            if args.ptm_sites[1] != 'HUMAN' and 'MOUSE':
+                raise RuntimeError(
+                    "species must be one of " '{"HUMAN", "MOUSE"}'
+                )
+            try: 
+                transcript_to_ptm_sites(
+                    args.ptm_sites[0], args.ptm_sites[1], cds_dict, dict_dir=args.dicts
+                )
+            except IndexError as exc:
+                raise RuntimeError(
+                    "The selected UniProtKB flat file uses a deprecated formatting. "
+                    "Neoepiscope only accepts flat files from release 2023-03-01 onward."
+                ) from exc
+
     elif args.subparser_name == "swap":
         adjust_tumor_column(args.input, args.output)
     elif args.subparser_name == "merge":
@@ -462,7 +474,7 @@ def main():
         # Load pickled dictionaries and prepare bowtie index
         if args.build is not None:
             if (
-                args.build == "GRCh38" # CHANGE THIS TO hg38 at some pt
+                args.build == "hg38"
                 and paths.gencode_v35 is not None
                 and paths.bowtie_hg38 is not None
                 and paths.rna_edits_hg38 is not None
@@ -477,23 +489,23 @@ def main():
                 and paths.gencode_v19 is not None
                 and paths.bowtie_hg19 is not None
                 and paths.rna_edits_hg19 is not None
-                and paths.uniprot_hg19 is not None
+                #and paths.uniprot_hg19 is not None
             ):
                 gencode_path = paths.gencode_v19
                 bowtie_index_path = paths.bowtie_hg19
                 rna_edits_path = paths.rna_edits_hg19
-                uniprot_path = paths.uniprot_hg19
+                #uniprot_path = paths.uniprot_hg19
             elif (
                 args.build == "mm9"
                 and paths.gencode_vM1 is not None
                 and paths.bowtie_mm9 is not None
                 and paths.rna_edits_mm9 is not None
-                and paths.uniprot_mm9 is not None
+                #and paths.uniprot_mm9 is not None
             ):
                 gencode_path = paths.gencode_vM1
                 bowtie_index_path = paths.bowtie_mm9
                 rna_edits_path = paths.rna_edits_mm9
-                uniprot_path = paths.uniprot_mm9
+                #uniprot_path = paths.uniprot_mm9
             elif (
                 args.build == "mm10"
                 and paths.gencode_vM25 is not None
@@ -512,7 +524,7 @@ def main():
                             args.build,
                             " is not an available genome build. Please "
                             "check that you have run `neoepiscope download` and are "
-                            "using 'hg19', 'GRCh38', 'mm10', or 'mm9' for this argument.",
+                            "using 'hg19', 'hg38', 'mm10', or 'mm9' for this argument.",
                         ]
                     )
                 )
