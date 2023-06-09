@@ -23,9 +23,11 @@ from collections import defaultdict
 
 neoepiscope_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# creates dict of descriptions from PTM reference file, used in last step of PTM parsing from UniProt record
 try:
     with open(
         os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "uniprotPTMreference.pickle")),
+        'rb'
     ) as ptm_ref_stream:
         ptm_reference_dict = pickle.load(ptm_ref_stream)
 except IOError as e:
@@ -248,7 +250,7 @@ def _read(handle, species):
                 if simple_descrip.startswith('(Microbial infection)'):
                     pass
                 else:
-                    # PTMs format: {iso_id: [(1-based location, [type, base, PTM ID]), ...]}
+                    # PTMs format: {iso_id: [(1-based aa location, [type, base, PTM ID]), ...]}
                     record.ptms[p[1]].append((p[2][0], ptm_reference_dict[simple_descrip]))
                 
             # Retain variant sequence information, see Record description for formatting

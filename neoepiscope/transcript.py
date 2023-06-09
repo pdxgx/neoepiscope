@@ -156,31 +156,58 @@ def custom_bisect_left(a, x, lo=0, hi=None, getter=0):
     return lo
 
 
-def kmerize_peptide(peptide, min_size=8, max_size=11, editing_positions=[], ambiguous_positions=[], ptm_positions=[]):
+def kmerize_peptide(
+    peptide,
+    min_size=8,
+    max_size=11,
+    editing_positions=[],
+    ambiguous_positions=[],
+    ptm_positions=[],
+    return_ranges=False
+):
     """Obtains subsequences of a peptide.
     normal_peptide: normal peptide seq
     min_size: minimum subsequence size
     max_size: maximum subsequence size
-    editing_positions: codon positions where edits are made
-    ambiguous_positions: positions where edits are ambiguous 
-    ptm_positions: positions where PTMs are present
+    editing_positions: list of positions where edits are made
+    ambiguous_positions: list of positions where edits are ambiguous 
+    ptm_positions: list of positions where PTMs are present
     Return value: a list of tuples of peptide substrings and
         Booleans indicating whether they contain RNA-editing and ambiguous
         RNA-editing
     """
     peptide_size = len(peptide)
-    return [
-        item
-        for sublist in [
-            [(peptide[i : i + size], 
+    peptides = []
+    pep_ranges = collections.defaultdict(list)
+    for size in range(min_size, max_size + 1):
+        for i in range(peptide_size - size + 1):
+            pep = (
+                peptide[i: i + size],
                 any(i <= x < (i + size) for x in editing_positions),
                 any(i <= x < (i + size) for x in ambiguous_positions),
-                any(i <= x < (i + size) for x in ptm_positions))
-            for i in range(peptide_size - size + 1)]
-            for size in range(min_size, max_size + 1)
-        ]
-        for item in sublist
-    ]
+                any(i <= x < (i + size) for x in ptm_positions)
+                )
+            peptides.append(pep)
+            # pep_range is inclusive of peptide start, exclusive of peptide end coords
+            pep_range = (i, i + size)
+            pep_ranges[pep].append(pep_range)
+    if return_ranges:    
+        return peptides, pep_ranges
+    else:
+        return peptides
+
+    #return [
+    #    item
+    #    for sublist in [
+    #        [(peptide[i : i + size], 
+    #            any(i <= x < (i + size) for x in editing_positions),
+    #            any(i <= x < (i + size) for x in ambiguous_positions),
+    #            any(i <= x < (i + size) for x in ptm_positions))
+    #        for i in range(peptide_size - size + 1)]
+    #        for size in range(min_size, max_size + 1)
+    #    ]
+    #    for item in sublist
+    #]
 
 # X below denotes a stop codon
 _codon_table = {
@@ -340,7 +367,7 @@ def seq_to_peptide(
     mitochondrial: True iff use mitochondrial codon table
     allow_partial_codons: True iff attempt to translate partial
         codons at end of sequence
-    return_positions: If True, return peptide string, editing_positions, ambiguous_positions, ptm_positions and ptms
+    return_positions: If True, return peptide string, editing_positions, ambiguous_positions, ptm_positions & ptm_descriptions
     ptms: Dictionary of post-translational modifications mapped to transcript coordinates with
         keys as a tuple of 3 adjacent transcript positions and values as PTM(s) info.
 
@@ -357,9 +384,10 @@ def seq_to_peptide(
     peptide = []
     editing_positions = []
     ambiguous_positions = []
-    ptm_positions = []
     peptide_warnings = []
     seq_size = len(seq)
+    ptm_positions = []
+    ptm_descrips = collections.defaultdict(list)
     for i in range(0, seq_size - seq_size % 3, 3):
         chunk = seq[i : i + 3]
         if seq_start:
@@ -367,6 +395,7 @@ def seq_to_peptide(
             chunk_coords = tuple(list(range(seq_start + i, seq_start + i + 3)))
         else:
             chunk_coords = None
+        # 0-based protein position
         protein_pos = round(i/3, 0)
         if 'N' not in chunk and "I" not in chunk:
             if not mitochondrial:
@@ -420,11 +449,15 @@ def seq_to_peptide(
         
         # Find protein position of PTMs
         if ptms and chunk_coords in ptms.keys():
-            # ptm[4] is the expected amino acid base
-            if codon == ptms[chunk_coords][4]:
+            # ptms key is codon transcript coords, value is list of PTM lists e.g. [['N-linked (Glc)', 'K', 'PTM-0509']]
+            matched_ptms = list(entry for entry in ptms[chunk_coords] if entry[1] == codon)
+            # ref_bases = list(set([entry[1] for entry in ptms[chunk_coords]]))
+            # if len(ref_bases) != 1 log error?
+            if matched_ptms:
                 ptm_positions.append(protein_pos)
-                # Replace transcript coords with protein-level coords in the PTM dict keys
-                ptms[protein_pos] = ptms.pop(chunk_coords)
+                # Replace transcript coords with 0-based protein coords in the PTM dict keys
+                ptm_descrips[protein_pos] = matched_ptms
+                del ptms[chunk_coords]
     
     if seq_size % 3:
         peptide_warnings.append("incomplete_CDS")
@@ -474,7 +507,7 @@ def seq_to_peptide(
     if mitochondrial and peptide[0] != "M":
         peptide[0] = "M"
     if return_positions:
-        return "".join(peptide), editing_positions, ambiguous_positions, ptm_positions, ptms, peptide_warnings
+        return "".join(peptide), editing_positions, ambiguous_positions, ptm_positions, ptm_descrips, peptide_warnings
     else:
         return "".join(peptide), peptide_warnings
 
@@ -557,7 +590,8 @@ def prot_to_gen(cds_list, ptm_list):
                         start, end = cd[3], cd[2]
                         exon.extend(reversed(range(end, start+1)))
                     # update aa counts
-                    aa_start = codon_total + 1
+                    codon_total += 1
+                    aa_start = codon_total
                     codon_total += len(exon) // 3
                 except StopIteration:
                     # PTM is beyond the final CDS
@@ -3683,8 +3717,8 @@ class Transcript(object):
             ref_skipped_ptms = []
             # Only proceed without frameshifting mutations
             if not frame_shifts:
-                alt_ptms = defaultdict(list)
-                ref_ptms = defaultdict(list)
+                alt_ptms = collections.defaultdict(list)
+                ref_ptms = collections.defaultdict(list)
                 for case in 'alt', 'ref':
                     for ptm in self.ptm_sites:
                         # PTMs are a list of 3 genomic coords followed by PTM info
@@ -3699,28 +3733,24 @@ class Transcript(object):
                         # Ensure that transcript positions form a consecutive codon
                         if len(tx_positions) == 3 and abs(tx_positions[2] - tx_positions[0]) == 2:
                             # Concat PTM description into a single string
-                            joined_descrip = ', '.join(ptm[3:])
-                            # key = tuple(0-based transcript coords), value = list('PTM type, AA base, PTM reference ID')
-                            exec(case + '_ptms[tuple(tx_positions)].append(descrip)')
+                            descrip = ptm[3:]
+                            #joined_descrip = [', '.join(ptm[3:])]
+                            # key = tuple(0-based transcript coords), value = list('PTM type', 'AA base', 'PTM reference ID')
+                            exec(case + '_ptms[tuple(sorted(tx_positions))].append(descrip)')
                         else:
                             exec(case + '_skipped_ptms.append(ptm)')
                             continue
             # If frameshift, discard all PTMs
             else:
                 alt_skipped_ptms = self.ptm_sites
-                alt_ptms = []
+                alt_ptms = dict()
                 ref_skipped_ptms = self.ptm_sites
-                ref_ptms = []
+                ref_ptms = dict()
         else:
-            alt_ptms = []
-            ref_ptms = []
+            alt_ptms = dict()
+            ref_ptms = dict()
         try:
-            protein, 
-            editing_positions, 
-            ambiguous_positions, 
-            ptm_positions,
-            alt_ptms, 
-            protein_warnings = seq_to_peptide(
+            protein, editing_positions, ambiguous_positions, ptm_positions, ptm_descrips, protein_warnings = seq_to_peptide(
                     sequence[start_codon[0] : stop_codon[0]],
                     seq_start = start_codon[0],
                     reverse_strand=False,
@@ -3730,8 +3760,7 @@ class Transcript(object):
                     ptms=alt_ptms
                     )
         except TypeError:
-            protein, 
-            protein_warnings = seq_to_peptide(
+            protein, protein_warnings = seq_to_peptide(
                 sequence[start_codon[0] :],
                 reverse_strand=False,
                 mitochondrial=self.mitochondrial,
@@ -3741,12 +3770,7 @@ class Transcript(object):
             ambiguous_positions = []
             ptm_positions = []
         try:
-           protein_ref, 
-           ref_editing_positions, 
-           ref_ambiguous_positions, 
-           ref_ptm_positions,
-           ref_ptms,
-           ref_warnings = seq_to_peptide(
+           protein_ref, ref_editing_positions, ref_ambiguous_positions, ref_ptm_positions, ref_ptm_descrips, ref_warnings = seq_to_peptide(
                 ref_sequence[ref_atg[1] : ref_stop[1]],
                 seq_start = ref_atg[1],
                 reverse_strand=False, 
@@ -3760,8 +3784,7 @@ class Transcript(object):
             ref_ambiguous_positions = []
             ref_ptm_positions = []
             try:
-                protein_ref, 
-                ref_warnings = seq_to_peptide(
+                protein_ref, ref_warnings = seq_to_peptide(
                     ref_sequence[ref_atg[1] :],
                     reverse_strand=False,
                     mitochondrial=self.mitochondrial,
@@ -3831,9 +3854,10 @@ class Transcript(object):
                         ]
                     )                    
                 peptides = []
-                pep_ranges = defaultdict(list)
+                pep_ranges = collections.defaultdict(list)
                 for pos in range(size, len(cleaved_protein)+1):
-                    # Enumerate peptides from predicted cleavage sites only where cleaved_protein[pos-1][3] == True
+                    # Enumerate peptides backwards from C-terminal cleavage site where
+                    # pepsickle output indicates (cleaved_protein[pos-1][3] == True)
                     if cleaved_protein[pos-1][3]:  
                         pep = (
                             protein[pos-size:pos],
@@ -3842,8 +3866,9 @@ class Transcript(object):
                             any(pos - size <= x < pos for x in ptm_positions)
                             )
                         peptides.append(pep)
+                        # pep_range is inclusive of peptide start, exclusive of peptide end coords
                         pep_range = (pos-size, pos)
-                        pep_ranges[pep_range].append(pep)
+                        pep_ranges[pep].append(pep_range)
                 for coords in epitope_coords:
                     # paired peptide available if no insertions, deletions or frameshifts
                     if coords[2] != "NA":
@@ -3854,15 +3879,17 @@ class Transcript(object):
                     epi_start = coords[0]
                     epi_end = coords[1]
                     # only evaluate peptides within epitope coords
-                    subset = [pep for pep_range, pep in pep_ranges.items() if epi_start <= pep_range[0] and epi_end >= pep_range[1]]
+                    subset = [pep for pep, pep_range in pep_ranges.items() if epi_start <= pep_range[0] and epi_end >= pep_range[1]]
                     for pep in subset:
                         if pep not in peptides_ref:
+                            #if len(pep_ranges[pep] == 1):
+                            # possible to have the same peptide key repeated multiple times across protein?
                             # protein-level peptide coords
-                            pep_start = pep_range[pep][0]
-                            pep_end = pep_range[pep][1]
+                            pep_start = pep_ranges[pep][0][0]
+                            pep_end = pep_ranges[pep][0][1]
                             if ref_available:
                                 # get paired ref peptide
-                                paired_peptide = protein_ref[pep_start:pep_end]
+                                paired_peptide = protein_ref[pep_start:pep_end+1]
                             else:
                                 paired_peptide = "NA"
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:
@@ -3881,13 +3908,16 @@ class Transcript(object):
                                 epitope_warnings.append("ambiguous_inosine_codon")
                             if pep[3]:
                                 # find and append PTM descriptions for sites within pep_range
-                                pep_ptm_keys = [pos for pos in alt_ptms.keys() if pep_start <= pos < pep_end]
-                                # pos is 0-based protein-level PTM position
-                                for pos in pep_ptm_keys:
-                                    pep_ptms = alt_ptms[pos].copy()
-                                    # add peptide-level position to PTM description
-                                    pep_ptms.insert(0, pos - pep_start)
-                                    epitope_warnings.extend(pep_ptms)
+                                pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
+                                # pos is protein-level PTM position
+                                for site in pep_ptm_sites:
+                                    pep_ptms = copy.deepcopy(ptm_descrips[site])
+                                    for ptm in pep_ptms:
+                                        # add peptide-level position to PTM description
+                                        ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                    # concatenate PTM info
+                                    pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                    epitope_warnings.append(pep_ptms)
                             for mutation_data in data_set:
                                 if unknown_aa and "?" in pep[0] or "X" in pep[0]:
                                     if self.seleno:
@@ -3899,19 +3929,19 @@ class Transcript(object):
                                 if transcript_warnings:
                                     # both transcript and epitope warnings
                                     if epitope_warnings:
-                                        combo = [";".join(transcript_warnings + epitope_warnings)]
+                                        combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                         mutation_data += (paired_peptide,) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # only transcript warnings
                                     else:
-                                        combo = [";".join(transcript_warnings)]
+                                        combo = ["; ".join(transcript_warnings)]
                                         mutation_data += (paired_peptide,) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data) 
                                 else:
                                     transcript_warnings.append("NA")
                                     # only epitope warnings
                                     if epitope_warnings:
-                                        combo = [";".join(transcript_warnings + epitope_warnings)]
+                                        combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                         mutation_data += (paired_peptide,) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # no warnings, only placeholder
@@ -3967,12 +3997,13 @@ class Transcript(object):
                         ]
                     )
                 for coords in epitope_coords:
-                    peptides = kmerize_peptide(
+                    peptides, pep_ranges = kmerize_peptide(
                         protein[coords[0] : coords[1]], 
                         min_size=size, 
                         max_size=size, 
                         editing_positions=editing_positions,
-                        ptm_positions=alt_ptms
+                        ptm_positions=ptm_positions,
+                        return_ranges=True
                     )
                     # make normal peptide + ref peptide pair
                     if coords[2] != "NA":
@@ -3999,6 +4030,9 @@ class Transcript(object):
                                     data_set = coords[4]
                                 # track peptide-specific warnings
                                 epitope_warnings = []
+                                # protein-level peptide coords
+                                pep_start = pep_ranges[pair[0]][0][0]
+                                pep_end = pep_ranges[pair[0]][0][1]
                                 if len(paired_peptides) == len(peptides):
                                     # boolean for presence of RNA edits in peptide
                                     if pair[0][1] or pair[1][1]:
@@ -4008,13 +4042,16 @@ class Transcript(object):
                                         epitope_warnings.append("ambiguous_inosine_codon")
                                     if pair[0][3]:
                                         # find and append PTM descriptions for sites within pep_range
-                                        pep_ptm_keys = [pos for pos in alt_ptms.keys() if pep_start <= pos < pep_end]
+                                        pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
                                         # pos is protein-level PTM position
-                                        for pos in pep_ptm_keys:
-                                            pep_ptms = alt_ptms[pos].copy()
-                                            # add peptide-level position to PTM description
-                                            pep_ptms.insert(0, pos - pep_start)
-                                            epitope_warnings.extend(pep_ptms)
+                                        for site in pep_ptm_sites:
+                                            pep_ptms = copy.deepcopy(ptm_descrips[site])
+                                            for ptm in pep_ptms:
+                                                # add peptide-level position to PTM description
+                                                ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                            # concatenate PTM info
+                                            pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                            epitope_warnings.append(pep_ptms)
                                 for mutation_data in data_set:
                                     if (
                                         unknown_aa
@@ -4032,19 +4069,19 @@ class Transcript(object):
                                     if transcript_warnings:
                                         # both transcript and epitope warnings
                                         if epitope_warnings:
-                                            combo = [";".join(transcript_warnings + epitope_warnings)]
+                                            combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data)
                                         # only transcript warnings
                                         else:
-                                            combo = [";".join(transcript_warnings)]
+                                            combo = ["; ".join(transcript_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data) 
                                     else:
                                         transcript_warnings.append("NA")
                                         # only epitope warnings
                                         if epitope_warnings:
-                                            combo = [";".join(transcript_warnings + epitope_warnings)]
+                                            combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data)
                                         # no warnings, only placeholder
@@ -4064,6 +4101,9 @@ class Transcript(object):
                                 data_set = coords[4]
                             # track peptide-specific warnings
                             epitope_warnings = []
+                            # protein-level peptide coords
+                            pep_start = pep_ranges[pep][0]
+                            pep_end = pep_ranges[pep][1]
                             # boolean for presence of RNA edits in peptide
                             if pep[1]:
                                 epitope_warnings.append("rna_editing")
@@ -4072,13 +4112,16 @@ class Transcript(object):
                                 epitope_warnings.append("ambiguous_inosine_codon")
                             if pep[3]:
                                 # find and append PTM descriptions for sites within pep_range
-                                pep_ptm_keys = [pos for pos in alt_ptms.keys() if pep_start <= pos < pep_end]
+                                pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
                                 # pos is protein-level PTM position
-                                for k in pep_ptm_keys:
-                                    pep_ptms = alt_ptms[pos].copy()
-                                    # add peptide-level position to PTM description
-                                    pep_ptms.insert(0, pos - pep_start)
-                                    epitope_warnings.extend(pep_ptms)
+                                for site in pep_ptm_sites:
+                                    pep_ptms = copy.deepcopy(ptm_descrips[site])
+                                    for ptm in pep_ptms:
+                                        # add peptide-level position to PTM description
+                                        ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                    # concatenate PTM info
+                                    pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                    epitope_warnings.append(pep_ptms)
                             for mutation_data in data_set:
                                 if unknown_aa and "?" in pep[0] or "X" in pep[0]:
                                     if self.seleno:
@@ -4090,19 +4133,19 @@ class Transcript(object):
                                 if transcript_warnings:
                                     # both transcript and epitope warnings
                                     if epitope_warnings:
-                                        combo = [";".join(transcript_warnings + epitope_warnings)]
+                                        combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # only transcript warnings
                                     else:
-                                        combo = [";".join(transcript_warnings)]
+                                        combo = ["; ".join(transcript_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data) 
                                 else:
                                     transcript_warnings.append("NA")
                                     # only epitope warnings
                                     if epitope_warnings:
-                                        combo = [";".join(transcript_warnings + epitope_warnings)]
+                                        combo = ["; ".join(transcript_warnings + epitope_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # no warnings, only placeholder
@@ -4146,6 +4189,12 @@ def gtf_to_cds(gtf_file, dict_dir=None):
                     transcript_id = re.sub(
                         r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
                     )
+                    # remove underscore from transcript ID where applicable
+                    if '_' in transcript_id:
+                        try:
+                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
+                        except AttributeError:
+                            pass
                     transcript_type = re.sub(
                         r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
                     )
@@ -4171,11 +4220,21 @@ def gtf_to_cds(gtf_file, dict_dir=None):
                     transcript_id = re.sub(
                         r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
                     )
+                    if '_' in transcript_id:
+                        try:
+                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
+                        except AttributeError:
+                            pass
                     cds_lines[transcript_id].append(tokens)
                 elif tokens[2] == "transcript":
                     transcript_id = re.sub(
                         r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
                     )
+                    if '_' in transcript_id:
+                        try:
+                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
+                        except AttributeError:
+                            pass
                     transcript_type = re.sub(
                         r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
                     )
@@ -4559,7 +4618,7 @@ def transcript_to_ptm_sites(uniprot_file, build_species, cds_dict, dict_dir=None
     """
     transcript_to_ptm_sites = dict()
     with open(uniprot_file, 'rt') as handle:
-        for record in parse(handle, build_species):
+        for record in uniprot_parse.parse(handle, build_species):
             for ids in record.tx_ids:
                 tx_id = ids[0]
                 iso_id = ids[1]

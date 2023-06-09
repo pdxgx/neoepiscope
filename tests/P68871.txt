@@ -1,0 +1,3411 @@
+ID   HBB_HUMAN               Reviewed;         147 AA.
+AC   P68871; A4GX73; B2ZUE0; P02023; Q13852; Q14481; Q14510; Q45KT0; Q549N7;
+AC   Q6FI08; Q6R7N2; Q8IZI1; Q9BX96; Q9UCD6; Q9UCP8; Q9UCP9;
+DT   21-JUL-1986, integrated into UniProtKB/Swiss-Prot.
+DT   23-JAN-2007, sequence version 2.
+DT   03-MAY-2023, entry version 204.
+DE   RecName: Full=Hemoglobin subunit beta;
+DE   AltName: Full=Beta-globin;
+DE   AltName: Full=Hemoglobin beta chain;
+DE   Contains:
+DE     RecName: Full=LVV-hemorphin-7;
+DE   Contains:
+DE     RecName: Full=Spinorphin;
+GN   Name=HBB;
+OS   Homo sapiens (Human).
+OC   Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi; Mammalia;
+OC   Eutheria; Euarchontoglires; Primates; Haplorrhini; Catarrhini; Hominidae;
+OC   Homo.
+OX   NCBI_TaxID=9606;
+RN   [1]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RX   PubMed=1019344; DOI=10.1016/s0079-6603(08)60917-4;
+RA   Marotta C., Forget B., Cohen-Solal M., Weissman S.M.;
+RT   "Nucleotide sequence analysis of coding and noncoding regions of human
+RT   beta-globin mRNA.";
+RL   Prog. Nucleic Acid Res. Mol. Biol. 19:165-175(1976).
+RN   [2]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RX   PubMed=6254664; DOI=10.1016/0092-8674(80)90428-6;
+RA   Lawn R.M., Efstratiadis A., O'Connell C., Maniatis T.;
+RT   "The nucleotide sequence of the human beta-globin gene.";
+RL   Cell 21:647-651(1980).
+RN   [3]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA], AND VARIANT LYS-7.
+RX   PubMed=16175509; DOI=10.1086/491748;
+RA   Wood E.T., Stover D.A., Slatkin M., Nachman M.W., Hammer M.F.;
+RT   "The beta-globin recombinational hotspot reduces the effects of strong
+RT   selection around HbC, a recently arisen mutation providing resistance to
+RT   malaria.";
+RL   Am. J. Hum. Genet. 77:637-642(2005).
+RN   [4]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RA   Lu L., Hu Z.H., Du C.S., Fu Y.S.;
+RT   "DNA sequence of the human beta-globin gene isolated from a healthy
+RT   Chinese.";
+RL   Submitted (JUN-1997) to the EMBL/GenBank/DDBJ databases.
+RN   [5]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA], AND VARIANT ARG-113.
+RA   Cabeda J.M., Correia C., Estevinho A., Cardoso C., Amorim M.L., Cleto E.,
+RA   Vale L., Coimbra E., Pinho L., Justica B.;
+RT   "Unexpected patterns of globin mutations in thalassemia patients from north
+RT   of Portugal.";
+RL   Submitted (AUG-1998) to the EMBL/GenBank/DDBJ databases.
+RN   [6]
+RP   NUCLEOTIDE SEQUENCE [MRNA], AND VARIANT LOUISVILLE LEU-43.
+RC   TISSUE=Blood;
+RA   Kutlar F., Harbin J., Brisco J., Kutlar A.;
+RT   "Rapid detection of electrophoretically silent, unstable human hemoglobin
+RT   'Louisville', (Beta; Phe 42 Leu/TTT to CTT) by cDNA sequencing of mRNA.";
+RL   Submitted (JAN-1999) to the EMBL/GenBank/DDBJ databases.
+RN   [7]
+RP   NUCLEOTIDE SEQUENCE [MRNA], AND VARIANT DURHAM-N.C. PRO-115.
+RC   TISSUE=Blood;
+RA   Kutlar F., Abboud M., Leithner C., Holley L., Brisco J., Kutlar A.;
+RT   "Electrophoretically silent, very unstable, thalassemic mutation at codon
+RT   114 of beta globin (hemoglobin Durham-N.C.) detected by cDNA sequencing of
+RT   mRNA, from a Russian women.";
+RL   Submitted (AUG-1999) to the EMBL/GenBank/DDBJ databases.
+RN   [8]
+RP   NUCLEOTIDE SEQUENCE [MRNA], AND VARIANT TY GARD GLN-125.
+RC   TISSUE=Blood;
+RA   Kutlar F., Holley L., Leithner C., Kutlar A.;
+RT   "A rare beta chain variant 'Hemoglobin Ty Gard:Pro 124 Gln' found in a
+RT   Caucasian female with erythrocytosis.";
+RL   Submitted (FEB-2001) to the EMBL/GenBank/DDBJ databases.
+RN   [9]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RA   Kutlar A., Vercellotti G.M., Glendenning M., Holley L., Elam D., Kutlar F.;
+RT   "Heterozygote C->A beta-thalassemia mutation at the intron-2/848 nucleotide
+RT   of beta globin gene was detected on a Northern European (Caucasian)
+RT   individual.";
+RL   Submitted (JUL-2002) to the EMBL/GenBank/DDBJ databases.
+RN   [10]
+RP   NUCLEOTIDE SEQUENCE [MRNA], VARIANT SKCA VAL-7, AND VARIANT SER-140.
+RC   TISSUE=Blood;
+RA   Kutlar F., Lallinger R.R., Holley L., Glendenning M., Kutlar A.;
+RT   "A new hemoglobin, beta chain variant 'Hb S-Wake' confirmed to be on the
+RT   same chromosome with hemoglobin S mutation, detected in an African-American
+RT   family.";
+RL   Submitted (JUL-2002) to the EMBL/GenBank/DDBJ databases.
+RN   [11]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA], AND VARIANT O-ARAB LYS-122.
+RC   TISSUE=Blood;
+RA   Kutlar F., Elam D., Glendenning M., Kutlar A., Dincol G.;
+RT   "Coexistence of the hemoglobin O-Arab (Glu 121 Lys) and beta-thalassemia
+RT   (intron-2; nucleotide 745 C->G) was detected in a Turkish patient.";
+RL   Submitted (OCT-2002) to the EMBL/GenBank/DDBJ databases.
+RN   [12]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RA   Li W.J.;
+RT   "Thalassaemic trait cause by C-T substitution at position -90 in proximal
+RT   CACCC box of beta-globin gene in China family.";
+RL   Submitted (MAR-2003) to the EMBL/GenBank/DDBJ databases.
+RN   [13]
+RP   NUCLEOTIDE SEQUENCE [MRNA], AND VARIANTS PHE-50 AND PRO-76.
+RC   TISSUE=Lymphocyte;
+RA   Fan B., Xie L., Guan X.;
+RT   "The differently expressed genes in the lymphocyte of recovered SARS
+RT   patients.";
+RL   Submitted (DEC-2003) to the EMBL/GenBank/DDBJ databases.
+RN   [14]
+RP   NUCLEOTIDE SEQUENCE [GENOMIC DNA].
+RC   TISSUE=Blood;
+RA   Mehta S., Li T., Davis D.H., Nechtman J., Kutlar F.;
+RT   "Beta-thalassemia G->C mutation at the nucleotide 5 position of intron 1 of
+RT   beta globin gene was detected in Asian-Indian female with two polymorphisms
+RT   in cis.";
+RL   Submitted (FEB-2007) to the EMBL/GenBank/DDBJ databases.
+RN   [15]
+RP   NUCLEOTIDE SEQUENCE [MRNA].
+RA   Hilliard L.M., Patel N., Li T., Zhang H., Kutlar A., Kutlar F.;
+RT   "Hb Dothan: a novel beta chain variant due to (-GTG) deletion between the
+RT   codons 25/26 of beta globin gene detected in a Caucasian male baby.";
+RL   Submitted (MAY-2008) to the EMBL/GenBank/DDBJ databases.
+RN   [16]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE MRNA].
+RC   TISSUE=Spleen;
+RX   PubMed=14702039; DOI=10.1038/ng1285;
+RA   Ota T., Suzuki Y., Nishikawa T., Otsuki T., Sugiyama T., Irie R.,
+RA   Wakamatsu A., Hayashi K., Sato H., Nagai K., Kimura K., Makita H.,
+RA   Sekine M., Obayashi M., Nishi T., Shibahara T., Tanaka T., Ishii S.,
+RA   Yamamoto J., Saito K., Kawai Y., Isono Y., Nakamura Y., Nagahari K.,
+RA   Murakami K., Yasuda T., Iwayanagi T., Wagatsuma M., Shiratori A., Sudo H.,
+RA   Hosoiri T., Kaku Y., Kodaira H., Kondo H., Sugawara M., Takahashi M.,
+RA   Kanda K., Yokoi T., Furuya T., Kikkawa E., Omura Y., Abe K., Kamihara K.,
+RA   Katsuta N., Sato K., Tanikawa M., Yamazaki M., Ninomiya K., Ishibashi T.,
+RA   Yamashita H., Murakawa K., Fujimori K., Tanai H., Kimata M., Watanabe M.,
+RA   Hiraoka S., Chiba Y., Ishida S., Ono Y., Takiguchi S., Watanabe S.,
+RA   Yosida M., Hotuta T., Kusano J., Kanehori K., Takahashi-Fujii A., Hara H.,
+RA   Tanase T.-O., Nomura Y., Togiya S., Komai F., Hara R., Takeuchi K.,
+RA   Arita M., Imose N., Musashino K., Yuuki H., Oshima A., Sasaki N.,
+RA   Aotsuka S., Yoshikawa Y., Matsunawa H., Ichihara T., Shiohata N., Sano S.,
+RA   Moriya S., Momiyama H., Satoh N., Takami S., Terashima Y., Suzuki O.,
+RA   Nakagawa S., Senoh A., Mizoguchi H., Goto Y., Shimizu F., Wakebe H.,
+RA   Hishigaki H., Watanabe T., Sugiyama A., Takemoto M., Kawakami B.,
+RA   Yamazaki M., Watanabe K., Kumagai A., Itakura S., Fukuzumi Y., Fujimori Y.,
+RA   Komiyama M., Tashiro H., Tanigami A., Fujiwara T., Ono T., Yamada K.,
+RA   Fujii Y., Ozaki K., Hirao M., Ohmori Y., Kawabata A., Hikiji T.,
+RA   Kobatake N., Inagaki H., Ikema Y., Okamoto S., Okitani R., Kawakami T.,
+RA   Noguchi S., Itoh T., Shigeta K., Senba T., Matsumura K., Nakajima Y.,
+RA   Mizuno T., Morinaga M., Sasaki M., Togashi T., Oyama M., Hata H.,
+RA   Watanabe M., Komatsu T., Mizushima-Sugano J., Satoh T., Shirai Y.,
+RA   Takahashi Y., Nakagawa K., Okumura K., Nagase T., Nomura N., Kikuchi H.,
+RA   Masuho Y., Yamashita R., Nakai K., Yada T., Nakamura Y., Ohara O.,
+RA   Isogai T., Sugano S.;
+RT   "Complete sequencing and characterization of 21,243 full-length human
+RT   cDNAs.";
+RL   Nat. Genet. 36:40-45(2004).
+RN   [17]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE MRNA].
+RA   Halleck A., Ebert L., Mkoundinya M., Schick M., Eisenstein S., Neubert P.,
+RA   Kstrang K., Schatten R., Shen B., Henze S., Mar W., Korn B., Zuo D., Hu Y.,
+RA   LaBaer J.;
+RT   "Cloning of human full open reading frames in Gateway(TM) system entry
+RT   vector (pDONR201).";
+RL   Submitted (JUN-2004) to the EMBL/GenBank/DDBJ databases.
+RN   [18]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE GENOMIC DNA].
+RA   Mural R.J., Istrail S., Sutton G.G., Florea L., Halpern A.L., Mobarry C.M.,
+RA   Lippert R., Walenz B., Shatkay H., Dew I., Miller J.R., Flanigan M.J.,
+RA   Edwards N.J., Bolanos R., Fasulo D., Halldorsson B.V., Hannenhalli S.,
+RA   Turner R., Yooseph S., Lu F., Nusskern D.R., Shue B.C., Zheng X.H.,
+RA   Zhong F., Delcher A.L., Huson D.H., Kravitz S.A., Mouchard L., Reinert K.,
+RA   Remington K.A., Clark A.G., Waterman M.S., Eichler E.E., Adams M.D.,
+RA   Hunkapiller M.W., Myers E.W., Venter J.C.;
+RL   Submitted (SEP-2005) to the EMBL/GenBank/DDBJ databases.
+RN   [19]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE MRNA].
+RC   TISSUE=Skeletal muscle;
+RX   PubMed=15489334; DOI=10.1101/gr.2596504;
+RG   The MGC Project Team;
+RT   "The status, quality, and expansion of the NIH full-length cDNA project:
+RT   the Mammalian Gene Collection (MGC).";
+RL   Genome Res. 14:2121-2127(2004).
+RN   [20]
+RP   PROTEIN SEQUENCE OF 2-147.
+RX   PubMed=13872627; DOI=10.1515/bchm2.1961.325.1.283;
+RA   Braunitzer G., Gehring-Muller R., Hilschmann N., Hilse K., Hobom G.,
+RA   Rudloff V., Wittmann-Liebold B.;
+RT   "The constitution of normal adult human haemoglobin.";
+RL   Hoppe-Seyler's Z. Physiol. Chem. 325:283-286(1961).
+RN   [21]
+RP   PROTEIN SEQUENCE OF 3-9, INVOLVEMENT IN SKCA, AND VARIANT SKCA VAL-7.
+RX   PubMed=13464827; DOI=10.1038/180326a0;
+RA   Ingram V.M.;
+RT   "Gene mutations in human haemoglobin: the chemical difference between
+RT   normal and sickle cell haemoglobin.";
+RL   Nature 180:326-328(1957).
+RN   [22]
+RP   PROTEIN SEQUENCE OF 19-31, AND IDENTIFICATION BY MASS SPECTROMETRY.
+RC   TISSUE=Tear;
+RX   PubMed=25946035; DOI=10.1021/acs.jproteome.5b00179;
+RA   Azkargorta M., Soria J., Ojeda C., Guzman F., Acera A., Iloro I.,
+RA   Suarez T., Elortza F.;
+RT   "Human basal tear peptidome characterization by CID, HCD, and ETD followed
+RT   by in silico and in vitro analyses for antimicrobial peptide
+RT   identification.";
+RL   J. Proteome Res. 14:2649-2658(2015).
+RN   [23]
+RP   PROTEIN SEQUENCE OF 33-42, AND MASS SPECTROMETRY.
+RX   PubMed=1575724; DOI=10.1016/0006-291x(92)90699-l;
+RA   Glaemsta E.-L., Meyerson B., Silberring J., Terenius L., Nyberg F.;
+RT   "Isolation of a hemoglobin-derived opioid peptide from cerebrospinal fluid
+RT   of patients with cerebrovascular bleedings.";
+RL   Biochem. Biophys. Res. Commun. 184:1060-1066(1992).
+RN   [24]
+RP   PROTEIN SEQUENCE OF 33-42.
+RA   Ianzer D., Konno K., Xavier C.H., Stoecklin R., Santos R.A.S.,
+RA   de Camargo A.C.M., Pimenta D.C.;
+RL   Submitted (JUN-2007) to UniProtKB.
+RN   [25]
+RP   PROTEIN SEQUENCE OF 97-121, NUCLEOTIDE SEQUENCE [MRNA] OF 106-113, AND
+RP   VARIANT BURKE ARG-108.
+RX   PubMed=8401300;
+RA   Suzuki H., Wada C., Kamata K., Takahashi E., Sato N., Kunitomo T.;
+RT   "Globin chain synthesis in hemolytic anemia reticulocytes. A case of
+RT   hemoglobin Burke.";
+RL   Biochem. Mol. Biol. Int. 30:425-431(1993).
+RN   [26]
+RP   NUCLEOTIDE SEQUENCE [MRNA] OF 122-147.
+RX   PubMed=2581851; DOI=10.1016/0378-1119(85)90093-9;
+RA   Lang K.M., Spritz R.A.;
+RT   "Cloning specific complete polyadenylylated 3'-terminal cDNA segments.";
+RL   Gene 33:191-196(1985).
+RN   [27]
+RP   BISPHOSPHOGLYCERATE BINDING.
+RX   PubMed=4555506; DOI=10.1038/237146a0;
+RA   Arnone A.;
+RT   "X-ray diffraction study of binding of 2,3-diphosphoglycerate to human
+RT   deoxyhaemoglobin.";
+RL   Nature 237:146-149(1972).
+RN   [28]
+RP   ACETYLATION AT LYS-60; LYS-83 AND LYS-145.
+RX   PubMed=4531009; DOI=10.1073/pnas.71.12.4693;
+RA   Shamsuddin M., Mason R.G., Ritchey J.M., Honig G.R., Klotz I.M.;
+RT   "Sites of acetylation of sickle cell hemoglobin by aspirin.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 71:4693-4697(1974).
+RN   [29]
+RP   GLYCATION AT VAL-2.
+RX   PubMed=635569; DOI=10.1126/science.635569;
+RA   Bunn H.F., Gabbay K.H., Gallop P.M.;
+RT   "The glycosylation of hemoglobin: relevance to diabetes mellitus.";
+RL   Science 200:21-27(1978).
+RN   [30]
+RP   GLYCATION AT LYS-9; LYS-18; LYS-67; LYS-121 AND LYS-145, AND LACK OF
+RP   GLYCATION AT LYS-60; LYS-83 AND LYS-96.
+RX   PubMed=7358733; DOI=10.1016/s0021-9258(19)85860-x;
+RA   Shapiro R., McManus M.J., Zalut C., Bunn H.F.;
+RT   "Sites of nonenzymatic glycosylation of human hemoglobin A.";
+RL   J. Biol. Chem. 255:3120-3127(1980).
+RN   [31]
+RP   INVOLVEMENT IN B-THAL, AND VARIANT B-THAL LYS-27.
+RX   PubMed=6166632; DOI=10.1172/jci110226;
+RA   Benz E.J. Jr., Berman B.W., Tonkonow B.L., Coupal E., Coates T.,
+RA   Boxer L.A., Altman A., Adams J.G. III;
+RT   "Molecular analysis of the beta-thalassemia phenotype associated with
+RT   inheritance of hemoglobin E (alpha 2 beta2(26)Glu leads to Lys).";
+RL   J. Clin. Invest. 68:118-126(1981).
+RN   [32]
+RP   SUBUNIT, TISSUE SPECIFICITY, AND PARTIAL PROTEIN SEQUENCE.
+RX   PubMed=6539334; DOI=10.1016/s0021-9258(17)39875-7;
+RA   Randhawa Z.I., Jones R.T., Lie-Injo L.E.;
+RT   "Human hemoglobin Portland II (zeta 2 beta 2). Isolation and
+RT   characterization of Portland hemoglobin components and their constituent
+RT   globin chains.";
+RL   J. Biol. Chem. 259:7325-7330(1984).
+RN   [33]
+RP   INTERACTION WITH HAPTOGLOBIN.
+RX   PubMed=3718478; DOI=10.1042/bj2340453;
+RA   Yoshioka N., Atassi M.Z.;
+RT   "Haemoglobin binding with haptoglobin. Localization of the haptoglobin-
+RT   binding sites on the beta-chain of human haemoglobin by synthetic
+RT   overlapping peptides encompassing the entire chain.";
+RL   Biochem. J. 234:453-456(1986).
+RN   [34]
+RP   MODIFICATION AT LEU-142.
+RX   PubMed=1520632; DOI=10.1111/j.1365-2141.1992.tb08179.x;
+RA   Brennan S.O., Shaw J., Allen J., George P.M.;
+RT   "Beta 141 Leu is not deleted in the unstable haemoglobin Atlanta-Coventry
+RT   but is replaced by a novel amino acid of mass 129 daltons.";
+RL   Br. J. Haematol. 81:99-103(1992).
+RN   [35]
+RP   S-NITROSYLATION AT CYS-94.
+RX   PubMed=8637569; DOI=10.1038/380221a0;
+RA   Jia L., Bonaventura C., Bonaventura J., Stamler J.S.;
+RT   "S-nitrosohaemoglobin: a dynamic activity of blood involved in vascular
+RT   control.";
+RL   Nature 380:221-226(1996).
+RN   [36]
+RP   S-NITROSYLATION AT CYS-94.
+RX   PubMed=9843411; DOI=10.1021/bi9816711;
+RA   Chan N.L., Rogers P.H., Arnone A.;
+RT   "Crystal structure of the S-nitroso form of liganded human hemoglobin.";
+RL   Biochemistry 37:16459-16464(1998).
+RN   [37]
+RP   NITRIC OXIDE-BINDING.
+RX   PubMed=10588683; DOI=10.1073/pnas.96.25.14206;
+RA   Durner J., Gow A.J., Stamler J.S., Glazebrook J.;
+RT   "Ancient origins of nitric oxide signaling in biological systems.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 96:14206-14207(1999).
+RN   [38]
+RP   POLYMORPHISM, AND ASSOCIATION OF VARIANT LYS-7 WITH RESISTANCE TO MALARIA.
+RX   PubMed=11001883;
+RA   Agarwal A., Guindo A., Cissoko Y., Taylor J.G., Coulibaly D., Kone A.,
+RA   Kayentao K., Djimde A., Plowe C.V., Doumbo O., Wellems T.E., Diallo D.;
+RT   "Hemoglobin C associated with protection from severe malaria in the Dogon
+RT   of Mali, a West African population with a low prevalence of hemoglobin S.";
+RL   Blood 96:2358-2363(2000).
+RN   [39]
+RP   SUBUNIT.
+RX   PubMed=11747442; DOI=10.1021/bi011329f;
+RA   Kidd R.D., Russell J.E., Watmough N.J., Baker E.N., Brittain T.;
+RT   "The role of beta chains in the control of the hemoglobin oxygen binding
+RT   function: chimeric human/mouse proteins, structure, and function.";
+RL   Biochemistry 40:15669-15675(2001).
+RN   [40]
+RP   POLYMORPHISM, AND ASSOCIATION OF VARIANT B-THAL LYS-27 WITH RESISTANCE TO
+RP   MALARIA.
+RX   PubMed=12149194;
+RA   Chotivanich K., Udomsangpetch R., Pattanapanyasat K., Chierakul W.,
+RA   Simpson J., Looareesuwan S., White N.;
+RT   "Hemoglobin E: a balanced polymorphism protective against high parasitemias
+RT   and thus severe P falciparum malaria.";
+RL   Blood 100:1172-1176(2002).
+RN   [41]
+RP   REVIEW ON FUNCTION OF SPINORPHIN.
+RX   PubMed=12470213; DOI=10.2174/1389203023380404;
+RA   Yamamoto Y., Ono H., Ueda A., Shimamura M., Nishimura K., Hazato T.;
+RT   "Spinorphin as an endogenous inhibitor of enkephalin-degrading enzymes:
+RT   roles in pain and inflammation.";
+RL   Curr. Protein Pept. Sci. 3:587-599(2002).
+RN   [42]
+RP   PROTEOLYTIC CLEAVAGE (MICROBIAL INFECTION) BY N.AMERICANUS APR-2, AND
+RP   PARTIAL PROTEIN SEQUENCE.
+RX   PubMed=12552433; DOI=10.1086/367708;
+RA   Williamson A.L., Brindley P.J., Abbenante G., Datu B.J., Prociv P.,
+RA   Berry C., Girdwood K., Pritchard D.I., Fairlie D.P., Hotez P.J., Zhan B.,
+RA   Loukas A.;
+RT   "Hookworm aspartic protease, Na-APR-2, cleaves human hemoglobin and serum
+RT   proteins in a host-specific fashion.";
+RL   J. Infect. Dis. 187:484-494(2003).
+RN   [43]
+RP   POLYMORPHISM, AND ASSOCIATION OF VARIANT SKCA VAL-7 WITH RESISTANCE TO
+RP   MALARIA.
+RX   PubMed=16001361; DOI=10.1086/432519;
+RA   Kwiatkowski D.P.;
+RT   "How malaria has affected the human genome and what human genetics can
+RT   teach us about malaria.";
+RL   Am. J. Hum. Genet. 77:171-192(2005).
+RN   [44]
+RP   SYNTHESIS OF 33-42, AND FUNCTION.
+RX   PubMed=16904236; DOI=10.1016/j.peptides.2006.06.009;
+RA   Ianzer D., Konno K., Xavier C.H., Stoecklin R., Santos R.A.S.,
+RA   de Camargo A.C.M., Pimenta D.C.;
+RT   "Hemorphin and hemorphin-like peptides isolated from dog pancreas and sheep
+RT   brain are able to potentiate bradykinin activity in vivo.";
+RL   Peptides 27:2957-2966(2006).
+RN   [45]
+RP   FUNCTION OF SPINORPHIN.
+RX   PubMed=17676725; DOI=10.1021/jm070114m;
+RA   Jung K.Y., Moon H.D., Lee G.E., Lim H.H., Park C.S., Kim Y.C.;
+RT   "Structure-activity relationship studies of spinorphin as a potent and
+RT   selective human P2X(3) receptor antagonist.";
+RL   J. Med. Chem. 50:4543-4547(2007).
+RN   [46]
+RP   IDENTIFICATION BY MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RX   PubMed=21269460; DOI=10.1186/1752-0509-5-17;
+RA   Burkard T.R., Planyavsky M., Kaupe I., Breitwieser F.P., Buerckstuemmer T.,
+RA   Bennett K.L., Superti-Furga G., Colinge J.;
+RT   "Initial characterization of the human central proteome.";
+RL   BMC Syst. Biol. 5:17-17(2011).
+RN   [47]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-10; THR-13; SER-45; THR-51
+RP   AND THR-88, AND IDENTIFICATION BY MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Liver;
+RX   PubMed=24275569; DOI=10.1016/j.jprot.2013.11.014;
+RA   Bian Y., Song C., Cheng K., Dong M., Wang F., Huang J., Sun D., Wang L.,
+RA   Ye M., Zou H.;
+RT   "An enzyme assisted RP-RPLC approach for in-depth analysis of human liver
+RT   phosphoproteome.";
+RL   J. Proteomics 96:253-262(2014).
+RN   [48]
+RP   ELECTRON MICROSCOPY OF SICKLE-CELL HEMOGLOBIN FIBERS.
+RX   PubMed=4123689; DOI=10.1073/pnas.70.3.718;
+RA   Finch J.T., Perutz M.F., Bertles J.F., Doebler J.;
+RT   "Structure of sickled erythrocytes and of sickle-cell hemoglobin fibers.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 70:718-722(1973).
+RN   [49]
+RP   X-RAY CRYSTALLOGRAPHY (5 ANGSTROMS) OF VARIANT SKCA VAL-7.
+RX   PubMed=1195378; DOI=10.1016/s0022-2836(75)80108-2;
+RA   Wishner B.C., Ward K.B., Lattman E.E., Love W.E.;
+RT   "Crystal structure of sickle-cell deoxyhemoglobin at 5 A resolution.";
+RL   J. Mol. Biol. 98:179-194(1975).
+RN   [50]
+RP   X-RAY CRYSTALLOGRAPHY (2.5 ANGSTROMS) OF DEOXYHEMOGLOBIN.
+RX   PubMed=1177322; DOI=10.1016/s0022-2836(75)80037-4;
+RA   Fermi G.;
+RT   "Three-dimensional Fourier synthesis of human deoxyhaemoglobin at 2.5-A
+RT   resolution: refinement of the atomic model.";
+RL   J. Mol. Biol. 97:237-256(1975).
+RN   [51]
+RP   X-RAY CRYSTALLOGRAPHY (2.7 ANGSTROMS) OF CARBONMONOXY HEMOGLOBIN.
+RX   PubMed=7373648; DOI=10.1016/0022-2836(80)90308-3;
+RA   Baldwin J.M.;
+RT   "The structure of human carbonmonoxy haemoglobin at 2.7-A resolution.";
+RL   J. Mol. Biol. 136:103-128(1980).
+RN   [52]
+RP   X-RAY CRYSTALLOGRAPHY (1.74 ANGSTROMS) OF DEOXYHEMOGLOBIN.
+RX   PubMed=6726807; DOI=10.1016/0022-2836(84)90472-8;
+RA   Fermi G., Perutz M.F., Shaanan B., Fourme R.;
+RT   "The crystal structure of human deoxyhaemoglobin at 1.74 A resolution.";
+RL   J. Mol. Biol. 175:159-174(1984).
+RN   [53]
+RP   X-RAY CRYSTALLOGRAPHY (1.9 ANGSTROMS) OF VARIANT ROTHSCHILD ARG-38.
+RX   PubMed=1567857; DOI=10.1021/bi00131a030;
+RA   Kavanaugh J.S., Rogers P.H., Case D.A., Arnone A.;
+RT   "High-resolution X-ray study of deoxyhemoglobin Rothschild 37 beta
+RT   Trp-->Arg: a mutation that creates an intersubunit chloride-binding site.";
+RL   Biochemistry 31:4111-4121(1992).
+RN   [54]
+RP   X-RAY CRYSTALLOGRAPHY (2.8 ANGSTROMS) OF MUTANT ARG-75.
+RX   PubMed=1507231; DOI=10.1016/0022-2836(92)90638-z;
+RA   Fermi G., Perutz M.F., Williamson D., Stein P., Shih D.T.;
+RT   "Structure-function relationships in the low-affinity mutant haemoglobin
+RT   Aalborg (Gly74 (E18)beta-->Arg).";
+RL   J. Mol. Biol. 226:883-888(1992).
+RN   [55]
+RP   X-RAY CRYSTALLOGRAPHY (2.5 ANGSTROMS), AND BISPHOSPHOGLYCERATE BINDING.
+RX   PubMed=8377203; DOI=10.1006/jmbi.1993.1505;
+RA   Richard V., Dodson G.G., Mauguen Y.;
+RT   "Human deoxyhaemoglobin-2,3-diphosphoglycerate complex low-salt structure
+RT   at 2.5 A resolution.";
+RL   J. Mol. Biol. 233:270-274(1993).
+RN   [56]
+RP   X-RAY CRYSTALLOGRAPHY (2.1 ANGSTROMS).
+RX   PubMed=8642597; DOI=10.1006/jmbi.1996.0124;
+RA   Paoli M., Liddington R., Tame J., Wilkinson A., Dodson G.;
+RT   "Crystal structure of T state haemoglobin with oxygen bound at all four
+RT   haems.";
+RL   J. Mol. Biol. 256:775-792(1996).
+RN   [57]
+RP   X-RAY CRYSTALLOGRAPHY (1.8 ANGSTROMS) OF MUTANTS ALA-38; GLU-38; GLY-38 AND
+RP   TYR-38.
+RX   PubMed=9521756; DOI=10.1021/bi9708702;
+RA   Kavanaugh J.S., Weydert J.A., Rogers P.H., Arnone A.;
+RT   "High-resolution crystal structures of human hemoglobin with mutations at
+RT   tryptophan 37beta: structural basis for a high-affinity T-state.";
+RL   Biochemistry 37:4358-4373(1998).
+RN   [58]
+RP   X-RAY CRYSTALLOGRAPHY (2.0 ANGSTROMS) OF MUTANT TRP-7.
+RX   PubMed=9830011; DOI=10.1074/jbc.273.49.32690;
+RA   Harrington D.J., Adachi K., Royer W.E. Jr.;
+RT   "Crystal structure of deoxy-human hemoglobin beta6 Glu-->Trp. Implications
+RT   for the structure and formation of the sickle cell fiber.";
+RL   J. Biol. Chem. 273:32690-32696(1998).
+RN   [59]
+RP   X-RAY CRYSTALLOGRAPHY (2.0 ANGSTROMS) OF VARIANT LYS-7.
+RX   PubMed=12454462; DOI=10.1107/s0907444902016426;
+RA   Dewan J.C., Feeling-Taylor A., Puius Y.A., Patskovska L., Patskovsky Y.,
+RA   Nagel R.L., Almo S.C., Hirsch R.E.;
+RT   "Structure of mutant human carbonmonoxyhemoglobin C (betaE6K) at 2.0 A
+RT   resolution.";
+RL   Acta Crystallogr. D 58:2038-2042(2002).
+RN   [60]
+RP   X-RAY CRYSTALLOGRAPHY (1.95 ANGSTROMS) OF VARIANT SKCA VAL-7 IN COMPLEX
+RP   WITH HEME AND HBZ, AND SUBUNIT.
+RX   PubMed=24100324; DOI=10.1107/s0907444913019197;
+RA   Safo M.K., Ko T.P., Abdulmalik O., He Z., Wang A.H., Schreiter E.R.,
+RA   Russell J.E.;
+RT   "Structure of fully liganded Hb zeta2beta2s trapped in a tense
+RT   conformation.";
+RL   Acta Crystallogr. D 69:2061-2071(2013).
+RN   [61]
+RP   VARIANT FREIBURG VAL-24 DEL.
+RX   PubMed=5919752; DOI=10.1126/science.154.3752.1024;
+RA   Jones R.T., Brimhall B., Huisman T.H., Kleihauer E., Betke K.;
+RT   "Hemoglobin Freiburg: abnormal hemoglobin due to deletion of a single amino
+RT   acid residue.";
+RL   Science 154:1024-1027(1966).
+RN   [62]
+RP   VARIANT ALABAMA LYS-40.
+RX   PubMed=1115799;
+RA   Brimhall B., Jones R.T., Schneider R.G., Hosty T.S., Tomlin G., Atkins R.;
+RT   "Two new hemoglobins. Hemoglobin Alabama (beta39(C5)Gln leads to Lys) and
+RT   hemoglobin Montgomery (alpha 48(CD 6) Leu leads to Arg).";
+RL   Biochim. Biophys. Acta 379:28-32(1975).
+RN   [63]
+RP   INVOLVEMENT IN HEIBAN, AND VARIANT ST LOUIS GLN-29.
+RX   PubMed=186485; DOI=10.1172/jci108561;
+RA   Thillet J., Cohen-Solal M., Seligmann M., Rosa J.;
+RT   "Functional and physicochemical studies of hemoglobin St. Louis beta 28
+RT   (B10) Leu replaced by Gln: a variant with ferric beta heme iron.";
+RL   J. Clin. Invest. 58:1098-1106(1976).
+RN   [64]
+RP   INVOLVEMENT IN B-THALIB.
+RX   PubMed=1971109; DOI=10.1073/pnas.87.10.3924;
+RA   Thein S.L., Hesketh C., Taylor P., Temperley I.J., Hutchinson R.M.,
+RA   Old J.M., Wood W.G., Clegg J.B., Weatherall D.J.;
+RT   "Molecular basis for dominantly inherited inclusion body beta-
+RT   thalassemia.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 87:3924-3928(1990).
+RN   [65]
+RP   VARIANT ALESHA MET-68.
+RX   PubMed=8330974; DOI=10.3109/03630269308998896;
+RA   Molchanova T.P., Postnikov Y.V., Pobedimskaya D.D., Smetanina N.S.,
+RA   Moschan A.A., Kazanetz E.G., Tokarev Y.N., Huisman T.H.J.;
+RT   "Hb Alesha or alpha 2 beta (2)67(E11)Val-->Met: a new unstable hemoglobin
+RT   variant identified through sequencing of amplified DNA.";
+RL   Hemoglobin 17:217-225(1993).
+RN   [66]
+RP   VARIANT J-ALTGELDS GARDENS ASP-93.
+RX   PubMed=721609; DOI=10.3109/03630267809007075;
+RA   Adams J.G. III, Przywara K.P., Heller P., Shamsuddin M.;
+RT   "Hemoglobin J Altgeld Gardens. A hemoglobin variant with a substitution of
+RT   the proximal histidine of the beta-chain.";
+RL   Hemoglobin 2:403-415(1978).
+RN   [67]
+RP   VARIANT ANKARA ASP-11.
+RX   PubMed=4850241; DOI=10.1016/0014-5793(74)80766-0;
+RA   Arcasoy A., Casey R., Lehmann H., Cavdar A.O., Berki A.;
+RT   "A new haemoglobin J from Turkey -- Hb Ankara (beta10 (A7) Ala-Asp).";
+RL   FEBS Lett. 42:121-123(1974).
+RN   [68]
+RP   VARIANT J-ANTAKYA MET-66, AND VARIANT COMPLUTENSE GLU-128.
+RX   PubMed=3707969; DOI=10.1016/0167-4838(86)90178-0;
+RA   Huisman T.H.J., Wilson J.B., Kutlar A., Yang K.-G., Chen S.-S.,
+RA   Webber B.B., Altay C., Martinez A.V.;
+RT   "Hb J-Antakya or alpha 2 beta (2)65(E9)Lys-->Met in a Turkish family and Hb
+RT   complutense or alpha 2 beta (2)127(H5)Gln-->Glu in a Spanish family;
+RT   correction of a previously published identification.";
+RL   Biochim. Biophys. Acta 871:229-231(1986).
+RN   [69]
+RP   VARIANT J-AUCKLAND ASP-26.
+RX   PubMed=3654265; DOI=10.3109/03630268709017888;
+RA   Williamson D., Wells R.M.G., Anderson R., Matthews J.;
+RT   "A new unstable and low oxygen affinity hemoglobin variant: Hb J-Auckland
+RT   [beta 25(B7)Gly-->Asp].";
+RL   Hemoglobin 11:221-230(1987).
+RN   [70]
+RP   VARIANT AURORA TYR-140.
+RX   PubMed=8718692; DOI=10.3109/03630269509005825;
+RA   Lafferty J., Ali M., Matthew K., Eng B., Patterson M., Waye J.S.;
+RT   "Identification of a new high oxygen affinity hemoglobin variant: Hb Aurora
+RT   [beta 139(H17) Asn-->Tyr].";
+RL   Hemoglobin 19:335-341(1995).
+RN   [71]
+RP   VARIANT BREST LYS-128.
+RX   PubMed=3384710; DOI=10.3109/03630268808998024;
+RA   Baudin-Chich V., Wajcman H., Gombaud-Saintonge G., Arous N., Riou J.,
+RA   Briere J., Galacteros F.;
+RT   "Hemoglobin Brest [beta 127 (H5)Gln-->Lys] a new unstable human hemoglobin
+RT   variant located at the alpha 1 beta 1 interface with specific
+RT   electrophoretic behavior.";
+RL   Hemoglobin 12:179-188(1988).
+RN   [72]
+RP   VARIANT BRISBANE HIS-69.
+RX   PubMed=6166590; DOI=10.3109/03630268108991807;
+RA   Brennan S.O., Wells R.M., Smith H., Carrell R.W.;
+RT   "Hemoglobin Brisbane: beta68 Leu replaced by His. A new high oxygen
+RT   affinity variant.";
+RL   Hemoglobin 5:325-335(1981).
+RN   [73]
+RP   VARIANT BUNBURY ASN-95.
+RX   PubMed=6629823; DOI=10.3109/03630268309038410;
+RA   Como P.F., Kennett D., Wilkinson T., Kronenberg H.;
+RT   "A new hemoglobin with high oxygen affinity -- hemoglobin Bunbury: alpha 2
+RT   beta 2 [94 (FG1) Asp replaced by Asn].";
+RL   Hemoglobin 7:413-421(1983).
+RN   [74]
+RP   VARIANT J-CAIRO GLN-66.
+RX   PubMed=1247583; DOI=10.1016/0005-2795(76)90348-2;
+RA   Garel M.-C., Hassan W., Coquelet M.T., Goossens M., Rosa J., Arous N.;
+RT   "Hemoglobin J Cairo: beta 65 (E9) Lys leads to Gln, A new hemoglobin
+RT   variant discovered in an Egyptian family.";
+RL   Biochim. Biophys. Acta 420:97-104(1976).
+RN   [75]
+RP   VARIANT CAMPERDOWN SER-105.
+RX   PubMed=1138922; DOI=10.1016/0005-2795(75)90231-7;
+RA   Wilkinson T., Chua C.G., Carrell R.W., Robin H., Exner T., Lee K.M.,
+RA   Kronenberg H.;
+RT   "A new haemoglobin variant, haemoglobin Camperdown (beta 104 (G6)
+RT   arginine->serine).";
+RL   Biochim. Biophys. Acta 393:195-200(1975).
+RN   [76]
+RP   VARIANT CARIBBEAN ARG-92.
+RX   PubMed=992050; DOI=10.1016/0014-5793(76)80662-x;
+RA   Ahern E., Ahern V., Hilton T., Serjeant G.R., Serjeant B.E., Seakins M.,
+RA   Lang A., Middleton A., Lehmann H.;
+RT   "Haemoglobin caribbean beta91 (F7) Leu replaced by Arg: a mildly
+RT   haemoglobin with a low oxygen affinity.";
+RL   FEBS Lett. 69:99-102(1976).
+RN   [77]
+RP   VARIANT CITY OF HOPE SER-70.
+RX   PubMed=6434492; DOI=10.3109/03630268408991716;
+RA   Rahbar S., Asmerom Y., Blume K.G.;
+RT   "A silent hemoglobin variant detected by HPLC: hemoglobin City of Hope beta
+RT   69 (E13) Gly-->Ser.";
+RL   Hemoglobin 8:333-342(1984).
+RN   [78]
+RP   VARIANT COIMBRA GLU-100.
+RX   PubMed=1814856; DOI=10.3109/03630269109027896;
+RA   Tamagnini G.P., Ribeiro M.L., Valente V., Ramachandran M., Wilson J.B.,
+RA   Baysal E., Gu L.H., Huisman T.H.J.;
+RT   "Hb Coimbra or alpha 2 beta (2)99(G1)Asp-->Glu, a newly discovered high
+RT   oxygen affinity variant.";
+RL   Hemoglobin 15:487-496(1991).
+RN   [79]
+RP   VARIANT COSTA RICA ARG-78.
+RX   PubMed=8641705; DOI=10.1007/s004390050145;
+RA   Romero W.E.R., Castillo M., Chaves M.A., Saenz G.F., Gu L.-H., Wilson J.B.,
+RA   Baysal E., Smetanina N.S., Leonova J.Y., Huisman T.H.J.;
+RT   "Hb Costa Rica or alpha 2 beta 2 77(EF1)His-->Arg: the first example of a
+RT   somatic cell mutation in a globin gene.";
+RL   Hum. Genet. 97:829-833(1996).
+RN   [80]
+RP   VARIANT DEBROUSSE PRO-97.
+RX   PubMed=8602627;
+RX   DOI=10.1002/(sici)1096-8652(199604)51:4<276::aid-ajh5>3.0.co;2-t;
+RA   Lacan P., Kister J., Francina A., Souillet G., Galacteros F., Delaunay J.,
+RA   Wajcman H.;
+RT   "Hemoglobin Debrousse (beta 96[FG3]Leu-->Pro): a new unstable hemoglobin
+RT   with twofold increased oxygen affinity.";
+RL   Am. J. Hematol. 51:276-281(1996).
+RN   [81]
+RP   VARIANT B-THAL GLY-127.
+RX   PubMed=2399911; DOI=10.1002/ajh.2830350206;
+RA   Bardakdjian-Michau J., Fucharoen S., Delanoe-Garin J., Kister J.,
+RA   Lacombe C., Winichagoon P., Blouquit Y., Riou J., Wasi P., Galacteros F.;
+RT   "Hemoglobin Dhonburi alpha 2 beta 2 126 (H4) Val-->Gly: a new unstable beta
+RT   variant producing a beta-thalassemia intermedia phenotype in association
+RT   with beta zero-thalassemia.";
+RL   Am. J. Hematol. 35:96-99(1990).
+RN   [82]
+RP   VARIANT NEWCASTLE PRO-93, VARIANT CAMPERDOWN SER-105, AND DESCRIPTION OF
+RP   VARIANT DUINO.
+RX   PubMed=1511986; DOI=10.1007/bf00221961;
+RA   Wajcman H., Blouquit Y., Vasseur C., le Querrec A., Laniece M.,
+RA   Melevendi C., Rasore A., Galacteros F.;
+RT   "Two new human hemoglobin variants caused by unusual mutational events: Hb
+RT   Zaire contains a five residue repetition within the alpha-chain and Hb
+RT   Duino has two residues substituted in the beta-chain.";
+RL   Hum. Genet. 89:676-680(1992).
+RN   [83]
+RP   VARIANT DURHAM-N.C. PRO-115.
+RX   PubMed=1301199; DOI=10.1002/humu.1380010207;
+RA   Murru S., Poddie D., Sciarratta G.V., Agosti S., Baffico M., Melevendi C.,
+RA   Pirastu M., Cao A.;
+RT   "A novel beta-globin structural mutant, Hb Brescia (beta 114 Leu-Pro),
+RT   causing a severe beta-thalassemia intermedia phenotype.";
+RL   Hum. Mutat. 1:124-128(1992).
+RN   [84]
+RP   VARIANT DURHAM-N.C. PRO-115.
+RX   PubMed=8111050;
+RA   de Castro C.M., Devlin B., Fleenor D.E., Lee M.E., Kaufman R.E.;
+RT   "A novel beta-globin mutation, beta Durham-NC [beta 114 Leu-->Pro],
+RT   produces a dominant thalassemia-like phenotype.";
+RL   Blood 83:1109-1116(1994).
+RN   [85]
+RP   VARIANT J-EUROPA ASP-63.
+RX   PubMed=8811317; DOI=10.3109/03630269609027919;
+RA   Kiger L., Kister J., Groff P., Kalmes G., Prome D., Galacteros F.,
+RA   Wajcman H.;
+RT   "Hb J-Europa [beta 62(E6)Ala-->Asp]: normal oxygen binding properties in a
+RT   new variant involving a residue located distal to the heme.";
+RL   Hemoglobin 20:135-140(1996).
+RN   [86]
+RP   VARIANT GEELONG ASP-140.
+RX   PubMed=1917539; DOI=10.3109/03630269109072487;
+RA   Como P.F., Hocking D.R., Swinton G.W., Trent R.J., Holland R.A.B.,
+RA   Tibben E.A., Wilkinson T., Kronenberg H.;
+RT   "Hb Geelong [beta 139(H17)Asn-->Asp].";
+RL   Hemoglobin 15:85-95(1991).
+RN   [87]
+RP   VARIANT GRANGE-BLANCHE VAL-28.
+RX   PubMed=3666141; DOI=10.1016/0014-5793(87)80509-4;
+RA   Baklouti F., Giraud Y., Francina A., Richard G., Perier C., Geyssant A.,
+RA   Jaubert J., Brizard C., Delaunay J.;
+RT   "Hemoglobin Grange-Blanche [beta 27(B9) Ala-->Val], a new variant with
+RT   normal expression and increased affinity for oxygen.";
+RL   FEBS Lett. 223:59-62(1987).
+RN   [88]
+RP   VARIANT GRAZ LEU-3.
+RX   PubMed=1487420; DOI=10.3109/03630269208993117;
+RA   Liu J.S., Molchanova T.P., Gu L.H., Wilson J.B., Hopmeier P., Schnedl W.,
+RA   Balaun E., Krejs G.J., Huisman T.H.J.;
+RT   "Hb Graz or alpha 2 beta 2(2)(NA2)His-->Leu; a new beta chain variant
+RT   observed in four families from southern Austria.";
+RL   Hemoglobin 16:493-501(1992).
+RN   [89]
+RP   VARIANT HELSINKI MET-83.
+RX   PubMed=826083; DOI=10.1159/000207947;
+RA   Ikkala E., Koskela J., Pikkarainen P., Rahiala E.-L., El-Hazmi M.A.F.,
+RA   Nagai K., Lang A., Lehmann H.;
+RT   "Hb Helsinki: a variant with a high oxygen affinity and a substitution at a
+RT   2,3-DPG binding site (beta82[EF6] Lys replaced by Met).";
+RL   Acta Haematol. 56:257-275(1976).
+RN   [90]
+RP   VARIANT HIMEJI ASP-141.
+RX   PubMed=3754244; DOI=10.3109/03630268609046438;
+RA   Ohba Y., Miyaji T., Murakami M., Kadowaki S., Fujita T., Oimomi M.,
+RA   Hatanaka H., Ishikawa K., Baba S., Hitaka K., Imai K.;
+RT   "Hb Himeji or beta 140 (H18) Ala-->Asp. A slightly unstable hemoglobin with
+RT   increased beta N-terminal glycation.";
+RL   Hemoglobin 10:109-126(1986).
+RN   [91]
+RP   VARIANT HINSDALE LYS-140.
+RX   PubMed=2513289; DOI=10.3109/03630268908998084;
+RA   Moo-Penn W.F., Johnson M.H., Jue D.L., Lonser R.;
+RT   "Hb Hinsdale [beta 139 (H17)Asn-->Lys]: a variant in the central cavity
+RT   showing reduced affinity for oxygen and 2,3-diphosphoglycerate.";
+RL   Hemoglobin 13:455-464(1989).
+RN   [92]
+RP   VARIANT HINWIL ASN-39.
+RX   PubMed=8745430; DOI=10.3109/03630269609027908;
+RA   Frischknecht H., Ventruto M., Hess D., Hunziker P., Rosatelli M.C., Cao A.,
+RA   Breitenstein U., Fehr J., Tuchschmid P.;
+RT   "HB Hinwil or beta 38(C4)Thr-->Asn: a new beta chain variant detected in a
+RT   Swiss family.";
+RL   Hemoglobin 20:31-40(1996).
+RN   [93]
+RP   VARIANT HOWICK GLY-38.
+RX   PubMed=8144352; DOI=10.3109/03630269309043491;
+RA   Owen M.C., Ockelford P.A., Wells R.M.G.;
+RT   "Hb Howick [beta 37(C3)Trp-->Gly]: a new high oxygen affinity variant of
+RT   the alpha 1 beta 2 contact.";
+RL   Hemoglobin 17:513-521(1993).
+RN   [94]
+RP   VARIANT INDIANAPOLIS ARG-113.
+RX   PubMed=429365; DOI=10.1016/s0021-9258(18)50784-5;
+RA   Adams J.G. III, Steinberg M.H., Boxer L.A., Baehner R.L., Forget B.G.,
+RA   Tsistrakis G.A.;
+RT   "The structure of hemoglobin Indianapolis [beta112(G14) arginine]. An
+RT   unstable variant detectable only by isotopic labeling.";
+RL   J. Biol. Chem. 254:3479-3482(1979).
+RN   [95]
+RP   VARIANT ISEHARA ASN-93.
+RX   PubMed=1787097; DOI=10.3109/03630269109027880;
+RA   Harano T., Harano K., Kushida Y., Ueda S., Yoshii A., Nishinarita M.;
+RT   "Hb Isehara (or Hb Redondo) [beta 92 (F8) His-->Asn]: an unstable variant
+RT   with a proximal histidine substitution at the heme contact.";
+RL   Hemoglobin 15:279-290(1991).
+RN   [96]
+RP   VARIANT ISTAMBUL GLN-93.
+RX   PubMed=4639022; DOI=10.1172/jci107050;
+RA   Aksoy M., Erdem S., Efremov G.D., Wilson J.B., Huisman T.H.J.,
+RA   Schroeder W.A., Shelton J.R., Shelton J.B., Ulitin O.N., Muftuoglu A.;
+RT   "Hemoglobin Istanbul: substitution of glutamine for histidine in a proximal
+RT   histidine (F8(92)).";
+RL   J. Clin. Invest. 51:2380-2387(1972).
+RN   [97]
+RP   VARIANT JACKSONVILLE ASP-55.
+RX   PubMed=2101840;
+RA   Gaudry C.L. Jr., Pitel P.A., Jue D.L., Hine T.K., Johnson M.H.,
+RA   Moo-Penn W.F.;
+RT   "Hb Jacksonville [alpha 2 beta 2(54)(D5)Val-->Asp]: a new unstable variant
+RT   found in a patient with hemolytic anemia.";
+RL   Hemoglobin 14:653-659(1990).
+RN   [98]
+RP   VARIANT JIANGHUA ILE-121.
+RX   PubMed=6618888;
+RA   Lu Y.Q., Fan J.L., Liu J.F., Hu H.L., Peng X.H., Huang C.-H., Huang P.Y.,
+RA   Chen S.S., Jai P.C., Yang K.G.;
+RT   "Hemoglobin Jianghua [beta 120(GH3) Lys leads to Ile]: a new fast-moving
+RT   variant found in China.";
+RL   Hemoglobin 7:321-326(1983).
+RN   [99]
+RP   VARIANT KARLSKOGA HIS-22.
+RX   PubMed=8330972; DOI=10.3109/03630269308998894;
+RA   Landin B.;
+RT   "Hb Karlskoga or alpha 2 beta (2)21(B3) Asp-->His: a new slow-moving
+RT   variant found in Sweden.";
+RL   Hemoglobin 17:201-208(1993).
+RN   [100]
+RP   VARIANT KNOSSOS SER-28.
+RX   PubMed=7173395; DOI=10.1016/0014-5793(82)81052-1;
+RA   Arous N., Galacteros F., Fessas P., Loukopoulos D., Blouquit Y., Komis G.,
+RA   Sellaye M., Boussiou M., Rosa J.;
+RT   "Structural study of hemoglobin Knossos, beta 27 (B9) Ala leads to Ser. A
+RT   new abnormal hemoglobin present as a silent beta-thalassemia.";
+RL   FEBS Lett. 147:247-250(1982).
+RN   [101]
+RP   VARIANT KODAIRA GLN-147.
+RX   PubMed=1634367; DOI=10.3109/03630269209005681;
+RA   Harano T., Harano K., Kushida Y., Imai K., Nishinakamura R., Matsunaga T.;
+RT   "Hb Kodaira [beta 146(HC3)His-->Gln]: a new beta chain variant with an
+RT   amino acid substitution at the C-terminus.";
+RL   Hemoglobin 16:85-91(1992).
+RN   [102]
+RP   VARIANT KOFU ILE-85.
+RX   PubMed=3744871; DOI=10.3109/03630268608996871;
+RA   Harano T., Harano K., Ueda S., Imai N., Kitazumi T.;
+RT   "A new electrophoretically-silent hemoglobin variant: hemoglobin Kofu or
+RT   alpha 2 beta 2 84 (EF8) Thr-->Ile.";
+RL   Hemoglobin 10:417-420(1986).
+RN   [103]
+RP   VARIANT B-THAL ASP-116.
+RX   PubMed=7693620; DOI=10.3109/03630269308997485;
+RA   Divoky V., Svobodova M., Indrak K., Chrobak L., Molchanova T.P.,
+RA   Huisman T.H.J.;
+RT   "Hb Hradec Kralove (Hb HK) or alpha 2 beta 2 115(G17)Ala-->Asp, a severely
+RT   unstable hemoglobin variant resulting in a dominant beta-thalassemia trait
+RT   in a Czech family.";
+RL   Hemoglobin 17:319-328(1993).
+RN   [104]
+RP   VARIANT LA DESIRADE VAL-130.
+RX   PubMed=3557994; DOI=10.3109/03630268609036564;
+RA   Merault G., Keclard L., Garin J., Poyart C., Blouquit Y., Arous N.,
+RA   Galacteros F., Feingold J., Rosa J.;
+RT   "Hemoglobin La Desirade alpha A2 beta 2 129 (H7) Ala-->Val: a new unstable
+RT   hemoglobin.";
+RL   Hemoglobin 10:593-605(1986).
+RN   [105]
+RP   VARIANT LA ROCHE-SUR-YON HIS-82.
+RX   PubMed=1540659; DOI=10.1016/0925-4439(92)90052-o;
+RA   Wajcman H., Kister J., Vasseur C., Blouquit Y., Trastour J.C.,
+RA   Cottenceau D., Galacteros F.;
+RT   "Structure of the EF corner favors deamidation of asparaginyl residues in
+RT   hemoglobin: the example of Hb La Roche-sur-Yon [beta 81 (EF5) Leu-->His].";
+RL   Biochim. Biophys. Acta 1138:127-132(1992).
+RN   [106]
+RP   VARIANT LAS PALMAS PHE-50.
+RX   PubMed=3384708; DOI=10.3109/03630268808998022;
+RA   Malcorra-Azpiazu J.J., Balda-Aguirre M.I., Diaz-Chico J.C., Hu H.,
+RA   Wilson J.B., Webber B.B., Kutlar F., Kutlar A., Huisman T.H.J.;
+RT   "Hb Las Palmas or alpha 2 beta 2(49)(CD8)Ser-->Phe, a mildly unstable
+RT   hemoglobin variant.";
+RL   Hemoglobin 12:163-170(1988).
+RN   [107]
+RP   VARIANT LINKOPING THR-37.
+RX   PubMed=3691763; DOI=10.1111/j.1600-0609.1987.tb01455.x;
+RA   Berlin G., Wranne B., Jeppsson J.-O.;
+RT   "Hb Linkoping (beta 36 Pro-->Thr): a new high oxygen affinity hemoglobin
+RT   variant found in two families of Finnish origin.";
+RL   Eur. J. Haematol. 39:452-456(1987).
+RN   [108]
+RP   VARIANT MAPUTO TYR-48.
+RX   PubMed=6629824; DOI=10.3109/03630268309038411;
+RA   Marinucci M., Boissel J.P., Massa A., Wajcman H., Tentori L., Labie D.;
+RT   "Hemoglobin Maputo: a new beta-chain variant (alpha 2 beta 2 47 (CD6) Asp
+RT   replaced by Tyr) in combination with hemoglobin S, identified by high
+RT   performance liquid chromatography (HPLC).";
+RL   Hemoglobin 7:423-433(1983).
+RN   [109]
+RP   VARIANT MATERA LYS-56.
+RX   PubMed=2384314; DOI=10.3109/03630269009002256;
+RA   Sciarratta G.V., Ivaldi G.;
+RT   "Hb Matera [beta 55(D6)Met-->Lys]: a new unstable hemoglobin variant in an
+RT   Italian family.";
+RL   Hemoglobin 14:79-85(1990).
+RN   [110]
+RP   VARIANT MIYASHIRO GLY-24.
+RX   PubMed=7338468; DOI=10.3109/03630268108991833;
+RA   Nakatsuji T., Miwa S., Ohba Y., Hattori Y., Miyaji T., Miyata H.,
+RA   Shinohara T., Hori T., Takayama J.;
+RT   "Hemoglobin Miyashiro (beta 23[B5] val substituting for gly) an
+RT   electrophoretically silent variant discovered by the isopropanol test.";
+RL   Hemoglobin 5:653-666(1981).
+RN   [111]
+RP   VARIANT MIZUHO PRO-69.
+RX   PubMed=893142; DOI=10.3109/03630267709027864;
+RA   Ohba Y., Miyaji T., Matsuoka M., Sugiyama K., Suzuki T., Sugiura T.;
+RT   "Hemoglobin Mizuho or beta 68 (E 12) leucine leads to proline, a new
+RT   unstable variant associated with severe hemolytic anemia.";
+RL   Hemoglobin 1:467-477(1977).
+RN   [112]
+RP   VARIANT MUSCAT VAL-33.
+RX   PubMed=1517102; DOI=10.3109/03630269208998866;
+RA   Ramachandran M., Gu L.H., Wilson J.B., Kitundu M.N., Adekile A.D.,
+RA   Liu J.C., McKie K.M., Huisman T.H.J.;
+RT   "A new variant, HB Muscat [alpha 2 beta (2)32(B14)Leu-->Val] observed in
+RT   association with HB S in an Arabian family.";
+RL   Hemoglobin 16:259-266(1992).
+RN   [113]
+RP   VARIANT N-TIMONE GLU-9.
+RX   PubMed=2634671; DOI=10.3109/03630268908998848;
+RA   Lena-Russo D., Orsini A., Vovan L., Bardakdjian-Michau J., Lacombe C.,
+RA   Blouquit Y., Craescu C.T., Galacteros F.;
+RT   "Hb N-Timone [alpha 2 beta 2(8)(A5)Lys-->Glu]: a new fast-moving variant
+RT   with normal stability and oxygen affinity.";
+RL   Hemoglobin 13:743-747(1989).
+RN   [114]
+RP   VARIANT NAGOYA PRO-98.
+RX   PubMed=3838976; DOI=10.3109/03630268508996978;
+RA   Ohba Y., Imanaka M., Matsuoka M., Hattori Y., Miyaji T., Funaki C.,
+RA   Shibata K., Shimokata H., Kuzuya F., Miwa S.;
+RT   "A new unstable, high oxygen affinity hemoglobin: Hb Nagoya or beta 97
+RT   (FG4) His-->Pro.";
+RL   Hemoglobin 9:11-24(1985).
+RN   [115]
+RP   VARIANT D-NEATH ALA-122.
+RX   PubMed=8330979; DOI=10.3109/03630269308998901;
+RA   Welch S.G., Bateman C.;
+RT   "Hb D-Neath or beta 121 (GH4) Glu-->Ala: a new member of the Hb D family.";
+RL   Hemoglobin 17:255-259(1993).
+RN   [116]
+RP   VARIANT NORTH CHICAGO SER-37.
+RX   PubMed=3937824; DOI=10.3109/03630268508997038;
+RA   Rahbar S., Louis J., Lee T., Asmerom Y.;
+RT   "Hemoglobin North Chicago (beta 36 [C2] proline-->serine): a new high
+RT   affinity hemoglobin.";
+RL   Hemoglobin 9:559-576(1985).
+RN   [117]
+RP   VARIANT NORTH SHORE-CARACAS GLU-135.
+RX   PubMed=891976; DOI=10.1016/0014-5793(77)80453-5;
+RA   Arends T., Lehmann H., Plowman D., Stathopoulou R.;
+RT   "Haemoglobin North Shore-Caracas beta 134 (H12) valine replaced by glutamic
+RT   acid.";
+RL   FEBS Lett. 80:261-265(1977).
+RN   [118]
+RP   VARIANT OLOMOUC ASP-87.
+RX   PubMed=3623975; DOI=10.3109/03630268709005790;
+RA   Indrak K., Wiedermann B.F., Batek F., Wilson J.B., Webber B.B., Kutlar A.,
+RA   Huisman T.H.J.;
+RT   "Hb Olomouc or alpha 2 beta 2(86)(F2)Ala-->Asp, a new high oxygen affinity
+RT   variant.";
+RL   Hemoglobin 11:151-155(1987).
+RN   [119]
+RP   VARIANT PALMERSTON NORTH PHE-24.
+RX   PubMed=7161106; DOI=10.3109/03630268209046450;
+RA   Brennan S.O., Williamson D., Whisson M.E., Carrell R.W.;
+RT   "Hemoglobin Palmerston North beta 23 (B5) Val replaced by Phe. A new
+RT   variant identified in a patient with polycythemia.";
+RL   Hemoglobin 6:569-575(1982).
+RN   [120]
+RP   VARIANT PIERRE-BENITE ASP-91.
+RX   PubMed=3384709; DOI=10.3109/03630268808998023;
+RA   Baklouti F., Giraud Y., Francina A., Richard G., Favre-Gilly J.,
+RA   Delaunay J.;
+RT   "Hemoglobin Pierre-Benite [beta 90(F6)Glu-->Asp], a new high affinity
+RT   variant found in a French family.";
+RL   Hemoglobin 12:171-177(1988).
+RN   [121]
+RP   VARIANT PRESBYTERIAN LYS-109.
+RX   PubMed=668922; DOI=10.1016/0014-5793(78)80720-0;
+RA   Moo-Penn W.F., Wolff J.A., Simon G., Vacek M., Jue D.L., Johnson M.H.;
+RT   "Hemoglobin Presbyterian: beta108 (G10) asparagine leads to lysine, A
+RT   hemoglobin variant with low oxygen affinity.";
+RL   FEBS Lett. 92:53-56(1978).
+RN   [122]
+RP   VARIANT PUTTELANGE VAL-141.
+RX   PubMed=8522332; DOI=10.1007/bf00210304;
+RA   Wajcman H., Girodon E., Prome D., North M.L., Plassa F., Duwig I.,
+RA   Kister J., Bergerat J.P., Oberling F., Lampert E., Lonsdorfer J.,
+RA   Goossens M., Galacteros F.;
+RT   "Germline mosaicism for an alanine to valine substitution at residue beta
+RT   140 in hemoglobin Puttelange, a new variant with high oxygen affinity.";
+RL   Hum. Genet. 96:711-716(1995).
+RN   [123]
+RP   VARIANT QUIN-HAI ARG-79.
+RX   PubMed=6629822; DOI=10.3109/03630268309038409;
+RA   Jen P.C., Chen L.C., Chen P.F., Wong Y., Chen L.F., Guo Y.Y., Chang F.Q.,
+RA   Chow Y.C., Chiu Y.;
+RT   "Hemoglobin Quin-Hai, beta 78 (EF2) Leu replaced by Arg, a new abnormal
+RT   hemoglobin found in Guangdong, China.";
+RL   Hemoglobin 7:407-412(1983).
+RN   [124]
+RP   VARIANT RAMBAM ASP-70.
+RX   PubMed=9761252;
+RA   Bisse E., Zorn N., Eigel A., Lizama M., Huamam-Guillen P., Marz W.,
+RA   van Dorsselaer A., Wieland H.;
+RT   "Hemoglobin Rambam (beta69[E13]Gly-->Asp), a pitfall in the assessment of
+RT   diabetic control: characterization by electrospray mass spectrometry and
+RT   HPLC.";
+RL   Clin. Chem. 44:2172-2177(1998).
+RN   [125]
+RP   VARIANT RANDWICK GLY-16.
+RX   PubMed=3384707; DOI=10.3109/03630268808998021;
+RA   Gilbert A.T., Fleming P.J., Sumner D.R., Hughes W.G., Ip F., Kwan Y.L.,
+RA   Holland R.A.B.;
+RT   "Hemoglobin Randwick or beta 15 (A12)Trp-->Gly: a new unstable beta-chain
+RT   hemoglobin variant.";
+RL   Hemoglobin 12:149-161(1988).
+RN   [126]
+RP   VARIANT RIO GRANDE THR-9.
+RX   PubMed=6857757; DOI=10.3109/03630268309038405;
+RA   Moo-Penn W.F., Johnson M.H., McGuffey J.E., Jue D.L., Therrell B.L. Jr.;
+RT   "Hemoglobin Rio Grande [beta 8 (A5) Lys leads to Thr] a new variant found
+RT   in a Mexican-American family.";
+RL   Hemoglobin 7:91-95(1983).
+RN   [127]
+RP   VARIANT RUSH GLN-102.
+RX   PubMed=4129558;
+RA   Adams J.G. III, Winter W.P., Tausk K., Heller P.;
+RT   "Hemoglobin Rush (beta 101 (g3) glutamine): a new unstable hemoglobin
+RT   causing mild hemolytic anemia.";
+RL   Blood 43:261-269(1974).
+RN   [128]
+RP   VARIANT SAITAMA PRO-118.
+RX   PubMed=6687721; DOI=10.3109/03630268309038400;
+RA   Ohba Y., Hasegawa Y., Amino H., Miwa S., Nakatsuji T., Hattori Y.,
+RA   Miyaji T.;
+RT   "Hemoglobin Saitama or beta 117 (G19) His leads to Pro, a new variant
+RT   causing hemolytic disease.";
+RL   Hemoglobin 7:47-56(1983).
+RN   [129]
+RP   VARIANT M-SASKATOON TYR-64.
+RX   PubMed=13897827; DOI=10.1073/pnas.47.11.1758;
+RA   Gerald P.S., Efron M.L.;
+RT   "Chemical studies of several varieties of Hb M.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 47:1758-1767(1961).
+RN   [130]
+RP   VARIANT SHELBY/LESLIE/DEACONESS LYS-132.
+RX   PubMed=6526653; DOI=10.3109/03630268408991743;
+RA   Moo-Penn W.F., Johnson M.H., McGuffey J.E., Jue D.L.;
+RT   "Hemoglobin Shelby [beta 131(H9) Gln-->Lys] a correction to the structure
+RT   of hemoglobin Deaconess and hemoglobin Leslie.";
+RL   Hemoglobin 8:583-593(1984).
+RN   [131]
+RP   VARIANT J-SICILIA ASN-66.
+RX   PubMed=4852224; DOI=10.1016/0014-5793(74)80050-5;
+RA   Ricco G., Pich P.G., Mazza U., Rossi G., Ajmar P., Arese P., Gallo E.;
+RT   "Hb J Sicilia: beta 65 (E9) Lys-Asn, a beta homologue of Hb Zambia.";
+RL   FEBS Lett. 39:200-204(1974).
+RN   [132]
+RP   VARIANT STANMORE ALA-112.
+RX   PubMed=1917537; DOI=10.3109/03630269109072484;
+RA   Como P.F., Wylie B.R., Trent R.J., Bruce D., Volpato F., Wilkinson T.,
+RA   Kronenberg H., Holland R.A.B., Tibben E.A.;
+RT   "A new unstable and low oxygen affinity hemoglobin variant: Hb Stanmore
+RT   [beta 111(G13)Val-->Ala].";
+RL   Hemoglobin 15:53-65(1991).
+RN   [133]
+RP   VARIANT ST MANDE TYR-103.
+RX   PubMed=7238856; DOI=10.1016/0014-5793(81)81046-0;
+RA   Arous N., Braconnier F., Thillet J., Blouquit Y., Galacteros F.,
+RA   Chevrier M., Bordahandy C., Rosa J.;
+RT   "Hemoglobin Saint Mande beta 102 (G4) asn replaced by tyr: a new low oxygen
+RT   affinity variant.";
+RL   FEBS Lett. 126:114-116(1981).
+RN   [134]
+RP   VARIANT WINDSOR ASP-12.
+RX   PubMed=2599880; DOI=10.3109/03630268908998083;
+RA   Gilbert A.T., Fleming P.J., Sumner D.R., Hughes W.G., Holland R.A.B.,
+RA   Tibben E.A.;
+RT   "Hemoglobin Windsor or beta 11 (A8)Val-->Asp: a new unstable beta-chain
+RT   hemoglobin variant producing a hemolytic anemia.";
+RL   Hemoglobin 13:437-453(1989).
+RN   [135]
+RP   VARIANT YAHATA TYR-113.
+RX   PubMed=1917530; DOI=10.3109/03630269109072490;
+RA   Harano T., Harano K., Kushida Y., Ueda S.;
+RT   "A new abnormal variant, Hb Yahata or beta 112(G14)Cys-->Tyr, found in a
+RT   Japanese: structural confirmation by DNA sequencing of the beta-globin
+RT   gene.";
+RL   Hemoglobin 15:109-113(1991).
+RN   [136]
+RP   VARIANT YOKOHAMA PRO-32.
+RX   PubMed=7338469; DOI=10.3109/03630268108991834;
+RA   Nakatsuji T., Miwa S., Ohba Y., Hattori Y., Miyaji T., Hino S.,
+RA   Matsumoto N.;
+RT   "A new unstable hemoglobin, Hb Yokohama beta 31 (B13)Leu substituting for
+RT   Pro, causing hemolytic anemia.";
+RL   Hemoglobin 5:667-678(1981).
+RN   [137]
+RP   INVOLVEMENT IN HEIBAN, AND VARIANT HAMMERSMITH SER-43.
+RX   PubMed=6259091; DOI=10.3109/03630268108996914;
+RA   Rahbar S., Feagler R.J., Beutler E.;
+RT   "Hemoglobin Hammersmith (beta 42 (CD1) Phe replaced by Ser) associated with
+RT   severe hemolytic anemia.";
+RL   Hemoglobin 5:97-105(1981).
+RN   [138]
+RP   INVOLVEMENT IN HEIBAN, AND VARIANTS BRUXELLES PHE-42 DEL AND PHE-43 DEL.
+RX   PubMed=2599881; DOI=10.3109/03630268908998085;
+RA   Blouquit Y., Bardakdjian J., Lena-Russo D., Arous N., Perrimond H.,
+RA   Orsini A., Rosa J., Galacteros F.;
+RT   "Hb Bruxelles: alpha 2A beta (2)41 or 42(C7 or CD1)Phe deleted.";
+RL   Hemoglobin 13:465-474(1989).
+RN   [139]
+RP   VARIANT ZENGCHENG MET-115.
+RX   PubMed=2079435; DOI=10.3109/03630269009005808;
+RA   Plaseska D., Wilson J.B., Gu L.H., Kutlar F., Huisman T.H.J., Zeng Y.T.,
+RA   Shen M.;
+RT   "Hb Zengcheng or alpha 2 beta(2)114(G16)Leu-->Met.";
+RL   Hemoglobin 14:555-557(1990).
+RN   [140]
+RP   VARIANT BECKMAN ASP-136.
+RA   Rahbar S., Lee T., Asmeron Y.;
+RT   "Hb Beckman alpha135 (H13) ala-to-glu: a new unstable variant and reduced
+RT   oxygen affinity.";
+RL   Blood 78:204A-204A(1991).
+RN   [141]
+RP   VARIANT NON-SPHEROCYTIC HAEMOLITIC ANEMIA GLY-68.
+RX   PubMed=8280608; DOI=10.1111/j.1365-2141.1993.tb03178.x;
+RA   Fay K.C., Brennan S.O., Costello J.M., Potter H.C., Williamson D.A.,
+RA   Trent R.J., Ockelford P.A., Boswell D.R.;
+RT   "Haemoglobin Manukau beta 67[E11] Val-->Gly: transfusion-dependent
+RT   haemolytic anaemia ameliorated by coexisting alpha thalassaemia.";
+RL   Br. J. Haematol. 85:352-355(1993).
+RN   [142]
+RP   INVOLVEMENT IN HEIBAN, AND VARIANT BRISTOL ASP-68.
+RX   PubMed=8704193;
+RA   Rees D.C., Rochette J., Schofield C., Green B., Morris M., Parker N.E.,
+RA   Sasaki H., Tanaka A., Ohba Y., Clegg J.B.;
+RT   "A novel silent posttranslational mechanism converts methionine to
+RT   aspartate in hemoglobin Bristol (beta 67[E11] Val-Met->Asp).";
+RL   Blood 88:341-348(1996).
+RN   [143]
+RP   VARIANT IRAQ-HALABJA VAL-11.
+RX   PubMed=10398311;
+RX   DOI=10.1002/(sici)1096-8652(199907)61:3<187::aid-ajh5>3.0.co;2-7;
+RA   Deutsch S., Darbellay R., Offord R.E., Frutiger A., Kister J., Wajcman H.,
+RA   Beris P.;
+RT   "Hb Iraq-Halabja beta10 (A7) Ala-->Val (GCC-->GTC): a new beta-chain silent
+RT   variant in a family with multiple Hb disorders.";
+RL   Am. J. Hematol. 61:187-193(1999).
+RN   [144]
+RP   VARIANT VILLEJUIF ILE-124.
+RX   PubMed=11300351; DOI=10.1081/hem-100103071;
+RA   Carbone V., Salzano A.M., Pagano L., Buffardi S., De Rosa C., Pucci P.;
+RT   "Identification of Hb Villejuif [beta123(H1)Thr-->Ile] in Southern Italy.";
+RL   Hemoglobin 25:67-78(2001).
+RN   [145]
+RP   VARIANT TSUKUMI TYR-118.
+RX   PubMed=11300344; DOI=10.1081/hem-100103076;
+RA   North M.L., Duwig I., Riou J., Prome D., Yapo A.P., Kister J.,
+RA   Bardakdjian-Michau J., Cazenave J.-P., Wajcman H.;
+RT   "Hb Tsukumi [beta117(G19)His-->Tyr] found in a Moroccan woman.";
+RL   Hemoglobin 25:107-110(2001).
+RN   [146]
+RP   VARIANT CANTERBURY PHE-113.
+RX   PubMed=11939514; DOI=10.1081/hem-120002942;
+RA   Brennan S.O., Potter H.C., Kubala L.M., Carnoutsos S.A., Ferguson M.M.;
+RT   "Hb Canterbury [beta112(G14)Cys-->Phe]: a new, mildly unstable variant.";
+RL   Hemoglobin 26:67-69(2002).
+RN   [147]
+RP   VARIANT PYRGOS ASP-84, AND VARIANT B-THAL LYS-27.
+RX   PubMed=12144064; DOI=10.1081/hem-120005459;
+RA   Sawangareetrakul P., Svasti S., Yodsowon B., Winichagoon P., Srisomsap C.,
+RA   Svasti J., Fucharoen S.;
+RT   "Double heterozygosity for Hb Pyrgos [beta83(EF7)Gly-->Asp] and Hb E
+RT   [beta26(B8)Glu-->Lys] found in association with alpha-thalassemia.";
+RL   Hemoglobin 26:191-196(2002).
+RN   [148]
+RP   VARIANT SANTANDER ASP-35.
+RX   PubMed=12603091; DOI=10.1081/hem-120016378;
+RA   Villegas A., Ropero P., Nogales A., Gonzalez F.A., Mateo M., Mazo E.,
+RA   Rodrigo E., Arias M.;
+RT   "Hb Santander [beta34(B16)Val-->Asp (GTC-->GAC)]: a new unstable variant
+RT   found as a de novo mutation in a Spanish patient.";
+RL   Hemoglobin 27:31-35(2003).
+RN   [149]
+RP   VARIANT NANTES LEU-35, AND VARIANT VEXIN LEU-117.
+RX   PubMed=12908805; DOI=10.1081/hem-120023384;
+RA   Wajcman H., Bardakdjian-Michau J., Riou J., Prehu C., Kister J.,
+RA   Baudin-Creuza V., Prome D., Richelme-David S., Harousseau J.L.,
+RA   Galacteros F.;
+RT   "Two new hemoglobin variants with increased oxygen affinity: Hb Nantes
+RT   [beta34(B16)Val-->Leu] and Hb Vexin [beta116(G18)His-->Leu].";
+RL   Hemoglobin 27:191-199(2003).
+RN   [150]
+RP   VARIANT B-THAL LYS-27.
+RX   PubMed=15481886; DOI=10.1081/hem-120040334;
+RA   Flatz G., Sanguansermsri T., Sengchanh S., Horst D., Horst J.;
+RT   "The 'hot-spot' of Hb E [beta26(B8)Glu-->Lys] in Southeast Asia: beta-
+RT   globin anomalies in the Lao Theung population of southern Laos.";
+RL   Hemoglobin 28:197-204(2004).
+RN   [151]
+RP   VARIANT BECKMAN ASP-136.
+RX   PubMed=19453576; DOI=10.1111/j.1751-553x.2009.01156.x;
+RA   Kim S.Y., Kim G.Y., Jo S.A., Lee E.H., Cho E.H., Hwang S.H., Lee E.Y.;
+RT   "A novel hemoglobin variant beta135(H13) Ala > Asp identified in an
+RT   asymptomatic Korean family by direct sequencing: suggesting a new insight
+RT   into Hb Beckman mutation.";
+RL   Int. J. Lab. Hematol. 32:E175-E178(2010).
+RN   [152]
+RP   VARIANT BECKMAN ASP-136, AND MASS SPECTROMETRY.
+RX   PubMed=26209877; DOI=10.1016/j.ab.2015.07.010;
+RA   Das R., Muralidharan M., Mitra G., Bhat V., Mathew B., Pal D., Ross C.,
+RA   Mandal A.K.;
+RT   "Mass spectrometry based characterization of Hb Beckman variant in a
+RT   falsely elevated HbA(1c) sample.";
+RL   Anal. Biochem. 489:53-58(2015).
+RN   [153]
+RP   VARIANT VIGO ILE-67, AND FUNCTION.
+RX   PubMed=28066926; DOI=10.1002/ajh.24649;
+RA   Manu Pereira M.D., Ropero P., Loureiro C., Vives Corrons J.L.;
+RT   "Low affinity hemoglobinopathy (Hb Vigo) due to a new mutation of beta
+RT   globin gene (c200 A>T; Lys>Ile). A cause of rare anemia misdiagnosis.";
+RL   Am. J. Hematol. 92:38-40(2017).
+CC   -!- FUNCTION: Involved in oxygen transport from the lung to the various
+CC       peripheral tissues. {ECO:0000269|PubMed:28066926}.
+CC   -!- FUNCTION: LVV-hemorphin-7 potentiates the activity of bradykinin,
+CC       causing a decrease in blood pressure.
+CC   -!- FUNCTION: [Spinorphin]: Functions as an endogenous inhibitor of
+CC       enkephalin-degrading enzymes such as DPP3, and as a selective
+CC       antagonist of the P2RX3 receptor which is involved in pain signaling,
+CC       these properties implicate it as a regulator of pain and inflammation.
+CC   -!- SUBUNIT: Heterotetramer of two alpha chains and two beta chains in
+CC       adult hemoglobin A (HbA). Heterotetramer of two zeta chains and two
+CC       beta chains in hemoglobin Portland-2, detected in fetuses and neonates
+CC       with homozygous alpha-thalassemia. {ECO:0000269|PubMed:11747442,
+CC       ECO:0000269|PubMed:24100324, ECO:0000269|PubMed:6539334}.
+CC   -!- INTERACTION:
+CC       P68871; P69905: HBA2; NbExp=29; IntAct=EBI-715554, EBI-714680;
+CC       P68871; Q6B0K9: HBM; NbExp=3; IntAct=EBI-715554, EBI-12805802;
+CC       P68871; P09105: HBQ1; NbExp=3; IntAct=EBI-715554, EBI-10193656;
+CC       P68871; P02008: HBZ; NbExp=7; IntAct=EBI-715554, EBI-719843;
+CC   -!- TISSUE SPECIFICITY: Red blood cells. {ECO:0000269|PubMed:6539334}.
+CC   -!- PTM: Glucose reacts non-enzymatically with the N-terminus of the beta
+CC       chain to form a stable ketoamine linkage. This takes place slowly and
+CC       continuously throughout the 120-day life span of the red blood cell.
+CC       The rate of glycation is increased in patients with diabetes mellitus.
+CC   -!- PTM: S-nitrosylated; a nitric oxide group is first bound to Fe(2+) and
+CC       then transferred to Cys-94 to allow capture of O(2).
+CC       {ECO:0000269|PubMed:1520632, ECO:0000269|PubMed:8637569,
+CC       ECO:0000269|PubMed:9843411}.
+CC   -!- PTM: Acetylated on Lys-60, Lys-83 and Lys-145 upon aspirin exposure.
+CC       {ECO:0000269|PubMed:4531009}.
+CC   -!- MASS SPECTROMETRY: [LVV-hemorphin-7]: Mass=1310; Method=FAB;
+CC       Evidence={ECO:0000269|PubMed:1575724};
+CC   -!- POLYMORPHISM: Genetic variations in HBB are involved in resistance to
+CC       malaria [MIM:611162]. Hemoglobin S (Hb S), which at homozygosity is
+CC       responsible for sickle cell anemia, is not associated with any clinical
+CC       abnormality when heterozygous. At heterozygosity, Hb S confers an
+CC       increase in protection from life-threatening malaria. Additional
+CC       variants conferring resistance against severe malaria are hemoglobin C
+CC       (Hb C) and hemoglobin E (Hb E). {ECO:0000269|PubMed:11001883,
+CC       ECO:0000269|PubMed:12149194, ECO:0000269|PubMed:16001361}.
+CC   -!- DISEASE: Heinz body anemias (HEIBAN) [MIM:140700]: Form of non-
+CC       spherocytic hemolytic anemia of Dacie type 1. After splenectomy, which
+CC       has little benefit, basophilic inclusions called Heinz bodies are
+CC       demonstrable in the erythrocytes. Before splenectomy, diffuse or
+CC       punctate basophilia may be evident. Most of these cases are probably
+CC       instances of hemoglobinopathy. The hemoglobin demonstrates heat
+CC       lability. Heinz bodies are observed also with the Ivemark syndrome
+CC       (asplenia with cardiovascular anomalies) and with glutathione
+CC       peroxidase deficiency. {ECO:0000269|PubMed:186485,
+CC       ECO:0000269|PubMed:2599881, ECO:0000269|PubMed:6259091,
+CC       ECO:0000269|PubMed:8704193}. Note=The disease may be caused by variants
+CC       affecting the gene represented in this entry.
+CC   -!- DISEASE: Beta-thalassemia (B-THAL) [MIM:613985]: A form of thalassemia.
+CC       Thalassemias are common monogenic diseases occurring mostly in
+CC       Mediterranean and Southeast Asian populations. The hallmark of beta-
+CC       thalassemia is an imbalance in globin-chain production in the adult HbA
+CC       molecule. Absence of beta chain causes beta(0)-thalassemia, while
+CC       reduced amounts of detectable beta globin causes beta(+)-thalassemia.
+CC       In the severe forms of beta-thalassemia, the excess alpha globin chains
+CC       accumulate in the developing erythroid precursors in the marrow. Their
+CC       deposition leads to a vast increase in erythroid apoptosis that in turn
+CC       causes ineffective erythropoiesis and severe microcytic hypochromic
+CC       anemia. Clinically, beta-thalassemia is divided into thalassemia major
+CC       which is transfusion dependent, thalassemia intermedia (of intermediate
+CC       severity), and thalassemia minor that is asymptomatic.
+CC       {ECO:0000269|PubMed:12144064, ECO:0000269|PubMed:12149194,
+CC       ECO:0000269|PubMed:15481886, ECO:0000269|PubMed:2399911,
+CC       ECO:0000269|PubMed:6166632, ECO:0000269|PubMed:7693620}. Note=The
+CC       disease is caused by variants affecting the gene represented in this
+CC       entry.
+CC   -!- DISEASE: Sickle cell anemia (SKCA) [MIM:603903]: Characterized by
+CC       abnormally shaped red cells resulting in chronic anemia and periodic
+CC       episodes of pain, serious infections and damage to vital organs. Normal
+CC       red blood cells are round and flexible and flow easily through blood
+CC       vessels, but in sickle cell anemia, the abnormal hemoglobin (called Hb
+CC       S) causes red blood cells to become stiff. They are C-shaped and
+CC       resembles a sickle. These stiffer red blood cells can led to
+CC       microvascular occlusion thus cutting off the blood supply to nearby
+CC       tissues. {ECO:0000269|PubMed:1195378, ECO:0000269|PubMed:13464827,
+CC       ECO:0000269|PubMed:16001361, ECO:0000269|PubMed:24100324,
+CC       ECO:0000269|Ref.10}. Note=The disease is caused by variants affecting
+CC       the gene represented in this entry.
+CC   -!- DISEASE: Beta-thalassemia, dominant, inclusion body type (B-THALIB)
+CC       [MIM:603902]: An autosomal dominant form of beta thalassemia
+CC       characterized by moderate anemia, lifelong jaundice, cholelithiasis and
+CC       splenomegaly, marked morphologic changes in the red cells, erythroid
+CC       hyperplasia of the bone marrow with increased numbers of multinucleate
+CC       red cell precursors, and the presence of large inclusion bodies in the
+CC       normoblasts, both in the marrow and in the peripheral blood after
+CC       splenectomy. {ECO:0000269|PubMed:1971109}. Note=The disease is caused
+CC       by variants affecting the gene represented in this entry.
+CC   -!- MISCELLANEOUS: One molecule of 2,3-bisphosphoglycerate can bind to two
+CC       beta chains per hemoglobin tetramer.
+CC   -!- SIMILARITY: Belongs to the globin family. {ECO:0000255|PROSITE-
+CC       ProRule:PRU00238}.
+CC   -!- CAUTION: The modification form of Leu-142 is subject of controversy and
+CC       could be the artifactual result of sample handling.
+CC       {ECO:0000305|PubMed:1520632}.
+CC   -!- CAUTION: It is unclear if hemoglobin Beckman (Hb Beckman) is defined by
+CC       p.Ala136Glu or p.Ala136Asp. Hb Beckman has been originally identified
+CC       by reverse phase-HPLC and tandem mass spectrometry, and has been
+CC       reported as variant p.Ala136Glu (Ref.140). Subsequently, variant
+CC       p.Ala136Asp has been reported based on HBB gene complete sequencing
+CC       results (PubMed:19453576). Variant p.Ala136Asp has also been detected
+CC       by mass spectrometry (PubMed:26209877). Although the name Hb Beckman is
+CC       currently used for variant p.Ala136Asp, it cannot be ruled out that Hb
+CC       Beckman is indeed variant p.Ala136Glu (PubMed:19453576).
+CC       {ECO:0000269|PubMed:19453576, ECO:0000269|PubMed:26209877,
+CC       ECO:0000269|Ref.140, ECO:0000303|PubMed:19453576}.
+CC   -!- WEB RESOURCE: Name=HbVar; Note=Human hemoglobin variants and
+CC       thalassemias;
+CC       URL="https://globin.bx.psu.edu/cgi-bin/hbvar/query_vars3?mode=directlink&gene=HBB";
+CC   -!- WEB RESOURCE: Name=Wikipedia; Note=Hemoglobin entry;
+CC       URL="https://en.wikipedia.org/wiki/Hemoglobin";
+CC   ---------------------------------------------------------------------------
+CC   Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms
+CC   Distributed under the Creative Commons Attribution (CC BY 4.0) License
+CC   ---------------------------------------------------------------------------
+DR   EMBL; M25079; AAA35597.1; -; mRNA.
+DR   EMBL; V00499; CAA23758.1; -; Genomic_DNA.
+DR   EMBL; DQ126270; AAZ39745.1; -; Genomic_DNA.
+DR   EMBL; DQ126271; AAZ39746.1; -; Genomic_DNA.
+DR   EMBL; DQ126272; AAZ39747.1; -; Genomic_DNA.
+DR   EMBL; DQ126273; AAZ39748.1; -; Genomic_DNA.
+DR   EMBL; DQ126274; AAZ39749.1; -; Genomic_DNA.
+DR   EMBL; DQ126275; AAZ39750.1; -; Genomic_DNA.
+DR   EMBL; DQ126276; AAZ39751.1; -; Genomic_DNA.
+DR   EMBL; DQ126277; AAZ39752.1; -; Genomic_DNA.
+DR   EMBL; DQ126278; AAZ39753.1; -; Genomic_DNA.
+DR   EMBL; DQ126279; AAZ39754.1; -; Genomic_DNA.
+DR   EMBL; DQ126280; AAZ39755.1; -; Genomic_DNA.
+DR   EMBL; DQ126281; AAZ39756.1; -; Genomic_DNA.
+DR   EMBL; DQ126282; AAZ39757.1; -; Genomic_DNA.
+DR   EMBL; DQ126283; AAZ39758.1; -; Genomic_DNA.
+DR   EMBL; DQ126284; AAZ39759.1; -; Genomic_DNA.
+DR   EMBL; DQ126285; AAZ39760.1; -; Genomic_DNA.
+DR   EMBL; DQ126286; AAZ39761.1; -; Genomic_DNA.
+DR   EMBL; DQ126287; AAZ39762.1; -; Genomic_DNA.
+DR   EMBL; DQ126288; AAZ39763.1; -; Genomic_DNA.
+DR   EMBL; DQ126289; AAZ39764.1; -; Genomic_DNA.
+DR   EMBL; DQ126290; AAZ39765.1; -; Genomic_DNA.
+DR   EMBL; DQ126291; AAZ39766.1; -; Genomic_DNA.
+DR   EMBL; DQ126292; AAZ39767.1; -; Genomic_DNA.
+DR   EMBL; DQ126293; AAZ39768.1; -; Genomic_DNA.
+DR   EMBL; DQ126294; AAZ39769.1; -; Genomic_DNA.
+DR   EMBL; DQ126295; AAZ39770.1; -; Genomic_DNA.
+DR   EMBL; DQ126296; AAZ39771.1; -; Genomic_DNA.
+DR   EMBL; DQ126297; AAZ39772.1; -; Genomic_DNA.
+DR   EMBL; DQ126298; AAZ39773.1; -; Genomic_DNA.
+DR   EMBL; DQ126299; AAZ39774.1; -; Genomic_DNA.
+DR   EMBL; DQ126300; AAZ39775.1; -; Genomic_DNA.
+DR   EMBL; DQ126301; AAZ39776.1; -; Genomic_DNA.
+DR   EMBL; DQ126302; AAZ39777.1; -; Genomic_DNA.
+DR   EMBL; DQ126303; AAZ39778.1; -; Genomic_DNA.
+DR   EMBL; DQ126304; AAZ39779.1; -; Genomic_DNA.
+DR   EMBL; DQ126305; AAZ39780.1; -; Genomic_DNA.
+DR   EMBL; DQ126306; AAZ39781.1; -; Genomic_DNA.
+DR   EMBL; DQ126307; AAZ39782.1; -; Genomic_DNA.
+DR   EMBL; DQ126308; AAZ39783.1; -; Genomic_DNA.
+DR   EMBL; DQ126309; AAZ39784.1; -; Genomic_DNA.
+DR   EMBL; DQ126310; AAZ39785.1; -; Genomic_DNA.
+DR   EMBL; DQ126311; AAZ39786.1; -; Genomic_DNA.
+DR   EMBL; DQ126312; AAZ39787.1; -; Genomic_DNA.
+DR   EMBL; DQ126313; AAZ39788.1; -; Genomic_DNA.
+DR   EMBL; DQ126314; AAZ39789.1; -; Genomic_DNA.
+DR   EMBL; DQ126315; AAZ39790.1; -; Genomic_DNA.
+DR   EMBL; DQ126316; AAZ39791.1; -; Genomic_DNA.
+DR   EMBL; DQ126317; AAZ39792.1; -; Genomic_DNA.
+DR   EMBL; DQ126318; AAZ39793.1; -; Genomic_DNA.
+DR   EMBL; DQ126319; AAZ39794.1; -; Genomic_DNA.
+DR   EMBL; DQ126320; AAZ39795.1; -; Genomic_DNA.
+DR   EMBL; DQ126321; AAZ39796.1; -; Genomic_DNA.
+DR   EMBL; DQ126322; AAZ39797.1; -; Genomic_DNA.
+DR   EMBL; DQ126323; AAZ39798.1; -; Genomic_DNA.
+DR   EMBL; DQ126324; AAZ39799.1; -; Genomic_DNA.
+DR   EMBL; DQ126325; AAZ39800.1; -; Genomic_DNA.
+DR   EMBL; AF007546; AAB62944.1; -; Genomic_DNA.
+DR   EMBL; AF083883; AAL68978.1; -; Genomic_DNA.
+DR   EMBL; AF117710; AAD19696.1; -; mRNA.
+DR   EMBL; AF181989; AAF00489.1; -; mRNA.
+DR   EMBL; AF349114; AAK29639.1; -; mRNA.
+DR   EMBL; AF527577; AAM92001.1; -; Genomic_DNA.
+DR   EMBL; AY136510; AAN11320.1; -; mRNA.
+DR   EMBL; AY163866; AAN84548.1; -; Genomic_DNA.
+DR   EMBL; AY260740; AAP21062.1; -; Genomic_DNA.
+DR   EMBL; AY509193; AAR96398.1; -; mRNA.
+DR   EMBL; EF450778; ABO36678.1; -; Genomic_DNA.
+DR   EMBL; EU694432; ACD39349.1; -; mRNA.
+DR   EMBL; AK311825; BAG34767.1; -; mRNA.
+DR   EMBL; CR536530; CAG38767.1; -; mRNA.
+DR   EMBL; CR541913; CAG46711.1; -; mRNA.
+DR   EMBL; CH471064; EAW68806.1; -; Genomic_DNA.
+DR   EMBL; BC007075; AAH07075.1; -; mRNA.
+DR   EMBL; U01317; AAA16334.1; -; Genomic_DNA.
+DR   EMBL; V00497; CAA23756.1; -; mRNA.
+DR   EMBL; V00500; CAA23759.1; ALT_SEQ; mRNA.
+DR   EMBL; L26462; AAA21100.1; -; Genomic_DNA.
+DR   EMBL; L26463; AAA21101.1; -; Genomic_DNA.
+DR   EMBL; L26464; AAA21102.1; -; Genomic_DNA.
+DR   EMBL; L26465; AAA21103.1; -; Genomic_DNA.
+DR   EMBL; L26466; AAA21104.1; -; Genomic_DNA.
+DR   EMBL; L26467; AAA21105.1; -; Genomic_DNA.
+DR   EMBL; L26468; AAA21106.1; -; Genomic_DNA.
+DR   EMBL; L26469; AAA21107.1; -; Genomic_DNA.
+DR   EMBL; L26470; AAA21108.1; -; Genomic_DNA.
+DR   EMBL; L26471; AAA21109.1; -; Genomic_DNA.
+DR   EMBL; L26472; AAA21110.1; -; Genomic_DNA.
+DR   EMBL; L26473; AAA21111.1; -; Genomic_DNA.
+DR   EMBL; L26474; AAA21112.1; -; Genomic_DNA.
+DR   EMBL; L26475; AAA21113.1; -; Genomic_DNA.
+DR   EMBL; L26476; AAA21114.1; -; Genomic_DNA.
+DR   EMBL; L26477; AAA21115.1; -; Genomic_DNA.
+DR   EMBL; L26478; AAA21116.1; -; Genomic_DNA.
+DR   EMBL; L48213; AAA88063.1; -; Genomic_DNA.
+DR   EMBL; L48214; AAA88061.1; -; Genomic_DNA.
+DR   EMBL; L48215; AAA88059.1; -; Genomic_DNA.
+DR   EMBL; L48216; AAA88065.1; -; Genomic_DNA.
+DR   EMBL; L48217; AAA88067.1; -; Genomic_DNA.
+DR   EMBL; M36640; AAA52634.1; -; Genomic_DNA.
+DR   EMBL; M11428; AAA52633.1; -; mRNA.
+DR   EMBL; M25113; AAA35966.1; -; mRNA.
+DR   EMBL; L48932; AAA88054.1; -; Genomic_DNA.
+DR   CCDS; CCDS7753.1; -.
+DR   PIR; A53136; HBHU.
+DR   RefSeq; NP_000509.1; NM_000518.4.
+DR   PDB; 1A00; X-ray; 2.00 A; B/D=3-147.
+DR   PDB; 1A01; X-ray; 1.80 A; B/D=3-147.
+DR   PDB; 1A0U; X-ray; 2.14 A; B/D=3-147.
+DR   PDB; 1A0Z; X-ray; 2.00 A; B/D=3-147.
+DR   PDB; 1A3N; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1A3O; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1ABW; X-ray; 2.00 A; B/D=3-147.
+DR   PDB; 1ABY; X-ray; 2.60 A; B/D=3-147.
+DR   PDB; 1AJ9; X-ray; 2.20 A; B=2-147.
+DR   PDB; 1B86; X-ray; 2.50 A; B/D=2-147.
+DR   PDB; 1BAB; X-ray; 1.50 A; B/D=2-147.
+DR   PDB; 1BBB; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 1BIJ; X-ray; 2.30 A; B/D=2-147.
+DR   PDB; 1BUW; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1BZ0; X-ray; 1.50 A; B/D=2-147.
+DR   PDB; 1BZ1; X-ray; 1.59 A; B/D=2-147.
+DR   PDB; 1BZZ; X-ray; 1.59 A; B/D=2-147.
+DR   PDB; 1C7B; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1C7C; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1C7D; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1CBL; X-ray; 1.80 A; A/B/C/D=2-147.
+DR   PDB; 1CBM; X-ray; 1.74 A; A/B/C/D=2-147.
+DR   PDB; 1CH4; X-ray; 2.50 A; A/B/C/D=2-146.
+DR   PDB; 1CLS; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1CMY; X-ray; 3.00 A; B/D=2-147.
+DR   PDB; 1COH; X-ray; 2.90 A; B/D=2-147.
+DR   PDB; 1DKE; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1DXT; X-ray; 1.70 A; B/D=1-147.
+DR   PDB; 1DXU; X-ray; 1.70 A; B/D=3-147.
+DR   PDB; 1DXV; X-ray; 1.70 A; B/D=3-147.
+DR   PDB; 1FN3; X-ray; 2.48 A; B/D=2-147.
+DR   PDB; 1G9V; X-ray; 1.85 A; B/D=2-147.
+DR   PDB; 1GBU; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1GBV; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1GLI; X-ray; 2.50 A; B/D=3-147.
+DR   PDB; 1GZX; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1HAB; X-ray; 2.30 A; B/D=2-147.
+DR   PDB; 1HAC; X-ray; 2.60 A; B/D=2-147.
+DR   PDB; 1HBA; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1HBB; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1HBS; X-ray; 3.00 A; B/D/F/H=2-147.
+DR   PDB; 1HCO; X-ray; 2.70 A; B=2-147.
+DR   PDB; 1HDB; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 1HGA; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1HGB; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1HGC; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1HHO; X-ray; 2.10 A; B=2-147.
+DR   PDB; 1IRD; X-ray; 1.25 A; B=2-147.
+DR   PDB; 1J3Y; X-ray; 1.55 A; B/D/F/H=2-147.
+DR   PDB; 1J3Z; X-ray; 1.60 A; B/D/F/H=2-147.
+DR   PDB; 1J40; X-ray; 1.45 A; B/D/F/H=2-147.
+DR   PDB; 1J41; X-ray; 1.45 A; B/D/F/H=2-147.
+DR   PDB; 1J7S; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 1J7W; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1J7Y; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 1JY7; X-ray; 3.20 A; B/D/Q/S/V/X=2-147.
+DR   PDB; 1K0Y; X-ray; 1.87 A; B/D=2-147.
+DR   PDB; 1K1K; X-ray; 2.00 A; B=2-147.
+DR   PDB; 1KD2; X-ray; 1.87 A; B/D=2-147.
+DR   PDB; 1LFL; X-ray; 2.70 A; B/D/Q/S=2-147.
+DR   PDB; 1LFQ; X-ray; 2.60 A; B=2-147.
+DR   PDB; 1LFT; X-ray; 2.60 A; B=2-147.
+DR   PDB; 1LFV; X-ray; 2.80 A; B=2-147.
+DR   PDB; 1LFY; X-ray; 3.30 A; B=2-147.
+DR   PDB; 1LFZ; X-ray; 3.10 A; B=2-147.
+DR   PDB; 1LJW; X-ray; 2.16 A; B=2-147.
+DR   PDB; 1M9P; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1MKO; X-ray; 2.18 A; B/D=2-147.
+DR   PDB; 1NEJ; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1NIH; X-ray; 2.60 A; B/D=2-147.
+DR   PDB; 1NQP; X-ray; 1.73 A; B/D=2-147.
+DR   PDB; 1O1I; X-ray; 2.30 A; B=2-147.
+DR   PDB; 1O1J; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1O1K; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1O1L; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1O1M; X-ray; 1.85 A; B/D=2-147.
+DR   PDB; 1O1N; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1O1O; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1O1P; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1QI8; X-ray; 1.80 A; B/D=3-147.
+DR   PDB; 1QSH; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 1QSI; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 1QXD; X-ray; 2.25 A; B/D=2-147.
+DR   PDB; 1QXE; X-ray; 1.85 A; B/D=2-147.
+DR   PDB; 1R1X; X-ray; 2.15 A; B=2-147.
+DR   PDB; 1R1Y; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1RPS; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1RQ3; X-ray; 1.91 A; B/D=2-147.
+DR   PDB; 1RQ4; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1RQA; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1RVW; X-ray; 2.50 A; B=2-147.
+DR   PDB; 1SDK; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1SDL; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1THB; X-ray; 1.50 A; B/D=2-147.
+DR   PDB; 1UIW; X-ray; 1.50 A; B/D/F/H=2-147.
+DR   PDB; 1VWT; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1XXT; X-ray; 1.91 A; B/D=2-147.
+DR   PDB; 1XY0; X-ray; 1.99 A; B/D=2-147.
+DR   PDB; 1XYE; X-ray; 2.13 A; B/D=2-147.
+DR   PDB; 1XZ2; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1XZ4; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1XZ5; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1XZ7; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1XZU; X-ray; 2.16 A; B/D=2-147.
+DR   PDB; 1XZV; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1Y09; X-ray; 2.25 A; B/D=2-147.
+DR   PDB; 1Y0A; X-ray; 2.22 A; B/D=2-147.
+DR   PDB; 1Y0C; X-ray; 2.30 A; B/D=2-147.
+DR   PDB; 1Y0D; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1Y0T; X-ray; 2.14 A; B/D=2-147.
+DR   PDB; 1Y0W; X-ray; 2.14 A; B/D=2-147.
+DR   PDB; 1Y22; X-ray; 2.16 A; B/D=2-147.
+DR   PDB; 1Y2Z; X-ray; 2.07 A; B/D=2-147.
+DR   PDB; 1Y31; X-ray; 2.13 A; B/D=2-147.
+DR   PDB; 1Y35; X-ray; 2.12 A; B/D=2-147.
+DR   PDB; 1Y45; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1Y46; X-ray; 2.22 A; B/D=2-147.
+DR   PDB; 1Y4B; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1Y4F; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1Y4G; X-ray; 1.91 A; B/D=2-147.
+DR   PDB; 1Y4P; X-ray; 1.98 A; B/D=2-147.
+DR   PDB; 1Y4Q; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1Y4R; X-ray; 2.22 A; B/D=2-147.
+DR   PDB; 1Y4V; X-ray; 1.84 A; B/D=2-147.
+DR   PDB; 1Y5F; X-ray; 2.14 A; B/D=2-147.
+DR   PDB; 1Y5J; X-ray; 2.03 A; B/D=2-147.
+DR   PDB; 1Y5K; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 1Y7C; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1Y7D; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 1Y7G; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1Y7Z; X-ray; 1.98 A; B/D=2-147.
+DR   PDB; 1Y83; X-ray; 1.90 A; B/D=2-145.
+DR   PDB; 1Y85; X-ray; 2.13 A; B/D=2-146.
+DR   PDB; 1Y8W; X-ray; 2.90 A; B/D=2-147.
+DR   PDB; 1YDZ; X-ray; 3.30 A; B/D=2-147.
+DR   PDB; 1YE0; X-ray; 2.50 A; B/D=2-147.
+DR   PDB; 1YE1; X-ray; 4.50 A; B/D=2-147.
+DR   PDB; 1YE2; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1YEN; X-ray; 2.80 A; B/D=2-147.
+DR   PDB; 1YEO; X-ray; 2.22 A; B/D=2-147.
+DR   PDB; 1YEQ; X-ray; 2.75 A; B/D=2-147.
+DR   PDB; 1YEU; X-ray; 2.12 A; B/D=2-147.
+DR   PDB; 1YEV; X-ray; 2.11 A; B/D=2-147.
+DR   PDB; 1YFF; X-ray; 2.40 A; B/D/F/H=2-147.
+DR   PDB; 1YG5; X-ray; 2.70 A; B/D=2-147.
+DR   PDB; 1YGD; X-ray; 2.73 A; B/D=2-147.
+DR   PDB; 1YGF; X-ray; 2.70 A; B/D=2-147.
+DR   PDB; 1YH9; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 1YHE; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 1YHR; X-ray; 2.60 A; B/D=2-147.
+DR   PDB; 1YIE; X-ray; 2.40 A; B/D=2-147.
+DR   PDB; 1YIH; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 1YVQ; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 1YVT; X-ray; 1.80 A; B=2-147.
+DR   PDB; 1YZI; X-ray; 2.07 A; B=2-147.
+DR   PDB; 2D5Z; X-ray; 1.45 A; B/D=2-147.
+DR   PDB; 2D60; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 2DN1; X-ray; 1.25 A; B=2-147.
+DR   PDB; 2DN2; X-ray; 1.25 A; B/D=2-147.
+DR   PDB; 2DN3; X-ray; 1.25 A; B=2-147.
+DR   PDB; 2DXM; Neutron; 2.10 A; B/D=2-147.
+DR   PDB; 2H35; NMR; -; B/D=2-147.
+DR   PDB; 2HBC; X-ray; 2.10 A; B=2-147.
+DR   PDB; 2HBD; X-ray; 2.20 A; B=2-147.
+DR   PDB; 2HBE; X-ray; 2.00 A; B=2-147.
+DR   PDB; 2HBF; X-ray; 2.20 A; B=2-147.
+DR   PDB; 2HBS; X-ray; 2.05 A; B/D/F/H=2-147.
+DR   PDB; 2HCO; X-ray; 2.70 A; B=2-147.
+DR   PDB; 2HHB; X-ray; 1.74 A; B/D=2-147.
+DR   PDB; 2HHD; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 2HHE; X-ray; 2.20 A; B/D=4-147.
+DR   PDB; 2M6Z; NMR; -; B/D=2-147.
+DR   PDB; 2W6V; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 2W72; X-ray; 1.07 A; B/D=3-147.
+DR   PDB; 2YRS; X-ray; 2.30 A; B/D/K/O=2-147.
+DR   PDB; 3B75; X-ray; 2.30 A; B/D/F/H/T=2-147.
+DR   PDB; 3D17; X-ray; 2.80 A; B/D=2-147.
+DR   PDB; 3D7O; X-ray; 1.80 A; B=2-147.
+DR   PDB; 3DUT; X-ray; 1.55 A; B/D=2-147.
+DR   PDB; 3HHB; X-ray; 1.74 A; B/D=2-147.
+DR   PDB; 3HXN; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 3IC0; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 3IC2; X-ray; 2.40 A; B/D=2-147.
+DR   PDB; 3KMF; Neutron; 2.00 A; C/G=2-147.
+DR   PDB; 3NL7; X-ray; 1.80 A; B=2-147.
+DR   PDB; 3NMM; X-ray; 1.60 A; B/D=2-147.
+DR   PDB; 3ODQ; X-ray; 3.10 A; B/D=2-147.
+DR   PDB; 3ONZ; X-ray; 2.09 A; B=2-147.
+DR   PDB; 3OO4; X-ray; 1.90 A; B=2-147.
+DR   PDB; 3OO5; X-ray; 2.10 A; B=2-147.
+DR   PDB; 3P5Q; X-ray; 2.00 A; B=2-147.
+DR   PDB; 3QJB; X-ray; 1.80 A; B=2-147.
+DR   PDB; 3QJC; X-ray; 2.00 A; B=2-147.
+DR   PDB; 3QJD; X-ray; 1.56 A; B/D=2-147.
+DR   PDB; 3QJE; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 3R5I; X-ray; 2.20 A; B/D=2-147.
+DR   PDB; 3S65; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 3S66; X-ray; 1.40 A; B=2-147.
+DR   PDB; 3SZK; X-ray; 3.01 A; B/E=2-147.
+DR   PDB; 3W4U; X-ray; 1.95 A; B/D/F=2-147.
+DR   PDB; 3WCP; X-ray; 1.94 A; B/D=2-147.
+DR   PDB; 3WHM; X-ray; 1.85 A; B/F=2-147.
+DR   PDB; 4FC3; X-ray; 2.26 A; B=2-147.
+DR   PDB; 4HHB; X-ray; 1.74 A; B/D=2-147.
+DR   PDB; 4IJ2; X-ray; 4.24 A; B/D=2-147.
+DR   PDB; 4L7Y; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 4M4A; X-ray; 2.05 A; B=2-147.
+DR   PDB; 4M4B; X-ray; 2.00 A; B=2-147.
+DR   PDB; 4MQC; X-ray; 2.20 A; B=2-147.
+DR   PDB; 4MQG; X-ray; 1.68 A; B=2-147.
+DR   PDB; 4MQH; X-ray; 2.50 A; B=2-147.
+DR   PDB; 4MQI; X-ray; 1.92 A; B=2-147.
+DR   PDB; 4N7N; X-ray; 2.75 A; B/D/F/H/J/L=2-147.
+DR   PDB; 4N7O; X-ray; 2.50 A; B/D/F/H/J/L=2-147.
+DR   PDB; 4N7P; X-ray; 2.81 A; B/D/F/H/J/L=2-147.
+DR   PDB; 4N8T; X-ray; 1.90 A; B=2-147.
+DR   PDB; 4NI0; X-ray; 2.15 A; B=2-147.
+DR   PDB; 4NI1; X-ray; 1.90 A; B=2-147.
+DR   PDB; 4ROL; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 4ROM; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 4WJG; X-ray; 3.10 A; 1/B/G/L/Q/V=2-147.
+DR   PDB; 4X0L; X-ray; 2.05 A; B=2-147.
+DR   PDB; 4XS0; X-ray; 2.55 A; B=2-147.
+DR   PDB; 5E29; X-ray; 1.85 A; B/D=3-147.
+DR   PDB; 5E6E; X-ray; 1.76 A; B=2-147.
+DR   PDB; 5E83; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 5EE4; X-ray; 2.30 A; D/F=2-147.
+DR   PDB; 5HU6; X-ray; 2.90 A; B=3-143.
+DR   PDB; 5HY8; X-ray; 2.30 A; B/D/F/H/T=2-147.
+DR   PDB; 5JDO; X-ray; 3.20 A; D=3-147, F=3-146.
+DR   PDB; 5KDQ; X-ray; 2.15 A; B/D=2-147.
+DR   PDB; 5KSI; X-ray; 1.80 A; B/D=2-147.
+DR   PDB; 5KSJ; X-ray; 2.40 A; B/D=2-147.
+DR   PDB; 5NI1; EM; 3.20 A; B/D=2-147.
+DR   PDB; 5SW7; X-ray; 1.85 A; B=2-147.
+DR   PDB; 5U3I; X-ray; 1.95 A; B/D=2-147.
+DR   PDB; 5UCU; X-ray; 1.80 A; B=2-147.
+DR   PDB; 5UFJ; X-ray; 2.05 A; B/D=2-147.
+DR   PDB; 5URC; X-ray; 1.85 A; B/D=2-147.
+DR   PDB; 5VMM; X-ray; 3.60 A; B/D=2-147.
+DR   PDB; 5WOG; X-ray; 1.54 A; C/D=2-147.
+DR   PDB; 5WOH; X-ray; 1.58 A; B/D=2-147.
+DR   PDB; 5X2R; X-ray; 2.70 A; B/D/F/H/J/L=2-147.
+DR   PDB; 5X2S; X-ray; 2.39 A; B/D/F/H/J/L=2-147.
+DR   PDB; 5X2T; X-ray; 2.64 A; B/D/F/H/J/L=2-147.
+DR   PDB; 5X2U; X-ray; 2.53 A; B/D/F/H/J/L=2-147.
+DR   PDB; 6BB5; X-ray; 2.28 A; B=3-147.
+DR   PDB; 6BNR; X-ray; 1.95 A; B/D=2-147.
+DR   PDB; 6BWP; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 6BWU; X-ray; 2.00 A; B=2-147.
+DR   PDB; 6DI4; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 6FQF; X-ray; 2.10 A; A/B/C/D=2-147.
+DR   PDB; 6HAL; X-ray; 2.20 A; B/D=3-147.
+DR   PDB; 6HBW; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 6HK2; X-ray; 1.55 A; B/D=2-147.
+DR   PDB; 6KA9; X-ray; 1.40 A; B/D/F/H=2-147.
+DR   PDB; 6KAE; X-ray; 1.45 A; B/D/F/H=2-147.
+DR   PDB; 6KAH; X-ray; 1.45 A; B/D/F/H=2-147.
+DR   PDB; 6KAI; X-ray; 1.45 A; B/D/F/H=2-147.
+DR   PDB; 6KAO; X-ray; 1.40 A; B=2-147.
+DR   PDB; 6KAP; X-ray; 1.45 A; B=2-147.
+DR   PDB; 6KAQ; X-ray; 1.50 A; B=2-147.
+DR   PDB; 6KAR; X-ray; 1.60 A; B=2-147.
+DR   PDB; 6KAS; X-ray; 1.65 A; B/D=2-147.
+DR   PDB; 6KAT; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 6KAU; X-ray; 1.60 A; B/D=2-147.
+DR   PDB; 6KAV; X-ray; 1.70 A; B/D=2-147.
+DR   PDB; 6KYE; X-ray; 2.28 A; B/D/F/H/J/L=1-147.
+DR   PDB; 6L5V; X-ray; 1.45 A; B=2-147.
+DR   PDB; 6L5W; X-ray; 1.50 A; B=2-147.
+DR   PDB; 6L5X; X-ray; 1.65 A; B/D=2-147.
+DR   PDB; 6L5Y; X-ray; 1.65 A; B/D=2-147.
+DR   PDB; 6LCW; X-ray; 1.40 A; B/D/F/H=2-147.
+DR   PDB; 6LCX; X-ray; 1.40 A; B/D/F/H=2-147.
+DR   PDB; 6NBC; EM; 2.80 A; B/D=2-144.
+DR   PDB; 6NBD; EM; 3.20 A; B/D=2-144.
+DR   PDB; 6NQ5; X-ray; 1.85 A; B=2-147.
+DR   PDB; 6TB2; X-ray; 2.90 A; B=2-147.
+DR   PDB; 6XD9; X-ray; 2.10 A; B/D=2-147.
+DR   PDB; 6XDT; X-ray; 1.90 A; B/D=2-147.
+DR   PDB; 6XE7; X-ray; 2.00 A; B/D=2-147.
+DR   PDB; 7AET; X-ray; 2.53 A; BBB/DDD=3-147.
+DR   PDB; 7AEU; X-ray; 2.54 A; BBB/DDD=3-147.
+DR   PDB; 7AEV; X-ray; 2.77 A; BBB/DDD=3-147.
+DR   PDB; 7CUE; X-ray; 2.75 A; B/D=1-147.
+DR   PDB; 7DY3; X-ray; 1.40 A; B/D/F/H=2-147.
+DR   PDB; 7DY4; X-ray; 1.30 A; B/D/F/H=2-147.
+DR   PDB; 7JJQ; X-ray; 2.15 A; B/D=2-147.
+DR   PDB; 7JXZ; X-ray; 2.23 A; B/D=2-147.
+DR   PDB; 7JY0; X-ray; 1.63 A; B/D=2-147.
+DR   PDB; 7JY1; X-ray; 1.59 A; B/D=2-147.
+DR   PDB; 7JY3; X-ray; 1.48 A; B/D=2-147.
+DR   PDB; 7K4M; X-ray; 2.50 A; B/D/F/H/J=1-147.
+DR   PDB; 7PCF; EM; 5.82 A; B=2-147.
+DR   PDB; 7PCH; EM; 2.89 A; B/D=2-147.
+DR   PDB; 7PCQ; EM; 3.62 A; B/D=2-147.
+DR   PDB; 7UD7; X-ray; 1.80 A; B/D=1-147.
+DR   PDB; 7UD8; X-ray; 1.80 A; B/D=1-147.
+DR   PDB; 7UF6; X-ray; 2.00 A; B/D=1-147.
+DR   PDB; 7UF7; X-ray; 2.00 A; B/D=1-147.
+DR   PDB; 7VDE; EM; 3.20 A; B/D=1-147.
+DR   PDB; 7XGY; EM; 3.50 A; B/D=1-147.
+DR   PDB; 8EGI; X-ray; 2.30 A; B/D=1-147.
+DR   PDBsum; 1A00; -.
+DR   PDBsum; 1A01; -.
+DR   PDBsum; 1A0U; -.
+DR   PDBsum; 1A0Z; -.
+DR   PDBsum; 1A3N; -.
+DR   PDBsum; 1A3O; -.
+DR   PDBsum; 1ABW; -.
+DR   PDBsum; 1ABY; -.
+DR   PDBsum; 1AJ9; -.
+DR   PDBsum; 1B86; -.
+DR   PDBsum; 1BAB; -.
+DR   PDBsum; 1BBB; -.
+DR   PDBsum; 1BIJ; -.
+DR   PDBsum; 1BUW; -.
+DR   PDBsum; 1BZ0; -.
+DR   PDBsum; 1BZ1; -.
+DR   PDBsum; 1BZZ; -.
+DR   PDBsum; 1C7B; -.
+DR   PDBsum; 1C7C; -.
+DR   PDBsum; 1C7D; -.
+DR   PDBsum; 1CBL; -.
+DR   PDBsum; 1CBM; -.
+DR   PDBsum; 1CH4; -.
+DR   PDBsum; 1CLS; -.
+DR   PDBsum; 1CMY; -.
+DR   PDBsum; 1COH; -.
+DR   PDBsum; 1DKE; -.
+DR   PDBsum; 1DXT; -.
+DR   PDBsum; 1DXU; -.
+DR   PDBsum; 1DXV; -.
+DR   PDBsum; 1FN3; -.
+DR   PDBsum; 1G9V; -.
+DR   PDBsum; 1GBU; -.
+DR   PDBsum; 1GBV; -.
+DR   PDBsum; 1GLI; -.
+DR   PDBsum; 1GZX; -.
+DR   PDBsum; 1HAB; -.
+DR   PDBsum; 1HAC; -.
+DR   PDBsum; 1HBA; -.
+DR   PDBsum; 1HBB; -.
+DR   PDBsum; 1HBS; -.
+DR   PDBsum; 1HCO; -.
+DR   PDBsum; 1HDB; -.
+DR   PDBsum; 1HGA; -.
+DR   PDBsum; 1HGB; -.
+DR   PDBsum; 1HGC; -.
+DR   PDBsum; 1HHO; -.
+DR   PDBsum; 1IRD; -.
+DR   PDBsum; 1J3Y; -.
+DR   PDBsum; 1J3Z; -.
+DR   PDBsum; 1J40; -.
+DR   PDBsum; 1J41; -.
+DR   PDBsum; 1J7S; -.
+DR   PDBsum; 1J7W; -.
+DR   PDBsum; 1J7Y; -.
+DR   PDBsum; 1JY7; -.
+DR   PDBsum; 1K0Y; -.
+DR   PDBsum; 1K1K; -.
+DR   PDBsum; 1KD2; -.
+DR   PDBsum; 1LFL; -.
+DR   PDBsum; 1LFQ; -.
+DR   PDBsum; 1LFT; -.
+DR   PDBsum; 1LFV; -.
+DR   PDBsum; 1LFY; -.
+DR   PDBsum; 1LFZ; -.
+DR   PDBsum; 1LJW; -.
+DR   PDBsum; 1M9P; -.
+DR   PDBsum; 1MKO; -.
+DR   PDBsum; 1NEJ; -.
+DR   PDBsum; 1NIH; -.
+DR   PDBsum; 1NQP; -.
+DR   PDBsum; 1O1I; -.
+DR   PDBsum; 1O1J; -.
+DR   PDBsum; 1O1K; -.
+DR   PDBsum; 1O1L; -.
+DR   PDBsum; 1O1M; -.
+DR   PDBsum; 1O1N; -.
+DR   PDBsum; 1O1O; -.
+DR   PDBsum; 1O1P; -.
+DR   PDBsum; 1QI8; -.
+DR   PDBsum; 1QSH; -.
+DR   PDBsum; 1QSI; -.
+DR   PDBsum; 1QXD; -.
+DR   PDBsum; 1QXE; -.
+DR   PDBsum; 1R1X; -.
+DR   PDBsum; 1R1Y; -.
+DR   PDBsum; 1RPS; -.
+DR   PDBsum; 1RQ3; -.
+DR   PDBsum; 1RQ4; -.
+DR   PDBsum; 1RQA; -.
+DR   PDBsum; 1RVW; -.
+DR   PDBsum; 1SDK; -.
+DR   PDBsum; 1SDL; -.
+DR   PDBsum; 1THB; -.
+DR   PDBsum; 1UIW; -.
+DR   PDBsum; 1VWT; -.
+DR   PDBsum; 1XXT; -.
+DR   PDBsum; 1XY0; -.
+DR   PDBsum; 1XYE; -.
+DR   PDBsum; 1XZ2; -.
+DR   PDBsum; 1XZ4; -.
+DR   PDBsum; 1XZ5; -.
+DR   PDBsum; 1XZ7; -.
+DR   PDBsum; 1XZU; -.
+DR   PDBsum; 1XZV; -.
+DR   PDBsum; 1Y09; -.
+DR   PDBsum; 1Y0A; -.
+DR   PDBsum; 1Y0C; -.
+DR   PDBsum; 1Y0D; -.
+DR   PDBsum; 1Y0T; -.
+DR   PDBsum; 1Y0W; -.
+DR   PDBsum; 1Y22; -.
+DR   PDBsum; 1Y2Z; -.
+DR   PDBsum; 1Y31; -.
+DR   PDBsum; 1Y35; -.
+DR   PDBsum; 1Y45; -.
+DR   PDBsum; 1Y46; -.
+DR   PDBsum; 1Y4B; -.
+DR   PDBsum; 1Y4F; -.
+DR   PDBsum; 1Y4G; -.
+DR   PDBsum; 1Y4P; -.
+DR   PDBsum; 1Y4Q; -.
+DR   PDBsum; 1Y4R; -.
+DR   PDBsum; 1Y4V; -.
+DR   PDBsum; 1Y5F; -.
+DR   PDBsum; 1Y5J; -.
+DR   PDBsum; 1Y5K; -.
+DR   PDBsum; 1Y7C; -.
+DR   PDBsum; 1Y7D; -.
+DR   PDBsum; 1Y7G; -.
+DR   PDBsum; 1Y7Z; -.
+DR   PDBsum; 1Y83; -.
+DR   PDBsum; 1Y85; -.
+DR   PDBsum; 1Y8W; -.
+DR   PDBsum; 1YDZ; -.
+DR   PDBsum; 1YE0; -.
+DR   PDBsum; 1YE1; -.
+DR   PDBsum; 1YE2; -.
+DR   PDBsum; 1YEN; -.
+DR   PDBsum; 1YEO; -.
+DR   PDBsum; 1YEQ; -.
+DR   PDBsum; 1YEU; -.
+DR   PDBsum; 1YEV; -.
+DR   PDBsum; 1YFF; -.
+DR   PDBsum; 1YG5; -.
+DR   PDBsum; 1YGD; -.
+DR   PDBsum; 1YGF; -.
+DR   PDBsum; 1YH9; -.
+DR   PDBsum; 1YHE; -.
+DR   PDBsum; 1YHR; -.
+DR   PDBsum; 1YIE; -.
+DR   PDBsum; 1YIH; -.
+DR   PDBsum; 1YVQ; -.
+DR   PDBsum; 1YVT; -.
+DR   PDBsum; 1YZI; -.
+DR   PDBsum; 2D5Z; -.
+DR   PDBsum; 2D60; -.
+DR   PDBsum; 2DN1; -.
+DR   PDBsum; 2DN2; -.
+DR   PDBsum; 2DN3; -.
+DR   PDBsum; 2DXM; -.
+DR   PDBsum; 2H35; -.
+DR   PDBsum; 2HBC; -.
+DR   PDBsum; 2HBD; -.
+DR   PDBsum; 2HBE; -.
+DR   PDBsum; 2HBF; -.
+DR   PDBsum; 2HBS; -.
+DR   PDBsum; 2HCO; -.
+DR   PDBsum; 2HHB; -.
+DR   PDBsum; 2HHD; -.
+DR   PDBsum; 2HHE; -.
+DR   PDBsum; 2M6Z; -.
+DR   PDBsum; 2W6V; -.
+DR   PDBsum; 2W72; -.
+DR   PDBsum; 2YRS; -.
+DR   PDBsum; 3B75; -.
+DR   PDBsum; 3D17; -.
+DR   PDBsum; 3D7O; -.
+DR   PDBsum; 3DUT; -.
+DR   PDBsum; 3HHB; -.
+DR   PDBsum; 3HXN; -.
+DR   PDBsum; 3IC0; -.
+DR   PDBsum; 3IC2; -.
+DR   PDBsum; 3KMF; -.
+DR   PDBsum; 3NL7; -.
+DR   PDBsum; 3NMM; -.
+DR   PDBsum; 3ODQ; -.
+DR   PDBsum; 3ONZ; -.
+DR   PDBsum; 3OO4; -.
+DR   PDBsum; 3OO5; -.
+DR   PDBsum; 3P5Q; -.
+DR   PDBsum; 3QJB; -.
+DR   PDBsum; 3QJC; -.
+DR   PDBsum; 3QJD; -.
+DR   PDBsum; 3QJE; -.
+DR   PDBsum; 3R5I; -.
+DR   PDBsum; 3S65; -.
+DR   PDBsum; 3S66; -.
+DR   PDBsum; 3SZK; -.
+DR   PDBsum; 3W4U; -.
+DR   PDBsum; 3WCP; -.
+DR   PDBsum; 3WHM; -.
+DR   PDBsum; 4FC3; -.
+DR   PDBsum; 4HHB; -.
+DR   PDBsum; 4IJ2; -.
+DR   PDBsum; 4L7Y; -.
+DR   PDBsum; 4M4A; -.
+DR   PDBsum; 4M4B; -.
+DR   PDBsum; 4MQC; -.
+DR   PDBsum; 4MQG; -.
+DR   PDBsum; 4MQH; -.
+DR   PDBsum; 4MQI; -.
+DR   PDBsum; 4N7N; -.
+DR   PDBsum; 4N7O; -.
+DR   PDBsum; 4N7P; -.
+DR   PDBsum; 4N8T; -.
+DR   PDBsum; 4NI0; -.
+DR   PDBsum; 4NI1; -.
+DR   PDBsum; 4ROL; -.
+DR   PDBsum; 4ROM; -.
+DR   PDBsum; 4WJG; -.
+DR   PDBsum; 4X0L; -.
+DR   PDBsum; 4XS0; -.
+DR   PDBsum; 5E29; -.
+DR   PDBsum; 5E6E; -.
+DR   PDBsum; 5E83; -.
+DR   PDBsum; 5EE4; -.
+DR   PDBsum; 5HU6; -.
+DR   PDBsum; 5HY8; -.
+DR   PDBsum; 5JDO; -.
+DR   PDBsum; 5KDQ; -.
+DR   PDBsum; 5KSI; -.
+DR   PDBsum; 5KSJ; -.
+DR   PDBsum; 5NI1; -.
+DR   PDBsum; 5SW7; -.
+DR   PDBsum; 5U3I; -.
+DR   PDBsum; 5UCU; -.
+DR   PDBsum; 5UFJ; -.
+DR   PDBsum; 5URC; -.
+DR   PDBsum; 5VMM; -.
+DR   PDBsum; 5WOG; -.
+DR   PDBsum; 5WOH; -.
+DR   PDBsum; 5X2R; -.
+DR   PDBsum; 5X2S; -.
+DR   PDBsum; 5X2T; -.
+DR   PDBsum; 5X2U; -.
+DR   PDBsum; 6BB5; -.
+DR   PDBsum; 6BNR; -.
+DR   PDBsum; 6BWP; -.
+DR   PDBsum; 6BWU; -.
+DR   PDBsum; 6DI4; -.
+DR   PDBsum; 6FQF; -.
+DR   PDBsum; 6HAL; -.
+DR   PDBsum; 6HBW; -.
+DR   PDBsum; 6HK2; -.
+DR   PDBsum; 6KA9; -.
+DR   PDBsum; 6KAE; -.
+DR   PDBsum; 6KAH; -.
+DR   PDBsum; 6KAI; -.
+DR   PDBsum; 6KAO; -.
+DR   PDBsum; 6KAP; -.
+DR   PDBsum; 6KAQ; -.
+DR   PDBsum; 6KAR; -.
+DR   PDBsum; 6KAS; -.
+DR   PDBsum; 6KAT; -.
+DR   PDBsum; 6KAU; -.
+DR   PDBsum; 6KAV; -.
+DR   PDBsum; 6KYE; -.
+DR   PDBsum; 6L5V; -.
+DR   PDBsum; 6L5W; -.
+DR   PDBsum; 6L5X; -.
+DR   PDBsum; 6L5Y; -.
+DR   PDBsum; 6LCW; -.
+DR   PDBsum; 6LCX; -.
+DR   PDBsum; 6NBC; -.
+DR   PDBsum; 6NBD; -.
+DR   PDBsum; 6NQ5; -.
+DR   PDBsum; 6TB2; -.
+DR   PDBsum; 6XD9; -.
+DR   PDBsum; 6XDT; -.
+DR   PDBsum; 6XE7; -.
+DR   PDBsum; 7AET; -.
+DR   PDBsum; 7AEU; -.
+DR   PDBsum; 7AEV; -.
+DR   PDBsum; 7CUE; -.
+DR   PDBsum; 7DY3; -.
+DR   PDBsum; 7DY4; -.
+DR   PDBsum; 7JJQ; -.
+DR   PDBsum; 7JXZ; -.
+DR   PDBsum; 7JY0; -.
+DR   PDBsum; 7JY1; -.
+DR   PDBsum; 7JY3; -.
+DR   PDBsum; 7K4M; -.
+DR   PDBsum; 7PCF; -.
+DR   PDBsum; 7PCH; -.
+DR   PDBsum; 7PCQ; -.
+DR   PDBsum; 7UD7; -.
+DR   PDBsum; 7UD8; -.
+DR   PDBsum; 7UF6; -.
+DR   PDBsum; 7UF7; -.
+DR   PDBsum; 7VDE; -.
+DR   PDBsum; 7XGY; -.
+DR   PDBsum; 8EGI; -.
+DR   AlphaFoldDB; P68871; -.
+DR   BMRB; P68871; -.
+DR   SMR; P68871; -.
+DR   BioGRID; 109293; 210.
+DR   ComplexPortal; CPX-2158; Hemoglobin HbA complex.
+DR   ComplexPortal; CPX-2929; Hemoglobin Portland-2 complex.
+DR   ComplexPortal; CPX-2936; Hemoglobin HbH complex.
+DR   DIP; DIP-35526N; -.
+DR   IntAct; P68871; 53.
+DR   MINT; P68871; -.
+DR   STRING; 9606.ENSP00000333994; -.
+DR   ChEMBL; CHEMBL4331; -.
+DR   DrugBank; DB08262; 2,6-dicarboxynaphthalene.
+DR   DrugBank; DB07427; 2-[(2-methoxy-5-methylphenoxy)methyl]pyridine.
+DR   DrugBank; DB08077; 2-[4-({[(3,5-DICHLOROPHENYL)AMINO]CARBONYL}AMINO)PHENOXY]-2-METHYLPROPANOIC ACID.
+DR   DrugBank; DB07428; 4-[(5-methoxy-2-methylphenoxy)methyl]pyridine.
+DR   DrugBank; DB02126; 4-Carboxycinnamic Acid.
+DR   DrugBank; DB09130; Copper.
+DR   DrugBank; DB08486; Efaproxiral.
+DR   DrugBank; DB09147; Ferric pyrophosphate.
+DR   DrugBank; DB13995; Ferric pyrophosphate citrate.
+DR   DrugBank; DB00893; Iron Dextran.
+DR   DrugBank; DB09112; Nitrous acid.
+DR   DrugBank; DB09140; Oxygen.
+DR   DrugBank; DB06154; Pentaerythritol tetranitrate.
+DR   DrugBank; DB07645; Sebacic acid.
+DR   DrugBank; DB09517; Sodium ferric gluconate complex.
+DR   DrugBank; DB08632; Trimesic acid.
+DR   DrugBank; DB01593; Zinc.
+DR   DrugBank; DB14487; Zinc acetate.
+DR   DrugBank; DB14533; Zinc chloride.
+DR   DrugBank; DB14548; Zinc sulfate, unspecified form.
+DR   DrugCentral; P68871; -.
+DR   TCDB; 1.A.107.1.2; the pore-forming globin (globin) family.
+DR   CarbonylDB; P68871; -.
+DR   GlyConnect; 2875; 1 O-GlcNAc glycan (3 sites).
+DR   GlyCosmos; P68871; 10 sites, 2 glycans.
+DR   GlyGen; P68871; 4 sites, 2 O-linked glycans (4 sites).
+DR   iPTMnet; P68871; -.
+DR   PhosphoSitePlus; P68871; -.
+DR   BioMuta; HBB; -.
+DR   DMDM; 56749856; -.
+DR   REPRODUCTION-2DPAGE; IPI00654755; -.
+DR   REPRODUCTION-2DPAGE; P68871; -.
+DR   SWISS-2DPAGE; P68871; -.
+DR   UCD-2DPAGE; P68871; -.
+DR   EPD; P68871; -.
+DR   jPOST; P68871; -.
+DR   MassIVE; P68871; -.
+DR   MaxQB; P68871; -.
+DR   PaxDb; P68871; -.
+DR   PeptideAtlas; P68871; -.
+DR   PRIDE; P68871; -.
+DR   ProteomicsDB; 57543; -.
+DR   TopDownProteomics; P68871; -.
+DR   ABCD; P68871; 2 sequenced antibodies.
+DR   Antibodypedia; 34986; 411 antibodies from 34 providers.
+DR   DNASU; 3043; -.
+DR   Ensembl; ENST00000335295.4; ENSP00000333994.3; ENSG00000244734.4.
+DR   Ensembl; ENST00000647020.1; ENSP00000494175.1; ENSG00000244734.4.
+DR   GeneID; 3043; -.
+DR   KEGG; hsa:3043; -.
+DR   MANE-Select; ENST00000335295.4; ENSP00000333994.3; NM_000518.5; NP_000509.1.
+DR   UCSC; uc001mae.2; human.
+DR   AGR; HGNC:4827; -.
+DR   CTD; 3043; -.
+DR   DisGeNET; 3043; -.
+DR   GeneCards; HBB; -.
+DR   GeneReviews; HBB; -.
+DR   HGNC; HGNC:4827; HBB.
+DR   HPA; ENSG00000244734; Tissue enriched (bone).
+DR   MalaCards; HBB; -.
+DR   MIM; 140700; phenotype.
+DR   MIM; 141900; gene+phenotype.
+DR   MIM; 603902; phenotype.
+DR   MIM; 603903; phenotype.
+DR   MIM; 611162; phenotype.
+DR   MIM; 613985; phenotype.
+DR   neXtProt; NX_P68871; -.
+DR   OpenTargets; ENSG00000244734; -.
+DR   Orphanet; 247511; Autosomal dominant secondary polycythemia.
+DR   Orphanet; 231222; Beta-thalassemia intermedia.
+DR   Orphanet; 231214; Beta-thalassemia major.
+DR   Orphanet; 231237; Delta-beta-thalassemia.
+DR   Orphanet; 231226; Dominant beta-thalassemia.
+DR   Orphanet; 2132; Hemoglobin C disease.
+DR   Orphanet; 231242; Hemoglobin C-beta-thalassemia syndrome.
+DR   Orphanet; 90039; Hemoglobin D disease.
+DR   Orphanet; 2133; Hemoglobin E disease.
+DR   Orphanet; 231249; Hemoglobin E-beta-thalassemia syndrome.
+DR   Orphanet; 330032; Hemoglobin Lepore-beta-thalassemia syndrome.
+DR   Orphanet; 330041; Hemoglobin M disease.
+DR   Orphanet; 46532; Hereditary persistence of fetal hemoglobin-beta-thalassemia syndrome.
+DR   Orphanet; 251380; Hereditary persistence of fetal hemoglobin-sickle cell disease syndrome.
+DR   Orphanet; 232; Sickle cell anemia.
+DR   Orphanet; 251359; Sickle cell-beta-thalassemia disease syndrome.
+DR   Orphanet; 251365; Sickle cell-hemoglobin C disease syndrome.
+DR   Orphanet; 251370; Sickle cell-hemoglobin D disease syndrome.
+DR   Orphanet; 251375; Sickle cell-hemoglobin E disease syndrome.
+DR   PharmGKB; PA29202; -.
+DR   VEuPathDB; HostDB:ENSG00000244734; -.
+DR   eggNOG; KOG3378; Eukaryota.
+DR   GeneTree; ENSGT00940000163476; -.
+DR   HOGENOM; CLU_003827_10_0_1; -.
+DR   InParanoid; P68871; -.
+DR   OMA; ALWGKVD; -.
+DR   OrthoDB; 5356926at2759; -.
+DR   PhylomeDB; P68871; -.
+DR   TreeFam; TF333268; -.
+DR   PathwayCommons; P68871; -.
+DR   Reactome; R-HSA-1237044; Erythrocytes take up carbon dioxide and release oxygen.
+DR   Reactome; R-HSA-1247673; Erythrocytes take up oxygen and release carbon dioxide.
+DR   Reactome; R-HSA-2168880; Scavenging of heme from plasma.
+DR   Reactome; R-HSA-6798695; Neutrophil degranulation.
+DR   Reactome; R-HSA-9613829; Chaperone Mediated Autophagy.
+DR   Reactome; R-HSA-9615710; Late endosomal microautophagy.
+DR   Reactome; R-HSA-9707564; Cytoprotection by HMOX1.
+DR   Reactome; R-HSA-9707616; Heme signaling.
+DR   Reactome; R-HSA-983231; Factors involved in megakaryocyte development and platelet production.
+DR   SignaLink; P68871; -.
+DR   SIGNOR; P68871; -.
+DR   BioGRID-ORCS; 3043; 14 hits in 1155 CRISPR screens.
+DR   ChiTaRS; HBB; human.
+DR   EvolutionaryTrace; P68871; -.
+DR   GeneWiki; HBB; -.
+DR   GenomeRNAi; 3043; -.
+DR   Pharos; P68871; Tbio.
+DR   PRO; PR:P68871; -.
+DR   Proteomes; UP000005640; Chromosome 11.
+DR   RNAct; P68871; protein.
+DR   Bgee; ENSG00000244734; Expressed in trabecular bone tissue and 204 other tissues.
+DR   ExpressionAtlas; P68871; baseline and differential.
+DR   Genevisible; P68871; HS.
+DR   GO; GO:0072562; C:blood microparticle; HDA:UniProtKB.
+DR   GO; GO:0005829; C:cytosol; TAS:Reactome.
+DR   GO; GO:0071682; C:endocytic vesicle lumen; TAS:Reactome.
+DR   GO; GO:0070062; C:extracellular exosome; HDA:UniProtKB.
+DR   GO; GO:0005576; C:extracellular region; TAS:Reactome.
+DR   GO; GO:0005615; C:extracellular space; IDA:UniProtKB.
+DR   GO; GO:1904813; C:ficolin-1-rich granule lumen; TAS:Reactome.
+DR   GO; GO:0031838; C:haptoglobin-hemoglobin complex; IDA:BHF-UCL.
+DR   GO; GO:0005833; C:hemoglobin complex; IDA:BHF-UCL.
+DR   GO; GO:1904724; C:tertiary granule lumen; TAS:Reactome.
+DR   GO; GO:0020037; F:heme binding; IBA:GO_Central.
+DR   GO; GO:0031721; F:hemoglobin alpha binding; IBA:GO_Central.
+DR   GO; GO:0030492; F:hemoglobin binding; IDA:UniProtKB.
+DR   GO; GO:0046872; F:metal ion binding; IEA:UniProtKB-KW.
+DR   GO; GO:0043177; F:organic acid binding; IBA:GO_Central.
+DR   GO; GO:0019825; F:oxygen binding; IDA:UniProtKB.
+DR   GO; GO:0005344; F:oxygen carrier activity; IBA:GO_Central.
+DR   GO; GO:0097746; P:blood vessel diameter maintenance; IEA:UniProtKB-KW.
+DR   GO; GO:0015670; P:carbon dioxide transport; NAS:ComplexPortal.
+DR   GO; GO:0098869; P:cellular oxidant detoxification; IEA:GOC.
+DR   GO; GO:0042744; P:hydrogen peroxide catabolic process; IDA:BHF-UCL.
+DR   GO; GO:0030185; P:nitric oxide transport; IDA:ComplexPortal.
+DR   GO; GO:0015671; P:oxygen transport; IDA:ComplexPortal.
+DR   GO; GO:0070527; P:platelet aggregation; HMP:UniProtKB.
+DR   GO; GO:0010942; P:positive regulation of cell death; IDA:BHF-UCL.
+DR   GO; GO:0045429; P:positive regulation of nitric oxide biosynthetic process; NAS:UniProtKB.
+DR   GO; GO:0008217; P:regulation of blood pressure; IEA:UniProtKB-KW.
+DR   GO; GO:0070293; P:renal absorption; IMP:UniProtKB.
+DR   GO; GO:0042542; P:response to hydrogen peroxide; IDA:BHF-UCL.
+DR   CDD; cd08925; Hb-beta-like; 1.
+DR   Gene3D; 1.10.490.10; Globins; 1.
+DR   InterPro; IPR000971; Globin.
+DR   InterPro; IPR009050; Globin-like_sf.
+DR   InterPro; IPR012292; Globin/Proto.
+DR   InterPro; IPR002337; Hemoglobin_b.
+DR   PANTHER; PTHR11442; HEMOGLOBIN FAMILY MEMBER; 1.
+DR   PANTHER; PTHR11442:SF42; HEMOGLOBIN SUBUNIT BETA; 1.
+DR   Pfam; PF00042; Globin; 1.
+DR   PRINTS; PR00814; BETAHAEM.
+DR   SUPFAM; SSF46458; Globin-like; 1.
+DR   PROSITE; PS01033; GLOBIN; 1.
+PE   1: Evidence at protein level;
+KW   3D-structure; Acetylation; Congenital dyserythropoietic anemia;
+KW   Direct protein sequencing; Disease variant; Glycation; Glycoprotein; Heme;
+KW   Hereditary hemolytic anemia; Hypotensive agent; Iron; Metal-binding;
+KW   Oxygen transport; Phosphoprotein; Pyruvate; Reference proteome;
+KW   S-nitrosylation; Transport; Vasoactive.
+FT   INIT_MET        1
+FT                   /note="Removed"
+FT                   /evidence="ECO:0000250|UniProtKB:P02086,
+FT                   ECO:0000269|PubMed:13872627"
+FT   CHAIN           2..147
+FT                   /note="Hemoglobin subunit beta"
+FT                   /id="PRO_0000052976"
+FT   PEPTIDE         33..42
+FT                   /note="LVV-hemorphin-7"
+FT                   /id="PRO_0000296641"
+FT   PEPTIDE         33..39
+FT                   /note="Spinorphin"
+FT                   /id="PRO_0000424226"
+FT   BINDING         2
+FT                   /ligand="(2R)-2,3-bisphosphoglycerate"
+FT                   /ligand_id="ChEBI:CHEBI:58248"
+FT   BINDING         3
+FT                   /ligand="(2R)-2,3-bisphosphoglycerate"
+FT                   /ligand_id="ChEBI:CHEBI:58248"
+FT   BINDING         64
+FT                   /ligand="heme b"
+FT                   /ligand_id="ChEBI:CHEBI:60344"
+FT                   /ligand_part="Fe"
+FT                   /ligand_part_id="ChEBI:CHEBI:18248"
+FT                   /note="distal binding residue"
+FT   BINDING         83
+FT                   /ligand="(2R)-2,3-bisphosphoglycerate"
+FT                   /ligand_id="ChEBI:CHEBI:58248"
+FT   BINDING         93
+FT                   /ligand="heme b"
+FT                   /ligand_id="ChEBI:CHEBI:60344"
+FT                   /ligand_part="Fe"
+FT                   /ligand_part_id="ChEBI:CHEBI:18248"
+FT                   /note="proximal binding residue"
+FT   BINDING         144
+FT                   /ligand="(2R)-2,3-bisphosphoglycerate"
+FT                   /ligand_id="ChEBI:CHEBI:58248"
+FT   SITE            8..9
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            26..27
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            30..31
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            36..37
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            38..39
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            46..47
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            53..54
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            57..58
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            60
+FT                   /note="Not glycated"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   SITE            72..73
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            75..76
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            83
+FT                   /note="Not glycated"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   SITE            85..86
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            93..94
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            96
+FT                   /note="Not glycated"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   SITE            105..106
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            111..112
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            120..121
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            123..124
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            129..130
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            141..142
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   SITE            145..146
+FT                   /note="(Microbial infection) Cleavage; by N.americanus apr-
+FT                   2"
+FT                   /evidence="ECO:0000269|PubMed:12552433"
+FT   MOD_RES         2
+FT                   /note="N-acetylvaline"
+FT                   /evidence="ECO:0000250|UniProtKB:P02086"
+FT   MOD_RES         2
+FT                   /note="N-pyruvate 2-iminyl-valine; in Hb A1b"
+FT   MOD_RES         10
+FT                   /note="Phosphoserine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         13
+FT                   /note="Phosphothreonine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         45
+FT                   /note="Phosphoserine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         51
+FT                   /note="Phosphothreonine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         60
+FT                   /note="N6-acetyllysine"
+FT                   /evidence="ECO:0000269|PubMed:4531009"
+FT   MOD_RES         83
+FT                   /note="N6-acetyllysine"
+FT                   /evidence="ECO:0000269|PubMed:4531009"
+FT   MOD_RES         88
+FT                   /note="Phosphothreonine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         94
+FT                   /note="S-nitrosocysteine"
+FT                   /evidence="ECO:0000269|PubMed:8637569,
+FT                   ECO:0000269|PubMed:9843411"
+FT   MOD_RES         145
+FT                   /note="N6-acetyllysine; alternate"
+FT                   /evidence="ECO:0000269|PubMed:4531009"
+FT   CARBOHYD        2
+FT                   /note="N-linked (Glc) (glycation) valine; in Hb A1c"
+FT                   /evidence="ECO:0000269|PubMed:635569"
+FT   CARBOHYD        9
+FT                   /note="N-linked (Glc) (glycation) lysine"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   CARBOHYD        18
+FT                   /note="N-linked (Glc) (glycation) lysine"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   CARBOHYD        67
+FT                   /note="N-linked (Glc) (glycation) lysine"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   CARBOHYD        121
+FT                   /note="N-linked (Glc) (glycation) lysine"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   CARBOHYD        145
+FT                   /note="N-linked (Glc) (glycation) lysine; alternate"
+FT                   /evidence="ECO:0000269|PubMed:7358733"
+FT   VARIANT         2
+FT                   /note="V -> A (in Raleigh; O(2) affinity down;
+FT                   dbSNP:rs33949930)"
+FT                   /id="VAR_002856"
+FT   VARIANT         3
+FT                   /note="H -> L (in Graz; dbSNP:rs33983205)"
+FT                   /evidence="ECO:0000269|PubMed:1487420"
+FT                   /id="VAR_002857"
+FT   VARIANT         3
+FT                   /note="H -> Q (in Okayama; O(2) affinity up;
+FT                   dbSNP:rs713040)"
+FT                   /id="VAR_002858"
+FT   VARIANT         3
+FT                   /note="H -> R (in Deer Lodge; O(2) affinity up;
+FT                   dbSNP:rs33983205)"
+FT                   /id="VAR_002859"
+FT   VARIANT         3
+FT                   /note="H -> Y (in Fukuoka; dbSNP:rs35906307)"
+FT                   /id="VAR_002860"
+FT   VARIANT         6
+FT                   /note="P -> R (in Warwickshire; dbSNP:rs34769005)"
+FT                   /id="VAR_002861"
+FT   VARIANT         7
+FT                   /note="E -> A (in G-Makassar; dbSNP:rs334)"
+FT                   /id="VAR_002862"
+FT   VARIANT         7
+FT                   /note="E -> K (in Hb C; confers resistance to severe
+FT                   malaria; dbSNP:rs33930165)"
+FT                   /evidence="ECO:0000269|PubMed:11001883,
+FT                   ECO:0000269|PubMed:16175509"
+FT                   /id="VAR_002864"
+FT   VARIANT         7
+FT                   /note="E -> Q (in Machida; dbSNP:rs33930165)"
+FT                   /id="VAR_002865"
+FT   VARIANT         7
+FT                   /note="E -> V (in SKCA; Hb S; at heterozygosity confers
+FT                   resistance to malaria; dbSNP:rs334)"
+FT                   /evidence="ECO:0000269|PubMed:13464827,
+FT                   ECO:0000269|PubMed:16001361, ECO:0000269|Ref.10"
+FT                   /id="VAR_002863"
+FT   VARIANT         8
+FT                   /note="E -> G (in G-San Jose; mildly unstable;
+FT                   dbSNP:rs34387455)"
+FT                   /id="VAR_002866"
+FT   VARIANT         8
+FT                   /note="E -> K (in G-Siriraj; dbSNP:rs34948328)"
+FT                   /id="VAR_002867"
+FT   VARIANT         9
+FT                   /note="K -> E (in N-Timone; dbSNP:rs33926764)"
+FT                   /evidence="ECO:0000269|PubMed:2634671"
+FT                   /id="VAR_002868"
+FT   VARIANT         9
+FT                   /note="K -> Q (in J-Luhe; dbSNP:rs33926764)"
+FT                   /id="VAR_002869"
+FT   VARIANT         9
+FT                   /note="K -> T (in Rio Grande; dbSNP:rs33932981)"
+FT                   /evidence="ECO:0000269|PubMed:6857757"
+FT                   /id="VAR_002870"
+FT   VARIANT         10
+FT                   /note="S -> C (in Porto Alegre; O(2) affinity up;
+FT                   dbSNP:rs33918131)"
+FT                   /id="VAR_002871"
+FT   VARIANT         11
+FT                   /note="A -> D (in Ankara; dbSNP:rs33947457)"
+FT                   /evidence="ECO:0000269|PubMed:4850241"
+FT                   /id="VAR_002872"
+FT   VARIANT         11
+FT                   /note="A -> V (in Iraq-Halabja; dbSNP:rs33947457)"
+FT                   /evidence="ECO:0000269|PubMed:10398311"
+FT                   /id="VAR_025393"
+FT   VARIANT         12
+FT                   /note="V -> D (in Windsor; O(2) affinity up; unstable;
+FT                   dbSNP:rs35140348)"
+FT                   /evidence="ECO:0000269|PubMed:2599880"
+FT                   /id="VAR_002873"
+FT   VARIANT         12
+FT                   /note="V -> I (in Hamilton; dbSNP:rs33974228)"
+FT                   /id="VAR_002874"
+FT   VARIANT         14
+FT                   /note="A -> D (in J-Lens; dbSNP:rs35203747)"
+FT                   /id="VAR_002875"
+FT   VARIANT         15
+FT                   /note="L -> P (in Saki; unstable; dbSNP:rs33935445)"
+FT                   /id="VAR_002876"
+FT   VARIANT         15
+FT                   /note="L -> R (in Soegn; unstable; dbSNP:rs33935445)"
+FT                   /id="VAR_002877"
+FT   VARIANT         16
+FT                   /note="W -> G (in Randwick; unstable; dbSNP:rs33946157)"
+FT                   /evidence="ECO:0000269|PubMed:3384707"
+FT                   /id="VAR_002878"
+FT   VARIANT         16
+FT                   /note="W -> R (in Belfast; O(2) affinity up; unstable;
+FT                   dbSNP:rs33946157)"
+FT                   /id="VAR_002879"
+FT   VARIANT         17
+FT                   /note="G -> D (in
+FT                   J-Baltimore/J-Trinidad/J-Ireland/J-Georgia/N-New Haven;
+FT                   dbSNP:rs33962676)"
+FT                   /id="VAR_002880"
+FT   VARIANT         17
+FT                   /note="G -> R (in D-Bushman; dbSNP:rs63751285)"
+FT                   /id="VAR_002881"
+FT   VARIANT         18
+FT                   /note="K -> E (in Nagasaki; dbSNP:rs33986703)"
+FT                   /id="VAR_002882"
+FT   VARIANT         18
+FT                   /note="K -> N (in J-Amiens; dbSNP:rs36006214)"
+FT                   /id="VAR_002883"
+FT   VARIANT         18
+FT                   /note="K -> Q (in Nikosia; dbSNP:rs33986703)"
+FT                   /id="VAR_002884"
+FT   VARIANT         19
+FT                   /note="V -> M (in Baden; slightly unstable;
+FT                   dbSNP:rs35802118)"
+FT                   /id="VAR_002885"
+FT   VARIANT         20
+FT                   /note="N -> D (in Alamo; dbSNP:rs34866629)"
+FT                   /id="VAR_002886"
+FT   VARIANT         20
+FT                   /note="N -> K (in D-Ouleh RABAH; dbSNP:rs63750840)"
+FT                   /id="VAR_002887"
+FT   VARIANT         20
+FT                   /note="N -> S (in Malay; dbSNP:rs33972047)"
+FT                   /id="VAR_002888"
+FT   VARIANT         21
+FT                   /note="V -> M (in Olympia; O(2) affinity up;
+FT                   dbSNP:rs35890959)"
+FT                   /id="VAR_002889"
+FT   VARIANT         22
+FT                   /note="D -> G (in Connecticut; O(2) affinity down;
+FT                   dbSNP:rs33977536)"
+FT                   /id="VAR_002890"
+FT   VARIANT         22
+FT                   /note="D -> H (in Karlskoga; dbSNP:rs33950093)"
+FT                   /evidence="ECO:0000269|PubMed:8330972"
+FT                   /id="VAR_002892"
+FT   VARIANT         22
+FT                   /note="D -> N (in Cocody; dbSNP:rs33950093)"
+FT                   /id="VAR_002891"
+FT   VARIANT         22
+FT                   /note="D -> Y (in Yusa; dbSNP:rs33950093)"
+FT                   /id="VAR_002893"
+FT   VARIANT         23
+FT                   /note="E -> A (in G-Coushatta/G-Saskatoon/G-Taegu/Hsin Chu;
+FT                   dbSNP:rs33936254)"
+FT                   /id="VAR_002894"
+FT   VARIANT         23
+FT                   /note="E -> G (in G-Taipei; dbSNP:rs33936254)"
+FT                   /id="VAR_002895"
+FT   VARIANT         23
+FT                   /note="E -> K (in E-Saskatoon; dbSNP:rs33959855)"
+FT                   /id="VAR_002896"
+FT   VARIANT         23
+FT                   /note="E -> Q (in D-Iran; dbSNP:rs33959855)"
+FT                   /id="VAR_002897"
+FT   VARIANT         23
+FT                   /note="E -> V (in D-Granada; dbSNP:rs33936254)"
+FT                   /id="VAR_002898"
+FT   VARIANT         24
+FT                   /note="V -> D (in Strasbourg; O(2) affinity up;
+FT                   dbSNP:rs33945546)"
+FT                   /id="VAR_002899"
+FT   VARIANT         24
+FT                   /note="V -> F (in Palmerston North; O(2) affinity up;
+FT                   unstable; dbSNP:rs33929459)"
+FT                   /evidence="ECO:0000269|PubMed:7161106"
+FT                   /id="VAR_002900"
+FT   VARIANT         24
+FT                   /note="V -> G (in Miyashiro; O(2) affinity up; unstable;
+FT                   dbSNP:rs33945546)"
+FT                   /evidence="ECO:0000269|PubMed:7338468"
+FT                   /id="VAR_002901"
+FT   VARIANT         24
+FT                   /note="Missing (in Freiburg; dbSNP:rs34160180)"
+FT                   /evidence="ECO:0000269|PubMed:5919752"
+FT                   /id="VAR_069169"
+FT   VARIANT         25
+FT                   /note="G -> D (in Moscva; O(2) affinity down; unstable;
+FT                   dbSNP:rs33968721)"
+FT                   /id="VAR_002902"
+FT   VARIANT         25
+FT                   /note="G -> R (in Riverdale-Bronx; O(2) affinity up;
+FT                   unstable; dbSNP:rs33972975)"
+FT                   /id="VAR_002903"
+FT   VARIANT         25
+FT                   /note="G -> V (in Savannah; unstable; dbSNP:rs33968721)"
+FT                   /id="VAR_002904"
+FT   VARIANT         26
+FT                   /note="G -> D (in J-Auckland; unstable; O(2) affinity down;
+FT                   dbSNP:rs35474880)"
+FT                   /evidence="ECO:0000269|PubMed:3654265"
+FT                   /id="VAR_002905"
+FT   VARIANT         26
+FT                   /note="G -> R (in G-Taiwan Ami; dbSNP:rs34404985)"
+FT                   /id="VAR_002906"
+FT   VARIANT         27
+FT                   /note="E -> K (in B-THAL; Hb E; confers resistance to
+FT                   severe malaria; dbSNP:rs33950507)"
+FT                   /evidence="ECO:0000269|PubMed:12144064,
+FT                   ECO:0000269|PubMed:12149194, ECO:0000269|PubMed:15481886,
+FT                   ECO:0000269|PubMed:6166632"
+FT                   /id="VAR_002907"
+FT   VARIANT         27
+FT                   /note="E -> V (in Henri Mondor; slightly unstable;
+FT                   dbSNP:rs33915112)"
+FT                   /id="VAR_002908"
+FT   VARIANT         28
+FT                   /note="A -> D (in Volga/Drenthe; unstable;
+FT                   dbSNP:rs33954632)"
+FT                   /id="VAR_002909"
+FT   VARIANT         28
+FT                   /note="A -> S (in Knossos; dbSNP:rs35424040)"
+FT                   /evidence="ECO:0000269|PubMed:7173395"
+FT                   /id="VAR_002910"
+FT   VARIANT         28
+FT                   /note="A -> V (in Grange-blanche; O(2) affinity up;
+FT                   dbSNP:rs33954632)"
+FT                   /evidence="ECO:0000269|PubMed:3666141"
+FT                   /id="VAR_002911"
+FT   VARIANT         29
+FT                   /note="L -> P (in Genova/Hyogo; unstable;
+FT                   dbSNP:rs33916412)"
+FT                   /id="VAR_002912"
+FT   VARIANT         29
+FT                   /note="L -> Q (in St Louis; dbSNP:rs33916412)"
+FT                   /evidence="ECO:0000269|PubMed:186485"
+FT                   /id="VAR_035236"
+FT   VARIANT         30
+FT                   /note="G -> D (in Lufkin; unstable; dbSNP:rs35685286)"
+FT                   /id="VAR_002913"
+FT   VARIANT         31
+FT                   /note="R -> S (in Tacoma; unstable; dbSNP:rs1135071)"
+FT                   /id="VAR_002914"
+FT   VARIANT         32
+FT                   /note="L -> P (in Yokohama; unstable; dbSNP:rs33920173)"
+FT                   /evidence="ECO:0000269|PubMed:7338469"
+FT                   /id="VAR_002915"
+FT   VARIANT         33
+FT                   /note="L -> R (in Castilla; unstable; dbSNP:rs33948578)"
+FT                   /id="VAR_002916"
+FT   VARIANT         33
+FT                   /note="L -> V (in Muscat; slightly unstable;
+FT                   dbSNP:rs34314652)"
+FT                   /evidence="ECO:0000269|PubMed:1517102"
+FT                   /id="VAR_002917"
+FT   VARIANT         35
+FT                   /note="V -> D (in Santander; unstable; dbSNP:rs1135101)"
+FT                   /evidence="ECO:0000269|PubMed:12603091"
+FT                   /id="VAR_025394"
+FT   VARIANT         35
+FT                   /note="V -> F (in Pitie-Salpetriere; O(2) affinity up;
+FT                   dbSNP:rs1141387)"
+FT                   /id="VAR_002918"
+FT   VARIANT         35
+FT                   /note="V -> L (in Nantes; increased oxygen affinity;
+FT                   dbSNP:rs1141387)"
+FT                   /evidence="ECO:0000269|PubMed:12908805"
+FT                   /id="VAR_025395"
+FT   VARIANT         36
+FT                   /note="Y -> F (in Philly; O(2) affinity up; unstable;
+FT                   dbSNP:rs35857380)"
+FT                   /id="VAR_002919"
+FT   VARIANT         37
+FT                   /note="P -> R (in Sunnybrook; dbSNP:rs33993004)"
+FT                   /id="VAR_002920"
+FT   VARIANT         37
+FT                   /note="P -> S (in North Chicago; O(2) affinity up;
+FT                   dbSNP:rs33948615)"
+FT                   /evidence="ECO:0000269|PubMed:3937824"
+FT                   /id="VAR_002921"
+FT   VARIANT         37
+FT                   /note="P -> T (in Linkoping/Finlandia; O(2) affinity up;
+FT                   dbSNP:rs33948615)"
+FT                   /evidence="ECO:0000269|PubMed:3691763"
+FT                   /id="VAR_002922"
+FT   VARIANT         38
+FT                   /note="W -> G (in Howick; dbSNP:rs33994623)"
+FT                   /evidence="ECO:0000269|PubMed:8144352"
+FT                   /id="VAR_002923"
+FT   VARIANT         38
+FT                   /note="W -> R (in Rothschild; O(2) affinity down;
+FT                   dbSNP:rs33994623)"
+FT                   /evidence="ECO:0000269|PubMed:1567857"
+FT                   /id="VAR_002925"
+FT   VARIANT         38
+FT                   /note="W -> S (in Hirose; O(2) affinity up;
+FT                   dbSNP:rs33991059)"
+FT                   /id="VAR_002924"
+FT   VARIANT         39
+FT                   /note="T -> N (in Hinwil; O(2) affinity up;
+FT                   dbSNP:rs34703513)"
+FT                   /evidence="ECO:0000269|PubMed:8745430"
+FT                   /id="VAR_002926"
+FT   VARIANT         40
+FT                   /note="Q -> E (in Vaasa; unstable; dbSNP:rs11549407)"
+FT                   /id="VAR_002927"
+FT   VARIANT         40
+FT                   /note="Q -> K (in Alabama; dbSNP:rs11549407)"
+FT                   /evidence="ECO:0000269|PubMed:1115799"
+FT                   /id="VAR_002928"
+FT   VARIANT         40
+FT                   /note="Q -> R (in Tianshui; dbSNP:rs35973315)"
+FT                   /id="VAR_002929"
+FT   VARIANT         42
+FT                   /note="F -> Y (in Mequon; dbSNP:rs33926796)"
+FT                   /id="VAR_002930"
+FT   VARIANT         42
+FT                   /note="Missing (in Bruxelles)"
+FT                   /evidence="ECO:0000269|PubMed:2599881"
+FT                   /id="VAR_035237"
+FT   VARIANT         43
+FT                   /note="F -> L (in Louisville; unstable; dbSNP:rs33924146)"
+FT                   /evidence="ECO:0000269|Ref.6"
+FT                   /id="VAR_002931"
+FT   VARIANT         43
+FT                   /note="F -> S (in Hammersmith; dbSNP:rs34378160)"
+FT                   /evidence="ECO:0000269|PubMed:6259091"
+FT                   /id="VAR_035239"
+FT   VARIANT         43
+FT                   /note="Missing (in Bruxelles)"
+FT                   /evidence="ECO:0000269|PubMed:2599881"
+FT                   /id="VAR_035238"
+FT   VARIANT         44
+FT                   /note="E -> Q (in Hoshida/Chaya; dbSNP:rs33922842)"
+FT                   /id="VAR_002932"
+FT   VARIANT         45
+FT                   /note="S -> C (in Mississippi; dbSNP:rs34868397)"
+FT                   /id="VAR_002933"
+FT   VARIANT         46
+FT                   /note="F -> S (in Cheverly; unstable; dbSNP:rs33978338)"
+FT                   /id="VAR_002934"
+FT   VARIANT         47
+FT                   /note="G -> E (in K-Ibadan; dbSNP:rs35303218)"
+FT                   /id="VAR_002935"
+FT   VARIANT         48
+FT                   /note="D -> A (in Avicenna; dbSNP:rs33980484)"
+FT                   /id="VAR_002936"
+FT   VARIANT         48
+FT                   /note="D -> G (in Gavello; dbSNP:rs33980484)"
+FT                   /id="VAR_002937"
+FT   VARIANT         48
+FT                   /note="D -> Y (in Maputo; dbSNP:rs33932070)"
+FT                   /evidence="ECO:0000269|PubMed:6629824"
+FT                   /id="VAR_002938"
+FT   VARIANT         49
+FT                   /note="L -> P (in Bab-Saadoum; slightly unstable;
+FT                   dbSNP:rs33952850)"
+FT                   /id="VAR_002939"
+FT   VARIANT         50
+FT                   /note="S -> F (in Las Palmas; slightly unstable;
+FT                   dbSNP:rs33960931)"
+FT                   /evidence="ECO:0000269|PubMed:3384708, ECO:0000269|Ref.13"
+FT                   /id="VAR_002940"
+FT   VARIANT         51
+FT                   /note="T -> K (in Edmonton)"
+FT                   /id="VAR_002941"
+FT   VARIANT         52
+FT                   /note="P -> R (in Willamette; O(2) affinity up; unstable;
+FT                   dbSNP:rs33969727)"
+FT                   /id="VAR_002942"
+FT   VARIANT         53
+FT                   /note="D -> A (in Ocho Rios; dbSNP:rs33919924)"
+FT                   /id="VAR_002943"
+FT   VARIANT         53
+FT                   /note="D -> H (in Summer Hill; dbSNP:rs33961886)"
+FT                   /id="VAR_002944"
+FT   VARIANT         55
+FT                   /note="V -> D (in Jacksonville; O(2) affinity up; unstable;
+FT                   dbSNP:rs34037627)"
+FT                   /evidence="ECO:0000269|PubMed:2101840"
+FT                   /id="VAR_002945"
+FT   VARIANT         56
+FT                   /note="M -> K (in Matera; unstable; dbSNP:rs35094013)"
+FT                   /evidence="ECO:0000269|PubMed:2384314"
+FT                   /id="VAR_002946"
+FT   VARIANT         57
+FT                   /note="G -> R (in Hamadan; dbSNP:rs33935983)"
+FT                   /id="VAR_002947"
+FT   VARIANT         58
+FT                   /note="N -> K (in G-ferrara; unstable; dbSNP:rs35278874)"
+FT                   /id="VAR_002948"
+FT   VARIANT         59
+FT                   /note="P -> R (in Dhofar/Yukuhashi; dbSNP:rs33991472)"
+FT                   /id="VAR_002949"
+FT   VARIANT         60
+FT                   /note="K -> E (in I-High Wycombe; dbSNP:rs33969400)"
+FT                   /id="VAR_002950"
+FT   VARIANT         61
+FT                   /note="V -> A (in Collingwood; unstable; dbSNP:rs33931779)"
+FT                   /id="VAR_002951"
+FT   VARIANT         62
+FT                   /note="K -> E (in N-Seatlle; dbSNP:rs33995148)"
+FT                   /id="VAR_002952"
+FT   VARIANT         62
+FT                   /note="K -> M (in Bologna; O(2) affinity down;
+FT                   dbSNP:rs34974709)"
+FT                   /id="VAR_002953"
+FT   VARIANT         62
+FT                   /note="K -> N (in Hikari; dbSNP:rs34446260)"
+FT                   /id="VAR_002954"
+FT   VARIANT         63
+FT                   /note="A -> D (in J-Europa; dbSNP:rs34151786)"
+FT                   /evidence="ECO:0000269|PubMed:8811317"
+FT                   /id="VAR_002955"
+FT   VARIANT         63
+FT                   /note="A -> P (in Duarte; unstable; dbSNP:rs34933455)"
+FT                   /id="VAR_002956"
+FT   VARIANT         64
+FT                   /note="H -> Y (in M-Saskatoon; O(2) affinity up;
+FT                   dbSNP:rs33922873)"
+FT                   /evidence="ECO:0000269|PubMed:13897827"
+FT                   /id="VAR_002957"
+FT   VARIANT         66
+FT                   /note="K -> M (in J-Antakya; dbSNP:rs33932548)"
+FT                   /evidence="ECO:0000269|PubMed:3707969"
+FT                   /id="VAR_002958"
+FT   VARIANT         66
+FT                   /note="K -> N (in J-Sicilia; dbSNP:rs35747961)"
+FT                   /evidence="ECO:0000269|PubMed:4852224"
+FT                   /id="VAR_002959"
+FT   VARIANT         66
+FT                   /note="K -> Q (in J-Cairo; dbSNP:rs35353749)"
+FT                   /evidence="ECO:0000269|PubMed:1247583"
+FT                   /id="VAR_002960"
+FT   VARIANT         67
+FT                   /note="K -> I (in Vigo; O(2) affinity down)"
+FT                   /evidence="ECO:0000269|PubMed:28066926"
+FT                   /id="VAR_079528"
+FT   VARIANT         67
+FT                   /note="K -> T (in Chico; O(2) affinity down;
+FT                   dbSNP:rs35939489)"
+FT                   /id="VAR_002961"
+FT   VARIANT         68
+FT                   /note="V -> A (in Sydney; unstable; dbSNP:rs33918343)"
+FT                   /id="VAR_002962"
+FT   VARIANT         68
+FT                   /note="V -> D (in Bristol)"
+FT                   /evidence="ECO:0000269|PubMed:8704193"
+FT                   /id="VAR_035240"
+FT   VARIANT         68
+FT                   /note="V -> G (in non-spherocytic haemolytic anemia;
+FT                   Manukau; dbSNP:rs33918343)"
+FT                   /evidence="ECO:0000269|PubMed:8280608"
+FT                   /id="VAR_040060"
+FT   VARIANT         68
+FT                   /note="V -> M (in Alesha; unstable; dbSNP:rs36008922)"
+FT                   /evidence="ECO:0000269|PubMed:8330974"
+FT                   /id="VAR_002963"
+FT   VARIANT         69
+FT                   /note="L -> H (in Brisbane; O(2) affinity up;
+FT                   dbSNP:rs33972593)"
+FT                   /evidence="ECO:0000269|PubMed:6166590"
+FT                   /id="VAR_002964"
+FT   VARIANT         69
+FT                   /note="L -> P (in Mizuho; unstable; dbSNP:rs33972593)"
+FT                   /evidence="ECO:0000269|PubMed:893142"
+FT                   /id="VAR_002965"
+FT   VARIANT         70
+FT                   /note="G -> D (in Rambam; dbSNP:rs34718174)"
+FT                   /evidence="ECO:0000269|PubMed:9761252"
+FT                   /id="VAR_002966"
+FT   VARIANT         70
+FT                   /note="G -> R (in Kenitra; dbSNP:rs33947415)"
+FT                   /id="VAR_002967"
+FT   VARIANT         70
+FT                   /note="G -> S (in City of Hope; dbSNP:rs33947415)"
+FT                   /evidence="ECO:0000269|PubMed:6434492"
+FT                   /id="VAR_002968"
+FT   VARIANT         71
+FT                   /note="A -> D (in Seattle; O(2) affinity down; unstable;
+FT                   dbSNP:rs33946401)"
+FT                   /id="VAR_002969"
+FT   VARIANT         72
+FT                   /note="F -> S (in Christchurch; unstable;
+FT                   dbSNP:rs34362537)"
+FT                   /id="VAR_002970"
+FT   VARIANT         74
+FT                   /note="D -> G (in Tilburg; O(2) affinity down;
+FT                   dbSNP:rs33967755)"
+FT                   /id="VAR_002971"
+FT   VARIANT         74
+FT                   /note="D -> V (in Mobile; O(2) affinity down;
+FT                   dbSNP:rs33967755)"
+FT                   /id="VAR_002972"
+FT   VARIANT         74
+FT                   /note="D -> Y (in Vancouver; O(2) affinity down;
+FT                   dbSNP:rs33945705)"
+FT                   /id="VAR_002973"
+FT   VARIANT         75
+FT                   /note="G -> R (in Aalborg; unstable; dbSNP:rs33916541)"
+FT                   /id="VAR_002974"
+FT   VARIANT         75
+FT                   /note="G -> V (in Bushwick; unstable; dbSNP:rs33976006)"
+FT                   /id="VAR_002975"
+FT   VARIANT         76
+FT                   /note="L -> P (in Atlanta; unstable; dbSNP:rs33950542)"
+FT                   /evidence="ECO:0000269|Ref.13"
+FT                   /id="VAR_002976"
+FT   VARIANT         76
+FT                   /note="L -> R (in Pasadena; O(2) affinity up; unstable;
+FT                   dbSNP:rs33950542)"
+FT                   /id="VAR_002977"
+FT   VARIANT         77
+FT                   /note="A -> D (in J-Chicago; dbSNP:rs33985847)"
+FT                   /id="VAR_002978"
+FT   VARIANT         78
+FT                   /note="H -> D (in J-Iran; dbSNP:rs33991294)"
+FT                   /id="VAR_002979"
+FT   VARIANT         78
+FT                   /note="H -> R (in Costa Rica; dbSNP:rs33952543)"
+FT                   /evidence="ECO:0000269|PubMed:8641705"
+FT                   /id="VAR_002980"
+FT   VARIANT         78
+FT                   /note="H -> Y (in Fukuyama; dbSNP:rs33991294)"
+FT                   /id="VAR_002981"
+FT   VARIANT         79
+FT                   /note="L -> R (in Quin-hai; dbSNP:rs34870172)"
+FT                   /evidence="ECO:0000269|PubMed:6629822"
+FT                   /id="VAR_002982"
+FT   VARIANT         80
+FT                   /note="D -> Y (in Tampa; dbSNP:rs33990858)"
+FT                   /id="VAR_002983"
+FT   VARIANT         81
+FT                   /note="N -> K (in G-Szuhu/Gifu; dbSNP:rs35890380)"
+FT                   /id="VAR_002984"
+FT   VARIANT         82
+FT                   /note="L -> H (in La Roche-sur-Yon; unstable and O(2)
+FT                   affinity up; dbSNP:rs33936967)"
+FT                   /evidence="ECO:0000269|PubMed:1540659"
+FT                   /id="VAR_012663"
+FT   VARIANT         82
+FT                   /note="L -> R (in Baylor; unstable; dbSNP:rs33936967)"
+FT                   /id="VAR_002985"
+FT   VARIANT         82
+FT                   /note="L -> V (in dbSNP:rs11549406)"
+FT                   /id="VAR_049273"
+FT   VARIANT         83
+FT                   /note="K -> M (in Helsinki; O(2) affinity up;
+FT                   dbSNP:rs33987903)"
+FT                   /evidence="ECO:0000269|PubMed:826083"
+FT                   /id="VAR_002986"
+FT   VARIANT         83
+FT                   /note="K -> N (in Providence; dbSNP:rs33991993)"
+FT                   /id="VAR_012664"
+FT   VARIANT         84
+FT                   /note="G -> D (in Pyrgos; dbSNP:rs1803195)"
+FT                   /evidence="ECO:0000269|PubMed:12144064"
+FT                   /id="VAR_025396"
+FT   VARIANT         84
+FT                   /note="G -> R (in Muskegon; dbSNP:rs33930385)"
+FT                   /id="VAR_002987"
+FT   VARIANT         85
+FT                   /note="T -> I (in Kofu; dbSNP:rs35914488)"
+FT                   /evidence="ECO:0000269|PubMed:3744871"
+FT                   /id="VAR_002988"
+FT   VARIANT         87
+FT                   /note="A -> D (in Olomouc; O(2) affinity up;
+FT                   dbSNP:rs35819837)"
+FT                   /evidence="ECO:0000269|PubMed:3623975"
+FT                   /id="VAR_002989"
+FT   VARIANT         88
+FT                   /note="T -> I (in Quebec-Chori; dbSNP:rs33993568)"
+FT                   /id="VAR_002990"
+FT   VARIANT         88
+FT                   /note="T -> K (in D-Ibadan; dbSNP:rs33993568)"
+FT                   /id="VAR_002991"
+FT   VARIANT         88
+FT                   /note="T -> P (in Valletta; dbSNP:rs35553496)"
+FT                   /id="VAR_002992"
+FT   VARIANT         89
+FT                   /note="L -> P (in Santa Ana; unstable; dbSNP:rs33940204)"
+FT                   /id="VAR_002993"
+FT   VARIANT         89
+FT                   /note="L -> R (in Boras; unstable; dbSNP:rs33940204)"
+FT                   /id="VAR_002994"
+FT   VARIANT         90
+FT                   /note="S -> N (in Creteil; O(2) affinity up;
+FT                   dbSNP:rs33917628)"
+FT                   /id="VAR_002995"
+FT   VARIANT         90
+FT                   /note="S -> R (in Vanderbilt; O(2) affinity up;
+FT                   dbSNP:rs35351128)"
+FT                   /id="VAR_002996"
+FT   VARIANT         91
+FT                   /note="E -> D (in Pierre-Benite; O(2) affinity up;
+FT                   dbSNP:rs35002698)"
+FT                   /evidence="ECO:0000269|PubMed:3384709"
+FT                   /id="VAR_002997"
+FT   VARIANT         91
+FT                   /note="E -> K (in Agenogi; O(2) affinity down;
+FT                   dbSNP:rs33913712)"
+FT                   /id="VAR_002998"
+FT   VARIANT         92
+FT                   /note="L -> P (in Sabine; unstable; dbSNP:rs33917785)"
+FT                   /id="VAR_002999"
+FT   VARIANT         92
+FT                   /note="L -> R (in Caribbean; O(2) affinity down; unstable;
+FT                   dbSNP:rs33917785)"
+FT                   /evidence="ECO:0000269|PubMed:992050"
+FT                   /id="VAR_003000"
+FT   VARIANT         93
+FT                   /note="H -> D (in J-Altgelds Gardens; unstable;
+FT                   dbSNP:rs33924775)"
+FT                   /evidence="ECO:0000269|PubMed:721609"
+FT                   /id="VAR_003001"
+FT   VARIANT         93
+FT                   /note="H -> N (in Isehara; unstable; dbSNP:rs33924775)"
+FT                   /evidence="ECO:0000269|PubMed:1787097"
+FT                   /id="VAR_003002"
+FT   VARIANT         93
+FT                   /note="H -> P (in Newcastle and Duino; associated with
+FT                   S-104 in Duino; unstable; dbSNP:rs33974325)"
+FT                   /evidence="ECO:0000269|PubMed:1511986"
+FT                   /id="VAR_003003"
+FT   VARIANT         93
+FT                   /note="H -> Q (in Istambul; unstable; dbSNP:rs34083951)"
+FT                   /evidence="ECO:0000269|PubMed:4639022"
+FT                   /id="VAR_003004"
+FT   VARIANT         94
+FT                   /note="C -> R (in Okazaki; O(2) affinity up; unstable;
+FT                   dbSNP:rs33972927)"
+FT                   /id="VAR_003005"
+FT   VARIANT         95
+FT                   /note="D -> G (in Chandigarh; dbSNP:rs34579351)"
+FT                   /id="VAR_003006"
+FT   VARIANT         95
+FT                   /note="D -> H (in Barcelona; O(2) affinity up;
+FT                   dbSNP:rs33959340)"
+FT                   /id="VAR_003007"
+FT   VARIANT         95
+FT                   /note="D -> N (in Bunbury; O(2) affinity up;
+FT                   dbSNP:rs33959340)"
+FT                   /evidence="ECO:0000269|PubMed:6629823"
+FT                   /id="VAR_003008"
+FT   VARIANT         96
+FT                   /note="K -> M (in J-Cordoba; dbSNP:rs35204496)"
+FT                   /id="VAR_003009"
+FT   VARIANT         96
+FT                   /note="K -> N (in Detroit; dbSNP:rs36038739)"
+FT                   /id="VAR_003010"
+FT   VARIANT         97
+FT                   /note="L -> P (in Debrousse; unstable; O(2) affinity up;
+FT                   dbSNP:rs36081208)"
+FT                   /evidence="ECO:0000269|PubMed:8602627"
+FT                   /id="VAR_003011"
+FT   VARIANT         97
+FT                   /note="L -> V (in Regina; O(2) affinity up;
+FT                   dbSNP:rs34665886)"
+FT                   /id="VAR_003012"
+FT   VARIANT         98
+FT                   /note="H -> L (in Wood; O(2) affinity up;
+FT                   dbSNP:rs33951978)"
+FT                   /id="VAR_003013"
+FT   VARIANT         98
+FT                   /note="H -> P (in Nagoya; O(2) affinity up; unstable;
+FT                   dbSNP:rs33951978)"
+FT                   /evidence="ECO:0000269|PubMed:3838976"
+FT                   /id="VAR_003014"
+FT   VARIANT         98
+FT                   /note="H -> Q (in Malmoe; O(2) affinity up;
+FT                   dbSNP:rs34515413)"
+FT                   /id="VAR_003015"
+FT   VARIANT         98
+FT                   /note="H -> Y (in Moriguchi; dbSNP:rs33950993)"
+FT                   /id="VAR_003016"
+FT   VARIANT         99
+FT                   /note="V -> G (in Nottingham; unstable; dbSNP:rs33985510)"
+FT                   /id="VAR_003017"
+FT   VARIANT         100
+FT                   /note="D -> E (in Coimbra; O(2) affinity up;
+FT                   dbSNP:rs34013622)"
+FT                   /evidence="ECO:0000269|PubMed:1814856"
+FT                   /id="VAR_003018"
+FT   VARIANT         101
+FT                   /note="P -> L (in Brigham; O(2) affinity up;
+FT                   dbSNP:rs33965000)"
+FT                   /id="VAR_003019"
+FT   VARIANT         101
+FT                   /note="P -> R (in New Mexico; dbSNP:rs33965000)"
+FT                   /id="VAR_003020"
+FT   VARIANT         102
+FT                   /note="E -> D (in Potomac; O(2) affinity up;
+FT                   dbSNP:rs35209591)"
+FT                   /id="VAR_003021"
+FT   VARIANT         102
+FT                   /note="E -> G (in Alberta; O(2) affinity up;
+FT                   dbSNP:rs33937393)"
+FT                   /id="VAR_003022"
+FT   VARIANT         102
+FT                   /note="E -> K (in British Columbia; O(2) affinity up;
+FT                   dbSNP:rs33966487)"
+FT                   /id="VAR_003023"
+FT   VARIANT         102
+FT                   /note="E -> Q (in Rush; unstable; dbSNP:rs33966487)"
+FT                   /evidence="ECO:0000269|PubMed:4129558"
+FT                   /id="VAR_003024"
+FT   VARIANT         103
+FT                   /note="N -> S (in Beth Israel; O(2) affinity down;
+FT                   unstable; dbSNP:rs33948057)"
+FT                   /id="VAR_003025"
+FT   VARIANT         103
+FT                   /note="N -> Y (in St Mande; O(2) affinity down;
+FT                   dbSNP:rs33927739)"
+FT                   /evidence="ECO:0000269|PubMed:7238856"
+FT                   /id="VAR_003026"
+FT   VARIANT         104
+FT                   /note="F -> L (in Heathrow; O(2) affinity up;
+FT                   dbSNP:rs35067717)"
+FT                   /id="VAR_003027"
+FT   VARIANT         105
+FT                   /note="R -> S (in Camperdown and Duino; associated with
+FT                   P-92 in Duino; unstable; dbSNP:rs33914944)"
+FT                   /evidence="ECO:0000269|PubMed:1138922,
+FT                   ECO:0000269|PubMed:1511986"
+FT                   /id="VAR_003028"
+FT   VARIANT         105
+FT                   /note="R -> T (in Sherwood Forest; dbSNP:rs33911434)"
+FT                   /id="VAR_003029"
+FT   VARIANT         108
+FT                   /note="G -> R (in Burke; O(2) affinity down; unstable;
+FT                   dbSNP:rs35017910)"
+FT                   /evidence="ECO:0000269|PubMed:8401300"
+FT                   /id="VAR_003030"
+FT   VARIANT         109
+FT                   /note="N -> K (in Presbyterian; O(2) affinity down;
+FT                   unstable; dbSNP:rs34933751)"
+FT                   /evidence="ECO:0000269|PubMed:668922"
+FT                   /id="VAR_003031"
+FT   VARIANT         110
+FT                   /note="V -> M (in San Diego; O(2) affinity up;
+FT                   dbSNP:rs33969677)"
+FT                   /id="VAR_003032"
+FT   VARIANT         111
+FT                   /note="L -> P (in Showa-Yakushiji; dbSNP:rs35256489)"
+FT                   /id="VAR_003033"
+FT   VARIANT         112
+FT                   /note="V -> A (in Stanmore; O(2) affinity down; unstable;
+FT                   dbSNP:rs35871407)"
+FT                   /evidence="ECO:0000269|PubMed:1917537"
+FT                   /id="VAR_003034"
+FT   VARIANT         113
+FT                   /note="C -> F (in Canterbury; dbSNP:rs33932908)"
+FT                   /evidence="ECO:0000269|PubMed:11939514"
+FT                   /id="VAR_025397"
+FT   VARIANT         113
+FT                   /note="C -> R (in Indianapolis; dbSNP:rs35849199)"
+FT                   /evidence="ECO:0000269|PubMed:429365, ECO:0000269|Ref.5"
+FT                   /id="VAR_003035"
+FT   VARIANT         113
+FT                   /note="C -> Y (in Yahata; dbSNP:rs33932908)"
+FT                   /evidence="ECO:0000269|PubMed:1917530"
+FT                   /id="VAR_003036"
+FT   VARIANT         115
+FT                   /note="L -> M (in Zengcheng; dbSNP:rs33917394)"
+FT                   /evidence="ECO:0000269|PubMed:2079435"
+FT                   /id="VAR_010144"
+FT   VARIANT         115
+FT                   /note="L -> P (in B-THAL; Durham-N.C./Brescia;
+FT                   dbSNP:rs36015961)"
+FT                   /evidence="ECO:0000269|PubMed:1301199,
+FT                   ECO:0000269|PubMed:8111050, ECO:0000269|Ref.7"
+FT                   /id="VAR_010145"
+FT   VARIANT         116
+FT                   /note="A -> D (in B-THAL; Hradec Kralove; unstable;
+FT                   dbSNP:rs35485099)"
+FT                   /evidence="ECO:0000269|PubMed:7693620"
+FT                   /id="VAR_003037"
+FT   VARIANT         116
+FT                   /note="A -> P (in Madrid; unstable; dbSNP:rs34945623)"
+FT                   /id="VAR_003038"
+FT   VARIANT         117
+FT                   /note="H -> L (in Vexin; increased oxygen affinity;
+FT                   dbSNP:rs33978082)"
+FT                   /evidence="ECO:0000269|PubMed:12908805"
+FT                   /id="VAR_025398"
+FT   VARIANT         117
+FT                   /note="H -> Q (in Hafnia; dbSNP:rs35209776)"
+FT                   /id="VAR_003039"
+FT   VARIANT         118
+FT                   /note="H -> P (in Saitama; unstable; dbSNP:rs33935673)"
+FT                   /evidence="ECO:0000269|PubMed:6687721"
+FT                   /id="VAR_003040"
+FT   VARIANT         118
+FT                   /note="H -> R (in P-Galveston; dbSNP:rs33935673)"
+FT                   /id="VAR_003041"
+FT   VARIANT         118
+FT                   /note="H -> Y (in Tsukumi; dbSNP:rs33935527)"
+FT                   /evidence="ECO:0000269|PubMed:11300344"
+FT                   /id="VAR_025399"
+FT   VARIANT         120
+FT                   /note="G -> A (in Iowa; dbSNP:rs33947020)"
+FT                   /id="VAR_003042"
+FT   VARIANT         121
+FT                   /note="K -> E (in Hijiyama; dbSNP:rs33924134)"
+FT                   /id="VAR_003043"
+FT   VARIANT         121
+FT                   /note="K -> I (in Jianghua; dbSNP:rs34303736)"
+FT                   /evidence="ECO:0000269|PubMed:6618888"
+FT                   /id="VAR_003044"
+FT   VARIANT         121
+FT                   /note="K -> Q (in Takamatsu; dbSNP:rs33924134)"
+FT                   /id="VAR_003045"
+FT   VARIANT         122
+FT                   /note="E -> A (in D-Neath; dbSNP:rs33987957)"
+FT                   /evidence="ECO:0000269|PubMed:8330979"
+FT                   /id="VAR_003046"
+FT   VARIANT         122
+FT                   /note="E -> G (in St Francis; dbSNP:rs33987957)"
+FT                   /id="VAR_003047"
+FT   VARIANT         122
+FT                   /note="E -> K (in O-Arab; dbSNP:rs33946267)"
+FT                   /id="VAR_003049"
+FT   VARIANT         122
+FT                   /note="E -> Q (in D-Los
+FT                   Angeles/D-Punjab/D-Portugal/D-Chicago/D-Oak Ridge;
+FT                   dbSNP:rs33946267)"
+FT                   /id="VAR_003048"
+FT   VARIANT         122
+FT                   /note="E -> V (in D-Camperdown/Beograd; dbSNP:rs33987957)"
+FT                   /id="VAR_003050"
+FT   VARIANT         124
+FT                   /note="T -> I (in Villejuif; asymptomatic variant;
+FT                   dbSNP:rs33935383)"
+FT                   /evidence="ECO:0000269|PubMed:11300351"
+FT                   /id="VAR_003051"
+FT   VARIANT         125
+FT                   /note="P -> Q (in Ty Gard; O(2) affinity up;
+FT                   dbSNP:rs33983276)"
+FT                   /evidence="ECO:0000269|Ref.8"
+FT                   /id="VAR_003053"
+FT   VARIANT         125
+FT                   /note="P -> R (in Khartoum; unstable; dbSNP:rs33983276)"
+FT                   /id="VAR_003052"
+FT   VARIANT         125
+FT                   /note="P -> S (in Tunis; dbSNP:rs35461710)"
+FT                   /id="VAR_003054"
+FT   VARIANT         127
+FT                   /note="V -> A (in Beirut; dbSNP:rs33925391)"
+FT                   /id="VAR_003055"
+FT   VARIANT         127
+FT                   /note="V -> E (in Hofu; unstable; dbSNP:rs33925391)"
+FT                   /id="VAR_003057"
+FT   VARIANT         127
+FT                   /note="V -> G (in B-THAL; Dhonburi/Neapolis; unstable;
+FT                   dbSNP:rs33925391)"
+FT                   /evidence="ECO:0000269|PubMed:2399911"
+FT                   /id="VAR_003056"
+FT   VARIANT         128
+FT                   /note="Q -> E (in Complutense; dbSNP:rs33971634)"
+FT                   /evidence="ECO:0000269|PubMed:3707969"
+FT                   /id="VAR_003058"
+FT   VARIANT         128
+FT                   /note="Q -> K (in Brest; unstable; dbSNP:rs33971634)"
+FT                   /evidence="ECO:0000269|PubMed:3384710"
+FT                   /id="VAR_003059"
+FT   VARIANT         129
+FT                   /note="A -> D (in J-Guantanamo; unstable;
+FT                   dbSNP:rs33957286)"
+FT                   /id="VAR_003060"
+FT   VARIANT         130
+FT                   /note="A -> P (in Crete; O(2) affinity up; unstable;
+FT                   dbSNP:rs35939430)"
+FT                   /id="VAR_003061"
+FT   VARIANT         130
+FT                   /note="A -> V (in La Desirade; O(2) affinity down;
+FT                   unstable; dbSNP:rs111645889)"
+FT                   /evidence="ECO:0000269|PubMed:3557994"
+FT                   /id="VAR_003062"
+FT   VARIANT         131
+FT                   /note="Y -> D (in Wien; unstable; dbSNP:rs35834416)"
+FT                   /id="VAR_003063"
+FT   VARIANT         131
+FT                   /note="Y -> S (in Nevers; dbSNP:rs33937535)"
+FT                   /id="VAR_003064"
+FT   VARIANT         132
+FT                   /note="Q -> E (in Camden/Tokuchi/Motown; dbSNP:rs33910209)"
+FT                   /id="VAR_003065"
+FT   VARIANT         132
+FT                   /note="Q -> K (in Shelby/Leslie/Deaconess; unstable;
+FT                   dbSNP:rs33910209)"
+FT                   /evidence="ECO:0000269|PubMed:6526653"
+FT                   /id="VAR_003066"
+FT   VARIANT         132
+FT                   /note="Q -> P (in Shangai; unstable; dbSNP:rs33950778)"
+FT                   /id="VAR_003067"
+FT   VARIANT         132
+FT                   /note="Q -> R (in Sarrebourg; unstable; dbSNP:rs33950778)"
+FT                   /id="VAR_003068"
+FT   VARIANT         133
+FT                   /note="K -> N (in Yamagata; O(2) affinity down;
+FT                   dbSNP:rs33946775)"
+FT                   /id="VAR_003069"
+FT   VARIANT         133
+FT                   /note="K -> Q (in K-Woolwich; dbSNP:rs33953406)"
+FT                   /id="VAR_003070"
+FT   VARIANT         134
+FT                   /note="V -> L (in Extredemura; dbSNP:rs34095019)"
+FT                   /id="VAR_003071"
+FT   VARIANT         135
+FT                   /note="V -> E (in North Shore-Caracas; unstable;
+FT                   dbSNP:rs33966761)"
+FT                   /evidence="ECO:0000269|PubMed:891976"
+FT                   /id="VAR_003072"
+FT   VARIANT         136
+FT                   /note="A -> D (in Beckman; originally reported as E-136;
+FT                   O(2) affinity down; unstable; dbSNP:rs35669628)"
+FT                   /evidence="ECO:0000269|PubMed:19453576,
+FT                   ECO:0000269|PubMed:26209877, ECO:0000269|Ref.140"
+FT                   /id="VAR_003073"
+FT   VARIANT         136
+FT                   /note="A -> P (in Altdorf; O(2) affinity up; unstable;
+FT                   dbSNP:rs35492035)"
+FT                   /id="VAR_003074"
+FT   VARIANT         137
+FT                   /note="G -> D (in Hope; O(2) affinity down; unstable;
+FT                   dbSNP:rs33949486)"
+FT                   /id="VAR_003075"
+FT   VARIANT         139
+FT                   /note="A -> P (in Brockton; unstable; dbSNP:rs33919821)"
+FT                   /id="VAR_003076"
+FT   VARIANT         140
+FT                   /note="N -> D (in Geelong; unstable; dbSNP:rs33910475)"
+FT                   /evidence="ECO:0000269|PubMed:1917539"
+FT                   /id="VAR_003077"
+FT   VARIANT         140
+FT                   /note="N -> K (in Hinsdale; O(2) affinity down;
+FT                   dbSNP:rs34240441)"
+FT                   /evidence="ECO:0000269|PubMed:2513289"
+FT                   /id="VAR_003078"
+FT   VARIANT         140
+FT                   /note="N -> S (in S-Wake; associated with V-6)"
+FT                   /evidence="ECO:0000269|Ref.10"
+FT                   /id="VAR_025335"
+FT   VARIANT         140
+FT                   /note="N -> Y (in Aurora; O(2) affinity up;
+FT                   dbSNP:rs33910475)"
+FT                   /evidence="ECO:0000269|PubMed:8718692"
+FT                   /id="VAR_003079"
+FT   VARIANT         141
+FT                   /note="A -> D (in Himeji; unstable; O(2) affinity down;
+FT                   dbSNP:rs33927093)"
+FT                   /evidence="ECO:0000269|PubMed:3754244"
+FT                   /id="VAR_003080"
+FT   VARIANT         141
+FT                   /note="A -> T (in St Jacques; O(2) affinity up;
+FT                   dbSNP:rs34980264)"
+FT                   /id="VAR_003081"
+FT   VARIANT         141
+FT                   /note="A -> V (in Puttelange; polycythemia; O(2) affinity
+FT                   up; dbSNP:rs33927093)"
+FT                   /evidence="ECO:0000269|PubMed:8522332"
+FT                   /id="VAR_003082"
+FT   VARIANT         142
+FT                   /note="L -> R (in Olmsted; unstable; dbSNP:rs35854892)"
+FT                   /id="VAR_003083"
+FT   VARIANT         143
+FT                   /note="A -> D (in Ohio; O(2) affinity up;
+FT                   dbSNP:rs33921821)"
+FT                   /id="VAR_003084"
+FT   VARIANT         144
+FT                   /note="H -> D (in Rancho Mirage; dbSNP:rs33929415)"
+FT                   /id="VAR_003085"
+FT   VARIANT         144
+FT                   /note="H -> P (in Syracuse; O(2) affinity up;
+FT                   dbSNP:rs33918338)"
+FT                   /id="VAR_003087"
+FT   VARIANT         144
+FT                   /note="H -> Q (in Little Rock; O(2) affinity up;
+FT                   dbSNP:rs36020563)"
+FT                   /id="VAR_003086"
+FT   VARIANT         144
+FT                   /note="H -> R (in Abruzzo; O(2) affinity up;
+FT                   dbSNP:rs33918338)"
+FT                   /id="VAR_003088"
+FT   VARIANT         145
+FT                   /note="K -> E (in Mito; O(2) affinity up;
+FT                   dbSNP:rs33964352)"
+FT                   /id="VAR_003089"
+FT   VARIANT         146
+FT                   /note="Y -> C (in Rainier; O(2) affinity up;
+FT                   dbSNP:rs35117167)"
+FT                   /id="VAR_003090"
+FT   VARIANT         146
+FT                   /note="Y -> H (in Bethesda; O(2) affinity up;
+FT                   dbSNP:rs33949869)"
+FT                   /id="VAR_003091"
+FT   VARIANT         147
+FT                   /note="H -> D (in Hiroshima; O(2) affinity up;
+FT                   dbSNP:rs33961444)"
+FT                   /id="VAR_003092"
+FT   VARIANT         147
+FT                   /note="H -> L (in Cowtown; O(2) affinity up;
+FT                   dbSNP:rs33954264)"
+FT                   /id="VAR_003093"
+FT   VARIANT         147
+FT                   /note="H -> P (in York; O(2) affinity up;
+FT                   dbSNP:rs33954264)"
+FT                   /id="VAR_003094"
+FT   VARIANT         147
+FT                   /note="H -> Q (in Kodaira; O(2) affinity up;
+FT                   dbSNP:rs33985739)"
+FT                   /evidence="ECO:0000269|PubMed:1634367"
+FT                   /id="VAR_003095"
+FT   CONFLICT        26
+FT                   /note="Missing (in Ref. 15; ACD39349)"
+FT                   /evidence="ECO:0000305"
+FT   CONFLICT        42
+FT                   /note="F -> L (in Ref. 13; AAR96398)"
+FT                   /evidence="ECO:0000305"
+FT   HELIX           6..17
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           21..35
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           37..42
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           44..46
+FT                   /evidence="ECO:0007829|PDB:1IRD"
+FT   HELIX           52..57
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           59..75
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   TURN            78..80
+FT                   /evidence="ECO:0007829|PDB:1IRD"
+FT   HELIX           82..95
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           102..119
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           120..122
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           125..143
+FT                   /evidence="ECO:0007829|PDB:2W72"
+FT   HELIX           144..146
+FT                   /evidence="ECO:0007829|PDB:1IRD"
+SQ   SEQUENCE   147 AA;  15998 MW;  A31F6D621C6556A1 CRC64;
+     MVHLTPEEKS AVTALWGKVN VDEVGGEALG RLLVVYPWTQ RFFESFGDLS TPDAVMGNPK
+     VKAHGKKVLG AFSDGLAHLD NLKGTFATLS ELHCDKLHVD PENFRLLGNV LVCVLAHHFG
+     KEFTPPVQAA YQKVVAGVAN ALAHKYH
+//

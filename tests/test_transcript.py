@@ -67,11 +67,19 @@ ref_prefix_hg38 = os.path.join(
     "tests",
     "grch38_chr11",
 )
+## not testing creation of RNA edit dictionary? preloaded in .../neoepiscope/neoepiscope/
 atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
          "neoepiscope",
          "transcript_to_editing_hg38.pickle")
 with open(atoi, "rb") as fh:
     rna_dict = pickle.load(fh)
+flat_file = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests",
+    "P68871.txt",
+)
+ptm_dict = transcript_to_ptm_sites(flat_file, "HUMAN", cds, dict_dir=None)
+ptm_dict_hg38 = transcript_to_ptm_sites(flat_file, "HUMAN", cds_hg38, dict_dir=None)
 reference_index = bowtie_index.BowtieIndexReference(ref_prefix)
 reference_index_hg38 = bowtie_index.BowtieIndexReference(ref_prefix_hg38)
 
@@ -79,7 +87,7 @@ class TestTranscript(unittest.TestCase):
     """Tests transcript object construction"""
         
     def setUp(self):
-        ## All following transcripts from GRCh37 genome build ##
+        ## Most transcripts from GRCh37 genome build (see reference_index vs. reference_index_hg38) ##
         # HBB-001: 628bp transcript w/ 3 exons (all coding) --> 147aa peptide
         self.transcript = Transcript(
             reference_index,
@@ -94,11 +102,34 @@ class TestTranscript(unittest.TestCase):
                     strand,
                 ]
                 for (chrom, seq_type, start, end, strand, tx_type) in cds[
-                    "ENST00000335295.4_1"
+                    #"ENST00000335295.4_1"
+                    "ENST00000335295.4"
                 ]
             ],
-            "ENST00000335295.4_1",
+            #"ENST00000335295.4_1",
+            "ENST00000335295.4",
             False,
+            ptm_sites_dict=ptm_dict
+        )
+        self.transcript_hg38 = Transcript(
+            reference_index_hg38,
+            [
+                [
+                    str(chrom).replace("chr", ""),
+                    "N/A",
+                    seq_type,
+                    str(start),
+                    str(end),
+                    ".",
+                    strand,
+                ]
+                for (chrom, seq_type, start, end, strand, tx_type) in cds_hg38[
+                    "ENST00000335295.4"
+                ]
+            ],
+            "ENST00000335295.4",
+            False,
+            ptm_sites_dict=ptm_dict_hg38
         )
         # PTDSS2-001: 2,445bp transcript w/ 12 exons (all coding) --> 487aa peptide
         self.fwd_transcript = Transcript(
@@ -114,10 +145,12 @@ class TestTranscript(unittest.TestCase):
                     strand,
                 ]
                 for (chrom, seq_type, start, end, strand, tx_type) in cds[
-                    "ENST00000308020.5_1"
+                    #"ENST00000308020.5_1"
+                    "ENST00000308020.5"
                 ]
             ],
-            "ENST00000308020.5_1",
+            #"ENST00000308020.5_1",
+            "ENST00000308020.5",
             False,
         )
         # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
@@ -134,10 +167,12 @@ class TestTranscript(unittest.TestCase):
                     strand,
                 ]
                 for (chrom, seq_type, start, end, strand, tx_type) in cds[
-                    "ENST00000317078.1_1"
+                    #"ENST00000317078.1_1"
+                    "ENST00000317078.1"
                 ]
             ],
-            "ENST00000317078.1_1",
+            #"ENST00000317078.1_1",
+            "ENST00000317078.1",
             False,
         )
         # CAPRIN1-001: 4108bp transcript w/ 19 exons (18/19 coding) --> 709aa peptide
@@ -154,10 +189,12 @@ class TestTranscript(unittest.TestCase):
                     strand,
                 ]
                 for (chrom, seq_type, start, end, strand, tx_type) in cds[
-                    "ENST00000341394.8_1"
+                    #"ENST00000341394.8_1"
+                    "ENST00000341394.8"
                 ]
             ],
-            "ENST00000341394.8_1",
+            #"ENST00000341394.8_1",
+            "ENST00000341394.8",
             False,
         )
         # AP003733.1: transcript w/ 1 exon (coding)  
@@ -179,7 +216,7 @@ class TestTranscript(unittest.TestCase):
             ],
             "ENST00000318950.10",
             False,
-            rna_dict,
+            rna_edit_dict=rna_dict,
         )
 
         self.atoi_manual_transcript = Transcript(
@@ -222,7 +259,8 @@ class TestTranscript(unittest.TestCase):
                     ["chr11", "exon", 65191098, 65192298, "+", "lincRNA"],
                 ]
             ],
-            "ENST00000499732.2_1",
+            #"ENST00000499732.2_1",
+            "ENST00000499732.2",
             False,
         )
 
@@ -2656,12 +2694,71 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(mut_to_alt_counter[('11', 5248245, 'G', 'C', 'V', None)], (56, ('G', 'S', [('11', 5248245, 'G', 'C', 'V', None)], 5248245)))
 
     def test_seq_to_peptide_with_I_N(self):
-        """checks whether sseq_to_peptide function can properly handle N and I"""
+        """checks whether seq_to_peptide function can properly handle N and I"""
         seq = "AAIATIIGNIAA"
-        pep, editing_positions, ambiguous_positions, peptide_warnings = transcript.seq_to_peptide(seq, return_positions=True)
+        pep, editing_positions, ambiguous_positions, ptm_positions, ptms, peptide_warnings = transcript.seq_to_peptide(
+            seq, 
+            return_positions=True
+            )
         self.assertEqual(editing_positions, [0, 1.0, 2.0, 3.0])
         self.assertEqual(ambiguous_positions, [3.0])
         self.assertEqual(pep, "KMGE")
+
+    def test_ptm_sites(self):
+        """checks PTM mapping from protein to genomic positions"""
+        grch37_sites = [
+            [5248246, 5248247, 5248248],
+            [5248225, 5248226, 5248227],
+            [5248222, 5248223, 5248224],
+            [5248213, 5248214, 5248215],
+            [5248198, 5248199, 5248200],
+            [5247987, 5247988, 5247989],
+            [5247969, 5247970, 5247971],
+            [5247942, 5247943, 5247944],
+            [5247921, 5247922, 5247923],
+            [5247873, 5247874, 5247875],
+            [5247858, 5247859, 5247860],
+            [5247840, 5247841, 5247842],
+            [5246912, 5246913, 5246914],
+            [5246840, 5246841, 5246842]
+        ]
+        grch38_sites = [
+            [5227016, 5227017, 5227018],
+            [5226995, 5226996, 5226997],
+            [5226992, 5226993, 5226994],
+            [5226983, 5226984, 5226985],
+            [5226968, 5226969, 5226970],
+            [5226757, 5226758, 5226759],
+            [5226739, 5226740, 5226741],
+            [5226712, 5226713, 5226714],
+            [5226691, 5226692, 5226693],
+            [5226643, 5226644, 5226645],
+            [5226628, 5226629, 5226630],
+            [5226610, 5226611, 5226612],
+            [5225682, 5225683, 5225684],
+            [5225610, 5225611, 5225612]
+        ]
+        self.assertEqual(len(ptm_dict['ENST00000335295.4']), len(ptm_dict_hg38['ENST00000335295.4']))
+        # extract genomic location from ptm_dict entry for each PTM in transcript
+        for ptm in ptm_dict['ENST00000335295.4'][3]:
+            site = ptm[:3]
+            self.assertTrue(site in grch37_sites)
+        for ptm in ptm_dict_hg38['ENST00000335295.4'][3][:3]:
+            site = ptm[:3]
+            self.assertTrue(site in grch38_sites)
+
+    def test_ptm_neopeptides(self):
+        """checks peptide-level PTM warnings with different mutations"""
+        # creation of ptm_sites attribute from ptm_dict
+        self.assertTrue(self.transcript.ptm_sites)
+        self.assertTrue(self.transcript_hg38.ptm_sites)
+
+        # adds nonsynonymous mutation overlapping 2nd amino acid
+        self.transcript.edit("A", 5248248, mutation_type="V", mutation_class="S")
+        #self.transcript_hg38.edit("C", 5227016, mutation_type="V", mutation_class="S")
+        peptides, protein = self.transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        #print(peptides)
+        #print(protein)
 
 if __name__ == "__main__":
     unittest.main()

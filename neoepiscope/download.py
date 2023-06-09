@@ -48,7 +48,7 @@ import tempfile
 import sys
 import os
 import subprocess
-from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree, transcript_to_rna_edits
+from .transcript import gtf_to_cds, cds_to_feature_length, cds_to_tree, transcript_to_rna_edits, transcript_to_ptm_sites
 from distutils.core import Command
 from datetime import datetime
 from urllib import request, error
@@ -587,9 +587,9 @@ class NeoepiscopeDownloader(object):
             uniprotkb_flat_file = None
 
         for build, gencode, bowtie, rediportal, uniprot_species in [
-                ("mm9", "vM1", "NCBIM37", None, None),
+                ("mm9", "vM1", "NCBIM37", None, "MOUSE"),
                 ("mm10", "vM25", "GRCm38.p6", "TABLE1_mm10.txt", "MOUSE"),
-                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt", None),
+                ("hg19", "v19", "GRCh37.p13", "TABLE1_hg19.txt", "HUMAN"),
                 ("hg38", "v35", "GRCh38.p13", "TABLE1_hg38.txt", "HUMAN")
             ]:
             if self._yes_no_query("Download and install indexes for " + build + "?"):
