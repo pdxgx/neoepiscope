@@ -73,13 +73,13 @@ atoi = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
          "transcript_to_editing_hg38.pickle")
 with open(atoi, "rb") as fh:
     rna_dict = pickle.load(fh)
-flat_file = os.path.join(
+ptm_test_file = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "tests",
-    "P68871.txt",
+    "ptm_test_entries.txt",
 )
-ptm_dict = transcript_to_ptm_sites(flat_file, "HUMAN", cds, dict_dir=None)
-ptm_dict_hg38 = transcript_to_ptm_sites(flat_file, "HUMAN", cds_hg38, dict_dir=None)
+ptm_dict = transcript_to_ptm_sites(ptm_test_file, "HUMAN", cds, dict_dir=None)
+ptm_dict_hg38 = transcript_to_ptm_sites(ptm_test_file, "HUMAN", cds_hg38, dict_dir=None)
 reference_index = bowtie_index.BowtieIndexReference(ref_prefix)
 reference_index_hg38 = bowtie_index.BowtieIndexReference(ref_prefix_hg38)
 
@@ -152,6 +152,7 @@ class TestTranscript(unittest.TestCase):
             #"ENST00000308020.5_1",
             "ENST00000308020.5",
             False,
+            ptm_sites_dict=ptm_dict
         )
         # OR52N1-001: 963bp transcript w/ 1 exon (all coding) --> 320aa peptide
         self.all_coding_transcript = Transcript(
@@ -282,7 +283,7 @@ class TestTranscript(unittest.TestCase):
         self.assertTrue(self.transcript.rev_strand)
         self.assertEqual(self.transcript.edits, {})
         self.assertEqual(self.transcript.deletion_intervals, [])
-        self.assertEqual(self.transcript.transcript_id, "ENST00000335295.4_1")
+        self.assertEqual(self.transcript.transcript_id, "ENST00000335295.4")
 
     # Reading frame tests
     def test_rev_reading_frame(self):
@@ -890,7 +891,7 @@ class TestTranscript(unittest.TestCase):
         for pep in peptides:
             for mutation_data in peptides[pep]:
                 self.assertEqual(
-                    mutation_data[7], "annotated_stop_codon_disrupted;nonstop"
+                    mutation_data[7], "annotated_stop_codon_disrupted; nonstop"
                 )
 
     def test_split_start(self):
@@ -2739,7 +2740,7 @@ class TestTranscript(unittest.TestCase):
             [5225610, 5225611, 5225612]
         ]
         self.assertEqual(len(ptm_dict['ENST00000335295.4']), len(ptm_dict_hg38['ENST00000335295.4']))
-        # extract genomic location from ptm_dict entry for each PTM in transcript
+        # extract genomic location from ptm_dict entry for each PTM in reverse transcript
         for ptm in ptm_dict['ENST00000335295.4'][3]:
             site = ptm[:3]
             self.assertTrue(site in grch37_sites)
@@ -2748,17 +2749,113 @@ class TestTranscript(unittest.TestCase):
             self.assertTrue(site in grch38_sites)
 
     def test_ptm_neopeptides(self):
-        """checks peptide-level PTM warnings with different mutations"""
+        """checks peptide-level PTM warnings with different mutations for forward transcript"""
+        self.assertTrue(self.fwd_transcript.ptm_sites)
+
+        # adds nonsynonymous somatic mutation @ AA position 17 (1-based)
+        # captures Phosphoserines @ AA positions 16 and 24
+        self.fwd_transcript.edit("A", 450505, mutation_type="V", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Peptide base 0' in peptides['SQVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 8' in peptides['SQVPAGRAS'][0][7])
+
+        # remove edit
+        self.fwd_transcript.reset(reference=True)
+
+        # adds nonsynonymous somatic mutation that ablates PTM @ AA position 16 (1-based)
+        self.fwd_transcript.edit("A", 450502, mutation_type="V", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Peptide base 8' in peptides['YPVPAGRAS'][0][7])
+
+        # remove edit
+        self.fwd_transcript.reset(reference=True)
+
+        # deletion causes truncation with PTM @ AA position 24 becoming position 16, warning is retained
+        self.fwd_transcript.edit(24, 450501, mutation_type="D", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Peptide base 1' in peptides['ESLEEPPD'][0][7])
+
+        # new edit restores 'S' @ AA position 24, does not yield PTM warning after deletion
+        # because AA base genomic coords do not match ref PTM
+        self.fwd_transcript.edit("T", 450549, mutation_type="V", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Peptide base 0' in peptides['SLEEPPDGS'][0][7])
+        self.assertTrue('Peptide base 8' not in peptides['SLEEPPDGS'][0][7])
+
+        # remove edit
+        self.fwd_transcript.reset(reference=True)
+
+        # non-frameshift insertion before PTM preserves warning
+        self.fwd_transcript.edit("TTT", 450500, mutation_type="I", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        # PTM sites increase by 1 in ptm_positions (output of seq_to_peptides)
+        self.assertTrue('Peptide base 1' in peptides['FSPVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 9' in peptides['FSPVPAGRAS'][0][7])
+
+        # additional frameshift insertion ablates PTMs
+        self.fwd_transcript.edit("TT", 450497, mutation_type="I", mutation_class="S")
+        peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+
+    def test_ptm_neopeptides_reverse(self):
+        """checks peptide-level PTM warnings with different mutations for reverse transcript"""
         # creation of ptm_sites attribute from ptm_dict
         self.assertTrue(self.transcript.ptm_sites)
         self.assertTrue(self.transcript_hg38.ptm_sites)
 
-        # adds nonsynonymous mutation overlapping 2nd amino acid
+        # adds nonsynonymous somatic mutation that ablates PTM @ AA position 2 (1-based)
         self.transcript.edit("A", 5248248, mutation_type="V", mutation_class="S")
-        #self.transcript_hg38.edit("C", 5227016, mutation_type="V", mutation_class="S")
         peptides, protein = self.transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        #print(peptides)
-        #print(protein)
+        self.transcript_hg38.edit("A", 5227018, mutation_type="V", mutation_class="S")
+        peptides_hg38, protein_hg38 = self.transcript_hg38.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue(protein == protein_hg38)
+        # values will differ because positions != between different genome versions
+        self.assertTrue(peptides.keys() == peptides_hg38.keys())
+
+        # other PTMs @ AA positions 9 and 10 (1-based) should be present
+        self.assertTrue('Peptide base' not in peptides['MLHLTPEE'][0][7])
+        self.assertTrue('Peptide base' in peptides['LHLTPEEK'][0][7])
+        self.assertTrue('Peptide base' not in peptides_hg38['MLHLTPEE'][0][7])
+        self.assertTrue('Peptide base' in peptides_hg38['LHLTPEEK'][0][7])
+
+        # remove edits
+        self.transcript.reset(reference=True)
+        self.transcript_hg38.reset(reference=True)
+
+        # adds adjacent synonymous/nonsynonymous somatic mutations preserving PTM @ AA position 2 (1-based)
+        self.transcript.edit("G", 5248246, mutation_type="V", mutation_class="S")
+        self.transcript.edit("T", 5248243, mutation_type="V", mutation_class="S")
+        peptides, protein = self.transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Acetylation, V, PTM-0210' in peptides['MVQLTPEE'][0][7])
+
+        # remove edits
+        self.transcript.reset(reference=True)
+        self.transcript_hg38.reset(reference=True)
+
+        # deletion removes PTMs @ AA positions 9 and 10 (1-based), PTM @ AA position 2 is restored
+        self.transcript.edit(6, 5248222, mutation_type="D", mutation_class="S")
+        peptides, protein = self.transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('N-linked (Glc), K, PTM-0509' not in peptides.values())
+        self.assertTrue('Phosphorylation, S, PTM-0253' not in peptides.values())
+        self.assertTrue('Acetylation, V, PTM-0210' in peptides['MVHLTPEEAVT'][0][7])
+        
+        self.transcript_hg38.edit(6, 5226992, mutation_type="D", mutation_class="S")
+        peptides_hg38, protein_hg38 = self.transcript_hg38.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('N-linked (Glc), K, PTM-0509' not in peptides_hg38)
+        self.assertTrue('Phosphorylation, S, PTM-0253' not in peptides_hg38)
+        self.assertTrue('Acetylation, V, PTM-0210' in peptides_hg38['MVHLTPEEAVT'][0][7])
+
+        self.assertTrue(peptides.keys() == peptides_hg38.keys())
+        self.assertTrue(protein == protein_hg38)
+
+        # remove edits
+        self.transcript.reset(reference=True)
+        self.transcript_hg38.reset(reference=True)
+
+        # somatic variant restores PTMs @ AA position 1 (1-based) lost by germline variant
+        self.transcript.edit("A", 5248248, mutation_type="V", mutation_class="G")
+        self.transcript.edit("C", 5248248, mutation_type="V", mutation_class="S")
+        peptides, protein = self.transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        self.assertTrue('Acetylation, V, PTM-0210' in peptides['MVHLTPEE'][0][7])
 
 if __name__ == "__main__":
     unittest.main()

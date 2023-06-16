@@ -1,3 +1,430 @@
+ID   PTSS2_HUMAN             Reviewed;         487 AA.
+AC   Q9BVG9;
+DT   21-JUN-2004, integrated into UniProtKB/Swiss-Prot.
+DT   01-JUN-2001, sequence version 1.
+DT   03-MAY-2023, entry version 155.
+DE   RecName: Full=Phosphatidylserine synthase 2;
+DE            Short=PSS-2;
+DE            Short=PtdSer synthase 2;
+DE            EC=2.7.8.29 {ECO:0000269|PubMed:19014349};
+DE   AltName: Full=Serine-exchange enzyme II;
+GN   Name=PTDSS2; Synonyms=PSS2;
+OS   Homo sapiens (Human).
+OC   Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi; Mammalia;
+OC   Eutheria; Euarchontoglires; Primates; Haplorrhini; Catarrhini; Hominidae;
+OC   Homo.
+OX   NCBI_TaxID=9606;
+RN   [1]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE MRNA].
+RC   TISSUE=Brain;
+RX   PubMed=17974005; DOI=10.1186/1471-2164-8-399;
+RA   Bechtel S., Rosenfelder H., Duda A., Schmidt C.P., Ernst U.,
+RA   Wellenreuther R., Mehrle A., Schuster C., Bahr A., Bloecker H., Heubner D.,
+RA   Hoerlein A., Michel G., Wedler H., Koehrer K., Ottenwaelder B., Poustka A.,
+RA   Wiemann S., Schupp I.;
+RT   "The full-ORF clone resource of the German cDNA consortium.";
+RL   BMC Genomics 8:399-399(2007).
+RN   [2]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE GENOMIC DNA].
+RX   PubMed=16421571; DOI=10.1038/nature04406;
+RA   Nusbaum C., Mikkelsen T.S., Zody M.C., Asakawa S., Taudien S., Garber M.,
+RA   Kodira C.D., Schueler M.G., Shimizu A., Whittaker C.A., Chang J.L.,
+RA   Cuomo C.A., Dewar K., FitzGerald M.G., Yang X., Allen N.R., Anderson S.,
+RA   Asakawa T., Blechschmidt K., Bloom T., Borowsky M.L., Butler J., Cook A.,
+RA   Corum B., DeArellano K., DeCaprio D., Dooley K.T., Dorris L. III,
+RA   Engels R., Gloeckner G., Hafez N., Hagopian D.S., Hall J.L., Ishikawa S.K.,
+RA   Jaffe D.B., Kamat A., Kudoh J., Lehmann R., Lokitsang T., Macdonald P.,
+RA   Major J.E., Matthews C.D., Mauceli E., Menzel U., Mihalev A.H.,
+RA   Minoshima S., Murayama Y., Naylor J.W., Nicol R., Nguyen C., O'Leary S.B.,
+RA   O'Neill K., Parker S.C.J., Polley A., Raymond C.K., Reichwald K.,
+RA   Rodriguez J., Sasaki T., Schilhabel M., Siddiqui R., Smith C.L.,
+RA   Sneddon T.P., Talamas J.A., Tenzin P., Topham K., Venkataraman V., Wen G.,
+RA   Yamazaki S., Young S.K., Zeng Q., Zimmer A.R., Rosenthal A., Birren B.W.,
+RA   Platzer M., Shimizu N., Lander E.S.;
+RT   "DNA sequence and analysis of human chromosome 8.";
+RL   Nature 439:331-335(2006).
+RN   [3]
+RP   NUCLEOTIDE SEQUENCE [LARGE SCALE MRNA].
+RC   TISSUE=Brain;
+RX   PubMed=15489334; DOI=10.1101/gr.2596504;
+RG   The MGC Project Team;
+RT   "The status, quality, and expansion of the NIH full-length cDNA project:
+RT   the Mammalian Gene Collection (MGC).";
+RL   Genome Res. 14:2121-2127(2004).
+RN   [4]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Cervix carcinoma;
+RX   PubMed=17081983; DOI=10.1016/j.cell.2006.09.026;
+RA   Olsen J.V., Blagoev B., Gnad F., Macek B., Kumar C., Mortensen P., Mann M.;
+RT   "Global, in vivo, and site-specific phosphorylation dynamics in signaling
+RT   networks.";
+RL   Cell 127:635-648(2006).
+RN   [5]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Platelet;
+RX   PubMed=18088087; DOI=10.1021/pr0704130;
+RA   Zahedi R.P., Lewandrowski U., Wiesner J., Wortelkamp S., Moebius J.,
+RA   Schuetz C., Walter U., Gambaryan S., Sickmann A.;
+RT   "Phosphoproteome of resting human platelets.";
+RL   J. Proteome Res. 7:526-534(2008).
+RN   [6]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16 AND THR-485, AND
+RP   IDENTIFICATION BY MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Cervix carcinoma;
+RX   PubMed=18691976; DOI=10.1016/j.molcel.2008.07.007;
+RA   Daub H., Olsen J.V., Bairlein M., Gnad F., Oppermann F.S., Korner R.,
+RA   Greff Z., Keri G., Stemmann O., Mann M.;
+RT   "Kinase-selective enrichment enables quantitative phosphoproteomics of the
+RT   kinome across the cell cycle.";
+RL   Mol. Cell 31:438-448(2008).
+RN   [7]
+RP   IDENTIFICATION BY MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Cervix carcinoma;
+RX   PubMed=18669648; DOI=10.1073/pnas.0805139105;
+RA   Dephoure N., Zhou C., Villen J., Beausoleil S.A., Bakalarski C.E.,
+RA   Elledge S.J., Gygi S.P.;
+RT   "A quantitative atlas of mitotic phosphorylation.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 105:10762-10767(2008).
+RN   [8]
+RP   FUNCTION, CATALYTIC ACTIVITY, SUBSTRATE SPECIFICITY, ACTIVITY REGULATION,
+RP   AND BIOPHYSICOCHEMICAL PROPERTIES.
+RX   PubMed=19014349; DOI=10.1042/bj20081597;
+RA   Tomohiro S., Kawaguti A., Kawabe Y., Kitada S., Kuge O.;
+RT   "Purification and characterization of human phosphatidylserine synthases 1
+RT   and 2.";
+RL   Biochem. J. 418:421-429(2009).
+RN   [9]
+RP   GLYCOSYLATION [LARGE SCALE ANALYSIS] AT ASN-181.
+RC   TISSUE=Liver;
+RX   PubMed=19159218; DOI=10.1021/pr8008012;
+RA   Chen R., Jiang X., Sun D., Han G., Wang F., Ye M., Wang L., Zou H.;
+RT   "Glycoproteomics analysis of human liver tissue by combination of multiple
+RT   enzyme digestion and hydrazide chemistry.";
+RL   J. Proteome Res. 8:651-661(2009).
+RN   [10]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RX   PubMed=19369195; DOI=10.1074/mcp.m800588-mcp200;
+RA   Oppermann F.S., Gnad F., Olsen J.V., Hornberger R., Greff Z., Keri G.,
+RA   Mann M., Daub H.;
+RT   "Large-scale proteomics analysis of the human kinome.";
+RL   Mol. Cell. Proteomics 8:1751-1764(2009).
+RN   [11]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Cervix carcinoma;
+RX   PubMed=20068231; DOI=10.1126/scisignal.2000475;
+RA   Olsen J.V., Vermeulen M., Santamaria A., Kumar C., Miller M.L.,
+RA   Jensen L.J., Gnad F., Cox J., Jensen T.S., Nigg E.A., Brunak S., Mann M.;
+RT   "Quantitative phosphoproteomics reveals widespread full phosphorylation
+RT   site occupancy during mitosis.";
+RL   Sci. Signal. 3:RA3-RA3(2010).
+RN   [12]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RX   PubMed=21406692; DOI=10.1126/scisignal.2001570;
+RA   Rigbolt K.T., Prokhorova T.A., Akimov V., Henningsen J., Johansen P.T.,
+RA   Kratchmarova I., Kassem M., Mann M., Olsen J.V., Blagoev B.;
+RT   "System-wide temporal characterization of the proteome and phosphoproteome
+RT   of human embryonic stem cell differentiation.";
+RL   Sci. Signal. 4:RS3-RS3(2011).
+RN   [13]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16, AND IDENTIFICATION BY
+RP   MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Cervix carcinoma, and Erythroleukemia;
+RX   PubMed=23186163; DOI=10.1021/pr300630k;
+RA   Zhou H., Di Palma S., Preisinger C., Peng M., Polat A.N., Heck A.J.,
+RA   Mohammed S.;
+RT   "Toward a comprehensive characterization of a human cancer cell
+RT   phosphoproteome.";
+RL   J. Proteome Res. 12:260-271(2013).
+RN   [14]
+RP   PHOSPHORYLATION [LARGE SCALE ANALYSIS] AT SER-16 AND SER-24, AND
+RP   IDENTIFICATION BY MASS SPECTROMETRY [LARGE SCALE ANALYSIS].
+RC   TISSUE=Liver;
+RX   PubMed=24275569; DOI=10.1016/j.jprot.2013.11.014;
+RA   Bian Y., Song C., Cheng K., Dong M., Wang F., Huang J., Sun D., Wang L.,
+RA   Ye M., Zou H.;
+RT   "An enzyme assisted RP-RPLC approach for in-depth analysis of human liver
+RT   phosphoproteome.";
+RL   J. Proteomics 96:253-262(2014).
+CC   -!- FUNCTION: Catalyzes a base-exchange reaction in which the polar head
+CC       group of phosphatidylethanolamine (PE) or phosphatidylcholine (PC) is
+CC       replaced by L-serine (PubMed:19014349). Catalyzes the conversion of
+CC       phosphatatidylethanolamine and does not act on phosphatidylcholine
+CC       (PubMed:19014349). Can utilize both phosphatidylethanolamine (PE)
+CC       plasmalogen and diacyl PE as substrate and the latter is six times
+CC       better utilized, indicating the importance of an ester linkage at the
+CC       sn-1 position (By similarity). Although it shows no sn-1 fatty acyl
+CC       preference, exhibits significant preference towards docosahexaenoic
+CC       acid (22:6n-3) compared with 18:1 or 20:4 at the sn-2 position (By
+CC       similarity). {ECO:0000250|UniProtKB:Q9Z1X2,
+CC       ECO:0000269|PubMed:19014349}.
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=a 1,2-diacyl-sn-glycero-3-phosphoethanolamine + L-serine = a
+CC         1,2-diacyl-sn-glycero-3-phospho-L-serine + ethanolamine;
+CC         Xref=Rhea:RHEA:27606, ChEBI:CHEBI:33384, ChEBI:CHEBI:57262,
+CC         ChEBI:CHEBI:57603, ChEBI:CHEBI:64612; EC=2.7.8.29;
+CC         Evidence={ECO:0000269|PubMed:19014349};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:27607;
+CC         Evidence={ECO:0000305|PubMed:19014349};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-hexadecanoyl-2-(9Z-octadecenoyl)-sn-glycero-3-
+CC         phosphoethanolamine + L-serine = 1-hexadecanoyl-2-(9Z-octadecenoyl)-
+CC         sn-glycero-3-phospho-L-serine + ethanolamine; Xref=Rhea:RHEA:41484,
+CC         ChEBI:CHEBI:33384, ChEBI:CHEBI:57603, ChEBI:CHEBI:73007,
+CC         ChEBI:CHEBI:75029; Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41485;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-hexadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-
+CC         glycero-3-phosphoethanolamine + L-serine = 1-hexadecanoyl-2-
+CC         (4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoserine +
+CC         ethanolamine; Xref=Rhea:RHEA:41488, ChEBI:CHEBI:33384,
+CC         ChEBI:CHEBI:57603, ChEBI:CHEBI:78261, ChEBI:CHEBI:78262;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41489;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-octadecanoyl-2-(5Z,8Z,11Z,14Z)-eicosatetraenoyl-sn-glycero-
+CC         3-phosphoethanolamine + L-serine = 1-octadecanoyl-2-(5Z,8Z,11Z,14Z)-
+CC         eicosatetraenoyl-sn-glycero-3-phosphoserine + ethanolamine;
+CC         Xref=Rhea:RHEA:41500, ChEBI:CHEBI:33384, ChEBI:CHEBI:57603,
+CC         ChEBI:CHEBI:78268, ChEBI:CHEBI:78269;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41501;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-octadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-
+CC         glycero-3-phosphoethanolamine + L-serine = 1-octadecanoyl-2-
+CC         (4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoserine +
+CC         ethanolamine; Xref=Rhea:RHEA:41492, ChEBI:CHEBI:33384,
+CC         ChEBI:CHEBI:57603, ChEBI:CHEBI:78265, ChEBI:CHEBI:78266;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41493;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-(1Z-octadecenyl)-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-
+CC         sn-glycero-3-phosphoethanolamine + L-serine = 1-(1Z-octadecenyl)-2-
+CC         (4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phospho-L-serine
+CC         + ethanolamine; Xref=Rhea:RHEA:41496, ChEBI:CHEBI:33384,
+CC         ChEBI:CHEBI:57603, ChEBI:CHEBI:78263, ChEBI:CHEBI:78264;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41497;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-octadecanoyl-2-(9Z-octadecenoyl)-sn-glycero-3-
+CC         phosphoethanolamine + L-serine = 1-octadecanoyl-2-(9Z-octadecenoyl)-
+CC         sn-glycero-3-phospho-L-serine + ethanolamine; Xref=Rhea:RHEA:40795,
+CC         ChEBI:CHEBI:33384, ChEBI:CHEBI:57603, ChEBI:CHEBI:75038,
+CC         ChEBI:CHEBI:78260; Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:40796;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-(1Z-octadecenyl)-2-(9Z-octadecenoyl)-sn-glycero-3-
+CC         phosphoethanolamine + L-serine = 1-(1Z-octadecenyl)-2-(9Z-
+CC         octadecenoyl)-sn-glycero-3-phospho-L-serine + ethanolamine;
+CC         Xref=Rhea:RHEA:41600, ChEBI:CHEBI:33384, ChEBI:CHEBI:57603,
+CC         ChEBI:CHEBI:78340, ChEBI:CHEBI:78341;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41601;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- CATALYTIC ACTIVITY:
+CC       Reaction=1-(1Z-octadecenyl)-2-(5Z,8Z,11Z,14Z- eicosatetraenoyl)-sn-
+CC         glycero-3-phosphoethanolamine + L-serine = 1-(1Z-octadecenyl)-2-
+CC         (5Z,8Z,11Z,14Z-eicosatetraenoyl)-sn-glycero-3-phospho-L-serine +
+CC         ethanolamine; Xref=Rhea:RHEA:41604, ChEBI:CHEBI:33384,
+CC         ChEBI:CHEBI:57603, ChEBI:CHEBI:78342, ChEBI:CHEBI:78343;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC       PhysiologicalDirection=left-to-right; Xref=Rhea:RHEA:41605;
+CC         Evidence={ECO:0000250|UniProtKB:Q9Z1X2};
+CC   -!- ACTIVITY REGULATION: Requires calcium ions (PubMed:19014349). Inhibited
+CC       by exogenous phosphatidylserine (PubMed:19014349).
+CC       {ECO:0000269|PubMed:19014349}.
+CC   -!- BIOPHYSICOCHEMICAL PROPERTIES:
+CC       Kinetic parameters:
+CC         KM=120 uM for serine (in the presence of 1 mM PE)
+CC         {ECO:0000269|PubMed:19014349};
+CC         Vmax=0.57 mmol/h/mg enzyme {ECO:0000269|PubMed:19014349};
+CC       pH dependence:
+CC         Optimum pH is around 7.5. {ECO:0000269|PubMed:19014349};
+CC   -!- PATHWAY: Phospholipid metabolism; phosphatidylserine biosynthesis.
+CC   -!- SUBCELLULAR LOCATION: Endoplasmic reticulum membrane
+CC       {ECO:0000250|UniProtKB:Q9Z1X2}; Multi-pass membrane protein
+CC       {ECO:0000255}. Note=Highly enriched in the mitochondria-associated
+CC       membrane (MAM). {ECO:0000250|UniProtKB:Q9Z1X2}.
+CC   -!- SIMILARITY: Belongs to the phosphatidyl serine synthase family.
+CC       {ECO:0000305}.
+CC   ---------------------------------------------------------------------------
+CC   Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms
+CC   Distributed under the Creative Commons Attribution (CC BY 4.0) License
+CC   ---------------------------------------------------------------------------
+DR   EMBL; AL834357; CAD39022.1; -; mRNA.
+DR   EMBL; AC137894; -; NOT_ANNOTATED_CDS; Genomic_DNA.
+DR   EMBL; AC138230; -; NOT_ANNOTATED_CDS; Genomic_DNA.
+DR   EMBL; BC001210; AAH01210.1; -; mRNA.
+DR   CCDS; CCDS7696.1; -.
+DR   RefSeq; NP_110410.1; NM_030783.2.
+DR   AlphaFoldDB; Q9BVG9; -.
+DR   BioGRID; 123499; 140.
+DR   IntAct; Q9BVG9; 8.
+DR   MINT; Q9BVG9; -.
+DR   STRING; 9606.ENSP00000308258; -.
+DR   DrugBank; DB00144; Phosphatidyl serine.
+DR   SwissLipids; SLP:000001061; -.
+DR   GlyConnect; 1602; 1 N-Linked glycan (1 site).
+DR   GlyCosmos; Q9BVG9; 1 site, 1 glycan.
+DR   GlyGen; Q9BVG9; 1 site, 1 N-linked glycan (1 site).
+DR   iPTMnet; Q9BVG9; -.
+DR   PhosphoSitePlus; Q9BVG9; -.
+DR   SwissPalm; Q9BVG9; -.
+DR   BioMuta; PTDSS2; -.
+DR   DMDM; 49036457; -.
+DR   EPD; Q9BVG9; -.
+DR   jPOST; Q9BVG9; -.
+DR   MassIVE; Q9BVG9; -.
+DR   MaxQB; Q9BVG9; -.
+DR   PaxDb; Q9BVG9; -.
+DR   PeptideAtlas; Q9BVG9; -.
+DR   ProteomicsDB; 79205; -.
+DR   Antibodypedia; 41975; 104 antibodies from 16 providers.
+DR   DNASU; 81490; -.
+DR   Ensembl; ENST00000308020.5; ENSP00000308258.5; ENSG00000174915.12.
+DR   GeneID; 81490; -.
+DR   KEGG; hsa:81490; -.
+DR   MANE-Select; ENST00000308020.5; ENSP00000308258.5; NM_030783.3; NP_110410.1.
+DR   UCSC; uc001lpj.3; human.
+DR   AGR; HGNC:15463; -.
+DR   CTD; 81490; -.
+DR   GeneCards; PTDSS2; -.
+DR   HGNC; HGNC:15463; PTDSS2.
+DR   HPA; ENSG00000174915; Low tissue specificity.
+DR   MIM; 612793; gene.
+DR   neXtProt; NX_Q9BVG9; -.
+DR   OpenTargets; ENSG00000174915; -.
+DR   PharmGKB; PA33940; -.
+DR   VEuPathDB; HostDB:ENSG00000174915; -.
+DR   eggNOG; KOG2735; Eukaryota.
+DR   GeneTree; ENSGT00530000063576; -.
+DR   HOGENOM; CLU_037661_4_1_1; -.
+DR   InParanoid; Q9BVG9; -.
+DR   OMA; ELNCFTM; -.
+DR   OrthoDB; 3933684at2759; -.
+DR   PhylomeDB; Q9BVG9; -.
+DR   TreeFam; TF300012; -.
+DR   BioCyc; MetaCyc:HS10846-MON; -.
+DR   BRENDA; 2.7.8.29; 2681.
+DR   PathwayCommons; Q9BVG9; -.
+DR   Reactome; R-HSA-1483101; Synthesis of PS.
+DR   SignaLink; Q9BVG9; -.
+DR   UniPathway; UPA00948; -.
+DR   BioGRID-ORCS; 81490; 12 hits in 1159 CRISPR screens.
+DR   GenomeRNAi; 81490; -.
+DR   Pharos; Q9BVG9; Tbio.
+DR   PRO; PR:Q9BVG9; -.
+DR   Proteomes; UP000005640; Chromosome 11.
+DR   RNAct; Q9BVG9; protein.
+DR   Bgee; ENSG00000174915; Expressed in left testis and 95 other tissues.
+DR   ExpressionAtlas; Q9BVG9; baseline and differential.
+DR   Genevisible; Q9BVG9; HS.
+DR   GO; GO:0005789; C:endoplasmic reticulum membrane; ISS:UniProtKB.
+DR   GO; GO:0016020; C:membrane; ISS:UniProtKB.
+DR   GO; GO:0003882; F:CDP-diacylglycerol-serine O-phosphatidyltransferase activity; IEA:Ensembl.
+DR   GO; GO:0106245; F:L-serine-phosphatidylethanolamine phosphatidyltransferase activity; IDA:FlyBase.
+DR   GO; GO:0016740; F:transferase activity; TAS:Reactome.
+DR   GO; GO:0006659; P:phosphatidylserine biosynthetic process; IDA:FlyBase.
+DR   InterPro; IPR004277; PSS.
+DR   PANTHER; PTHR15362; PHOSPHATIDYLINOSITOL SYNTHASE; 1.
+DR   PANTHER; PTHR15362:SF7; PHOSPHATIDYLSERINE SYNTHASE 2; 1.
+DR   Pfam; PF03034; PSS; 1.
+PE   1: Evidence at protein level;
+KW   Endoplasmic reticulum; Glycoprotein; Lipid biosynthesis; Lipid metabolism;
+KW   Membrane; Phospholipid biosynthesis; Phospholipid metabolism;
+KW   Phosphoprotein; Reference proteome; Transferase; Transmembrane;
+KW   Transmembrane helix.
+FT   CHAIN           1..487
+FT                   /note="Phosphatidylserine synthase 2"
+FT                   /id="PRO_0000056832"
+FT   TOPO_DOM        1..62
+FT                   /note="Cytoplasmic"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        63..83
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        84..96
+FT                   /note="Lumenal"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        97..117
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        118..126
+FT                   /note="Cytoplasmic"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        127..147
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        148..313
+FT                   /note="Lumenal"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        314..334
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        335
+FT                   /note="Cytoplasmic"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        336..356
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        357..376
+FT                   /note="Lumenal"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        377..397
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        398..403
+FT                   /note="Cytoplasmic"
+FT                   /evidence="ECO:0000255"
+FT   TRANSMEM        404..424
+FT                   /note="Helical"
+FT                   /evidence="ECO:0000255"
+FT   TOPO_DOM        425..487
+FT                   /note="Lumenal"
+FT                   /evidence="ECO:0000255"
+FT   REGION          1..50
+FT                   /note="Disordered"
+FT                   /evidence="ECO:0000256|SAM:MobiDB-lite"
+FT   REGION          451..487
+FT                   /note="Disordered"
+FT                   /evidence="ECO:0000256|SAM:MobiDB-lite"
+FT   MOD_RES         16
+FT                   /note="Phosphoserine"
+FT                   /evidence="ECO:0007744|PubMed:17081983,
+FT                   ECO:0007744|PubMed:18088087, ECO:0007744|PubMed:18691976,
+FT                   ECO:0007744|PubMed:19369195, ECO:0007744|PubMed:20068231,
+FT                   ECO:0007744|PubMed:21406692, ECO:0007744|PubMed:23186163,
+FT                   ECO:0007744|PubMed:24275569"
+FT   MOD_RES         24
+FT                   /note="Phosphoserine"
+FT                   /evidence="ECO:0007744|PubMed:24275569"
+FT   MOD_RES         485
+FT                   /note="Phosphothreonine"
+FT                   /evidence="ECO:0007744|PubMed:18691976"
+FT   CARBOHYD        181
+FT                   /note="N-linked (GlcNAc...) asparagine"
+FT                   /evidence="ECO:0000269|PubMed:19159218"
+SQ   SEQUENCE   487 AA;  56253 MW;  E02508F894841A4F CRC64;
+     MRRGERRDAG GPRPESPVPA GRASLEEPPD GPSAGQATGP GEGRRSTESE VYDDGTNTFF
+     WRAHTLTVLF ILTCTLGYVT LLEETPQDTA YNTKRGIVAS ILVFLCFGVT QAKDGPFSRP
+     HPAYWRFWLC VSVVYELFLI FILFQTVQDG RQFLKYVDPK LGVPLPERDY GGNCLIYDPD
+     NETDPFHNIW DKLDGFVPAH FLGWYLKTLM IRDWWMCMII SVMFEFLEYS LEHQLPNFSE
+     CWWDHWIMDV LVCNGLGIYC GMKTLEWLSL KTYKWQGLWN IPTYKGKMKR IAFQFTPYSW
+     VRFEWKPASS LRRWLAVCGI ILVFLLAELN TFYLKFVLWM PPEHYLVLLR LVFFVNVGGV
+     AMREIYDFMD DPKPHKKLGP QAWLVAAITA TELLIVVKYD PHTLTLSLPF YISQCWTLGS
+     VLALTWTVWR FFLRDITLRY KETRWQKWQN KDDQGSTVGN GDQHPLGLDE DLLGPGVAEG
+     EGAPTPN
+//
 ID   HBB_HUMAN               Reviewed;         147 AA.
 AC   P68871; A4GX73; B2ZUE0; P02023; Q13852; Q14481; Q14510; Q45KT0; Q549N7;
 AC   Q6FI08; Q6R7N2; Q8IZI1; Q9BX96; Q9UCD6; Q9UCP8; Q9UCP9;

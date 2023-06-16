@@ -163,7 +163,8 @@ def kmerize_peptide(
     editing_positions=[],
     ambiguous_positions=[],
     ptm_positions=[],
-    return_ranges=False
+    return_ranges=False,
+    protein_start=0
 ):
     """Obtains subsequences of a peptide.
     normal_peptide: normal peptide seq
@@ -172,9 +173,10 @@ def kmerize_peptide(
     editing_positions: list of positions where edits are made
     ambiguous_positions: list of positions where edits are ambiguous 
     ptm_positions: list of positions where PTMs are present
+    return_ranges: boolean of whether to return peptide range dictionary
     Return value: a list of tuples of peptide substrings and
         Booleans indicating whether they contain RNA-editing and ambiguous
-        RNA-editing
+        RNA-editing, optional dict of 0-based peptide ranges within protein
     """
     peptide_size = len(peptide)
     peptides = []
@@ -183,13 +185,13 @@ def kmerize_peptide(
         for i in range(peptide_size - size + 1):
             pep = (
                 peptide[i: i + size],
-                any(i <= x < (i + size) for x in editing_positions),
-                any(i <= x < (i + size) for x in ambiguous_positions),
-                any(i <= x < (i + size) for x in ptm_positions)
+                any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
+                any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
+                any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions)
                 )
             peptides.append(pep)
             # pep_range is inclusive of peptide start, exclusive of peptide end coords
-            pep_range = (i, i + size)
+            pep_range = (protein_start + i, protein_start + i + size)
             pep_ranges[pep].append(pep_range)
     if return_ranges:    
         return peptides, pep_ranges
@@ -367,7 +369,12 @@ def seq_to_peptide(
     mitochondrial: True iff use mitochondrial codon table
     allow_partial_codons: True iff attempt to translate partial
         codons at end of sequence
-    return_positions: If True, return peptide string, editing_positions, ambiguous_positions, ptm_positions & ptm_descriptions
+    return_positions: If True returns
+        peptide string, 
+        editing_positions, 
+        ambiguous_positions, 
+        ptm_positions,
+        ptm_descriptions
     ptms: Dictionary of post-translational modifications mapped to transcript coordinates with
         keys as a tuple of 3 adjacent transcript positions and values as PTM(s) info.
 
@@ -3879,7 +3886,7 @@ class Transcript(object):
                     epi_start = coords[0]
                     epi_end = coords[1]
                     # only evaluate peptides within epitope coords
-                    subset = [pep for pep, pep_range in pep_ranges.items() if epi_start <= pep_range[0] and epi_end >= pep_range[1]]
+                    subset = [pep for pep, pep_range in pep_ranges.items() if epi_start <= pep_range[0][0] and epi_end >= pep_range[0][1]]
                     for pep in subset:
                         if pep not in peptides_ref:
                             #if len(pep_ranges[pep] == 1):
@@ -3888,8 +3895,8 @@ class Transcript(object):
                             pep_start = pep_ranges[pep][0][0]
                             pep_end = pep_ranges[pep][0][1]
                             if ref_available:
-                                # get paired ref peptide
-                                paired_peptide = protein_ref[pep_start:pep_end+1]
+                                # get paired ref peptide, range exclusive of pep_end
+                                paired_peptide = protein_ref[pep_start:pep_end]
                             else:
                                 paired_peptide = "NA"
                             if len(coords[4]) == 2 and type(coords[4][0]) == list:
@@ -3914,9 +3921,9 @@ class Transcript(object):
                                     pep_ptms = copy.deepcopy(ptm_descrips[site])
                                     for ptm in pep_ptms:
                                         # add peptide-level position to PTM description
-                                        ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                        ptm.insert(0, f'Peptide base {int(site - pep_start)}')
                                     # concatenate PTM info
-                                    pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                    pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
                                     epitope_warnings.append(pep_ptms)
                             for mutation_data in data_set:
                                 if unknown_aa and "?" in pep[0] or "X" in pep[0]:
@@ -4003,7 +4010,8 @@ class Transcript(object):
                         max_size=size, 
                         editing_positions=editing_positions,
                         ptm_positions=ptm_positions,
-                        return_ranges=True
+                        return_ranges=True,
+                        protein_start=coords[0]
                     )
                     # make normal peptide + ref peptide pair
                     if coords[2] != "NA":
@@ -4012,7 +4020,8 @@ class Transcript(object):
                             min_size=size, 
                             max_size=size, 
                             editing_positions=ref_editing_positions,
-                            ptm_positions=ref_ptm_positions
+                            ptm_positions=ref_ptm_positions,
+                            protein_start=coords[2]
                         )
                         if len(paired_peptides) == len(peptides):
                             peptide_pairs = zip(peptides, paired_peptides)
@@ -4048,9 +4057,9 @@ class Transcript(object):
                                             pep_ptms = copy.deepcopy(ptm_descrips[site])
                                             for ptm in pep_ptms:
                                                 # add peptide-level position to PTM description
-                                                ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                                ptm.insert(0, f'Peptide base {int(site - pep_start)}')
                                             # concatenate PTM info
-                                            pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                            pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
                                             epitope_warnings.append(pep_ptms)
                                 for mutation_data in data_set:
                                     if (
@@ -4102,8 +4111,8 @@ class Transcript(object):
                             # track peptide-specific warnings
                             epitope_warnings = []
                             # protein-level peptide coords
-                            pep_start = pep_ranges[pep][0]
-                            pep_end = pep_ranges[pep][1]
+                            pep_start = pep_ranges[pep][0][0]
+                            pep_end = pep_ranges[pep][0][1]
                             # boolean for presence of RNA edits in peptide
                             if pep[1]:
                                 epitope_warnings.append("rna_editing")
@@ -4118,9 +4127,9 @@ class Transcript(object):
                                     pep_ptms = copy.deepcopy(ptm_descrips[site])
                                     for ptm in pep_ptms:
                                         # add peptide-level position to PTM description
-                                        ptm.insert(0, f'Peptide base: {int(site - pep_start)}')
+                                        ptm.insert(0, f'Peptide base {int(site - pep_start)}')
                                     # concatenate PTM info
-                                    pep_ptms = ' | '.join([', '.join(ptm) for ptm in pep_ptms])
+                                    pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
                                     epitope_warnings.append(pep_ptms)
                             for mutation_data in data_set:
                                 if unknown_aa and "?" in pep[0] or "X" in pep[0]:
@@ -4187,14 +4196,8 @@ def gtf_to_cds(gtf_file, dict_dir=None):
                 tokens = line.strip().split("\t")
                 if tokens[2] in ["exon", "start_codon", "stop_codon"]:
                     transcript_id = re.sub(
-                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                        r".*transcript_id \"([A-Z0-9.]+)[_0-9]*\"[;].*", r"\1", tokens[8]
                     )
-                    # remove underscore from transcript ID where applicable
-                    if '_' in transcript_id:
-                        try:
-                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
-                        except AttributeError:
-                            pass
                     transcript_type = re.sub(
                         r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
                     )
@@ -4218,23 +4221,13 @@ def gtf_to_cds(gtf_file, dict_dir=None):
                         )
                 elif tokens[2] == "CDS":
                     transcript_id = re.sub(
-                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                        r".*transcript_id \"([A-Z0-9.]+)[_0-9]*\"[;].*", r"\1", tokens[8]
                     )
-                    if '_' in transcript_id:
-                        try:
-                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
-                        except AttributeError:
-                            pass
                     cds_lines[transcript_id].append(tokens)
                 elif tokens[2] == "transcript":
                     transcript_id = re.sub(
-                        r".*transcript_id \"([A-Z0-9._]+)\"[;].*", r"\1", tokens[8]
+                        r".*transcript_id \"([A-Z0-9.]+)[_0-9]*\"[;].*", r"\1", tokens[8]
                     )
-                    if '_' in transcript_id:
-                        try:
-                            transcript_id = re.search('[A-Z0-9.]+', transcript_id).group()
-                        except AttributeError:
-                            pass
                     transcript_type = re.sub(
                         r".*transcript_type \"([A-Za-z_]+)\"[;].*", r"\1", tokens[8]
                     )
