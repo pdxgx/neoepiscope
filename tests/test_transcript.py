@@ -1108,7 +1108,6 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(kmertides, kmertides | peptides)
         peptides = self.fwd_transcript.neopeptides(cleavage_prediction="I", cleavage_model=cleavage_model).keys()
         self.assertEqual(kmertides, kmertides | peptides)
-
         self.transcript.edit("T", 5248006)
         rev_kmertides = self.transcript.neopeptides().keys()
         rev_peptides = self.transcript.neopeptides(cleavage_prediction="C", cleavage_model=cleavage_model).keys()
@@ -1784,7 +1783,7 @@ class TestTranscript(unittest.TestCase):
         all_peptides = self.all_coding_transcript.neopeptides()
         self.assertEqual(
             all_peptides,
-            {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", "NA")]},
+            {"MSFLKAPA": [("11", 5810032, "A", "", "D", None, "NA", None)]},
         )
 
     def test_rna_edits_peptides(self):
@@ -2756,8 +2755,8 @@ class TestTranscript(unittest.TestCase):
         # captures Phosphoserines @ AA positions 16 and 24
         self.fwd_transcript.edit("A", 450505, mutation_type="V", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        self.assertTrue('Peptide base 0' in peptides['SQVPAGRAS'][0][7])
-        self.assertTrue('Peptide base 8' in peptides['SQVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 1' in peptides['SQVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 9' in peptides['SQVPAGRAS'][0][7])
 
         # remove edit
         self.fwd_transcript.reset(reference=True)
@@ -2765,7 +2764,7 @@ class TestTranscript(unittest.TestCase):
         # adds nonsynonymous somatic mutation that ablates PTM @ AA position 16 (1-based)
         self.fwd_transcript.edit("A", 450502, mutation_type="V", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        self.assertTrue('Peptide base 8' in peptides['YPVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 9' in peptides['YPVPAGRAS'][0][7])
 
         # remove edit
         self.fwd_transcript.reset(reference=True)
@@ -2773,14 +2772,14 @@ class TestTranscript(unittest.TestCase):
         # deletion causes truncation with PTM @ AA position 24 becoming position 16, warning is retained
         self.fwd_transcript.edit(24, 450501, mutation_type="D", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        self.assertTrue('Peptide base 1' in peptides['ESLEEPPD'][0][7])
+        self.assertTrue('Peptide base 2' in peptides['ESLEEPPD'][0][7])
 
         # new edit restores 'S' @ AA position 24, does not yield PTM warning after deletion
         # because AA base genomic coords do not match ref PTM
         self.fwd_transcript.edit("T", 450549, mutation_type="V", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        self.assertTrue('Peptide base 0' in peptides['SLEEPPDGS'][0][7])
-        self.assertTrue('Peptide base 8' not in peptides['SLEEPPDGS'][0][7])
+        self.assertTrue('Peptide base 1' in peptides['SLEEPPDGS'][0][7])
+        self.assertTrue('Peptide base 9' not in peptides['SLEEPPDGS'][0][7])
 
         # remove edit
         self.fwd_transcript.reset(reference=True)
@@ -2789,12 +2788,15 @@ class TestTranscript(unittest.TestCase):
         self.fwd_transcript.edit("TTT", 450500, mutation_type="I", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
         # PTM sites increase by 1 in ptm_positions (output of seq_to_peptides)
-        self.assertTrue('Peptide base 1' in peptides['FSPVPAGRAS'][0][7])
-        self.assertTrue('Peptide base 9' in peptides['FSPVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 2' in peptides['FSPVPAGRAS'][0][7])
+        self.assertTrue('Peptide base 10' in peptides['FSPVPAGRAS'][0][7])
 
-        # additional frameshift insertion ablates PTMs
+        # additional frameshift insertion ablates PTM warnings
         self.fwd_transcript.edit("TT", 450497, mutation_type="I", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
+        for vals in peptides.values():
+            for mut in vals:
+                self.assertTrue(mut[7] == None)
 
     def test_ptm_neopeptides_reverse(self):
         """checks peptide-level PTM warnings with different mutations for reverse transcript"""
@@ -2812,9 +2814,9 @@ class TestTranscript(unittest.TestCase):
         self.assertTrue(peptides.keys() == peptides_hg38.keys())
 
         # other PTMs @ AA positions 9 and 10 (1-based) should be present
-        self.assertTrue('Peptide base' not in peptides['MLHLTPEE'][0][7])
+        self.assertTrue(peptides['MLHLTPEE'][0][7] == None)
         self.assertTrue('Peptide base' in peptides['LHLTPEEK'][0][7])
-        self.assertTrue('Peptide base' not in peptides_hg38['MLHLTPEE'][0][7])
+        self.assertTrue(peptides_hg38['MLHLTPEE'][0][7] == None)
         self.assertTrue('Peptide base' in peptides_hg38['LHLTPEEK'][0][7])
 
         # remove edits
