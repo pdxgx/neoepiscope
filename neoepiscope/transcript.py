@@ -202,9 +202,9 @@ def kmerize_peptide(
     #    item
     #    for sublist in [
     #        [(peptide[i : i + size], 
-    #            any(i <= x < (i + size) for x in editing_positions),
-    #            any(i <= x < (i + size) for x in ambiguous_positions),
-    #            any(i <= x < (i + size) for x in ptm_positions))
+    #            any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
+    #            any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
+    #            any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions))
     #        for i in range(peptide_size - size + 1)]
     #        for size in range(min_size, max_size + 1)
     #    ]
@@ -566,7 +566,8 @@ def prot_to_gen(cds_list, ptm_list):
         exon = list(reversed(range(end, start+1)))
     # incorrectly annotated start codon or exon
     if not exon:
-        raise RuntimeError
+        #raise RuntimeError
+        return tx_type, new_ptms
     # counters are 1-based like PTM positions
     codon_total = len(exon) // 3
     aa_start = 1
@@ -1521,12 +1522,12 @@ class Transcript(object):
                         del edits_to_return[pos]
                     elif include_rna_edits == 1:
                         edits_to_return[pos] = [
-                            ('I', 'E', 'P', (el[3][0], el[3][1], el[3][2], 'I', 'E'))
+                            ('I', 'E', 'P', (el[3][0], el[3][1], el[3][2], 'I', 'E', el[3][5]))
                                 for el in edits_to_return[pos]
                         ]
                     else:
                         edits_to_return[pos] = [
-                            ('I', 'E', 'P', (el[3][0], el[3][1], 'I', 'I', 'E'))
+                            ('I', 'E', 'P', (el[3][0], el[3][1], 'I', 'I', 'E', el[3][5]))
                                 for el in edits_to_return[pos]
                         ]
         self.reset()
@@ -1866,7 +1867,7 @@ class Transcript(object):
                 include_somatic=include_somatic,
                 include_germline=include_germline,
                 include_rna_edits=include_rna_edits,
-            ) 
+            )
             new_edits = copy.deepcopy(edits)
             """Check for insertions at beginnings of intervals, and if they're
             present, shift them to ends of previous intervals so they're
@@ -2251,7 +2252,7 @@ class Transcript(object):
                                 self.transcript_id,
                                 ";\nContributing deletions: ",
                                 str(triggering_mutations),
-                                ";\nMutations excluded from trancript: ",
+                                ";\nMutations excluded from transcript: ",
                                 str(skipped_mutations),
                             ]
                         )
@@ -2620,8 +2621,8 @@ class Transcript(object):
         include_germline=2,
         include_rna_edits=0,
         include_ptm_sites=0,
-        cleavage_prediction=None,
         cleavage_model=None,
+        cleavage_prob=None,
         only_novel_upstream=False,
         only_downstream=True,
         only_reference=False,
@@ -2646,9 +2647,8 @@ class Transcript(object):
             2 = include RNA edits in both annotated sequence and reference comparison
         include_ptm_sites: 0 = do not include post-translational modification warnings,
                 1 = include post-translational modification flags for enumerated neopeptides
-        cleavage_prediction: "C" = cleavage probability using constitutive proteasome data,
-            "I" = cleavage probability using immunoproteasome data
-        cleavage_model: initialized human epitope proteasome model from pepsickle
+        cleavage_model: initialized epitope model
+        cleavage_prob: probability threshold for C-terminal cleavage sites
         Return value: dict of peptides of desired length(s) [KEYS] with
             values equivalent to a list of causal variants [VALUES].
         """
@@ -3806,14 +3806,12 @@ class Transcript(object):
         transcript_warnings.extend(protein_warnings)
         # Enumerate peptides
         peptide_seqs = collections.defaultdict(list)
-        if cleavage_prediction:
+        if cleavage_model:
             # Use pepsickle cleavage prediction when applicable
             cleaved_protein = predict_protein_cleavage_locations(
-                protein_id="None",
-                protein_seq=protein,
-                model=cleavage_model,
-                mod_type="epitope",
-                proteasome_type=cleavage_prediction,
+                protein,
+                cleavage_model,
+                threshold=cleavage_prob
                 )
             for size in range(min_size, max_size + 1):
                 if len(cleaved_protein) < size:
@@ -3920,7 +3918,7 @@ class Transcript(object):
                                     epitope_warnings.append("ambiguous_inosine_codon (alt)")
                                 if pep[3]:
                                     # find and append PTM descriptions for sites within pep_range
-                                    pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
+                                    pep_ptm_sites = [site for site in ptm_descrips if pep_start <= site < pep_end]
                                     # pos is protein-level PTM position
                                     for site in pep_ptm_sites:
                                         pep_ptms = copy.deepcopy(ptm_descrips[site])
@@ -3928,7 +3926,7 @@ class Transcript(object):
                                             # add peptide-level position to PTM description
                                             ptm.insert(0, f'Peptide base {int(site - pep_start + 1)}')
                                         # concatenate PTM info
-                                        pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
+                                        pep_ptms = ','.join([':'.join(ptm) for ptm in pep_ptms])
                                         epitope_warnings.append(pep_ptms)
                                 for mutation_data in data_set:
                                     if unknown_aa and "?" in pep[0] or "X" in pep[0]:
@@ -3941,18 +3939,18 @@ class Transcript(object):
                                     if transcript_warnings:
                                         # both transcript and epitope warnings
                                         if epitope_warnings:
-                                            combo = ["; ".join(transcript_warnings + epitope_warnings)]
+                                            combo = [",".join(transcript_warnings + epitope_warnings)]
                                             mutation_data += (paired_peptide,) + tuple(combo)
                                             peptide_seqs[pep[0]].append(mutation_data)
                                         # only transcript warnings
                                         else:
-                                            combo = ["; ".join(transcript_warnings)]
+                                            combo = [",".join(transcript_warnings)]
                                             mutation_data += (paired_peptide,) + tuple(combo)
                                             peptide_seqs[pep[0]].append(mutation_data) 
                                     else:
                                         # only epitope warnings
                                         if epitope_warnings:
-                                            combo = ["; ".join(epitope_warnings)]
+                                            combo = [",".join(epitope_warnings)]
                                             mutation_data += (paired_peptide,) + tuple(combo)
                                             peptide_seqs[pep[0]].append(mutation_data)
                                         # no warnings, only placeholder
@@ -4061,7 +4059,7 @@ class Transcript(object):
                                             pep_start = ranges[0]
                                             pep_end = ranges[1]
                                             # find and append PTM descriptions for sites within pep_range
-                                            pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
+                                            pep_ptm_sites = [site for site in ptm_descrips if pep_start <= site < pep_end]
                                             # pos is protein-level PTM position
                                             for site in pep_ptm_sites:
                                                 pep_ptms = copy.deepcopy(ptm_descrips[site])
@@ -4069,7 +4067,7 @@ class Transcript(object):
                                                     # add peptide-level position to PTM description
                                                     ptm.insert(0, f'Peptide base {int(site - pep_start + 1)}')
                                                 # concatenate PTM info
-                                                pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
+                                                pep_ptms = ','.join([':'.join(ptm) for ptm in pep_ptms])
                                                 epitope_warnings.append(pep_ptms)
                                 for mutation_data in data_set:
                                     if (
@@ -4088,18 +4086,18 @@ class Transcript(object):
                                     if transcript_warnings:
                                         # both transcript and epitope warnings
                                         if epitope_warnings:
-                                            combo = ["; ".join(transcript_warnings + epitope_warnings)]
+                                            combo = [",".join(transcript_warnings + epitope_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data)
                                         # only transcript warnings
                                         else:
-                                            combo = ["; ".join(transcript_warnings)]
+                                            combo = [",".join(transcript_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data) 
                                     else:
                                         # only epitope warnings
                                         if epitope_warnings:
-                                            combo = ["; ".join(epitope_warnings)]
+                                            combo = [",".join(epitope_warnings)]
                                             mutation_data += (pair[1][0],) + tuple(combo)
                                             peptide_seqs[pair[0][0]].append(mutation_data)
                                         # no warnings, only placeholder
@@ -4132,7 +4130,7 @@ class Transcript(object):
                                     pep_start = ranges[0]
                                     pep_end = ranges[1]
                                     # find and append PTM descriptions for sites within pep_range
-                                    pep_ptm_sites = [site for site in ptm_descrips.keys() if pep_start <= site < pep_end]
+                                    pep_ptm_sites = [site for site in ptm_descrips if pep_start <= site < pep_end]
                                     # pos is protein-level PTM position
                                     for site in pep_ptm_sites:
                                         pep_ptms = copy.deepcopy(ptm_descrips[site])
@@ -4140,7 +4138,7 @@ class Transcript(object):
                                             # add peptide-level position to PTM description
                                             ptm.insert(0, f'Peptide base {int(site - pep_start + 1)}')
                                         # concatenate PTM info
-                                        pep_ptms = '; '.join([', '.join(ptm) for ptm in pep_ptms])
+                                        pep_ptms = ','.join([':'.join(ptm) for ptm in pep_ptms])
                                         epitope_warnings.append(pep_ptms)
                             for mutation_data in data_set:
                                 if unknown_aa and "?" in pep[0] or "X" in pep[0]:
@@ -4153,18 +4151,18 @@ class Transcript(object):
                                 if transcript_warnings:
                                     # both transcript and epitope warnings
                                     if epitope_warnings:
-                                        combo = ["; ".join(transcript_warnings + epitope_warnings)]
+                                        combo = [",".join(transcript_warnings + epitope_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # only transcript warnings
                                     else:
-                                        combo = ["; ".join(transcript_warnings)]
+                                        combo = [",".join(transcript_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data) 
                                 else:
                                     # only epitope warnings
                                     if epitope_warnings:
-                                        combo = ["; ".join(epitope_warnings)]
+                                        combo = [",".join(epitope_warnings)]
                                         mutation_data += ("NA",) + tuple(combo)
                                         peptide_seqs[pep[0]].append(mutation_data)
                                     # no warnings, only placeholder
@@ -4586,8 +4584,9 @@ def transcript_to_rna_edits(rna_edit_file, cds_tree, cds_dict,
             # 0.045% of rediportal region labels are alt chromosomes (e.g. 'chr14_GL000009v2_random')
             try:
                 cds_tree[chrom]
-                for transcript in cds_tree[chrom][pos:pos + 1]:
+                for interval in cds_tree[chrom][pos:pos + 1]:
                     # some transcript keys returning empty list values from cds_dict
+                    transcript = list(interval)[2]
                     if not cds_dict[transcript]:
                         pass
                     elif strand == cds_dict[transcript][0][4]:
@@ -4621,30 +4620,40 @@ def transcript_to_ptm_sites(uniprot_file, build_species, cds_dict, dict_dir=None
     """
     transcript_to_ptm_sites = dict()
     with open(uniprot_file, 'rt') as handle:
+    # gzipped files must be decompressed before passing to parser fxn
         for record in uniprot_parse.parse(handle, build_species):
             for ids in record.tx_ids:
                 tx_id = ids[0]
                 iso_id = ids[1]
+                # retrieve CDS info for each transcript ID
                 try:
-                    # retrieve CDS info for each transcript ID
-                    cds_list = cds_dict[tx_id]
-                    ptm_list = sorted(record.ptms[iso_id])
-                    if not cds_list or not ptm_list:
-                        # transcript ID not in cds_list or no PTMs for isoform
-                        continue
-                    tx_type, new_ptms = prot_to_gen(cds_list, ptm_list)
-                    # shouldn't occur if matching cds_list and ptm_list present
-                    #if not new_ptms:
-                        #continue
-                    transcript_to_ptm_sites[tx_id] = [
-                       record.accession,
-                        iso_id,
-                        tx_type,
-                        new_ptms
-                        ]
+                    if tx_id in cds_dict.keys():
+                        cds_list = cds_dict[tx_id]
+                    else:
+                        # transcript ID from GTF not in UniProt file
+                        cds_list = None
+                # CDS annotation is incorrect e.g. start codon is <3 bp
                 except RuntimeError:
-                    # CDS annotation is incorrect e.g. start codon is <3 bp
                     continue
+                # retrieve PTMs for the given isoform ID
+                try:
+                    ptm_list = sorted(record.ptms[iso_id])
+                # if no PTMs available record.ptms is None
+                except TypeError:
+                    continue
+                if not cds_list or not ptm_list:
+                    # transcript ID mismatch or no PTMs for isoform
+                    continue
+                tx_type, new_ptms = prot_to_gen(cds_list, ptm_list)
+                # shouldn't occur if matching cds_list and ptm_list present
+                #if not new_ptms:
+                    #continue
+                transcript_to_ptm_sites[tx_id] = [
+                   record.accession,
+                    iso_id,
+                    tx_type,
+                    new_ptms
+                    ]
     if dict_dir is not None:
         pickle_dict = os.path.join(dict_dir, "transcript_to_ptm_sites.pickle")
         with open(pickle_dict, "wb") as f:
@@ -5066,8 +5075,8 @@ def get_peptides_from_transcripts(
     include_somatic=1,
     include_rna_edits=0,
     include_ptm_sites=0,
-    cleavage_prediction=None,
     cleavage_model=None,
+    cleavage_prob=None,
     protein_fasta=False,
     rna_edit_dict=None,
     ptm_sites_dict=None
@@ -5104,10 +5113,8 @@ def get_peptides_from_transcripts(
             comparison
     include_ptm_sites: 0 = do not include post-translational modification warnings,
                 1 = include post-translational modification flags for enumerated neopeptides
-    cleavage_prediction: "C" = cleavage probability using constitutive 
-            proteasome data,
-            "I" = cleavage probability using immunoproteasome data
-    cleavage_model: initialized human epitope proteasome model from pepsickle
+    cleavage_model: initialized epitope model
+    cleavage_prob: probability threshold for C-terminal cleavage sites
     nmd: whether to include nonsense mediated decay transcripts (boolean)
     pp: whether to include polymorphic pseudogene transcripts (boolean)
     igv: whether to include IGV transcripts (boolean)
@@ -5117,7 +5124,7 @@ def get_peptides_from_transcripts(
     allow_partial_codons: attempt to translate partial codons at ends of transcripts
     protein_fasta: wheather to generate full-length protein sequences
         for fasta file
-    rna_edit_dict: dictionary linking transcript IDs to RNA editing sites
+    rna_edit_dict: dictionary linking transcript IDs to RNA editing sites tuple(chrom, 1-based pos)
     ptm_sites_dict: dictionary linking transcript IDs to genome-mapped post-translational 
         modification sites 
     return value: dictionary linking neoepitopes to their associated
@@ -5216,8 +5223,8 @@ def get_peptides_from_transcripts(
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
                     include_ptm_sites=include_ptm_sites,
-                    cleavage_prediction=cleavage_prediction,
                     cleavage_model=cleavage_model,
+                    cleavage_prob=cleavage_prob,
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,
@@ -5300,8 +5307,8 @@ def get_peptides_from_transcripts(
                     include_germline=include_germline,
                     include_rna_edits=include_rna_edits,
                     include_ptm_sites=include_ptm_sites,
-                    cleavage_prediction=cleavage_prediction,
                     cleavage_model=cleavage_model,
+                    cleavage_prob=cleavage_prob,
                     only_novel_upstream=only_novel_upstream,
                     only_downstream=only_downstream,
                     only_reference=only_reference,

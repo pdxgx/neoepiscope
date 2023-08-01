@@ -775,6 +775,10 @@ def write_results(
                     vaf = "NA"
                 else:
                     vaf = str(mutation[5])
+                if mutation[7] is None:
+                    warnings = "NA"
+                else:
+                    warnings = mutation[7]
                 # Get transcript/gene info
                 tx_info = tx_dict[mutation[8]]
                 # Get gene expression info
@@ -816,7 +820,7 @@ def write_results(
                     mutation[4],
                     vaf,
                     mutation[6],
-                    mutation[7],
+                    warnings,
                     mutation[8],
                     tx_info[0],
                     tx_info[1],
@@ -851,6 +855,10 @@ def write_results(
                         vaf = "NA"
                     else:
                         vaf = str(mut[5])
+                    if mut[7] is None:
+                        warnings = "NA"
+                    else:
+                        warnings = mut[7]
                     if expressed_variants is not None:
                         reads_supporting_variant = expressed_variants[tuple(mut[0:5])]
                         reads_covering_variant = covered_variants[tuple(mut[0:5])]
@@ -880,7 +888,7 @@ def write_results(
                             reads_covering_variant,
                             percent_support,
                         )
-                    ].append([mut[7], mut[8]])
+                    ].append([warnings, mut[8]])
                 mutation_list = sorted(list(mutation_dict.keys()))
                 # Get transcript/gene info
                 for mut in mutation_list:
@@ -926,7 +934,7 @@ def write_results(
                         ";".join(gene_ids),
                         ";".join(gene_names),
                         ";".join([str(x) for x in tpm_values]),
-                        str(mut[7]),
+                        str(warnings),
                         str(mut[8]),
                         str(mut[9]),
                         iedb_id,

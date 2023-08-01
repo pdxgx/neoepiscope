@@ -237,22 +237,22 @@ def _read(handle, species):
             ptms = [p for p in record.features if p[0] == 'MOD_RES' or p[0] == 'CARBOHYD']
             if ptms:
                 record.ptms = defaultdict(list)
-            for p in ptms:
-                # Add isoform ID for canonical sequence where possible otherwise iso_id = None
-                if p[1] == None:
-                    try:
-                        p[1] = record.isoforms[0][0]
-                    except IndexError:
+                for p in ptms:
+                    # Add isoform ID for canonical sequence where possible otherwise iso_id = None
+                    if p[1] == None:
+                        try:
+                            p[1] = record.isoforms[0][0]
+                        except IndexError:
+                            pass
+                    descrip = p[3]['note']
+                    simple_descrip = descrip.split(';')[0]
+                    # Skipping PTMs from pathogens
+                    if simple_descrip.startswith('(Microbial infection)'):
                         pass
-                descrip = p[3]['note']
-                simple_descrip = descrip.split(';')[0]
-                # Skipping PTMs from pathogens
-                if simple_descrip.startswith('(Microbial infection)'):
-                    pass
-                else:
-                    # PTMs format: {iso_id: [(1-based aa location, [type, base, PTM ID]), ...]}
-                    record.ptms[p[1]].append((p[2][0], ptm_reference_dict[simple_descrip]))
-                
+                    else:
+                        # PTMs format: {iso_id: [(1-based aa location, [type, base, PTM ID]), ...]}
+                        record.ptms[p[1]].append((p[2][0], ptm_reference_dict[simple_descrip]))
+
             # Retain variant sequence information, see Record description for formatting
             record.var_seqs = [(v[2], v[3]) for v in record.features if v[0] == 'VAR_SEQ']
             return record

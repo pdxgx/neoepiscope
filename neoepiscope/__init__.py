@@ -129,7 +129,8 @@ def main():
     )
     index_parser.add_argument(
         "-e", 
-        "--rna-edits", 
+        "--rna-edits",
+        dest='edits', 
         type=str, 
         required=False,
         default=None,
@@ -137,14 +138,14 @@ def main():
     )
     index_parser.add_argument(
         "-p", 
-        "--ptm-sites", 
+        "--ptm-sites",
+        dest='ptms', 
         type=str,
         nargs=2, 
         required=False,
-        action="append",
         default=None,
         help="input path to UniProtKB flat file and build species ('HUMAN' or 'MOUSE') —"
-        " only use with hg38 or mm10 GTF files for up-to-date mappings",
+        " only use with hg38 or mm10 GTF files for the most up-to-date mappings",
     )
     index_parser.add_argument(
         "-d",
@@ -323,7 +324,8 @@ def main():
     call_parser.add_argument(
         "-e", 
         "--rna-edits",
-        type=str, 
+        dest='edits',
+        type=str,
         required=False,
         default="exclude",
         help="how to handle RNA edits in "
@@ -349,8 +351,9 @@ def main():
         "-l",
         "--cleavage-prediction",
         required=False,
+        type=float,
         help="enumerate neoepitopes from proteasomal cleavage predictions; "
-        "documentation online for more information",
+        "choose a cleavage probability threshold (pepsickle default is 0.5)",
     )
     call_parser.add_argument(
         "-r",
@@ -374,7 +377,8 @@ def main():
         help="enumerate neoepitopes from polymorphic pseudogene transcripts",
     )
     call_parser.add_argument(
-        "--ptm-sites", 
+        "--ptm-sites",
+        dest='ptms', 
         type=str, 
         required=False,
         default="exclude",
@@ -437,22 +441,22 @@ def main():
         cds_dict, tx_data_dict = gtf_to_cds(args.gtf, dict_dir=args.dicts)
         cds_to_feature_length(cds_dict, tx_data_dict, dict_dir=args.dicts)
         cds_tree = cds_to_tree(cds_dict, dict_dir=args.dicts)
-        if args.rna_edits is not None:
-            transcript_to_rna_edits(args.rna_edits, cds_tree, cds_dict,
+        if args.edits is not None:
+            transcript_to_rna_edits(args.edits, cds_tree, cds_dict,
                                     dict_dir=args.dicts)
-        if args.ptm_sites is not None:
-            if args.ptm_sites[1] != 'HUMAN' and 'MOUSE':
+        if args.ptms is not None:
+            if args.ptms[1] != 'HUMAN' and 'MOUSE':
                 raise RuntimeError(
                     "species must be one of " '{"HUMAN", "MOUSE"}'
                 )
             try: 
                 transcript_to_ptm_sites(
-                    args.ptm_sites[0], args.ptm_sites[1], cds_dict, dict_dir=args.dicts
+                    args.ptms[0], args.ptms[1], cds_dict, dict_dir=args.dicts
                 )
             except IndexError as exc:
                 raise RuntimeError(
                     "The selected UniProtKB flat file uses a deprecated formatting. "
-                    "Neoepiscope only accepts flat files from release 2023-03-01 onward."
+                    "neoepiscope only accepts flat files from release 2023-03-01 onward."
                 ) from exc
 
     elif args.subparser_name == "swap":
@@ -489,12 +493,12 @@ def main():
                 and paths.gencode_v19 is not None
                 and paths.bowtie_hg19 is not None
                 and paths.rna_edits_hg19 is not None
-                #and paths.uniprot_hg19 is not None
+                and paths.uniprot_hg19 is not None
             ):
                 gencode_path = paths.gencode_v19
                 bowtie_index_path = paths.bowtie_hg19
                 rna_edits_path = paths.rna_edits_hg19
-                #uniprot_path = paths.uniprot_hg19
+                uniprot_path = paths.uniprot_hg19
             elif (
                 args.build == "mm9"
                 and paths.gencode_vM1 is not None
@@ -767,39 +771,37 @@ def main():
                 Warning,
             )
         # Establish handling of RNA edits:
-        if args.rna-edits == "include":
+        if args.edits == "include":
             include_rna_edits = 1
-        elif args.rna-edits == "background":
+        elif args.edits == "background":
             include_rna_edits = 2
-        elif args.rna-edits == "exclude":
+        elif args.edits == "exclude":
             include_rna_edits = 0
         else:
             raise RuntimeError(
                 "--rna-edits must be one of " '{"background", "include", "exclude"}'
             )
         # Establish handling of post-translational modifications:
-        if args.ptm-sites == "include":
+        if args.ptms == "include":
             include_ptm_sites = 1
-        elif args.ptm-sites == "exclude":
+        elif args.ptms == "exclude":
             include_ptm_sites = 0
         else:
             raise RuntimeError(
                 "--ptm-sites must be one of " '{"include", "exclude"}'
             )
         # Determine handling of proteasome type for cleavage prediciton:
-        if not args.cleavage-prediction:
-            cleavage_prediction = None
+        if not args.cleavage_prediction:
+            cleavage_prob = 0
             cleavage_model = None
-        elif args.cleavage-prediction == "C":
-            cleavage_prediction = "C"
-            cleavage_model = initialize_epitope_model()
-        elif args.cleavage-prediction == "I":
-            cleavage_prediction = "I"
-            cleavage_model = initialize_epitope_model()
         else:
-            raise RuntimeError(
-                "--cleavage-prediction must be one of " '{"C", "I"}'
-            )
+            if type(args.cleavage_prediction) != float:
+                raise RuntimeError(
+                    "--cleavage-prediction must be probablity threshold from [0-1]"
+                )
+            else:
+                cleavage_prob = args.cleavage_prediction
+            cleavage_model = initialize_epitope_model()
         # Determine whether mutations will be phased
         if not args.isolate:
             phase_mutations = True
@@ -848,11 +850,11 @@ def main():
             include_somatic,
             include_rna_edits,
             include_ptm_sites,
-            cleavage_prediction,
-            cleavage_model,
+            cleavage_model=cleavage_model,
+            cleavage_prob=cleavage_prob,
             protein_fasta=args.fasta,
-            rna_edit_dict=(rna_edit_dict if args.rna_edits else None),
-            ptm_sites_dict=(ptm_sites_dict if args.ptm_sites else None),
+            rna_edit_dict=(rna_edit_dict if args.edits else None),
+            ptm_sites_dict=(ptm_sites_dict if args.ptms else None),
         )
         # If neoepitopes are found, get binding scores and write results
         if len(neoepitopes) > 0:
