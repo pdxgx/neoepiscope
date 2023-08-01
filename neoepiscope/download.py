@@ -637,36 +637,39 @@ class NeoepiscopeDownloader(object):
                      + "'", globals())
                 # Download and index REDIportal RNA edits
                 if rediportal is not None:
-                    self._grab_and_explode(
-                        download["REDIportal " + build + " database"], 
-                        "REDIportal " + build + " database",
-                        explode=False
-                    )
-                    exec("rediportal_" + build + "_temp = '" + os.path.join(temp_install_dir, 'rediportal_' + build)
-                         + "'", globals())
-                    exec("rna_edits_" + build + " = '" + os.path.join(self.download_dir, 'rediportal_' + build)
-                         + "'", globals())
-                    exec("rediportal_" + build + "_file = '"
-                         + os.path.join(temp_install_dir, os.path.basename(download['REDIportal ' + build + ' database'][0]))
-                         + "'", globals())
-                    try:
-                        os.makedirs(eval("rediportal_" + build + "_temp"))
-                    except OSError as e:
+                    if self._yes_no_query("Download and index RNA edits for " + build + "?"):
+                        self._grab_and_explode(
+                            download["REDIportal " + build + " database"], 
+                            "REDIportal " + build + " database",
+                            explode=False
+                        )
+                        exec("rediportal_" + build + "_temp = '" + os.path.join(temp_install_dir, 'rediportal_' + build)
+                             + "'", globals())
+                        exec("rna_edits_" + build + " = '" + os.path.join(self.download_dir, 'rediportal_' + build)
+                             + "'", globals())
+                        exec("rediportal_" + build + "_file = '"
+                             + os.path.join(temp_install_dir, os.path.basename(download['REDIportal ' + build + ' database'][0]))
+                             + "'", globals())
+                        try:
+                            os.makedirs(eval("rediportal_" + build + "_temp"))
+                        except OSError as e:
+                            self._print_to_screen_and_log(
+                                (
+                                    'Problem encountered trying to create '
+                                    'directory "{}" for installation. May need '
+                                    'sudo permissions.'.format(eval("rediportal_" + build + "_temp"))
+                                )
+                            )   
+                            self._bail()
                         self._print_to_screen_and_log(
-                            (
-                                'Problem encountered trying to create '
-                                'directory "{}" for installation. May need '
-                                'sudo permissions.'.format(eval("rediportal_" + build + "_temp"))
-                            )
-                        )   
-                        self._bail()
-                    self._print_to_screen_and_log(
-                        "[Configuring] Indexing REDIportal RNA edits for {}...".format(build)
-                    )
-                    transcript_to_rna_edits(eval("rediportal_" + build + "_file"),
-                                            searchable_tree, cds_dict,
-                                            dict_dir=eval("rediportal_" + build + "_temp")
-                                            )
+                            "[Configuring] Indexing REDIportal RNA edits for {}...".format(build)
+                        )
+                        transcript_to_rna_edits(eval("rediportal_" + build + "_file"),
+                                                searchable_tree, cds_dict,
+                                                dict_dir=eval("rediportal_" + build + "_temp")
+                                                )
+                    else:
+                        exec("rna_edits_" + build + " = None", globals())
                 else:
                     exec("rna_edits_" + build + " = None", globals())
                     self._print_to_screen_and_log(
