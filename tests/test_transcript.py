@@ -82,7 +82,6 @@ ptm_dict = transcript_to_ptm_sites(ptm_test_file, "HUMAN", cds, dict_dir=None)
 ptm_dict_hg38 = transcript_to_ptm_sites(ptm_test_file, "HUMAN", cds_hg38, dict_dir=None)
 reference_index = bowtie_index.BowtieIndexReference(ref_prefix)
 reference_index_hg38 = bowtie_index.BowtieIndexReference(ref_prefix_hg38)
-# init epitope model for cleavage prediction
 cleavage_model = initialize_epitope_model()
 
 class TestTranscript(unittest.TestCase):
@@ -259,7 +258,26 @@ class TestTranscript(unittest.TestCase):
             "ENST00000499732.2",
             False,
         )
-
+        # testing RNA edits error where include_rna_edits=2 results in neopeptides with Mutation_type="E"
+        self.atoi_error_transcript = Transcript(
+            reference_index,
+            [
+                [
+                    str(chrom).replace("chr", ""),
+                    "N/A",
+                    seq_type,
+                    str(start),
+                    str(end),
+                    ".",
+                    strand,
+                ]
+                for (chrom, seq_type, start, end, strand, tx_type) in cds[
+                    "ENST00000533256.5"
+                ]
+            ],
+            "ENST00000533256.5",
+            False,
+        )
     def test_transcript_structure(self):
         """Fails if structure of unedited transcript is incorrect"""
         self.assertEqual(len(self.transcript.annotated_seq()), 3)
@@ -1626,6 +1644,39 @@ class TestTranscript(unittest.TestCase):
         pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2)
         self.assertEqual((pep, protein[:5]), ({}, "MGGLE"))
 
+        ## adds non-synonymous variants to multiple-edited peptide
+        # alt is "MRGLE"
+        self.atoi_transcript.edit("A", 9664183, mutation_type="V", mutation_class="S")
+        # alt becomes "MRGLG" with second edit to codon [9664192, 9664193, 9664194]
+        self.atoi_transcript.edit("I", 9664193, mutation_type="E", mutation_class="P")
+        # ref is "MWGLG"
+        self.atoi_transcript.edit("T", 9664183, mutation_type="V", mutation_class="G")
+        pep, protein = self.atoi_transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[:5], "MRGLG")
+
+        
+    def test_rna_edits_adjacent_snv(self):
+        # recreate erroneous ouput from LUAD VCF with -e background
+        #pep, protein = self.error_transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        #self.assertEqual(pep, {})
+        # ref is "...IASVDGA..." with multiple RNA edits (ITSVDDA > IASVDGA)
+        self.atoi_error_transcript.edit("I", 720101, mutation_type="E", mutation_class="P")
+        self.atoi_error_transcript.edit("I", 720114, mutation_type="E", mutation_class="P")
+        # alt is "...IASVDCA..." due to somatic mut (IASVDGA > IASVDCA)
+        self.atoi_error_transcript.edit("T", 720113, mutation_type="V", mutation_class="S")
+        pep, protein = self.atoi_error_transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        self.assertNotEqual(pep, {})
+        self.assertEqual(protein[67:74], "IASVDCA")
+        for val in pep.values():
+            self.assertNotEqual(val[0][4], "E")
+
+        # output includes mutations with mutation_type="E", successfully recreates error!
+        # strange that RNA edit @ 720114 is reported as neoepitope but not edit @ 720101
+        ## reason is that codon with 720101 is the same for ref vs. alt (RNA edit applied to both)
+        ## not the same for codon with 720114 because somatic SNV alters ref vs. alt (even with RNA edit applied to both)
+            # should we have neopeptides missense SNV detection consider if include_rna_edits=2 vs. 1? ignore if 2
+
     def test_adjacent_edits_peptides(self):
         """Fails if incorrect peptides are returned when multiple adjacent 
         edits, including RNA edits, are introduced"""
@@ -2634,8 +2685,8 @@ class TestTranscript(unittest.TestCase):
         # additional frameshift insertion ablates PTM warnings
         self.fwd_transcript.edit("TT", 450497, mutation_type="I", mutation_class="S")
         peptides, protein = self.fwd_transcript.neopeptides(return_protein=True, include_ptm_sites=1)
-        for vals in peptides.values():
-            for mut in vals:
+        for val in peptides.values():
+            for mut in val:
                 self.assertTrue(mut[7] == None)
 
     def test_ptm_neopeptides_reverse(self):

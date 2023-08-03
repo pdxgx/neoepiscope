@@ -1520,11 +1520,13 @@ class Transcript(object):
                                             )
                                         )
                         del edits_to_return[pos]
+                    # RNA edit applied only to alt sequence, ref base (el[3][2]) is retained
                     elif include_rna_edits == 1:
                         edits_to_return[pos] = [
                             ('I', 'E', 'P', (el[3][0], el[3][1], el[3][2], 'I', 'E', el[3][5]))
                                 for el in edits_to_return[pos]
                         ]
+                    # RNA edit applied to both ref and alt sequences
                     else:
                         edits_to_return[pos] = [
                             ('I', 'E', 'P', (el[3][0], el[3][1], 'I', 'I', 'E', el[3][5]))
@@ -3491,7 +3493,7 @@ class Transcript(object):
                     continue
                 elif seq[2][0][4] == "E":
                     # RNA edit overlapping start
-                    if counter + len(seq[0]) >= coding_start:
+                    if counter + len(seq[0]) >= coding_start and include_rna_edits != 2:
                         coordinates.append(
                             [
                                 alt_to_genome[coding_start],
@@ -3681,7 +3683,7 @@ class Transcript(object):
                         mitochondrial=self.mitochondrial,
                         allow_partial_codons=allow_partial_codons,
                     )
-                    if A != B:
+                    if A != B and include_rna_edits != 2:
                         # Missense variant
                         if frame_shifts == []:
                             # No upstream frameshifts to complicate paired normal peptides
