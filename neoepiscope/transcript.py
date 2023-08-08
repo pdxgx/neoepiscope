@@ -179,37 +179,35 @@ def kmerize_peptide(
         RNA-editing, optional dict of 0-based peptide ranges within protein
     """
     peptide_size = len(peptide)
-    peptides = []
-    pep_ranges = collections.defaultdict(list)
-    for size in range(min_size, max_size + 1):
-        for i in range(peptide_size - size + 1):
-            pep = (
-                peptide[i: i + size],
-                any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
-                any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
-                any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions)
-                )
-            peptides.append(pep)
-            # pep_range is inclusive of peptide start, exclusive of peptide end coords
-            pep_range = (protein_start + i, protein_start + i + size)
-            pep_ranges[pep].append(pep_range)
-    if return_ranges:    
+    if return_ranges:
+        peptides = []
+        pep_ranges = collections.defaultdict(list)
+        for size in range(min_size, max_size + 1):
+            for i in range(peptide_size - size + 1):
+                pep = (
+                    peptide[i: i + size],
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions)
+                    )
+                peptides.append(pep)
+                # pep_range is inclusive of peptide start, exclusive of peptide end coords
+                pep_range = (protein_start + i, protein_start + i + size)
+                pep_ranges[pep].append(pep_range)
         return peptides, pep_ranges
     else:
-        return peptides
-
-    #return [
-    #    item
-    #    for sublist in [
-    #        [(peptide[i : i + size], 
-    #            any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
-    #            any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
-    #            any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions))
-    #        for i in range(peptide_size - size + 1)]
-    #        for size in range(min_size, max_size + 1)
-    #    ]
-    #    for item in sublist
-    #]
+        return [
+            item
+            for sublist in [
+                [(peptide[i : i + size], 
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in editing_positions),
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in ambiguous_positions),
+                    any((protein_start + i) <= x < (protein_start + i + size) for x in ptm_positions))
+                for i in range(peptide_size - size + 1)]
+                for size in range(min_size, max_size + 1)
+            ]
+            for item in sublist
+        ]
 
 # X below denotes a stop codon
 _codon_table = {
