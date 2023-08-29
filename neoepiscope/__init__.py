@@ -433,6 +433,7 @@ def main():
         help="minimum TPM to consider a transcript expressed",
     )
     args = parser.parse_args()
+    args_iter = vars(args)
     if args.subparser_name == "download":
         from .download import NeoepiscopeDownloader
         downloader = NeoepiscopeDownloader()
@@ -878,6 +879,7 @@ def main():
                 tpm_threshold,
                 expressed_variants,
                 covered_variants,
+                args_iterable=args_iter
             )
             if args.fasta:
                 fasta_file = "".join([args.output, ".fasta"])
@@ -889,7 +891,17 @@ def main():
                             print(identifier, file=f)
                             print(proteins[i], file=f)
         else:
-            print("No neoepitopes found", file=sys.stderr)
+            # print empty file with argument headers
+            full_neoepitopes = dict()
+            write_results(
+                args.output,
+                hla_alleles,
+                full_neoepitopes,
+                tool_dict,
+                info_dict,
+                args_iterable=args_iter
+            )
+            #print("No neoepitopes found", file=sys.stderr)
     else:
         parser.print_usage()
 

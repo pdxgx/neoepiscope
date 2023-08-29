@@ -673,6 +673,7 @@ def write_results(
     tpm_threshold=None,
     expressed_variants=None,
     covered_variants=None,
+    args_iterable=None,
 ):
     """Writes predicted neoepitopes out to file
 
@@ -693,14 +694,16 @@ def write_results(
     """
     # Load epitope to IEDB linker dicts
     with open(
-        os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")),
+        #os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")),
+        '/Users/schreyer/scratch/neoepiscope/neoepiscope/epitopeID.pickle',
         "rb",
     ) as epitope_stream:
         epitope_to_iedb = pickle.load(epitope_stream)
     with open(
-        os.path.join(
-            os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
-        ),
+        #os.path.join(
+            #os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
+        #),
+        '/Users/schreyer/scratch/neoepiscope/neoepiscope/ambiguousEpitopeID.pickle',
         "rb",
     ) as epitope_stream:
         ambiguous_epitope_to_iedb = pickle.load(epitope_stream)
@@ -716,11 +719,24 @@ def write_results(
                     "# Neoepiscope version ",
                     version_number,
                     "; run ",
-                    str(datetime.date.today()),
+                    str(datetime.datetime.now()),
                 ]
             ),
             file=output_stream,
         )
+        for arg in [(k,v) for k,v in list(args_iterable.items())]:
+            print("".join(
+                    [
+                        "# ",
+                        str(arg)
+                    ]
+                ),
+            file=output_stream,
+            )
+        #print(
+            #", ".join(str(arg) for arg in [(k,v) for k,v in list(args_iterable.items())]),
+            #file=output_stream,
+        #)
         headers = [
             "Neoepitope",
             "Chromosome",
