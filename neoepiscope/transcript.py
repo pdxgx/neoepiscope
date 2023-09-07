@@ -170,9 +170,9 @@ def kmerize_peptide(
     normal_peptide: normal peptide seq
     min_size: minimum subsequence size
     max_size: maximum subsequence size
-    editing_positions: list of positions where edits are made
-    ambiguous_positions: list of positions where edits are ambiguous 
-    ptm_positions: list of positions where PTMs are present
+    editing_positions: list of protein positions where edits are made
+    ambiguous_positions: list of protein positions where edits are ambiguous 
+    ptm_positions: list of protein positions where PTMs are present
     return_ranges: boolean of whether to return peptide range dictionary
     Return value: a list of tuples of peptide substrings and
         Booleans indicating whether they contain RNA-editing and ambiguous
@@ -917,7 +917,7 @@ class Transcript(object):
                 self.boundary_spanning_deletion = False
 
     def edit(self, seq, pos, mutation_type="V", mutation_class="S", vaf=None):
-        """ Adds an edit to the transcript.
+        """ Adds an edit to the transcript edits dict (uses 0-based genomic coord as key).
             seq: sequence to add or delete from reference; for deletions, all
                 that matters is this sequence has the same length as the
                 sequence to delete. Also for deletions, seq can be an integer
@@ -1395,8 +1395,7 @@ class Transcript(object):
                     deletion_data.append(intervals[i][2])
                 else:
                     adjusted_intervals.append((intervals[i][0], "R", tuple(), None))
-        # duplicate init of defaultdict?
-        edits = collections.defaultdict(list)
+        # Add CDS edits to defaultdict (created same line as relevant_deletion_intevals)
         for pos in self.edits:
             # Add edit if and only if it's in one of the CDSes
             start_index = custom_bisect_left(intervals, pos)
@@ -1442,8 +1441,8 @@ class Transcript(object):
                     var = list(somatic[3])
                     if include_somatic == 2:
                         var[2] = somatic[3][3]
-                    elif include_germline == 2:
-                        #include_somatic == 1
+                    elif include_germline == 2 and include_somatic != 2:
+                        # might include both germline and somatic as background for RNA editing peptides
                         var[2] = germline[3][3]
                 else:
                     # RNA edits present
@@ -1456,13 +1455,14 @@ class Transcript(object):
                     else:
                         somatic = None
                     mutation_type = "V"
+                    # apply somatic/germline options to mut info first
                     if germline and somatic:
                         seq = somatic[0]
                         mutation_class = "S"
                         var = list(somatic[3])
                         if include_somatic == 2:
                             var[2] = somatic[3][3]
-                        elif include_germline == 2:
+                        elif include_germline == 2 and include_somatic != 2:
                             # include_somatic == 1
                             var[2] = germline[3][3]
                     elif germline:
@@ -1479,28 +1479,49 @@ class Transcript(object):
                         var = list(somatic[3])
                         if include_somatic == 2:
                             var[2] = somatic[3][3]
+                    rna = (edits_at_pos[0] if edits_at_pos[0][1] == 'E' and edits_at_pos[0][2] == 'P'
+                                else None)
+                    var2 = list(rna[3])
+                    # now apply RNA edit to mut info (using ref from somatic/germline when applicable)
                     if include_rna_edits == 1:
                         if (seq == 'T' and self.rev_strand or
                             seq == 'A' and not self.rev_strand):
-                            # Favor RNA edit leaving ref as-is
+                            # Favor RNA edit
                             seq = 'I'
                             mutation_type = "E"
-                            var[3] = seq
-                            var[4] = "E"
+                            # new mut class for compounded SNV + RNA edit
+                            mutation_class = "Z" + mutation_class
+                            # ref is inherited from SNV
+                            var2[2] = var[2]
                     if include_rna_edits == 2:
                         if (seq == 'T' and self.rev_strand or
                             seq == 'A' and not self.rev_strand):
                             # Favor RNA edit
                             seq = 'I'
                             mutation_type = "E"
-                            var[3] = seq
-                            var[4] = "E"
+                            # new mut class for compounded SNV + RNA edit
+                            mutation_class = "Z" + mutation_class
+                        else:
+                            # alt is inherited from SNV
+                            var2[3] = seq
                         if (var[2] == 'T' and self.rev_strand or
                             var[2] == 'A' and not self.rev_strand):
                             # RNA edit becomes ref
-                            var[2] = 'I'
+                            var2[2] = 'I'
+                            # new mut class for compounded SNV + RNA edit
+                            if "Z" not in mutation_class:
+                                mutation_class = "Z" + mutation_class
+                        else:
+                            # ref is inherited from SNV
+                            var2[2] = var[2]
                 # Update entry
-                new_entry.append(
+                if mutation_class.startswith("Z"):
+                    # DNA variant(s) always come before RNA edit
+                    new_entry.append(
+                        (seq, mutation_type, mutation_class, tuple(var), tuple(var2))
+                    )
+                else:
+                    new_entry.append(
                         (seq, mutation_type, mutation_class, tuple(var))
                     )
                 edits_to_return[pos] = new_entry
@@ -1616,7 +1637,8 @@ class Transcript(object):
             of R, G, S, or E (for respectively reference, germline edit,
             somatic edit, or RNA edit). Empty sequence means there was a deletion.
         seq: seq to add
-        mutation_class: S for somatic, G for germline, R for reference, P for post-transcriptional
+        mutation_class: S for somatic, G for germline, R for reference, 
+            P for post-transcriptional, Z[G or S] for compounded SNV + RNA edit
         mutation_info: tuple containing (1 based mutation position from
             vcf, mutation sequence, mutation type, and VAF)
         position: 1-based genomic position of first base added
@@ -1944,7 +1966,11 @@ class Transcript(object):
                         for edit in new_edits[pos_to_add]:
                             if edit[1] == "V" or edit[1] == "E":
                                 # Edit is a substitution - set snv w/ variant info and insertion w/ placeholder
-                                snv = (edit[0], edit[2], edit[3], edit[3][1])
+                                if edit[2].startswith("Z"):
+                                    # compounded SNV + RNA edit, mutation_info as a list which won't be merged
+                                    snv = (edit[0], edit[2], [edit[3], edit[4]], edit[3][1])
+                                else:
+                                    snv = (edit[0], edit[2], edit[3], edit[3][1])
                                 insertion = (
                                     "",
                                     "R",
@@ -2385,6 +2411,74 @@ class Transcript(object):
                 # Update counters
                 counter += len(seq[2][0][3])
                 ref_counter += len(seq[2][1][3])
+            elif seq[1].startswith("Z"):
+                # Compound SNV + RNA edit
+                cmpd_muts = seq[2]
+                # mut class (seq[1]) is a string with two letters: 'ZS' or 'ZG'
+                base_mut_class = seq[1][1]
+                # add edit to sequence
+                sequence += seq[0]
+                # Add applicable muts to ref_tree
+                if cmpd_muts[1][2] == "I":
+                    if include_rna_edits == 2:
+                        ref_sequence += "I"
+                        # Retains both mutations for ref_tree
+                        if self.rev_strand:
+                            ref_tree[seq[3] - len(seq[0]): seq[3]] = cmpd_muts
+                        else:
+                            ref_tree[seq[3]: seq[3] + len(seq[0])] = cmpd_muts
+                # else:
+                elif cmpd_muts[1][2] != "I":
+                    if (base_mut_class == "G" and include_germline == 2) or (
+                        base_mut_class == "S" and include_somatic == 2
+                    ):
+                        ref_sequence += cmpd_muts[0][2]
+                        # Retains only DNA mutation on reference
+                        if self.rev_strand:
+                            ref_tree[seq[3] - len(seq[0]): seq[3]] = cmpd_muts[0]
+                        else:
+                            ref_tree[seq[3]: seq[3] + len(seq[0])] = cmpd_muts[0]
+                    else:
+                        if self.rev_strand:
+                            ref_sequence += cmpd_muts[1][2][::-1].translate(
+                                    revcomp_translation_table
+                                )
+                        else:
+                            ref_sequence += cmpd_muts[1][2]
+                # Link coordinates
+                genomic_positions = [seq[3] + (i * strand) for i in range(len(seq[0]))]
+                transcriptomic_positions = [counter + i for i in range(len(seq[0]))]
+                ref_transcriptomic_positions = [
+                    ref_counter + i for i in range(len(seq[0]))
+                ]
+                multiassign(
+                    genome_to_ref, genomic_positions, ref_transcriptomic_positions
+                )
+                multiassign(genome_to_alt, genomic_positions, transcriptomic_positions)
+                multiassign(
+                    ref_to_genome, ref_transcriptomic_positions, genomic_positions
+                )
+                multiassign(alt_to_genome, transcriptomic_positions, genomic_positions)
+                # Update alt trees
+                if self.rev_strand:
+                    alt_tree[seq[3] - len(seq[0]) : seq[3]] = cmpd_muts
+                else:
+                    alt_tree[seq[3] : seq[3] + len(seq[0])] = cmpd_muts
+                # Update alt counter info
+                multiassign(
+                    mut_to_alt_counter,
+                    cmpd_muts,
+                    [(counter, seq) for i in range(len(cmpd_muts))],
+                )
+                multiassign(
+                    mut_to_ref_counter,
+                    cmpd_muts,
+                    [ref_counter for i in range(len(cmpd_muts))],
+                )
+                # Update counters
+                counter += len(seq[0])
+                ref_counter += len(seq[0])
+                continue
             elif seq[2][0][4] == "D":
                 # Get length of deleted sequence
                 deleted_length = len("".join([x[2] for x in seq[2]]))
@@ -2552,7 +2646,8 @@ class Transcript(object):
             elif seq[2][0][4] == "E":
                 # Add RNA edits to transcripts
                 sequence += seq[0]
-                if include_rna_edits == 2:
+                if seq[1] == "P" and include_rna_edits == 2:
+                    # ensure mutation class and background flags match before applying to ref sequence
                     ref_sequence += seq[0]
                     if self.rev_strand:
                         ref_tree[seq[3] - len(seq[0]): seq[3]] = seq[2]
@@ -2654,10 +2749,11 @@ class Transcript(object):
         """
         # if no edits to process, then skip all next steps and return {}
         if include_somatic == include_germline and include_somatic != 1:
-            if not return_protein:
-                return {}
-            else:
-                return {}, ""
+            if include_rna_edits != 1: 
+                if not return_protein:
+                    return {}
+                else:
+                    return {}, ""
         # Check whether to return due to lack of edits
         if not self.edits and not self.deletion_intervals and not allow_no_edits:
             if not return_protein:
@@ -3489,7 +3585,7 @@ class Transcript(object):
                             ]
                         )
                     continue
-                elif seq[2][0][4] == "E":
+                elif seq[1].startswith("Z") or seq[2][0][4] == "E":
                     # RNA edit overlapping start
                     if counter + len(seq[0]) >= coding_start and include_rna_edits != 2:
                         coordinates.append(
@@ -3660,7 +3756,7 @@ class Transcript(object):
                                     seq[2],
                                 ]
                             )
-            elif seq[2][0][4] == "E":
+            elif seq[1].startswith("Z") or seq[2][0][4] == "E":
                 # only document RNA edits corresponding to missense outputs
                 A1 = 3 * ((counter - coding_start) // 3) + coding_start
                 B1 = (
@@ -3974,13 +4070,18 @@ class Transcript(object):
                         # Get coordinates of paired normal peptide
                         epitope_coords.append(
                             [
+                                # lowest start coord alt transcript
                                 max(0, ((coords[2] - coding_start) // 3) - size + 1),
+                                # highest end coord alt transcript
                                 min(len(protein), ((coords[3] - coding_start) // 3) + size),
+                                # lowest start coord ref transcript
                                 max(0, ((coords[4] - coding_start) // 3) - size + 1),
+                                # highest end coord ref transcript
                                 min(
                                     len(protein_ref),
                                     ((coords[5] - coding_start) // 3) + size,
                                 ),
+                                # mutation info
                                 coords[6],
                             ]
                         )

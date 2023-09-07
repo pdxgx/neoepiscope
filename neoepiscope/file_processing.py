@@ -694,17 +694,13 @@ def write_results(
     """
     # Load epitope to IEDB linker dicts
     with open(
-        #os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")),
-        '/Users/schreyer/scratch/neoepiscope/neoepiscope/epitopeID.pickle',
-        "rb",
+        os.path.join(os.path.join(neoepiscope_dir, "neoepiscope", "epitopeID.pickle")),
     ) as epitope_stream:
         epitope_to_iedb = pickle.load(epitope_stream)
     with open(
-        #os.path.join(
-            #os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
-        #),
-        '/Users/schreyer/scratch/neoepiscope/neoepiscope/ambiguousEpitopeID.pickle',
-        "rb",
+        os.path.join(
+            os.path.join(neoepiscope_dir, "neoepiscope", "ambiguousEpitopeID.pickle")
+        ),
     ) as epitope_stream:
         ambiguous_epitope_to_iedb = pickle.load(epitope_stream)
     try:
@@ -719,7 +715,7 @@ def write_results(
                     "# Neoepiscope version ",
                     version_number,
                     "; run ",
-                    str(datetime.datetime.now()),
+                    str(datetime.datetime.now().isoformat(sep=" ", timespec="seconds")),
                 ]
             ),
             file=output_stream,
