@@ -1933,29 +1933,30 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1, include_germline=1)
         edit = edits[pos - 1][0]
+        # germline A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2, include_germline=1)
         edit = edits[pos-1][0]
+        # RNA edit becomes ref
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
-        self.assertEqual(edit[2], "ZG")
-        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[2], "G")
+        self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
-        self.assertEqual(edit[4][2], "I")
-        self.assertEqual(edit[4][3], "C")
-        self.assertEqual(edit[4][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1, include_germline=2)
         edit = edits[pos - 1][0]
+        # germline A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2, include_germline=2)
         edit = edits[pos-1][0]
+        # germline A > C ablates RNA edit for alt and ref sequences
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
@@ -1981,29 +1982,30 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1, include_somatic=1)
         edit = edits[pos - 1][0]
+        # somatic A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2, include_somatic=1)
         edit = edits[pos-1][0]
+        # somatic A > C ablates RNA edit for alt sequence, ref RNA edit retained but not reported
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
-        self.assertEqual(edit[2], "ZS")
-        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[2], "S")
+        self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
-        self.assertEqual(edit[4][2], "I")
-        self.assertEqual(edit[4][3], "C")
-        self.assertEqual(edit[4][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1, include_somatic=2)
         edit = edits[pos - 1][0]
+        # somatic A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2, include_somatic=2)
         edit = edits[pos-1][0]
+        # somatic A > C ablates RNA edit for alt and ref sequences
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
@@ -2023,23 +2025,23 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(edit[3][4], "E")
         edits, _ = self.atoi_manual_transcript.expressed_edits(include_rna_edits=1, include_somatic=1)
         edit = edits[pos - 1][0]
+        # somatic A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "A")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_manual_transcript.expressed_edits(include_rna_edits=2, include_somatic=1)
         edit = edits[pos-1][0]
+        # somatic A > C ablates RNA edit for alt sequence, ref RNA edit retained but not reported
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
-        self.assertEqual(edit[2], "ZS")
-        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[2], "S")
+        self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
-        self.assertEqual(edit[4][2], "I")
-        self.assertEqual(edit[4][3], "C")
-        self.assertEqual(edit[4][4], "E")
         edits, _ = self.atoi_manual_transcript.expressed_edits(include_rna_edits=2, include_somatic=2)
         edit = edits[pos-1][0]
+        # somatic A > C ablates RNA edit for alt and ref sequences
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
@@ -2054,12 +2056,14 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=2, include_somatic=0)
         edit = edits[pos - 1][0]
+        # germline A > C ablates RNA edit for alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=2, include_somatic=0)
+        # germline A > C ablates RNA edit for alt and ref sequences
         edit = edits[pos-1][0]
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[3][2], "C")
@@ -2106,6 +2110,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=1, include_somatic=2)
         edit = edits[pos - 1][0]
+        # somatic mut ablates germline A > C, retains RNA edit for alt sequence
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2118,10 +2123,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=2)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic mut ablates germline A > C, retains RNA edit for alt and ref sequences
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2134,10 +2136,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=2, include_somatic=1)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "C")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2150,10 +2149,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=2, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "C")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # germline A > C ablates RNA edit on ref, retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2166,10 +2162,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=1, include_somatic=1)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2182,10 +2175,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit is ref and retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2198,10 +2188,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=2, include_somatic=2)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2214,10 +2201,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=2, include_somatic=2)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit retained by somatic mut on alt and ref sequences
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2230,6 +2214,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=1, include_somatic=0)
         edit = edits[pos - 1][0]
+        # germline A > C ablates RNA edit on alt sequence
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
         self.assertEqual(edit[2], "G")
@@ -2239,27 +2224,17 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
-        print(edit)
-        #self.assertEqual(edit[0], "C")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "C")
-        #self.assertEqual(edit[3][4], "V")
+        # germline A > C ablates RNA edit on alt sequence, retained for ref
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
-        self.assertEqual(edit[2], "ZG")
-        self.assertEqual(edit[3][2], "A")
+        self.assertEqual(edit[2], "G")
+        self.assertEqual(edit[3][2], "I")
         self.assertEqual(edit[3][3], "C")
         self.assertEqual(edit[3][4], "V")
-        self.assertEqual(edit[4][2], "I")
-        self.assertEqual(edit[4][3], "C")
-        self.assertEqual(edit[4][4], "E")
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=0, include_somatic=1)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit retained by somatic mut on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2272,10 +2247,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=0, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # RNA edit as ref and alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2309,10 +2281,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=0, include_somatic=2)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A becomes ref, RNA edit overlaps somatic on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2325,10 +2294,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=0, include_somatic=2)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A overlapped by RNA edit on ref and alt sequences
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2341,10 +2307,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=1, include_somatic=2)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A becomes ref, RNA edit overlaps somatic on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2357,10 +2320,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=2)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A overlapped by RNA edit on ref and alt sequences
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2373,10 +2333,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=2, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "C")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # germline G > C becomes ref, somatic overlapped by RNA edit on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2389,10 +2346,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "G")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # ref unchanged, somatic overlapped by RNA edit on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2405,10 +2359,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=2, include_somatic=2)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "A")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A becomes ref, RNA edit overlaps somatic on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2421,10 +2372,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=2, include_somatic=2)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "I")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # somatic G > A overlapped by RNA edit on ref and alt sequences
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2437,6 +2385,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=1, include_somatic=0)
         edit = edits[pos-1][0]
+        # RNA edit not applied, germline G > C becomes alt
         self.assertEqual(edit[0], "C")
         self.assertEqual(edit[1], "V")
         self.assertEqual(edit[2], "G")
@@ -2446,10 +2395,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=1,
             include_germline=0, include_somatic=1)
         edit = edits[pos - 1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "G")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # ref unchanged, somatic overlapped by RNA edit on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2462,10 +2408,7 @@ class TestTranscript(unittest.TestCase):
         edits, _ = self.atoi_transcript.expressed_edits(include_rna_edits=2,
             include_germline=0, include_somatic=1)
         edit = edits[pos-1][0]
-        #self.assertEqual(edit[0], "I")
-        #self.assertEqual(edit[3][2], "G")
-        #self.assertEqual(edit[3][3], "I")
-        #self.assertEqual(edit[3][4], "E")
+        # ref unchanged, somatic overlapped by RNA edit on alt
         self.assertEqual(edit[0], "I")
         self.assertEqual(edit[1], "E")
         self.assertEqual(edit[2], "ZS")
@@ -2556,17 +2499,12 @@ class TestTranscript(unittest.TestCase):
 
         seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=0, include_rna_edits=2)
         self.assertEqual(len(seq), 26)
-        cmpd_seq = seq[12]
-        self.assertEqual(cmpd_seq[0], 'C')
-        self.assertEqual(cmpd_seq[1], 'ZG')
-        # SNV ref is ref base
-        self.assertEqual(cmpd_seq[2][0][2], 'A')
-        # SNV alt is germline mut
-        self.assertEqual(cmpd_seq[2][0][3], 'C')
-        # RNA edit ref is RNA edit
-        self.assertEqual(cmpd_seq[2][1][2], 'I')
-        # RNA edit alt is inherited from germline mut
-        self.assertEqual(cmpd_seq[2][1][3], 'C')
+        self.assertEqual(seq[12][0], 'C')
+        self.assertEqual(seq[12][1], 'G')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is germline A > C
+        self.assertEqual(seq[12][2][0][3], 'C')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=0, include_rna_edits=2)
         # alt and ref RNA edits are ablated by germline A > C mut
@@ -2603,17 +2541,12 @@ class TestTranscript(unittest.TestCase):
 
         seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=2)
         self.assertEqual(len(seq), 26)
-        cmpd_seq = seq[12]
-        self.assertEqual(cmpd_seq[0], 'T')
-        self.assertEqual(cmpd_seq[1], 'ZS')
-        # SNV ref is ref base
-        self.assertEqual(cmpd_seq[2][0][2], 'A')
-        # SNV alt is somatic mut
-        self.assertEqual(cmpd_seq[2][0][3], 'T')
-        # RNA edit ref is RNA edit
-        self.assertEqual(cmpd_seq[2][1][2], 'I')
-        # RNA edit alt is inherited from somatic mut
-        self.assertEqual(cmpd_seq[2][1][3], 'T')
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is somatic A > T
+        self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=2, include_rna_edits=2)
         # alt and ref RNA edits are ablated by somatic A > T mut
@@ -2652,17 +2585,12 @@ class TestTranscript(unittest.TestCase):
 
         seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=0, include_rna_edits=2)
         self.assertEqual(len(seq), 26)
-        cmpd_seq = seq[12]
-        self.assertEqual(cmpd_seq[0], 'C')
-        self.assertEqual(cmpd_seq[1], 'ZG')
-        # SNV ref is ref base
-        self.assertEqual(seq[12][2][0][2], 'A')
-        # SNV alt is germline mut
+        self.assertEqual(seq[12][0], 'C')
+        self.assertEqual(seq[12][1], 'G')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is germline A > C
         self.assertEqual(seq[12][2][0][3], 'C')
-        # RNA edit ref is RNA edit
-        self.assertEqual(seq[12][2][1][2], 'I')
-        # RNA edit alt is inherited from germline mut
-        self.assertEqual(seq[12][2][1][3], 'C')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=1)
         # somatic A > T ablates RNA edit on alt
@@ -2674,20 +2602,15 @@ class TestTranscript(unittest.TestCase):
 
         seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=2)
         self.assertEqual(len(seq), 26)
-        cmpd_seq = seq[12]
-        self.assertEqual(cmpd_seq[0], 'T')
-        self.assertEqual(cmpd_seq[1], 'ZS')
-        # SNV ref is ref base
-        self.assertEqual(cmpd_seq[2][0][2], 'A')
-        # SNV alt is somatic mut
-        self.assertEqual(cmpd_seq[2][0][3], 'T')
-        # RNA edit ref is RNA edit
-        self.assertEqual(cmpd_seq[2][1][2], 'I')
-        # RNA edit alt is inherited from somatic mut
-        self.assertEqual(cmpd_seq[2][1][3], 'T')
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is somatic A > T
+        self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=1, include_rna_edits=1)
-        # somatic A > T ablates germline A > C and RNA edit on alt
+        # somatic A > T ablates RNA edit on alt
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'T')
         self.assertEqual(seq[12][1], 'S')
@@ -2696,20 +2619,15 @@ class TestTranscript(unittest.TestCase):
 
         seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=1, include_rna_edits=2)
         self.assertEqual(len(seq), 26)
-        cmpd_seq = seq[12]
-        self.assertEqual(cmpd_seq[0], 'T')
-        self.assertEqual(cmpd_seq[1], 'ZS')
-        # SNV ref is ref base
-        self.assertEqual(cmpd_seq[2][0][2], 'A')
-        # SNV alt is somatic mut
-        self.assertEqual(cmpd_seq[2][0][3], 'T')
-        # RNA edit ref is RNA edit
-        self.assertEqual(cmpd_seq[2][1][2], 'I')
-        # RNA edit alt is inherited from somatic mut
-        self.assertEqual(cmpd_seq[2][1][3], 'T')
+        self.assertEqual(seq[12][0], 'T')
+        self.assertEqual(seq[12][1], 'S')
+        # ref is RNA edit
+        self.assertEqual(seq[12][2][0][2], 'I')
+        # alt is somatic A > T
+        self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=2)
-        # somatic A > T ablates germline A > C and RNA edit on alt
+        # somatic A > T ablates RNA edit on alt
         # germline A > C ablates RNA edit on ref
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'T')
@@ -2718,8 +2636,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=1, include_somatic=2, include_rna_edits=2)
-        # somatic A > T ablates germline A > C and RNA edit on alt
-        # somatic A > T ablates RNA edit on ref
+        # somatic A > T ablates RNA edit on alt and ref sequences
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'T')
         self.assertEqual(seq[12][1], 'S')
@@ -2727,8 +2644,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=2, include_rna_edits=2)
-        # somatic A > T ablates germline A > C and RNA edit on alt
-        # somatic A > T ablates germline A > C and RNA edit on ref
+        # somatic A > T ablates RNA edit on alt and ref sequences
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'T')
         self.assertEqual(seq[12][1], 'S')
@@ -2736,7 +2652,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(seq[12][2][0][3], 'T')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=2, include_somatic=0, include_rna_edits=2)
-        # germline A > C ablates RNA edit on alt and ref
+        # germline A > C ablates RNA edit on alt and ref sequences
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'C')
         self.assertEqual(seq[12][1], 'G')
@@ -2744,7 +2660,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(seq[12][2][0][3], 'C')
 
         seq = self.atoi_transcript.annotated_seq(include_germline=0, include_somatic=2, include_rna_edits=2)
-        # somatic A > T ablates RNA edit on alt and ref
+        # somatic A > T ablates RNA edit on alt and ref sequences
         self.assertEqual(len(seq), 26)
         self.assertEqual(seq[12][0], 'T')
         self.assertEqual(seq[12][1], 'S')

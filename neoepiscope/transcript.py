@@ -1501,16 +1501,17 @@ class Transcript(object):
                             mutation_type = "E"
                             # new mut class for compounded SNV + RNA edit
                             mutation_class = "Z" + mutation_class
-                        else:
+                        #else:
                             # alt is inherited from SNV
-                            var2[3] = seq
+                            #var2[3] = seq
                         if (var[2] == 'T' and self.rev_strand or
                             var[2] == 'A' and not self.rev_strand):
-                            # RNA edit becomes ref
-                            var2[2] = 'I'
-                            # new mut class for compounded SNV + RNA edit
                             if "Z" not in mutation_class:
-                                mutation_class = "Z" + mutation_class
+                                # RNA edit becomes ref in SNV mut info
+                                var[2] = 'I'
+                            else:
+                                # RNA edit becomes ref in RNA edit mut info
+                                var2[2] = 'I'
                         else:
                             # ref is inherited from SNV
                             var2[2] = var[2]
