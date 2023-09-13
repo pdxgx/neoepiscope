@@ -1677,25 +1677,26 @@ class TestTranscript(unittest.TestCase):
 
         
     def test_rna_edits_adjacent_snv(self):
-        # recreate erroneous ouput from LUAD VCF with -e background
-        #pep, protein = self.error_transcript.neopeptides(return_protein=True, include_rna_edits=2)
-        #self.assertEqual(pep, {})
+        """Fails if incorrect peptides are returned when multiple RNA 
+        edits are introduced adjacent to somatic SNV, originally made to 
+        recreate a peptide reporting bug for RNA edits"""
         # ref is "...IASVDGA..." with multiple RNA edits (ITSVDDA > IASVDGA)
         self.atoi_error_transcript.edit("I", 720101, mutation_type="E", mutation_class="P")
         self.atoi_error_transcript.edit("I", 720114, mutation_type="E", mutation_class="P")
         # alt is "...IASVDCA..." due to somatic mut (IASVDGA > IASVDCA)
         self.atoi_error_transcript.edit("T", 720113, mutation_type="V", mutation_class="S")
-        pep, protein = self.atoi_error_transcript.neopeptides(return_protein=True, include_rna_edits=2)
-        self.assertNotEqual(pep, {})
+        peps, protein = self.atoi_error_transcript.neopeptides(return_protein=True, include_rna_edits=2)
+        self.assertNotEqual(peps, {})
         self.assertEqual(protein[67:74], "IASVDCA")
-        for val in pep.values():
+        for val in peps.values():
             self.assertNotEqual(val[0][4], "E")
-
-        # output includes mutations with mutation_type="E", successfully recreates error!
-        # strange that RNA edit @ 720114 is reported as neoepitope but not edit @ 720101
-        ## reason is that codon with 720101 is the same for ref vs. alt (RNA edit applied to both)
-        ## not the same for codon with 720114 because somatic SNV alters ref vs. alt (even with RNA edit applied to both)
-            # should we have neopeptides missense SNV detection consider if include_rna_edits=2 vs. 1? ignore if 2
+        peps, protein = self.atoi_error_transcript.neopeptides(return_protein=True, include_rna_edits=1)
+        self.assertEqual(len(peps["EAIASVDC"]), 3)
+        self.assertEqual(sorted(peps["EAIASVDC"])[0][4], "E")
+        self.assertEqual(sorted(peps["EAIASVDC"])[2][4], "E")
+        for val in peps.values():
+            for mut in val:
+                self.assertTrue("rna_editing (ref)" not in mut[-1])
 
     def test_adjacent_edits_peptides(self):
         """Fails if incorrect peptides are returned when multiple adjacent 
@@ -2750,8 +2751,112 @@ class TestTranscript(unittest.TestCase):
         # alt counter output {mut info: transcript position, (base, mut_class [(mut_info)], genomic position)
         self.assertEqual(mut_to_alt_counter[('11', 5248245, 'G', 'C', 'V', None)], (56, ('G', 'S', [('11', 5248245, 'G', 'C', 'V', None)], 5248245)))
 
+    def test_build_sequences_with_overlapping_rna_germline_and_somatic_edits(self):
+        """Fails if edits are incorrectly applied to ref/alt sequences"""
+        # Reference base @ 450501 is T
+        self.fwd_transcript.edit("A", 450501, mutation_type="V", mutation_class="S")
+        self.fwd_transcript.edit("I", 450501, mutation_type="E", mutation_class="P")
+        self.fwd_transcript.edit("T", 450502, mutation_type="V", mutation_class="G")
+        
+        # Codon is TCC = S for ref to TTC = F with germline edit, ATC = I for alt with stacked somatic edit
+        seq = self.fwd_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=0)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.fwd_transcript._build_sequences(seq, strand=1, include_germline=2, include_somatic=1, include_rna_edits=0)
+        self.assertEqual(ref_sequence[221:224], "TTC")
+        self.assertEqual(sequence[221:224], "ATC")
+
+        # Codon is TCC = S for ref to TTC = F with germline edit, I(G)TC = V for alt with stacked somatic/RNA edits
+        seq = self.fwd_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=2)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.fwd_transcript._build_sequences(seq, strand=1, include_germline=2, include_somatic=1, include_rna_edits=2)
+        self.assertEqual(mut_to_alt_counter[('11', 450501, 'T', 'I', 'E', None)][0], 221)
+        self.assertEqual(mut_to_alt_counter[('11', 450502, 'C', 'T', 'V', None)][0], 222)
+        self.assertEqual(sequence[221:224], "ITC")
+        self.assertEqual(ref_sequence[221:224], "TTC")
+
+        # Codon is TCC = S for ref to TTC = F with germline edit, I(G)TC = V for alt with stacked somatic/RNA edits
+        seq = self.fwd_transcript.annotated_seq(include_germline=2, include_somatic=1, include_rna_edits=1)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.fwd_transcript._build_sequences(seq, strand=1, include_germline=2, include_somatic=1, include_rna_edits=1)
+        self.assertEqual(mut_to_alt_counter[('11', 450501, 'T', 'I', 'E', None)][0], 221)
+        self.assertEqual(mut_to_alt_counter[('11', 450502, 'C', 'T', 'V', None)][0], 222)
+        self.assertEqual(ref_sequence[221:224], "TTC")
+        self.assertEqual(sequence[221:224], "ITC")
+
+        # Codon is TCC = S for ref to I(G)CC = A with stacked somatic/RNA edits, I(G)TC = V for alt with germline edit
+        seq = self.fwd_transcript.annotated_seq(include_germline=1, include_somatic=2, include_rna_edits=2)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.fwd_transcript._build_sequences(seq, strand=1, include_germline=1, include_somatic=2, include_rna_edits=2)
+        self.assertEqual(ref_sequence[221:224], "ICC")
+        self.assertEqual(sequence[221:224], "ITC")
+        self.assertEqual(
+            mut_to_ref_counter[('11', 450501, 'A', 'A', 'V', None)], 
+            mut_to_ref_counter[('11', 450501, 'I', 'I', 'E', None)]
+            )
+        self.assertEqual(
+            mut_to_alt_counter[('11', 450501, 'A', 'A', 'V', None)], 
+            mut_to_alt_counter[('11', 450501, 'I', 'I', 'E', None)]
+            )
+
+        # Codon remains TCC = S for ref with blocked RNA edit, I(G)CC = A for alt with stacked somatic/RNA edits
+        seq = self.fwd_transcript.annotated_seq(include_germline=0, include_somatic=1, include_rna_edits=2)
+        (
+            sequence,
+            ref_sequence,
+            genome_to_ref,
+            genome_to_alt,
+            ref_to_genome,
+            alt_to_genome,
+            ref_tree,
+            alt_tree,
+            mut_to_ref_counter,
+            mut_to_alt_counter
+        ) = self.fwd_transcript._build_sequences(seq, strand=1, include_germline=0, include_somatic=1, include_rna_edits=2)
+        self.assertEqual(ref_sequence[221:224], "TCC")
+        self.assertEqual(sequence[221:224], "ICC")
+
     def test_seq_to_peptide_with_I_N(self):
-        """checks whether seq_to_peptide function can properly handle N and I"""
+        """tests whether seq_to_peptide function can properly handle N and I"""
         seq = "AAIATIIGNIAA"
         pep, editing_positions, ambiguous_positions, ptm_positions, ptms, peptide_warnings = transcript.seq_to_peptide(
             seq, 
@@ -2762,7 +2867,7 @@ class TestTranscript(unittest.TestCase):
         self.assertEqual(pep, "KMGE")
 
     def test_ptm_sites(self):
-        """checks PTM mapping from protein to genomic positions"""
+        """manually tests PTM mapping from protein to genomic positions"""
         grch37_sites = [
             [5248246, 5248247, 5248248],
             [5248225, 5248226, 5248227],
