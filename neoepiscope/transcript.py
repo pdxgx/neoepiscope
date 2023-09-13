@@ -1501,9 +1501,6 @@ class Transcript(object):
                             mutation_type = "E"
                             # new mut class for compounded SNV + RNA edit
                             mutation_class = "Z" + mutation_class
-                        #else:
-                            # alt is inherited from SNV
-                            #var2[3] = seq
                         if (var[2] == 'T' and self.rev_strand or
                             var[2] == 'A' and not self.rev_strand):
                             if "Z" not in mutation_class:
@@ -2417,18 +2414,16 @@ class Transcript(object):
                 cmpd_muts = seq[2]
                 # mut class (seq[1]) is a string with two letters: 'ZS' or 'ZG'
                 base_mut_class = seq[1][1]
-                # add edit to sequence
+                # add RNA edit to sequence
                 sequence += seq[0]
                 # Add applicable muts to ref_tree
-                if cmpd_muts[1][2] == "I":
-                    if include_rna_edits == 2:
-                        ref_sequence += "I"
-                        # Retains both mutations for ref_tree
-                        if self.rev_strand:
-                            ref_tree[seq[3] - len(seq[0]): seq[3]] = cmpd_muts
-                        else:
-                            ref_tree[seq[3]: seq[3] + len(seq[0])] = cmpd_muts
-                # else:
+                if cmpd_muts[1][2] == "I" and include_rna_edits == 2:
+                    ref_sequence += "I"
+                    # Retains both mutations for ref_tree
+                    if self.rev_strand:
+                        ref_tree[seq[3] - len(seq[0]): seq[3]] = cmpd_muts
+                    else:
+                        ref_tree[seq[3]: seq[3] + len(seq[0])] = cmpd_muts
                 elif cmpd_muts[1][2] != "I":
                     if (base_mut_class == "G" and include_germline == 2) or (
                         base_mut_class == "S" and include_somatic == 2
@@ -2440,6 +2435,7 @@ class Transcript(object):
                         else:
                             ref_tree[seq[3]: seq[3] + len(seq[0])] = cmpd_muts[0]
                     else:
+                        # Adds reference from RNA edit mut info
                         if self.rev_strand:
                             ref_sequence += cmpd_muts[1][2][::-1].translate(
                                     revcomp_translation_table
@@ -2645,10 +2641,9 @@ class Transcript(object):
                 counter += len(seq[0])
                 ref_counter += len(seq[0])
             elif seq[2][0][4] == "E":
-                # Add RNA edits to transcripts
+                # Add RNA edit to sequence
                 sequence += seq[0]
                 if seq[1] == "P" and include_rna_edits == 2:
-                    # ensure mutation class and background flags match before applying to ref sequence
                     ref_sequence += seq[0]
                     if self.rev_strand:
                         ref_tree[seq[3] - len(seq[0]): seq[3]] = seq[2]
